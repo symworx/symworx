@@ -1,6 +1,5 @@
 // filters/nonlinear/mod.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
-//
 
 pub mod kalman;
 pub mod lms;

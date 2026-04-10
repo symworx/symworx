@@ -3,7 +3,7 @@
 
 use ndarray::prelude::*;
 
-/// Calculates Sample Entropy (SampEn) of a time series.
+/// Calculate Sample Entropy (SampEn) of a time series.
 ///
 /// # Arguments
 /// * `data` - Input time series

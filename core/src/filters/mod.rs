@@ -4,7 +4,7 @@
 // Export all filter types and factory from their respective modules
 pub mod adaptive;
 // pub mod linear;
-// pub mod nonlienar;
+pub mod nonlinear;
 // pub mod time_frequency;
 
 // pub mod bandpass;
@@ -13,7 +13,7 @@ pub mod adaptive;
 // re-exports of filter types and factory
 pub use adaptive::*;
 // pub use linear::*;
-// pub use nonlienar::*;
+pub use nonlinear::*;
 // pub use time_frequency::*;
 
 // pub use bandpass::*;

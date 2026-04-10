@@ -1,3 +1,3 @@
-// filters/linear/moving_average.rs
+// filters/bandpass.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 

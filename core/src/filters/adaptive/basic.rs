@@ -24,7 +24,7 @@ fn mad(data: &[f64], med: f64) -> f64 {
 /// * `k` - Scaling factor for threshold (e.g., 2.0 for
 ///
 /// # Returns
-/// A new Vec<f64> where values deviating from the median by more than `theta
+/// A new `Vec<f64>` where values deviating from the median by more than `theta
 pub fn adaptive_median_filter(data: &[f64], k: f64) -> Vec<f64> {
     if data.is_empty() {
         return vec![];
@@ -47,7 +47,7 @@ pub fn adaptive_median_filter(data: &[f64], k: f64) -> Vec<f64> {
 /// * `k` - Scaling factor for threshold (e.g., 2.0 for
 ///
 /// # Returns
-/// A new Vec<f64> where values deviating from the mean by more than `theta
+/// A new `Vec<f64>` where values deviating from the mean by more than `theta
 pub fn adaptive_mean_filter(data: &[f64], k: f64) -> Vec<f64> {
     if data.is_empty() {
         return vec![];

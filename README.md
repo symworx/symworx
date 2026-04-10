@@ -1,6 +1,7 @@
-# cSYMd-core
+# cSYMd-symWorx
 
-`csymd-core` is a foundational package containing resources related to the `Computations Systems for Modeling Dynamics` project. 
+`csymd-symworx` is a foundational package containing resources related to the `Computations Systems for Modeling Dynamics` project. 
 
-This repository contains a variety of models and functions that are shared across the other `csymd` namespaces. 
+This is a monorepo that contains `core` utilities, as well as, physiological modeling and simulation resources (`biosym`), running performance simulation (`runsym`), and load calculation and optimization (`loadsym`).
+
 

@@ -1,7 +1,12 @@
-[package]
-name = "csymd-core"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-ndarray = { version = "0.15", features = ["std"] }
+[workspace]
+members = [
+    "core",
+    # "biosym",
+    # future:
+    # "loadsym",
+    # "runsym",
+    # "spatsym",
+    # "symspace",
+    # "symphase",
+]
+resolver = "2"
