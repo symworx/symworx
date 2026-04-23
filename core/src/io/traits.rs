@@ -1,0 +1,19 @@
+#![allow(unused_imports)]
+#![allow(dead_code)]
+
+// core/src/io/traits.rs
+// Copyright (C) 2026 cSYMd, All rights reserved.
+
+use crate::errors::SymError;
+
+pub trait SymReader {
+    type Output;
+
+    fn read(path: &str) -> Result<Self::Output, SymError>;
+}
+
+pub trait SymWriter {
+    type Input;
+
+    fn write(path: &str, data: &Self::Input) -> Result<(), SymError>;
+}

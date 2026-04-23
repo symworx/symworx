@@ -1,3 +1,6 @@
+#![allow(unused_imports)]
+#![allow(dead_code)]
+
 // filters/adaptive/basic.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 

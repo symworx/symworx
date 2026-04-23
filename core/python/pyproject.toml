@@ -1,0 +1,28 @@
+[build-system]
+requires = ["maturin>=1.4"]
+build-backend = "maturin"
+
+[project]
+name = "csymd_core"
+version = "0.1.0"
+description = "Core Rust-backed modeling engine for the C-SYMd ecosystem"
+authors = [{ name = "nate berry" }]
+requires-python = ">=3.12,<3.14"
+readme = "README.md"
+
+# Optional but recommended
+license = { text = "" }
+
+[project.urls]
+Homepage = "https://github.com/csymd/csymd-symworx"
+Source = "https://github.com/csymd/csymd-symworx"
+
+[tool.maturin]
+# Build the Rust crate in the parent directory
+manifest-path = "../Cargo.toml"
+
+# Ensure we build a Python extension module
+bindings = "pyo3"
+
+# Optional: strip symbols for smaller wheels
+strip = true

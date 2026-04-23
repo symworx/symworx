@@ -8,8 +8,3 @@ pub mod pipeline;
 pub mod traits;
 
 // re-exports of specific processing components
-pub use features::*;
-pub use normalization::*;
-pub use pipeline::*;
-pub use traits::*;
-

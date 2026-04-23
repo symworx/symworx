@@ -3,7 +3,7 @@ members = [
     "core",
     # "biosym",
     # future:
-    # "loadsym",
+    "loadsym",
     # "runsym",
     # "spatsym",
     # "symspace",

@@ -1,5 +1,8 @@
-// filters/adaptive/basic.rs
+// core/src/filters/adaptive/basic.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
+
+#![allow(unused_imports)]
+#![allow(dead_code)]
 
 use crate::statistics::median;
 
@@ -63,6 +66,9 @@ pub fn adaptive_mean_filter(data: &[f64], k: f64) -> Vec<f64> {
         .collect()
 }
 
+// ==========================================================
+// TESTS
+// ==========================================================
 #[cfg(test)]
 mod test_median_filter{
     use super::*;

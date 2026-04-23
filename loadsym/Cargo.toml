@@ -1,6 +1,11 @@
+# loadsym/src/Cargo.toml
+#
 [package]
-name = "loadsym"
+name = "csymd-loadsym"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+ndarray         = { version = "0.15", features = ["std"] }
+numpy           = { version = "0.21" }
+pyo3            = { version = "0.21", features = ["extension-module"] }

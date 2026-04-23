@@ -7,7 +7,7 @@ use std::cmp::Ordering;
 ///
 /// # Arguments
 /// * `data` - A slice of f64 values for which the mean is to be
-/// calculated.
+///            calculated.
 ///
 /// # Returns
 /// The mean value as an f64. If the input slice is empty, it returns NaN.
@@ -44,7 +44,9 @@ pub fn median(data: &[f64]) -> f64 {
     }
 }
 
-
+// ==========================================================
+// TESTS
+// ==========================================================
 #[cfg(test)]
 mod test_mean {
     use super::*;

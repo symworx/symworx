@@ -2,6 +2,7 @@
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use ndarray::prelude::*;
+use pyo3::prelude::*;
 
 /// Calculate Sample Entropy (SampEn) of a time series.
 ///
@@ -9,7 +10,10 @@ use ndarray::prelude::*;
 /// * `data` - Input time series
 /// * `m`    - Embedding dimension (typically 2)
 /// * `r`    - Tolerance (similarity threshold)
-/// 
+///
+/// # Returns
+/// Sample Entropy value. Returns 0.0 for constant or near-constant signals,
+///   or if the tolerance is too small.
 pub fn sample_entropy(data: &[f64], m: usize, r: f64) -> f64 {
     let n = data.len();
     if n <= m + 1 {
@@ -62,7 +66,9 @@ pub fn sample_entropy(data: &[f64], m: usize, r: f64) -> f64 {
     -((count_m_plus_1 as f64) / (count_m as f64)).ln()
 }
 
-
+// ===========================================================
+// TESTS
+// ===========================================================
 #[cfg(test)]
 mod tests {
     use super::*;

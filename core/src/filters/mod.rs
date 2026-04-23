@@ -11,10 +11,12 @@ pub mod nonlinear;
 // pub mod factory;
 
 // re-exports of filter types and factory
-pub use adaptive::*;
 // pub use linear::*;
-pub use nonlinear::*;
 // pub use time_frequency::*;
 
 // pub use bandpass::*;
 // pub use factory::*;
+
+// ==========================================================
+// PYTHON REGISTER
+// ==========================================================
