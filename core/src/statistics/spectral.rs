@@ -1,6 +1,12 @@
 // core/src/statistics/spectral.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
+// ==========================================================
+// Spectral Signal Analysis
+// ==========================================================
+// ----------------------------------------------------------
+// Welch Power Spectral Density
+// ----------------------------------------------------------
 /// Calculate the power spectral density (PSD) of a signal using the Welch method
 ///
 /// # Arguments
@@ -17,6 +23,10 @@ pub fn welch_psd(signal: &[f64], fs: f64) -> (Vec<f64>, Vec<f64>) {
     (freqs, psd)
 }
 
+
+// ==========================================================
+// TESTS
+// ==========================================================
 #[cfg(test)]
 mod tests {
     use super::*;

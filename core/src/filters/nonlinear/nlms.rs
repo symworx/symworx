@@ -1,9 +1,9 @@
-#![allow(unused_imports)]
-#![allow(dead_code)]
-
 // filters/linear/butterworth.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
+// ==========================================================
+// Butterworth
+// ==========================================================
 /// Nonlinear Least Mean Squares (NLMS) filter implementation.
 ///
 /// # Description
@@ -13,4 +13,7 @@ pub fn nlms() {
     // Placeholder for NLMS filter implementation
     println!("NLMS filter is not yet implemented.");
 }
-    
+
+// ==========================================================
+// TESTS
+// ==========================================================

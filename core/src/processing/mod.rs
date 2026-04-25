@@ -1,10 +1,17 @@
 // processing/mod.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
-//
 
-pub mod features;
+// ----------------------------------------------------------
+// Modules
+// ----------------------------------------------------------
 pub mod normalization;
-pub mod pipeline;
-pub mod traits;
 
-// re-exports of specific processing components
+// ----------------------------------------------------------
+// Exports
+// ----------------------------------------------------------
+pub use normalization::{
+    normalize,
+    z_score
+};
+
+

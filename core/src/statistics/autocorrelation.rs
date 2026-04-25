@@ -1,6 +1,12 @@
 // core/src/statistics/autocorrelation.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
+// ==========================================================
+// Autocorrelation functions
+// ==========================================================
+// ----------------------------------------------------------
+// acf
+// ----------------------------------------------------------
 /// Calculates the autocorrelation of a given signal. 
 ///
 /// # Arguments

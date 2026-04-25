@@ -1,47 +1,16 @@
 // core/src/filters/adaptive/basic.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
-#![allow(unused_imports)]
-#![allow(dead_code)]
-
 use crate::statistics::median;
 
-/// Compute Median Absolute Deviation (MAD)
-/// MAD = median(|x - median|) for x in data
-///
-/// # Arguments
-/// * `data` - Input data slice
-/// * `med` - Precomputed median of the
-///
-/// # Returns
-/// * MAD value
-fn mad(data: &[f64], med: f64) -> f64 {
-    let deviations: Vec<f64> = data.iter().map(|x| (x - med).abs()).collect();
-    median(&deviations)
-}
-
-/// Adaptive median-based outlier replacement filter.
-///
-/// # Arguments
-/// * `data` - Input data slice
-/// * `k` - Scaling factor for threshold (e.g., 2.0 for
-///
-/// # Returns
-/// A new `Vec<f64>` where values deviating from the median by more than `theta
-pub fn adaptive_median_filter(data: &[f64], k: f64) -> Vec<f64> {
-    if data.is_empty() {
-        return vec![];
-    }
-
-    let med = median(data);
-    let mad_val = mad(data, med);
-    let theta = k * mad_val;
-
-    data.iter()
-        .map(|&x| if (x - med).abs() > theta { med } else { x })
-        .collect()
-}
-
+// ==========================================================
+// Adaptive filters for time series
+// * mean adaptive filter 
+// * median adaptive filter
+// ==========================================================
+// ----------------------------------------------------------
+// Mean-based Adaptive Outlier Replacement Filters
+// ----------------------------------------------------------
 /// Adaptive mean-based outlier replacement filter.
 /// Threshold = k * standard deviation
 ///
@@ -56,7 +25,7 @@ pub fn adaptive_mean_filter(data: &[f64], k: f64) -> Vec<f64> {
         return vec![];
     }
 
-    let mean = data.iter().sum::<f64>() / (data.len() as f64);
+    let mean = crate::statistics::mean(data);
     let variance = data.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / (data.len() as f64);
     let std = variance.sqrt();
     let theta = k * std;
@@ -65,6 +34,33 @@ pub fn adaptive_mean_filter(data: &[f64], k: f64) -> Vec<f64> {
         .map(|&x| if (x - mean).abs() > theta { mean } else { x })
         .collect()
 }
+
+// ----------------------------------------------------------
+// Median based Adaptive Outlier Replacement Filters
+// ----------------------------------------------------------
+/// Adaptive median-based outlier replacement filter.
+///
+/// # Arguments
+/// * `data` - Input data slice
+/// * `k` - Scaling factor for threshold (e.g., 2.0 for
+///
+/// # Returns
+/// A new `Vec<f64>` where values deviating from the median by more than `theta
+///   are replaced with the median. Threshold = k * MAD (Median Absolute Deviation)
+pub fn adaptive_median_filter(data: &[f64], k: f64) -> Vec<f64> {
+    if data.is_empty() {
+        return vec![];
+    }
+
+    let med = median(data);
+    let mad_val = crate::statistics::mad(data, med);
+    let theta = k * mad_val;
+
+    data.iter()
+        .map(|&x| if (x - med).abs() > theta { med } else { x })
+        .collect()
+}
+
 
 // ==========================================================
 // TESTS

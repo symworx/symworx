@@ -30,9 +30,20 @@ pub fn py_median(data: Vec<f64>) -> f64 {
     crate::statistics::median(&data)
 }
 
+#[pyfunction(name = "mad")]
+pub fn py_mad(data: Vec<f64>) -> f64 {
+    let med = crate::statistics::median(&data);
+    crate::statistics::mad(&data, med)
+}
+
+#[pyfunction(name = "percentile")]
+pub fn py_percentile(data: Vec<f64>, p: Vec<f64>) -> PyResult<Vec<f64>> {
+    Ok(crate::statistics::percentile(&data, p))
+}
+
 // --- Correlation --------------------------------------
 #[pyfunction(name = "pearson_correlation")]
-pub fn py_pearson_correlation<'py>(
+pub fn py_pearson_correlation(
     data: Vec<Vec<f64>>,
     col1: usize,
     col2: usize
@@ -59,6 +70,12 @@ pub fn py_correlation_matrix_from_vec<'py>(
     let arr = crate::statistics::correlation_matrix_from_vec(&data);
 
     Ok(arr.into_pyarray_bound(py))
+}
+
+// --- Euclidean distance -----------------------------------
+#[pyfunction(name = "euclidean")]
+pub fn py_euclidean(vec1: Vec<f64>, vec2: Vec<f64>) -> f64 {
+    crate::statistics::euclidean(&vec1, &vec2)
 }
 
 // --- Linreg --------------------------------------

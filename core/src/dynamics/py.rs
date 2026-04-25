@@ -11,14 +11,18 @@ use pyo3::prelude::*;
 // ===========================================================
 // Dynamics
 // ===========================================================
-// --- Embedding ---------------------------------------------
-#[pyfunction]
-pub fn py_embed(data: Vec<f64>, embedding_dim: usize, time_delay: usize) -> Vec<Vec<f64>> {
-    crate::dynamics::edim(data, embedding_dim, time_delay)
+// Embedding 
+// -----------------------------------------------------------
+#[pyfunction(name = "edim")]
+pub fn py_edim(data: Vec<f64>, m: usize, tau: usize) -> Vec<Vec<f64>> {
+    crate::dynamics::edim(&data, m, tau)
 }
 
-// --- Entropy -----------------------------------------------
-#[pyfunction]
+// -----------------------------------------------------------
+// Entropy 
+// -----------------------------------------------------------
+#[pyfunction(name = "sample_entropy")]
 pub fn py_sample_entropy(data: Vec<f64>, m: usize, r: f64) -> f64 {
     crate::dynamics::sample_entropy(&data, m, r)
 }
+

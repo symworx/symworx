@@ -2,14 +2,14 @@
 // Copyright (C) 2026 cSYMd, All rights reserved.
 //
 
-pub mod bessel;
-pub mod butterworth;
+// ==========================================================
+// MODULES
+// ==========================================================
+pub mod bandpass;
 pub mod chebyshev;
-pub mod fir;
-pub mod moving_average;
 
-// re-exports of specific linear filter types
-pub use bessel::*;
-pub use butterworth::*;
+// ==========================================================
+// EXPORTS
+// ==========================================================
+pub use bandpass::*;
 pub use chebyshev::*;
-pub use fir::*;

@@ -2,7 +2,7 @@
 #
 
 [package]
-name = "csymd-core"
+name = "symworx-core"
 version = "0.1.0"
 edition = "2024"
 

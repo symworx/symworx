@@ -8,50 +8,118 @@
 
 use pyo3::prelude::*;
 
-// ===========================================================
-// ADAPTIVE Filters
-// ===========================================================
-// --- Moving Average ----------------------------------------
+// ==========================================================
+// FILTERS
+// ==========================================================
+// Adaptive Filters 
+// ----------------------------------------------------------
+#[pyfunction(name = "adaptive_mean_filter")]
+pub fn py_adaptive_mean_filter(data: Vec<f64>, k: f64) -> PyResult<Vec<f64>> {
+    let out = crate::filters::adaptive::basic::adaptive_mean_filter(&data, k);
+    Ok(out)
+}
 
-// --- Savitzky-Golay ----------------------------------------
-
-
-// ===========================================================
-// LINEAR Filters
-// ===========================================================
-// --- Bandpass ----------------------------------------------
-
-// --- Butterworth -------------------------------------------
-
-// --- Chebyshev ---------------------------------------------
-
-// --- Fir ---------------------------------------------------
+#[pyfunction(name = "adaptive_median_filter")]
+pub fn py_adaptive_median_filter(data: Vec<f64>, k: f64) -> PyResult<Vec<f64>> {
+    let out = crate::filters::adaptive::basic::adaptive_median_filter(&data, k);
+    Ok(out)
+}
 
 
-// ===========================================================
-// NONLINEAR Filters
-// ===========================================================
-// --- Median ------------------------------------------------
+// ----------------------------------------------------------
+// Linear Filters 
+// ----------------------------------------------------------
+// --- Bandpass ---------------------------------------------
+#[pyclass(name = "BandpassFilter")]
+pub struct PyBandpassFilter {
+    inner: crate::filters::linear::bandpass::BandpassFilter,
+}
 
-// --- Kalman ------------------------------------------------
+#[pymethods]
+impl PyBandpassFilter {
+    #[new]
+    fn new(fs: f64, f_low: f64, f_high: f64, q: f64) -> Self {
+        Self {
+            inner: crate::filters::linear::bandpass::BandpassFilter::new(
+                fs, f_low, f_high, q
+            ),
+        }
+    }
 
-// --- LMS ---------------------------------------------------
+    fn reset(&mut self) {
+        self.inner.reset();
+    }
 
-// --- NLMS --------------------------------------------------
+    fn process(&mut self, data: Vec<f64>) -> Vec<f64> {
+        self.inner.process(&data)
+    }
+}
 
-// --- RLS ---------------------------------------------------
+// --- Chebyshev --------------------------------------------
+#[pyclass(name = "ChebyshevFilter")]
+pub struct PyChebyshevFilter {
+    inner: crate::filters::linear::chebyshev::ChebyshevFilter,
+}
+
+#[pymethods]
+impl PyChebyshevFilter {
+    #[new]
+    fn new(fs: f64, f_low: f64, f_high: f64, ripple_db: f64) -> Self {
+        Self { 
+            inner: crate::filters::linear::chebyshev::ChebyshevFilter::new(
+                fs, f_low, f_high, ripple_db
+            ),
+        }
+    }
+
+    fn reset(&mut self) {
+        self.inner.reset()
+    }
+
+    fn process_sample(&mut self, x: f64) -> f64 {
+        self.inner.process_sample(x)
+    }
+
+    fn process(&mut self, data: Vec<f64>) -> Vec<f64> {
+        self.inner.process(&data)
+    }
+}
 
 
-// ===========================================================
-// TIME-FREQUENCY Filters
-// ===========================================================
-// --- EMD ---------------------------------------------------
+// ----------------------------------------------------------
+// Nonlinear Filters 
+// ----------------------------------------------------------
+#[pyclass(name = "KalmanFilter")]
+pub struct PyKalmanFilter {
+    inner: crate::filters::nonlinear::kalman::KalmanFilter,
+}
 
-// --- Hilbert -----------------------------------------------
+#[pymethods]
+impl PyKalmanFilter {
+    #[new]
+    fn new(dt: f64, process_var: f64, meas_var: f64) -> Self {
+        Self {
+            inner: crate::filters::nonlinear::kalman::KalmanFilter::new(
+                dt, process_var, meas_var,
+            )
+        }
+    }
 
-// --- STFT --------------------------------------------------
+    fn predict(&mut self) {
+        self.inner.predict()
+    }
 
-// --- Wavelet -----------------------------------------------
+    fn update(&mut self, z: f64) {
+        self.inner.update(z)
+    }
 
+    fn state(&self) -> (f64, f64) {
+        self.inner.state()
+    }
+}
 
+// ----------------------------------------------------------
+// Time Frequency
+// ----------------------------------------------------------
+// Placeholder
 

@@ -15,25 +15,25 @@ mod dynamics;
 mod statistics;
 mod processing;
 
-//
-// === PYTHON MODULE ======================================
-// 
+// ========================================================
+// PYTHON MODULE
+// ========================================================
 #[pymodule]
-fn csymd_core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // --- Backend submodule ---------------------------------
     // let backend_mod = PyModule::new_bound(py, "backend")?;
     // backend::register(py, &backend_mod)?;
     // m.add_submodule(&backend_mod)?;
 
     // --- Dynamics submodule ---------------------------------
-    let dynamics_mode = PyModule::new_bound(py, "dynamics")?;
-    dynamics::register(py, &dynamics_mode)?;
-    m.add_submodule(&dynamics_mode)?;
+    let dynamics_mod = PyModule::new_bound(py, "dynamics")?;
+    crate::dynamics::register(py, &dynamics_mod)?;
+    m.add_submodule(&dynamics_mod)?;
 
     // --- Filters submodule ---------------------------------
-    // let filters_mod = PyModule::new_bound(py, "filters")?;
-    // filters::register(py, &filters_mod)?;
-    // m.add_submodule(&filters_mod)?;
+    let filters_mod = PyModule::new_bound(py, "filters")?;
+    crate::filters::register(py, &filters_mod)?;
+    m.add_submodule(&filters_mod)?;
 
     // --- IO submodule -----------------------------------------
     // let io_mod = PyModule::new_bound(py, "io")?;
@@ -42,12 +42,12 @@ fn csymd_core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // --- Processing submodule ---------------------------------
     // let processing_mod = PyModule::new_bound(py, "processing")?;
-    // processing::register(py, &processing_mod)?;
+    // crate::processing::register(py, &processing_mod)?;
     // m.add_submodule(&processing_mod)?;
 
     // --- Statistics submodule ---------------------------------
     let stats_mod = PyModule::new_bound(py, "statistics")?;
-    statistics::register(py, &stats_mod)?;
+    crate::statistics::register(py, &stats_mod)?;
     m.add_submodule(&stats_mod)?;
 
     // --- Errors submodule -------------------------------------

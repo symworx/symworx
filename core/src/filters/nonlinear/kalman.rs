@@ -1,14 +1,14 @@
-#![allow(unused_imports)]
-#![allow(dead_code)]
-
-// filters/linear/butterworth.rs
+// filters/nonlinear/kalman.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use ndarray::{array, Array1, Array2};
 use ndarray_linalg::Inverse;
 
+// ==========================================================
+// Kalman Filter
+// ==========================================================
 #[derive(Debug, Clone)]
-struct KalmanFilter {
+pub struct KalmanFilter {
     x: Array1<f64>,   // state (2,)
     p: Array2<f64>,   // covariance (2,2)
     f: Array2<f64>,   // state transition (2,2)
@@ -18,7 +18,7 @@ struct KalmanFilter {
 }
 
 impl KalmanFilter {
-    fn new(dt: f64, process_var: f64, meas_var: f64) -> Self {
+    pub fn new(dt: f64, process_var: f64, meas_var: f64) -> Self {
         let f = array![
             [1.0, dt],
             [0.0, 1.0]
@@ -39,7 +39,7 @@ impl KalmanFilter {
         Self { x, p, f, q, h, r }
     }
 
-    fn predict(&mut self) {
+    pub fn predict(&mut self) {
         // x = F x
         self.x = self.f.dot(&self.x);
 
@@ -47,7 +47,7 @@ impl KalmanFilter {
         self.p = self.f.dot(&self.p).dot(&self.f.t()) + &self.q;
     }
 
-    fn update(&mut self, z: f64) {
+    pub fn update(&mut self, z: f64) {
         let z_vec = array![[z]]; // (1×1)
 
         // y = z - H x
@@ -69,12 +69,15 @@ impl KalmanFilter {
         self.p = (i - k.dot(&self.h)).dot(&self.p);
     }
 
-    fn state(&self) -> (f64, f64) {
+    pub fn state(&self) -> (f64, f64) {
         (self.x[0], self.x[1])
     }
 }
 
 
+// ==========================================================
+// TESTS
+// ==========================================================
 #[cfg(test)]
 mod test_kalman {
     use super::*;

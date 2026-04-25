@@ -1,9 +1,9 @@
-#![allow(unused_imports)]
-#![allow(dead_code)]
-
-// fitlers/nonlinear/rls.rs
+// core/filters/nonlinear/rls.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
+// ==========================================================
+// Nonlinear RLS 
+// ==========================================================
 /// Recursive Least Squares (RLS) filter implementation.
 ///
 /// The RLS filter is an adaptive filter that recursively finds the coefficients
@@ -14,3 +14,8 @@ pub fn rls() {
     // Placeholder for RLS filter implementation
     println!("RLS filter is not yet implemented.");
 }
+
+
+// ==========================================================
+// TESTS
+// ==========================================================

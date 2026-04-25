@@ -1,10 +1,15 @@
 // core/src/statistics/linreg.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
-
 use ndarray::{Array1, Array2, s};
 use ndarray_linalg::Inverse;
 
+// ==========================================================
+// Linear regression 
+// ==========================================================
+// ----------------------------------------------------------
+// L1 regression 
+// ----------------------------------------------------------
 /// L1 regression placeholder
 /// Note: L1 regression (Lasso) typically requires iterative optimization
 /// (e.g., coordinate descent, gradient descent) and is not solved in closed
@@ -29,7 +34,9 @@ pub fn l1(x: &Array2<f64>, y: &Array1<f64>) -> Array1<f64> {
     Array1::zeros(n_features)
 }
 
-
+// ----------------------------------------------------------
+// L2 regression 
+// ----------------------------------------------------------
 /// L2 regression (ordinary least squares)
 ///
 /// # Arguments

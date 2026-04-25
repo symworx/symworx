@@ -4,15 +4,28 @@
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 
+// ==========================================================
+// MODULES
+// ==========================================================
 pub mod embedding;
 pub mod entropy;
 pub mod rqa;
 pub mod py;
 
-// re-exports of specific statistics types
-pub use embedding::edim;
-pub use entropy::{sample_entropy};
-pub use py::{py_embed, py_sample_entropy};
+// ==========================================================
+// EXPORTS
+// ==========================================================
+pub use embedding::{
+    edim,
+    fnn
+};
+pub use entropy::{
+    sample_entropy
+};
+pub use py::{
+    py_edim,
+    py_sample_entropy
+};
 
 // ==========================================================
 // PYTHON REGISTER

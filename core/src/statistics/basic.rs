@@ -3,11 +3,20 @@
 
 use std::cmp::Ordering;
 
+// ==========================================================
+// Basic statistical functions
+// * mean             : mean of data
+// * median           : median of data
+// * mad              : mean absolute deviation
+// ==========================================================
+// ----------------------------------------------------------
+// Mean
+// ----------------------------------------------------------
 /// Calculates the mean of a time series of f64 values.
 ///
 /// # Arguments
 /// * `data` - A slice of f64 values for which the mean is to be
-///            calculated.
+///   calculated.
 ///
 /// # Returns
 /// The mean value as an f64. If the input slice is empty, it returns NaN.
@@ -18,7 +27,9 @@ pub fn mean(data: &[f64]) -> f64 {
     data.iter().sum::<f64>() / (data.len() as f64)
 }
 
-
+// ----------------------------------------------------------
+// Median
+// ----------------------------------------------------------
 /// Calculates the median of a slice of f64 values.
 /// 
 /// # Arguments
@@ -27,22 +38,84 @@ pub fn mean(data: &[f64]) -> f64 {
 /// # Returns
 /// The median value as an f64. If the input slice is empty, it returns NaN.
 pub fn median(data: &[f64]) -> f64 {
-    if data.is_empty() {
+    let n = data.len();
+    if n == 0 {
         return f64::NAN;
     }
 
-    let length = data.len();
-    let mut sorted_data = data.to_vec();
+    let mut v = data.to_vec();
+    v.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
-    sorted_data.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
-
-    if length % 2 == 0 {
-        let mid = length / 2;
-        (sorted_data[mid - 1] + sorted_data[mid]) / 2.0
+    let mid = n / 2;
+    if n.is_multiple_of(2) {
+        (v[mid - 1] + v[mid]) / 2.0
     } else {
-        sorted_data[length / 2]
+        v[mid]
     }
 }
+
+// ----------------------------------------------------------
+// Median absoluate deviation
+// ----------------------------------------------------------
+/// Compute Median Absolute Deviation (MAD)
+/// MAD = median(|x - median|) for x in data
+///
+/// # Arguments
+/// * `data` - Input data slice
+/// * `med` - Precomputed median of `data`
+///
+/// # Returns
+/// * MAD value
+pub fn mad(data: &[f64], med: f64) -> f64 {
+    let deviations: Vec<f64> = data.iter().map(|x| (x - med).abs()).collect();
+    median(&deviations)
+}
+
+// ----------------------------------------------------------
+// Percentile calculations
+// ----------------------------------------------------------
+/// Calculate percentiles for a data slice.
+/// `p` is a list of percentiles in [0, 100].
+///
+/// Uses linear interpolation between nearest ranks (NumPy default).
+pub fn percentile(data: &[f64], p: Vec<f64>) -> Vec<f64> {
+    let n = data.len();
+    if n == 0 {
+        return vec![f64::NAN; p.len()];
+    }
+
+    // Work on a sorted copy
+    let mut sorted = data.to_vec();
+    sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+    p.into_iter()
+        .map(|pct| {
+            // Clamp percentile to [0, 100]
+            let pct = pct.clamp(0.0, 100.0);
+
+            if pct == 0.0 {
+                return sorted[0];
+            }
+            if pct == 100.0 {
+                return sorted[n - 1];
+            }
+
+            // Convert percentile to fractional index
+            let rank = pct / 100.0 * (n - 1) as f64;
+
+            let low = rank.floor() as usize;
+            let high = rank.ceil() as usize;
+
+            if low == high {
+                sorted[low]
+            } else {
+                let w = rank - low as f64;
+                sorted[low] * (1.0 - w) + sorted[high] * w
+            }
+        })
+        .collect()
+}
+
 
 // ==========================================================
 // TESTS

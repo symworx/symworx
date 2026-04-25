@@ -1,22 +1,56 @@
 // fitlers/mod.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
-//
-// Export all filter types and factory from their respective modules
+
+use pyo3::prelude::*;
+use pyo3::wrap_pyfunction;
+
+// ==========================================================
+// MODULES
+// ==========================================================
 pub mod adaptive;
-// pub mod linear;
+pub mod linear;
 pub mod nonlinear;
-// pub mod time_frequency;
+pub mod py;
 
-// pub mod bandpass;
-// pub mod factory;
-
-// re-exports of filter types and factory
-// pub use linear::*;
-// pub use time_frequency::*;
-
-// pub use bandpass::*;
-// pub use factory::*;
+// ==========================================================
+// EXPORTS
+// ==========================================================
+pub use adaptive::{
+    adaptive_mean_filter,
+    adaptive_median_filter,
+};
+pub use linear::{
+    BandpassFilter,
+    ChebyshevFilter,
+};
+pub use nonlinear::{
+    KalmanFilter,
+};
 
 // ==========================================================
 // PYTHON REGISTER
 // ==========================================================
+pub use py::{
+    py_adaptive_mean_filter,
+    py_adaptive_median_filter,
+    PyBandpassFilter,
+    PyChebyshevFilter,
+    PyKalmanFilter,
+};
+
+pub fn register(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
+
+    // --- Adaptive -----------------------------------------
+    m.add_function(wrap_pyfunction!(py_adaptive_mean_filter, m)?)?;
+    m.add_function(wrap_pyfunction!(py_adaptive_median_filter, m)?)?;
+
+    // -- Linear --------------------------------------------
+    m.add_class::<PyBandpassFilter>()?;
+    m.add_class::<PyChebyshevFilter>()?;
+
+    // -- Nonlinear -----------------------------------------
+    m.add_class::<PyKalmanFilter>()?;
+
+    Ok(())
+}
+

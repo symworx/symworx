@@ -6,6 +6,15 @@
 use ndarray::{Array1, Array2, Axis};
 use ndarray_linalg::{Eigh, UPLO};
 
+// ==========================================================
+// Principal Component Analysis 
+// ==========================================================
+pub struct Pca {
+    pub components: Array2<f64>,
+    pub explained_variance: Array1<f64>,
+    pub mean: Array1<f64>,
+}
+
 /// Principal Component Analysis (PCA) implementation
 /// PCA is a dimensionality reduction technique that transforms data to a new coordinate system
 /// such that the greatest variance by any projection of the data comes to lie on the first coordinate
@@ -17,12 +26,6 @@ use ndarray_linalg::{Eigh, UPLO};
 /// # Returns
 /// A `Pca` struct containing the principal components, explained variance, and mean of the
 /// original data.
-pub struct Pca {
-    pub components: Array2<f64>,
-    pub explained_variance: Array1<f64>,
-    pub mean: Array1<f64>,
-}
-
 impl Pca {
     pub fn fit(data: &Array2<f64>, n_components: usize) -> Self {
         // Compute column means
@@ -57,6 +60,7 @@ impl Pca {
         centered.dot(&self.components)
     }
 }
+
 
 // ==========================================================
 // TESTS

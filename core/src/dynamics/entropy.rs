@@ -4,6 +4,9 @@
 use ndarray::prelude::*;
 use pyo3::prelude::*;
 
+// ===========================================================
+// Sample Entropy (SampEn)
+// ===========================================================
 /// Calculate Sample Entropy (SampEn) of a time series.
 ///
 /// # Arguments

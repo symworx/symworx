@@ -3,10 +3,16 @@
 
 use ndarray::{Array2, ArrayView1, Axis};
 
+// ==========================================================
+// Correlation 
+// ==========================================================
+// ----------------------------------------------------------
+// Pearson correlation
+// ----------------------------------------------------------
 /// Computes Pearson correlation coefficient between two columns.
 /// # Arguments
 /// * `data` - 2D array with **rows = observations**, **columns =
-///            variables**
+///   variables**
 /// * `col1` - index of first variable (column)
 /// * `col2` - index of second variable (column)
 ///
@@ -44,7 +50,9 @@ pub fn pearson_correlation(data: &Array2<f64>, col1: usize, col2: usize) -> f64 
     numerator / denominator
 }
 
-
+// ----------------------------------------------------------
+// Correlation matrix
+// ----------------------------------------------------------
 /// Generates a full Pearson correlation matrix for any number of variables (columns).
 ///
 /// # Arguments
@@ -52,7 +60,6 @@ pub fn pearson_correlation(data: &Array2<f64>, col1: usize, col2: usize) -> f64 
 ///
 /// # Returns
 /// Square correlation matrix (symmetric, diagonal = 1.0)
-/// 
 pub fn correlation_matrix(data: &Array2<f64>) -> Array2<f64> {
     let ncols = data.ncols();
     if ncols == 0 {
@@ -72,7 +79,9 @@ pub fn correlation_matrix(data: &Array2<f64>) -> Array2<f64> {
     corr
 }
 
-
+// ----------------------------------------------------------
+// Correlation matrix from vec
+// ----------------------------------------------------------
 /// Convenience function: Create correlation matrix from a Vec of Vecs
 pub fn correlation_matrix_from_vec(data: &[Vec<f64>]) -> Array2<f64> {
     if data.is_empty() || data[0].is_empty() {
