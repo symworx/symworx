@@ -1,6 +1,3 @@
-#![allow(unused_imports)]
-#![allow(dead_code)]
-
 // core/src/io/parquet.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
