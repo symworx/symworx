@@ -25,6 +25,17 @@ pub use parquet::ParquetReader;
 use crate::errors::SymError;
 use crate::io::traits::{SymReader, SymWriter};
 
+pub use py::{
+    py_load_any,
+    PyCsvReader,
+    PyCsvWriter,
+    PyGbdTable,
+    py_read_gbd,
+    PyIbiRecord,
+    py_read_ibi,
+    PyParquetReader,
+};
+
 // ===========================================================
 // Parent module functions
 // ===========================================================
@@ -37,20 +48,6 @@ pub fn load_any(path: &str) -> Result<Vec<Vec<f64>>, SymError> {
         Err(SymError::UnsupportedFormat(path.into()))
     }
 }
-
-// ===========================================================
-// PYTHON EXPORTS
-// ===========================================================
-pub use py::{
-    py_load_any,
-    PyCsvReader,
-    PyCsvWriter,
-    PyGbdTable,
-    py_read_gbd,
-    PyIbiRecord,
-    py_read_ibi,
-    PyParquetReader,
-};
 
 // ===========================================================
 // PYTHON REGISTER

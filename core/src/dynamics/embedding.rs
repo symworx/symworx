@@ -43,11 +43,12 @@ pub fn fnn(
     tau: usize,
     rtol: f64,
     atol: f64,
+    theiler: usize,
 ) -> FnnResult {
     let m0 = edim(data, m, tau);
     let m1 = edim(data, m + 1, tau);
 
-    let n = m0.len();
+    let n = m1.len();
     if n == 0 {
         return FnnResult { m, fnn_ratio: f64::NAN };
     }
@@ -60,6 +61,8 @@ pub fn fnn(
 
         for j in 0..n {
             if i == j { continue; }
+            if (i as isize - j as isize).abs() <= theiler as isize { continue; }
+
             let d = euclidean(&m0[i], &m0[j]);
             if d < best_dist {
                 best_dist = d;
@@ -74,7 +77,16 @@ pub fn fnn(
         let delta = (dist_m1 - dist_m).abs();
         let ratio = delta / dist_m;
 
-        if ratio > rtol || delta > atol {
+        // Kennel test 1
+        let mut is_false = ratio > rtol;
+
+        // Kennel test 2 (absolute)
+        let extra = (m1[i][m] - m1[j][m]).abs();
+        if extra > atol {
+            is_false = true;
+        }
+
+        if is_false {
             false_count += 1;
         }
     }

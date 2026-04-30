@@ -1,7 +1,6 @@
 // core/src/statistics/pca.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 // 
-#![allow(dead_code)]
 
 use ndarray::{Array1, Array2, Axis};
 use ndarray_linalg::{Eigh, UPLO};

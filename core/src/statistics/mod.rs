@@ -20,42 +20,16 @@ pub mod variability;
 // ==========================================================
 // EXPORTS
 // ==========================================================
-pub use autocorrelation::{
-    acf
-};
-pub use basic::{
-    mean,
-    median,
-    mad,
-    percentile,
-};
-pub use correlation::{
-    pearson_correlation, 
-    correlation_matrix, 
-    correlation_matrix_from_vec,
+pub use autocorrelation::{acf};
+pub use basic::{mean, median, mad, percentile,};
+pub use correlation::{pearson_correlation,
+                      correlation_matrix,
+                      correlation_matrix_from_vec,
 }; 
-pub use distance::{
-    euclidean,
-};
-pub use errors::{
-    mae,
-    mse,
-    rmse,
-};
-pub use linreg::{
-    l1,
-    l2,
-};
-pub use variability::{
-    intervals,
-    ibi,
-    rmssd,
-    sdnn,
-};
-
-// ==========================================================
-// PYTHON REGISTER
-// ==========================================================
+pub use distance::{euclidean,};
+pub use errors::{mae, mse, rmse,};
+pub use linreg::{l1, l2,};
+pub use variability::{intervals, ibi, rmssd, sdnn,};
 pub use py::{
     // --- Autocorrelation ---
     py_acf,
@@ -84,6 +58,9 @@ pub use py::{
     py_sdnn,
 };
 
+// ==========================================================
+// PYTHON REGISTER
+// ==========================================================
 pub fn register(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // --- Autocorrelation ----------------------------------

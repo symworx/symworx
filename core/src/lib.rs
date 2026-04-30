@@ -41,9 +41,9 @@ fn core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_submodule(&io_mod)?;
 
     // --- Processing submodule ---------------------------------
-    // let processing_mod = PyModule::new_bound(py, "processing")?;
-    // crate::processing::register(py, &processing_mod)?;
-    // m.add_submodule(&processing_mod)?;
+    let processing_mod = PyModule::new_bound(py, "processing")?;
+    crate::processing::register(py, &processing_mod)?;
+    m.add_submodule(&processing_mod)?;
 
     // --- Statistics submodule ---------------------------------
     let stats_mod = PyModule::new_bound(py, "statistics")?;

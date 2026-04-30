@@ -15,28 +15,19 @@ pub mod py;
 // ==========================================================
 // EXPORTS
 // ==========================================================
-pub use adaptive::{
-    adaptive_mean_filter,
-    adaptive_median_filter,
-};
-pub use linear::{
-    BandpassFilter,
-    ChebyshevFilter,
-};
-pub use nonlinear::{
-    KalmanFilter,
+pub use adaptive::{adaptive_mean_filter, adaptive_median_filter,};
+pub use linear::{BandpassFilter, ChebyshevFilter,};
+pub use nonlinear::{KalmanFilter,};
+pub use py::{py_adaptive_mean_filter,
+             py_adaptive_median_filter,
+             PyBandpassFilter,
+             PyChebyshevFilter,
+             PyKalmanFilter,
 };
 
 // ==========================================================
 // PYTHON REGISTER
 // ==========================================================
-pub use py::{
-    py_adaptive_mean_filter,
-    py_adaptive_median_filter,
-    PyBandpassFilter,
-    PyChebyshevFilter,
-    PyKalmanFilter,
-};
 
 pub fn register(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
 

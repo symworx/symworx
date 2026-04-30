@@ -1,5 +1,4 @@
 # core/src/Cargo.toml
-#
 
 [package]
 name = "symworx-core"

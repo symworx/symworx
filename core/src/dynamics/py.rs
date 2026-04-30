@@ -1,11 +1,6 @@
 // core/src/statistics/py.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
-#![allow(dead_code)]
-#![allow(unused_imports)]
-#![allow(unused_variables)]
-#![allow(unsafe_op_in_unsafe_fn)]
-
 use pyo3::prelude::*;
 
 // ===========================================================
@@ -16,6 +11,19 @@ use pyo3::prelude::*;
 #[pyfunction(name = "edim")]
 pub fn py_edim(data: Vec<f64>, m: usize, tau: usize) -> Vec<Vec<f64>> {
     crate::dynamics::edim(&data, m, tau)
+}
+
+#[pyfunction(name = "fnn")]
+pub fn py_fnn(
+    data: Vec<f64>,
+    m: usize,
+    tau: usize,
+    rtol: f64,
+    atol: f64,
+    theiler: usize
+) -> PyResult<(usize, f64)> {
+    let result = crate::dynamics::fnn(&data, m, tau, rtol, atol, theiler);
+    Ok((result.m, result.fnn_ratio))
 }
 
 // -----------------------------------------------------------

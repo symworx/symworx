@@ -15,30 +15,23 @@ pub mod py;
 // ==========================================================
 // EXPORTS
 // ==========================================================
-pub use embedding::{
-    edim,
-    fnn
-};
-pub use entropy::{
-    sample_entropy
-};
-pub use py::{
-    py_edim,
-    py_sample_entropy
-};
+pub use embedding::{edim, fnn};
+pub use entropy::{sample_entropy};
+pub use py::{py_edim, py_fnn, py_sample_entropy};
 
 // ==========================================================
 // PYTHON REGISTER
 // ==========================================================
 pub fn register(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
 
-    // --- embedding ---
-    // m.add_function(wrap_pyfunction!(py_edim, m)?)?;
+    // --- embedding ----------------------------------------
+    m.add_function(wrap_pyfunction!(py_edim, m)?)?;
+    m.add_function(wrap_pyfunction!(py_fnn, m)?)?;
     
-    // --- entropy ---
+    // --- entropy ------------------------------------------
     m.add_function(wrap_pyfunction!(py_sample_entropy, m)?)?;
 
-    // --- rqa ---
+    // --- rqa ----------------------------------------------
     // m.add_function(wrap_pyfunction!(py_linreg_l1, m)?)?;
 
     Ok(())
