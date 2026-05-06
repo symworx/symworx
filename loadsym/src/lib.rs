@@ -9,9 +9,9 @@ use pyo3::prelude::*;
 mod load;
 mod nutrition;
 
-//
-// === PYTHON MODULE ======================================
-// 
+// ========================================================
+// PYTHON MODULE
+// ========================================================
 #[pymodule]
 fn csymd_loadsym(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
 

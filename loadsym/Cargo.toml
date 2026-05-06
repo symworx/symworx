@@ -1,5 +1,6 @@
-# loadsym/src/Cargo.toml
-#
+# loadsym/Cargo.toml
+# Copyright (C) 2026 cSYMd, All rights reserved.
+
 [package]
 name = "csymd-loadsym"
 version = "0.1.0"

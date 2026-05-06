@@ -1,15 +1,15 @@
 // loadsym/src/nutrition/mod.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
-//
-#![allow(unused_imports)]
 
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 
 pub mod bodycomp;
+pub mod py;
 
 // re-exports of specific functions
-pub use bodycomp::{calculate_bmr, py_calculate_bmr, calculate_tdee, py_calculate_tdee};
+pub use bodycomp::{calculate_bmr, calculate_tdee, ActivityLevel};
+pub use py::{py_calculate_bmr, py_calculate_tdee};
 
 // ==========================================================
 // PYTHON REGISTER

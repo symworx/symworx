@@ -10,11 +10,3 @@ pub fn optimize_load(parameters: &[f64], data: &[f64]) -> Vec<f64> {
         .map(|(p, d)| p * d)
         .collect()
 }
-
-#[pyfunction(
-    name = "optimize_load",
-    signature = (parameters, data),
-)]
-pub fn py_optimize_load(parameters: Vec<f64>, data: Vec<f64>) -> PyResult<Vec<f64>> {
-    Ok(optimize_load(&parameters, &data))
-}
