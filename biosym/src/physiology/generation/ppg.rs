@@ -8,7 +8,7 @@ pub struct TimeSeries {
     pub times: Vec<f64>,
     pub values: Vec<f64>,
     pub systolic_peaks: Vec<usize>,
-    pub diastolic_peaks: Vec<usize>,
+    ub diastolic_peaks: Vec<usize>,
 }
 
 /// Generate a single PPG beat using two Gaussians:

@@ -1,0 +1,25 @@
+[build-system]
+requires = ["maturin>=1.4"]
+build-backend = "maturin"
+
+[project]
+name = "symworx"
+version = "0.1.0"
+description = "LoadSym Rust-backed modeling engine for the C-SYMd ecosystem"
+authors = [{ name = "nate berry" }]
+requires-python = ">=3.12,<3.14"
+readme = "README-LOADSYM.md"
+packages = [{ include = "symworx" }]
+
+[tool.maturin]
+manifest-path = "../Cargo.toml"
+bindings = "pyo3"
+strip = true
+python-source = "src"
+module-name = "symworx.loadsym.loadsym"
+
+license = { text = "MPL 2.0" }
+
+[project.urls]
+Homepage = "https://github.com/csymd/csymd-symworx"
+Source = "https://github.com/csymd/csymd-symworx"

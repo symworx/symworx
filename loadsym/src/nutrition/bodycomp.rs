@@ -3,6 +3,10 @@
 
 use pyo3::prelude::*;
 
+// ==========================================================
+// Constants
+// ==========================================================
+
 /// Calculate basal metabolic rate (BMR) using the Mifflin-St Jeor Equation
 ///
 /// # Arguments
@@ -19,16 +23,6 @@ pub fn calculate_bmr(weight_kg: f64, height_cm: f64, age_years: f64, is_male: bo
     } else {
         10.0 * weight_kg + 6.25 * height_cm - 5.0 * age_years - 161.0
     }
-}
-
-#[pyfunction(name = "calculate_bmr")]
-pub fn py_calculate_bmr(
-    weight_kg: f64,
-    height_cm: f64,
-    age_years: f64,
-    is_male: bool
-) -> PyResult<f64> {
-    Ok(calculate_bmr(weight_kg, height_cm, age_years, is_male))
 }
 
 /// Activity level enum for TDEE
@@ -65,19 +59,4 @@ impl ActivityLevel {
 /// - TDEE in calories/day
 pub fn calculate_tdee(bmr: f64, activity_level: ActivityLevel) -> f64 {
     bmr * activity_level.factor()
-}
-
-#[pyfunction(name = "calculate_tdee")]
-pub fn py_calculate_tdee(bmr: f64, activity: &str) -> PyResult<f64> {
-    let level = match activity.to_lowercase().as_str() {
-        "sedentary"    => ActivityLevel::Sedentary,
-        "light"        => ActivityLevel::Light,
-        "moderate"     => ActivityLevel::Moderate,
-        "active"       => ActivityLevel::Active,
-        "very active"  => ActivityLevel::VeryActive,
-        "extra active" => ActivityLevel::ExtraActive,
-        _              => ActivityLevel::Moderate,
-    };
-
-    Ok(calculate_tdee(bmr, level))
 }
