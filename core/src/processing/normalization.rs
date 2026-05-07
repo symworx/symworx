@@ -16,7 +16,7 @@
 pub fn normalize(data: &[f64]) -> Vec<f64> {
     let min = data.iter().cloned().fold(f64::INFINITY, f64::min);
     let max = data.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
-    data.into_iter().map(|x| (x - min) / (max - min)).collect()
+    data.iter().map(|x| (x - min) / (max - min)).collect()
 }
 
 // ----------------------------------------------------------
@@ -32,7 +32,7 @@ pub fn normalize(data: &[f64]) -> Vec<f64> {
 pub fn zscore(data: &[f64]) -> Vec<f64> {
     let mean = data.iter().sum::<f64>() / data.len() as f64;
     let std_dev = (data.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / data.len() as f64).sqrt();
-    data.into_iter().map(|x| (x - mean) / std_dev).collect()
+    data.iter().map(|x| (x - mean) / std_dev).collect()
 }
 
 

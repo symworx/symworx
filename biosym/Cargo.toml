@@ -10,3 +10,5 @@ edition = "2024"
 ndarray         = { version = "0.15", features = ["std"] }
 numpy           = { version = "0.21" }
 pyo3            = { version = "0.21", features = ["extension-module"] }
+rand            = { version = "0.8" }
+symworx-core    = { path = "../core"}

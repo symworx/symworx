@@ -28,9 +28,9 @@ pub fn calculate_bmr(weight_kg: f64, height_cm: f64, age_years: f64, is_male: bo
 /// Activity level enum for TDEE
 #[derive(Debug, Clone, Copy)]
 pub enum ActivityLevel {
-    Sedentary,
-    Light,
-    Moderate,
+    sedentary,
+    light,
+    moderate,
     Active,
     VeryActive,
     ExtraActive,

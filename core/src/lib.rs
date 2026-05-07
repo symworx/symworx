@@ -9,6 +9,7 @@
 use pyo3::prelude::*;
 
 mod io;
+mod math;
 mod errors;
 mod filters;
 mod dynamics;
@@ -40,6 +41,11 @@ fn core(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     crate::io::register(py, &io_mod)?;
     m.add_submodule(&io_mod)?;
 
+    // --- Math submodule -----------------------------------------
+    let math_mod = PyModule::new_bound(py, "math")?;
+    crate::math::register(py, &math_mod)?;
+    m.add_submodule(&math_mod)?;
+    
     // --- Processing submodule ---------------------------------
     let processing_mod = PyModule::new_bound(py, "processing")?;
     crate::processing::register(py, &processing_mod)?;
