@@ -1,6 +1,7 @@
 // biosym/src/physiology/ppg/mod.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
+//! The PPG module (symworx_biosym.physiology) 
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 

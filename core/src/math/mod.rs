@@ -33,10 +33,10 @@ pub mod integrate {
     pub use super::integration::*;
 }
 
-/// Random sampling utilities.
-pub mod rand {
-    pub use super::random::*;
-}
+// /// Random sampling utilities.
+// pub mod random {
+//     pub use super::random::*;
+// }
 
 // ==========================================================
 // Top-level exports

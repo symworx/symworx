@@ -3,7 +3,7 @@
 
 use pyo3::prelude::*;
 use pyo3::exceptions::PyValueError;
-use rand::thread_rng;
+use rand::{Rng, rng};
 
 use crate::math::{
     // Distributions
@@ -38,7 +38,7 @@ pub fn py_beta_sample(a: f64, b: f64) -> PyResult<f64> {
     if a <= 0.0 || b <= 0.0 {
         return Err(PyValueError::new_err("a and b must be positive"));
     }
-    let mut rng = thread_rng();
+    let mut rng = rng();
     Ok(sample::beta(&mut rng, a, b))
 }
 
@@ -58,7 +58,7 @@ pub fn py_gamma_sample(shape: f64, rate: f64) -> PyResult<f64> {
     if shape <= 0.0 || rate <= 0.0 {
         return Err(PyValueError::new_err("shape and rate must be positive"));
     }
-    let mut rng = thread_rng();
+    let mut rng = rng();
     Ok(sample::gamma(&mut rng, shape, rate))
 }
 
@@ -68,7 +68,7 @@ pub fn py_normal_sample(mean: f64, std: f64) -> PyResult<f64> {
     if std < 0.0 {
         return Err(PyValueError::new_err("std must be non-negative"));
     }
-    let mut rng = thread_rng();
+    let mut rng = rng();
     Ok(sample::normal(&mut rng, mean, std))
 }
 

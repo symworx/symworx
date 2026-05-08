@@ -1,6 +1,11 @@
+// biosym/src/physiology/py.rs
+// Copyright (C) 2026 cSYMd, All rights reserved.
 
+use pyo3::prelude::*;
 
-
+// ==========================================================
+// PPG
+// ==========================================================
 
 #[pyfunction]
 pub fn py_gamma_normalization(
@@ -11,3 +16,7 @@ pub fn py_gamma_normalization(
 ) -> PyResult<f64> {
     Ok(gamma_normalization(tidal_volume, t_insp, kappa, gamma_k))
 }
+
+// ==========================================================
+// Respiration
+// ==========================================================

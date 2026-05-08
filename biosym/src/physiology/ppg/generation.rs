@@ -1,37 +1,69 @@
 // biosym/src/physiology/ppg/generation.rs
-// Copyright ...
+// Copyright (C) 2026 cSYMd, All rights reserved.
 
-use rand::Rng;
-use rand::distributions::{Distribution, Normal};
+use rand::{Rng, rng};
+use rand_distr::{Distribution, Normal};
 
-/// Represents a PPG time-series signal.
-pub struct PPGTimeSeries {
-    pub times            : Vec<f64>,
-    pub values           : Vec<f64>,
-    pub systolic_peaks   : Vec<usize>,
-    pub diastolic_peaks  : Vec<usize>,
+// ==========================================================
+// Noise Configuration
+// ==========================================================
+
+#[derive(Debug, Clone, Copy)]
+pub struct PPGNoiseParams {
+    pub onset_jitter_std: f64,
+    // Add more noise types later:
+    // pub amplitude_noise_std: f64,
+    // pub baseline_wander_std: f64,
 }
 
-/// Generate a single PPG beat using two Gaussians:
+impl Default for PPGNoiseParams {
+    fn default() -> Self {
+        Self {
+            onset_jitter_std: 0.0,
+        }
+    }
+}
+
+// ============================
+// ==========================================================
+// PPG Generation
+// ==========================================================
+// ============================
+
+/// Represents a PPG time-series signal.
+#[derive(Debug, Clone)]
+pub struct PPGTimeSeries {
+    pub times: Vec<f64>,
+    pub values: Vec<f64>,
+    pub systolic_peaks: Vec<usize>,
+    pub diastolic_peaks: Vec<usize>,
+}
+
+/// Generate a single PPG beat using two Gaussians (systolic + diastolic).
 pub fn create_ppg_waveform(
     t0: f64,
     duration: f64,
     fs: f64,
-    params: (f64, f64, f64, f64, f64, f64),
+    params: (f64, f64, f64, f64, f64, f64), // (amp_s, mu_s, sigma_s, amp_d, mu_d, sigma_d)
 ) -> (Vec<f64>, Vec<f64>) {
     let dt = 1.0 / fs;
     let n = (duration * fs).round() as usize;
+
+    let (amp_s, mu_s, sigma_s, amp_d, mu_d, sigma_d) = params;
+
     let mut times = Vec::with_capacity(n);
     let mut values = Vec::with_capacity(n);
-    let (amp_s, mu_s, sigma_s, amp_d, mu_d, sigma_d) = params;
 
     for i in 0..n {
         let t = t0 + i as f64 * dt;
         let rel = t - t0;
+
         let g = |amp: f64, mu: f64, sigma: f64, x: f64| {
             amp * (-0.5 * ((x - mu) / sigma).powi(2)).exp()
         };
+
         let val = g(amp_s, mu_s, sigma_s, rel) + g(amp_d, mu_d, sigma_d, rel);
+
         times.push(t);
         values.push(val);
     }
@@ -39,7 +71,7 @@ pub fn create_ppg_waveform(
     (times, values)
 }
 
-/// Stitch multiple ppg waveforms into one contiguous timeseries.
+/// Stitch multiple PPG waveforms into one contiguous time series.
 pub fn create_ppg_timeseries(
     start_time: f64,
     rr_intervals: &[f64],
@@ -47,18 +79,18 @@ pub fn create_ppg_timeseries(
     beat_duration: f64,
     fs: f64,
     beat_params: (f64, f64, f64, f64, f64, f64),
-    noise_cfg: &PPGNoiseParams
+    noise_cfg: &PPGNoiseParams,
 ) -> PPGTimeSeries {
-    let mut times: Vec<f64> = Vec::new();
-    let mut values: Vec<f64> = Vec::new();
-    let mut systolic_peaks: Vec<usize> = Vec::new();
-    let mut diastolic_peaks: Vec<usize> = Vec::new();
+    let mut times = Vec::new();
+    let mut values = Vec::new();
+    let mut systolic_peaks = Vec::new();
+    let mut diastolic_peaks = Vec::new();
 
     let mut current_t = start_time;
-    let mut rng = rand::thread_rng();
+    let mut rng = rng();
 
-    // create normal distribution
-    let normal = Normal::new(0.0, noise_cfg.onset_jitter_std).unwrap();
+    let normal = Normal::new(0.0, noise_cfg.onset_jitter_std)
+        .expect("Failed to create Normal distribution");
 
     for i in 0..count {
         let jitter = if noise_cfg.onset_jitter_std > 0.0 {
@@ -71,9 +103,11 @@ pub fn create_ppg_timeseries(
         let (btimes, bvals) = create_ppg_waveform(onset, beat_duration, fs, beat_params);
 
         let base_index = times.len();
-        times.extend(btimes.iter());
-        values.extend(bvals.iter());
 
+        times.extend(btimes);
+        values.extend(bvals.iter().copied());
+
+        // Peak detection
         let seg_len = bvals.len();
         for j in 1..(seg_len - 1) {
             if bvals[j] > bvals[j - 1] && bvals[j] > bvals[j + 1] {
@@ -81,6 +115,7 @@ pub fn create_ppg_timeseries(
                 let dist_s = (rel_t - beat_params.1).abs();
                 let dist_d = (rel_t - beat_params.4).abs();
                 let global_idx = base_index + j;
+
                 if dist_s <= dist_d {
                     systolic_peaks.push(global_idx);
                 } else {
@@ -89,16 +124,12 @@ pub fn create_ppg_timeseries(
             }
         }
 
-        if !rr_intervals.is_empty() {
-            let rr = if i < rr_intervals.len() {
-                rr_intervals[i]
-            } else {
-                rr_intervals[rr_intervals.len() - 1]
-            };
-            current_t += rr;
+        // Advance time
+        current_t += if i < rr_intervals.len() {
+            rr_intervals[i]
         } else {
-            current_t += beat_duration;
-        }
+            beat_duration
+        };
     }
 
     PPGTimeSeries {
@@ -109,8 +140,12 @@ pub fn create_ppg_timeseries(
     }
 }
 
+// ==========================================================
+// TESTS
+// ==========================================================
+
 #[cfg(test)]
-mod test_ppg {
+mod tests {
     use super::*;
 
     #[test]
@@ -120,12 +155,20 @@ mod test_ppg {
         let beat_duration = 0.9;
         let rr_intervals = vec![0.8; 10];
 
-        let ts = create_ppg_timeseries(0.0, &rr_intervals, 10, beat_duration, fs, params, &PPGNoiseParams {
-            onset_jitter_std: 0.01,
-        });
+        let noise = PPGNoiseParams { onset_jitter_std: 0.01 };
+
+        let ts = create_ppg_timeseries(
+            0.0,
+            &rr_intervals,
+            10,
+            beat_duration,
+            fs,
+            params,
+            &noise,
+        );
 
         assert!(!ts.times.is_empty());
         assert!(!ts.values.is_empty());
-        assert!(ts.systolic_peaks.len() > 0);
+        assert!(!ts.systolic_peaks.is_empty());
     }
 }
