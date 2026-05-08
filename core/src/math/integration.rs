@@ -2,11 +2,6 @@
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 /// Cumulative trapezoidal integration
-///
-/// # Arguments
-///
-/// # Returns
-///
 #[inline]
 pub fn cumtrapz(y: &[f64], dx: f64) -> Vec<f64> {
     let n = y.len();
@@ -27,11 +22,6 @@ pub fn cumtrapz(y: &[f64], dx: f64) -> Vec<f64> {
 }
 
 /// Single trapezoidal integral over the whole array.
-///
-/// # Arguments
-///
-/// # Returns
-///
 #[inline]
 pub fn trapz(y: &[f64], dx: f64) -> f64 {
     let n = y.len();
