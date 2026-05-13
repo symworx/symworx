@@ -1,0 +1,36 @@
+// symworx/bindings/python/src/core/mod.rs
+// Copyright (C) 2026 cSYMd, All rights reserved.
+
+use pyo3::prelude::*;
+
+pub mod dynamics;
+pub mod filters;
+pub mod io;
+pub mod processing;
+pub mod statistics;
+// pub mod math;
+// pub mod backend;
+
+pub fn register_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    let dynamics_mod = PyModule::new(m.py(), "dynamics")?;
+    dynamics::register(&dynamics_mod)?;
+    m.add_submodule(&dynamics_mod)?;
+
+    let filters_mod = PyModule::new(m.py(), "filters")?;
+    filters::register(&filters_mod)?;
+    m.add_submodule(&filters_mod)?;
+
+    let io_mod = PyModule::new(m.py(), "io")?;
+    io::register(&io_mod)?;
+    m.add_submodule(&io_mod)?;
+
+    let processing_mod = PyModule::new(m.py(), "processing")?;
+    processing::register(&processing_mod)?;
+    m.add_submodule(&processing_mod)?;
+
+    let statistics_mod = PyModule::new(m.py(), "statistics")?;
+    statistics::register(&statistics_mod)?;
+    m.add_submodule(&statistics_mod)?;
+
+    Ok(())
+}

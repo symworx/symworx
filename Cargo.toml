@@ -1,12 +1,20 @@
 [workspace]
-members = [
-    "core",
-    "biosym",
-    # future:
-    "loadsym",
-    # "runsym",
-    # "spatsym",
-    # "symspace",
-    # "symphase",
-]
 resolver = "2"
+members = [
+    "crates/symworx-core",
+    "crates/symworx-biosym",
+    "crates/symworx-loadsym",
+    "crates/symworx-runsym",
+    "bindings/python",
+]
+
+[workspace.package]
+version    = "0.1.0"
+edition    = "2024"
+license    = "MPL-2.0"
+repository = "https://github.com/csymd/symworx"
+authors    = ["ntberry nate-berry@outlook.com"]
+
+[workspace.dependencies]
+ndarray        = { version = "0.15", features = ["std"] }
+ndarray-linalg = { version = "0.16", features = ["openblas"] }

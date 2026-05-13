@@ -1,0 +1,131 @@
+// symworx/bindings/python/src/core/processing.rs
+// Copyright (C) 2026 cSYMd, All rights reserved.
+
+use pyo3::prelude::*;
+use pyo3::wrap_pyfunction;
+
+use symworx_core::processing::{
+    interpolation::{interp_linear, interp_cubic, interp_spline},
+    normalization::{normalize, zscore},
+    resample::{Resample, ResampleMethod},
+};
+
+// ==========================================================
+// Normalization
+// ==========================================================
+
+#[pyfunction(name = "normalize")]
+pub fn py_normalize(data: Vec<f64>) -> Vec<f64> {
+    normalize(&data)
+}
+
+#[pyfunction(name = "zscore")]
+pub fn py_zscore(data: Vec<f64>) -> Vec<f64> {
+    zscore(&data)
+}
+
+// ==========================================================
+// Interpolation
+// ==========================================================
+
+#[pyfunction(name = "interp_linear")]
+pub fn py_interp_linear(x: Vec<f64>, y: Vec<f64>, x_new: Vec<f64>) -> PyResult<Vec<f64>> {
+    Ok(interp_linear(&x, &y, &x_new))
+}
+
+#[pyfunction(name = "interp1")]
+pub fn py_interp1(x: Vec<f64>, y: Vec<f64>, x_new: Vec<f64>) -> PyResult<Vec<f64>> {
+    Ok(interp1(&x, &y, &x_new))
+}
+
+#[pyfunction(name = "interp_cubic")]
+pub fn py_interp_cubic(x: Vec<f64>, y: Vec<f64>, x_new: Vec<f64>) -> PyResult<Vec<f64>> {
+    eprintln!("Warning: cubic interpolation not implemented");
+    Ok(interp_cubic(&x, &y, &x_new))
+}
+
+#[pyfunction(name = "interp_spline")]
+pub fn py_interp_spline(x: Vec<f64>, y: Vec<f64>, x_new: Vec<f64>) -> PyResult<Vec<f64>> {
+    eprintln!("Warning: spline interpolation not implemented");
+    Ok(interp_spline(&x, &y, &x_new))
+}
+
+// ==========================================================
+// Resmpling
+// ==========================================================
+
+#[pyclass(name = "ResampleMethod")]
+#[derive(Clone)]
+pub struct PyResampleMethod {
+    pub inner: ResampleMethod,
+}
+
+#[pymethods]
+impl PyResampleMethod {
+    #[classattr]
+    pub const LINEAR: Self = Self { inner: ResampleMethod::Linear };
+
+    #[classattr]
+    pub const CUBIC: Self = Self { inner: ResampleMethod::Cubic };
+
+    #[classattr]
+    pub const SPLINE: Self = Self { inner: ResampleMethod::Spline };
+}
+
+#[pyclass(name = "Resample")]
+pub struct PyResample {
+    inner: Resample<'static>,
+    data: Vec<f64>, // owned buffer to keep data alive
+}
+
+#[pymethods]
+impl PyResample {
+    #[new]
+    pub fn new(y: Vec<f64>) -> Self {
+        let data = y;
+        let slice: &'static [f64] =
+            unsafe { std::mem::transmute::<&[f64], &'static [f64]>(&data) };
+
+        Self {
+            inner: Resample::new(slice),
+            data,
+        }
+    }
+
+    #[allow(clippy::wrong_self_convention)]
+    pub fn to_len(&mut self, n: usize) {
+        self.inner.to_len(n);
+    }
+
+    #[allow(clippy::wrong_self_convention)]
+    pub fn scale(&mut self, factor: f64) {
+        self.inner.scale(factor);
+    }
+
+    #[allow(clippy::wrong_self_convention)]
+    pub fn to_rate(&mut self, old_fs: f64, new_fs: f64) {
+        self.inner.to_rate(old_fs, new_fs);
+    }
+
+    pub fn method(&self, method: &PyResampleMethod) -> Vec<f64> {
+        self.inner.method(method.inner)
+    }
+}
+
+// ==========================================================
+// PYTHON REGISTER
+// ==========================================================
+
+pub fn register(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(py_interp_linear, m)?)?;
+    m.add_function(wrap_pyfunction!(py_interp1, m)?)?;
+    m.add_function(wrap_pyfunction!(py_interp_cubic, m)?)?;
+    m.add_function(wrap_pyfunction!(py_interp_spline, m)?)?;
+    m.add_function(wrap_pyfunction!(py_normalize, m)?)?;
+    m.add_function(wrap_pyfunction!(py_zscore, m)?)?;
+
+    m.add_class::<PyResampleMethod>()?;
+    m.add_class::<PyResample>()?;
+
+    Ok(())
+}
