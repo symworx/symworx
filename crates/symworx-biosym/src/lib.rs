@@ -6,4 +6,4 @@
 #![allow(unsafe_op_in_unsafe_fn)]
 #![allow(improper_ctypes_definitions)]
 
-mod physiology;
+pub mod physiology;

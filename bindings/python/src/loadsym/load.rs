@@ -44,7 +44,7 @@ pub fn py_calculate_physiological_load(hr_data: Vec<f64>) -> PyResult<f64> {
 // PYTHON REGISTER
 // ==========================================================
 
-pub fn register(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
+pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     m.add_function(wrap_pyfunction!(py_calculate_mechanical_load, m)?)?;
     m.add_function(wrap_pyfunction!(py_optimize_load, m)?)?;

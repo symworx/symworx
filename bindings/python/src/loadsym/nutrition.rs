@@ -65,7 +65,7 @@ pub fn py_calculate_tdee(bmr: f64, activity: &str) -> PyResult<f64> {
 // ==========================================================
 // PYTHON REGISTER
 // ==========================================================
-pub fn register(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
+pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     m.add_function(wrap_pyfunction!(py_calculate_bmr, m)?)?;
     m.add_function(wrap_pyfunction!(py_calculate_tdee, m)?)?;

@@ -6,7 +6,33 @@ use numpy::{PyArray2, IntoPyArray};
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 
-use symworx_core::statistics;
+use symworx_core::statistics::{
+    // autocorrelation
+    acf,
+    // basic 
+    mad,
+    mean,
+    median,
+    percentile,
+    // correlation
+    correlation_matrix,
+    pearson_correlation,
+    correlation_matrix_from_vec,
+    // distance
+    euclidean,
+    // errors
+    mae,
+    mse,
+    rmse,
+    // linreg
+    l1,
+    l2,
+    // variability
+    intervals,
+    ibi,
+    rmssd,
+    sdnn,
+};
 
 // ==========================================================
 // Autocorrelation
@@ -63,7 +89,7 @@ pub fn py_correlation_matrix<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let arr = correlation_matrix_from_vec(&data);
 
-    Ok(arr.into_pyarray_bound(py))
+    Ok(arr.into_pyarray(py))
 }
 
 #[pyfunction(name = "correlation_matrix_from_vec")]
@@ -73,7 +99,7 @@ pub fn py_correlation_matrix_from_vec<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let arr = correlation_matrix_from_vec(&data);
 
-    Ok(arr.into_pyarray_bound(py))
+    Ok(arr.into_pyarray(py))
 }
 
 // ==========================================================

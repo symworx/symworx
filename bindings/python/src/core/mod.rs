@@ -11,7 +11,7 @@ pub mod statistics;
 // pub mod math;
 // pub mod backend;
 
-pub fn register_core(m: &Bound<'_, PyModule>) -> PyResult<()> {
+pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     let dynamics_mod = PyModule::new(m.py(), "dynamics")?;
     dynamics::register(&dynamics_mod)?;
     m.add_submodule(&dynamics_mod)?;

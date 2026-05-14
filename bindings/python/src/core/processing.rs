@@ -5,7 +5,7 @@ use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 
 use symworx_core::processing::{
-    interpolation::{interp_linear, interp_cubic, interp_spline},
+    interpolation::{interp_linear, interp1, interp_cubic, interp_spline},
     normalization::{normalize, zscore},
     resample::{Resample, ResampleMethod},
 };
@@ -116,7 +116,7 @@ impl PyResample {
 // PYTHON REGISTER
 // ==========================================================
 
-pub fn register(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
+pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_interp_linear, m)?)?;
     m.add_function(wrap_pyfunction!(py_interp1, m)?)?;
     m.add_function(wrap_pyfunction!(py_interp_cubic, m)?)?;
