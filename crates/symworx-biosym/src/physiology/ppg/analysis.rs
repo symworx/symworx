@@ -1,6 +1,9 @@
 // biosym/src/physiology/ppg/analysis.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
+
+/// Compute basic PPG statistics
+
 /// Analyze PPG signal
 pub fn analyze_ppg () {
     // Placeholder for PPG analysis implementation
