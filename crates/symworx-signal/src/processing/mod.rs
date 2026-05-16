@@ -1,4 +1,4 @@
-// symworx/crates/core/processing/mod.rs
+// symworx/crates/symworx-signal/src/processing/mod.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 //! # Processing Module
@@ -11,7 +11,9 @@
 
 pub mod interpolation;
 pub mod normalization;
+pub mod peaks;
 pub mod resample;
+pub mod traits;
 
 
 pub use interpolation::{
@@ -21,7 +23,9 @@ pub use interpolation::{
     interp_spline
 };
 pub use normalization::{normalize, zscore};
+pub use peaks::{Peak, PeakFinder, PeakFinderBuilder};
 pub use resample::{ResampleMethod, Resample};
+pub use traits::{PeakDetect};
 
 // ==========================================================
 // Namespaced exports

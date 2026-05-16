@@ -1,4 +1,4 @@
-# biosym/Cargo.toml
+# symworx/crates/symworx-biosym/Cargo.toml
 # Copyright (C) 2026 cSYMd, All rights reserved.
 
 [package]
@@ -9,9 +9,8 @@ license.workspace    = true
 repository.workspace = true
 
 [dependencies]
-ndarray      = { version = "0.15", features = ["std"] }
-# numpy        = { version = "0.21" }
-rand         = { version = "0.9" }
-rand_distr   = { version = "0.5" }
+ndarray      = { workspace = true }
+rand         = { workspace = true }
+rand_distr   = { workspace = true }
 
 symworx-core = { path = "../symworx-core"}

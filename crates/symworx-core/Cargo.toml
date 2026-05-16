@@ -1,4 +1,4 @@
-# core/Cargo.toml
+# symworx/crates/symworx-core/Cargo.toml
 # Copyright (C) 2026 cSYMd, All rights reserved.
 
 [package]
@@ -7,11 +7,9 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-csv            = { version = "1.3" }
-# edf            = { version = "0.0.0-alpha.0" }
-ndarray        = { version = "0.15", features = ["std"] }
-ndarray-linalg = { version = "0.16", features = ["openblas"] }
-# numpy          = { version = "0.21" }
-parquet        = { version = "51.0" }
-rand           = { version = "0.9" }
-rand_distr     = { version = "0.5" }
+symworx_backend  = { path = "../symworx-backend" }
+symworx_dynamics = { path = "../symworx-dynamics" }
+symworx_io       = { path = "../symworx-io" }
+symworx_math     = { path = "../symworx-math" }
+symworx_signal   = { path = "../symworx-signal" }
+symworx_stats    = { path = "../symworx-stats" }
