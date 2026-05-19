@@ -1,7 +1,7 @@
 // core/src/dynamics/embedding.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
-use crate::statistics::distance::euclidean;
+use symworx_stats::distance::euclidean;
 
 // ==========================================================
 // Embedding

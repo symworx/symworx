@@ -4,7 +4,7 @@
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 
-use symworx_core::processing::{
+use symworx_core::signal::processing::{
     interpolation::{interp_linear, interp1, interp_cubic, interp_spline},
     normalization::{normalize, zscore},
     resample::{Resample, ResampleMethod},
@@ -75,7 +75,7 @@ impl PyResampleMethod {
 #[pyclass(name = "Resample")]
 pub struct PyResample {
     inner: Resample<'static>,
-    data: Vec<f64>, // owned buffer to keep data alive
+    data: Vec<f64>, 
 }
 
 #[pymethods]

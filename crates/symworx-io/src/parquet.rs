@@ -1,11 +1,12 @@
 // core/src/io/parquet.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
-use crate::errors::SymError;
-use crate::io::traits::SymReader;
 use parquet::record::Field;
-use ::parquet::file::reader::{FileReader, SerializedFileReader};
+use parquet::file::reader::{FileReader, SerializedFileReader};
 use std::fs::File;
+
+use symworx_error::SymError;
+use crate::traits::SymReader;
 
 pub struct ParquetReader;
 

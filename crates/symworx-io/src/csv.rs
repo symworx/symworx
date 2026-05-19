@@ -1,16 +1,17 @@
-// core/src/io/csv.rs
+// symworx/crates/symworx-io/src/csv.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
-use crate::errors::SymError;
-use crate::io::traits::{SymReader, SymWriter};
-use ::csv::{ReaderBuilder, WriterBuilder};
 use std::fs::File;
+use csv::{ReaderBuilder, WriterBuilder};
 
-// ===========================================================
-// CSV Reader & Writer
-// ===========================================================
-// Reader
-// -----------------------------------------------------------
+use symworx_error::SymError;
+
+use crate::traits::{SymReader, SymWriter};
+
+
+/// CSV Reader implementation for `symworx-io`.
+///
+/// Supports reading numeric CSV files (no headers) into `Vec<Vec<f64>>`.
 pub struct CsvReader;
 
 impl SymReader for CsvReader {
@@ -19,12 +20,12 @@ impl SymReader for CsvReader {
     fn read(path: &str) -> Result<Self::Output, SymError> {
         let mut rdr = ReaderBuilder::new()
             .has_headers(false)
-            .from_path(path)?; // -> SymError::Csv
+            .from_path(path)?; 
 
         let mut rows = Vec::new();
 
         for result in rdr.records() {
-            let record = result?; // -> SymError::Csv
+            let record = result?; 
 
             let row = record
                 .iter()
@@ -38,9 +39,9 @@ impl SymReader for CsvReader {
     }
 }
 
-// -----------------------------------------------------------
-// Writer
-// -----------------------------------------------------------
+/// CSV Writer implementation for `symworx-io`.
+///
+/// Writes 2D numeric data (`Vec<Vec<f64>>`) to a CSV file.
 pub struct CsvWriter;
 
 impl SymWriter for CsvWriter {
@@ -51,7 +52,7 @@ impl SymWriter for CsvWriter {
         let mut wtr = WriterBuilder::new().from_writer(file);
 
         for row in data {
-            wtr.serialize(row)?; // -> SymError::Csv
+            wtr.serialize(row)?; 
         }
 
         wtr.flush().map_err(SymError::Io)

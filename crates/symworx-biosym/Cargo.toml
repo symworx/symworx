@@ -3,10 +3,11 @@
 
 [package]
 name = "symworx-biosym"
-version.workspace    = true
-edition.workspace    = true
-license.workspace    = true
-repository.workspace = true
+version          = { workspace = true }
+edition          = { workspace = true }
+license          = { workspace = true }
+repository       = { workspace = true }
+description      = "Biological (phys, mech, cpg) modeling tools and resources"
 
 [dependencies]
 ndarray      = { workspace = true }

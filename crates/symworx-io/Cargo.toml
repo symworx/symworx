@@ -1,0 +1,17 @@
+# symworx/crates/symworx-io/Cargo.toml
+# Copyright (C) 2026 cSYMd, All rights reserved.
+
+[package]
+name = "symworx-io"
+version          = { workspace = true }
+edition          = { workspace = true }
+license          = { workspace = true }
+repository       = { workspace = true }
+description      = "I/O utilities -- part of the symworx-core crate"
+
+[dependencies]
+csv          = { workspace = true }
+ndarray      = { workspace = true }
+parquet      = { workspace = true }
+
+symworx-error = { path = "../symworx-error" }

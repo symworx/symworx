@@ -1,0 +1,16 @@
+# symworx/crates/symworx-signal/Cargo.toml
+# Copyright (C) 2026 cSYMd, All rights reserved.
+
+[package]
+name = "symworx-signal"
+version          = { workspace = true }
+edition          = { workspace = true }
+license          = { workspace = true }
+repository       = { workspace = true }
+description      = "Signal-related tools and resources -- part of the symworx-core crate"
+
+[dependencies]
+ndarray        = { workspace = true }
+ndarray-linalg = { workspace = true }
+
+symworx-stats  = { path = "../symworx-stats" }

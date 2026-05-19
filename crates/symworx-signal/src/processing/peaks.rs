@@ -1,4 +1,4 @@
-// symworx/crates/symworx-core/src/processing/peaks.rs
+// symworx/crates/symworx-signal/src/processing/peaks.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use ndarray::{Array1, ArrayView1};

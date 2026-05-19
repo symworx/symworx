@@ -1,6 +1,8 @@
 // core/src/math/distributions.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
+use crate::special;
+
 // ==========================================================
 // Beta kernel functions
 // ==========================================================
@@ -24,7 +26,7 @@ pub fn beta_pdf(x: f64, a: f64, b: f64) -> f64 {
     if kernel == 0.0 {
         return 0.0;
     }
-    let norm = crate::math::special::beta(a, b);
+    let norm = special::beta(a, b);
     kernel / norm
 }
 
@@ -50,7 +52,7 @@ pub fn gamma_pdf(x: f64, shape: f64, rate: f64) -> f64 {
     if kernel == 0.0 {
         return 0.0;
     }
-    let norm = rate.powf(shape) / crate::math::special::gamma(shape);
+    let norm = rate.powf(shape) / special::gamma(shape);
     kernel * norm
 }
 

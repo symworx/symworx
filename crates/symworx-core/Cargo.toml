@@ -3,13 +3,17 @@
 
 [package]
 name = "symworx-core"
-version.workspace = true
-edition.workspace = true
+version          = { workspace = true }
+edition          = { workspace = true }
+license          = { workspace = true }
+repository       = { workspace = true }
+description      = "Core dependencies bunded togther for convenience"
 
 [dependencies]
-symworx_backend  = { path = "../symworx-backend" }
-symworx_dynamics = { path = "../symworx-dynamics" }
-symworx_io       = { path = "../symworx-io" }
-symworx_math     = { path = "../symworx-math" }
-symworx_signal   = { path = "../symworx-signal" }
-symworx_stats    = { path = "../symworx-stats" }
+symworx-backend  = { path = "../symworx-backend" }
+symworx-dynamics = { path = "../symworx-dynamics" }
+symworx-error    = { path = "../symworx-error" }
+symworx-io       = { path = "../symworx-io" }
+symworx-math     = { path = "../symworx-math" }
+symworx-signal   = { path = "../symworx-signal" }
+symworx-stats    = { path = "../symworx-stats" }

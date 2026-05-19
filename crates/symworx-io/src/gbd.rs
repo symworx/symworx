@@ -1,23 +1,7 @@
 // core/src/io/gbd.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
-//
-// --- Example Usage ----------------------------------------
-// use core::io::gbd::GbdReader;
-// use core::io::traits::SymReader;
 
-// fn main() -> Result<(), core::errors::SymError> {
-//     let table = GbdReader::read("fake.gdb")?;
-
-//     println!("Table: {}", table.name);
-//     println!("Rows: {:?}", table.rows);
-
-//     Ok(())
-// }
-//
-// ----------------------------------------------------------
-
-use crate::errors::SymError;
-use crate::io::traits::SymReader;
+use symworx_error::SymError;
 
 /// A stub implementation of a GBD reader that simulates querying a GBD file with SQL.
 pub struct GbdReader;

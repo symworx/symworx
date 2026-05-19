@@ -1,36 +1,19 @@
 // core/src/io/ibi.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
-// 
-// --- Example Usage -----------------------------------------
-// use core::io::ibi::{read_ibi, IbiRecord};
 
-// fn main() -> Result<(), core::errors::SymError> {
-//     let ibi: Vec<IbiRecord> = read_ibi("data/session.ibi")?;
-
-//     println!("Loaded {} RR intervals", ibi.len());
-
-//     if let Some(first) = ibi.first() {
-//         println!("First record: timestamp={}, rr_ms={}", first.timestamp, first.rr_ms);
-//     }
-
-//     Ok(())
-// }
-// ----------------------------------------------------------
-
-use crate::errors::SymError;
 use std::fs::File;
 use std::io::{Read, BufReader};
 
-// ===========================================================
-// IBI Functions
-// ===========================================================
+use symworx_error::SymError;
 
+/// IBI data record structure.
 #[derive(Debug, Clone)]
 pub struct IbiRecord {
     pub timestamp: u32,
     pub rr_ms: u16,
 }
 
+/// Read an IBI file into a single vector.
 pub fn read_ibi(path: &str) -> Result<Vec<IbiRecord>, SymError> {
     let file = File::open(path).map_err(SymError::Io)?;
     let mut reader = BufReader::new(file);

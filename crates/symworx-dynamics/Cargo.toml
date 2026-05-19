@@ -1,0 +1,14 @@
+# symworx/crates/symworx-dynamics/Cargo.toml
+# Copyright (C) 2026 cSYMd, All rights reserved.
+
+[package]
+name = "symworx-dynamics"
+version          = { workspace = true }
+edition          = { workspace = true }
+license          = { workspace = true }
+repository       = { workspace = true }
+description      = "Nonlinear Dynamics tools and resources -- part of the symworx-core crate"
+
+[dependencies]
+ndarray       = { workspace = true }
+symworx-stats = { path = "../symworx-stats" }

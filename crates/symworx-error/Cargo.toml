@@ -1,0 +1,12 @@
+# symworx/crates/symworx-errors/Cargo.toml
+# Copyright (C) 2026 cSYMd, All rights reserved.
+
+[package]
+name = "symworx-error"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+csv         = { workspace = true }
+parquet     = { workspace = true }
+thiserror   = { workspace = true }

@@ -31,4 +31,5 @@ ndarray-linalg = { version = "0.16", features = ["openblas"] }
 parquet        = { version = "51.0" }
 rand           = { version = "0.9" }
 rand_distr     = { version = "0.5" }
+thiserror      = { version = "2.0.17" }
 tokio          = { version = "1", features = ["full"] }

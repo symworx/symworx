@@ -6,7 +6,7 @@ use numpy::{PyArray2, IntoPyArray};
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 
-use symworx_core::statistics::{
+use symworx_core::stats::{
     // autocorrelation
     acf,
     // basic 

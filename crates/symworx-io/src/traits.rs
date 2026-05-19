@@ -1,7 +1,7 @@
 // core/src/io/traits.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
-use crate::errors::SymError;
+use symworx_error::SymError;
 
 pub trait SymReader {
     type Output;

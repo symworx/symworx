@@ -3,10 +3,11 @@
 
 [package]
 name = "symworx-runsym"
-version.workspace    = true
-edition.workspace    = true
-license.workspace    = true
-repository.workspace = true
+version          = { workspace = true }
+edition          = { workspace = true }
+license          = { workspace = true }
+repository       = { workspace = true }
+description      = "Physiological and biomechanical modeling during running."
 
 [dependencies]
 ndarray         = { version = "0.15", features = ["std"] }

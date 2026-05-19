@@ -1,14 +1,13 @@
-# symworx/crates/symworx-stats/Cargo.toml
+# symworx/crates/symworx-backend/Cargo.toml
 # Copyright (C) 2026 cSYMd, All rights reserved.
 
 [package]
-name = "symworx-stats"
+name = "symworx-backend"
 version          = { workspace = true }
 edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
-description      = "Statistical tools and resources -- part of the symworx-core crate"
+description      = "Error utilities -- part of the symworx-core crate"
 
 [dependencies]
-ndarray        = { workspace = true }
-ndarray-linalg = { workspace = true }
+tokio = { workspace = true }

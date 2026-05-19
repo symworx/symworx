@@ -1,7 +1,7 @@
 // core/src/filters/adaptive/basic.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
-use crate::statistics::median;
+use symworx_stats::{mad, mean, median};
 
 // ==========================================================
 // Adaptive filters for time series
@@ -25,7 +25,7 @@ pub fn adaptive_mean_filter(data: &[f64], k: f64) -> Vec<f64> {
         return vec![];
     }
 
-    let mean = crate::statistics::mean(data);
+    let mean = mean(data);
     let variance = data.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / (data.len() as f64);
     let std = variance.sqrt();
     let theta = k * std;
@@ -53,7 +53,7 @@ pub fn adaptive_median_filter(data: &[f64], k: f64) -> Vec<f64> {
     }
 
     let med = median(data);
-    let mad_val = crate::statistics::mad(data, med);
+    let mad_val = mad(data, med);
     let theta = k * mad_val;
 
     data.iter()
@@ -68,7 +68,6 @@ pub fn adaptive_median_filter(data: &[f64], k: f64) -> Vec<f64> {
 #[cfg(test)]
 mod test_median_filter{
     use super::*;
-    use crate::statistics::mean;
     
     #[test]
     fn test_adaptive_median_filter() {
