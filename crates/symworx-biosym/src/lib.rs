@@ -3,7 +3,9 @@
 
 pub mod biomechanics;
 pub mod cpg;
-// pub mod physiology;  // TODO
 
 pub use biomechanics::*;
 pub use cpg::*;
+
+// PyO3 Python bindings
+pub mod python;
