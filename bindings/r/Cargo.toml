@@ -1,0 +1,18 @@
+[package]
+name = "symworx-r"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name       = "symworx"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3            = { version = "0.23", features = ["extension-module", "abi3-py312"] }
+ndarray         = { workspace = true }
+ndarray-linalg  = { workspace = true }
+numpy           = { version = "0.23" }
+
+symworx-core    = { path = "../../crates/symworx-core", version = "0.1" }
+symworx-biosym  = { path = "../../crates/symworx-biosym", version = "0.1" }
+symworx-loadsym = { path = "../../crates/symworx-loadsym", version = "0.1" }

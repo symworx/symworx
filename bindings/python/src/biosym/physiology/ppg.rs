@@ -1,0 +1,257 @@
+// symworx/bindings/python/src/biosym/physiology/ppg.rs
+// Copyright (C) 2026 cSYMd, All rights reserved.
+
+use pyo3::prelude::*;
+use pyo3::wrap_pyfunction;
+
+use symworx_biosym::physiology::{
+    PPGTimeSeries,
+    PPGNoiseConfig,
+    PPGSignalQuality,
+    PPGSimulationParams,
+    analyze_ppg,
+    generate_ppg_waveform,
+    generate_ppg_timeseries,
+};
+
+// ==========================================================
+// PPG
+// ==========================================================
+
+#[pyfunction(name = "analyze_ppg")]
+pub fn py_analyze_ppg() -> PyResult<()> {
+    analyze_ppg();
+    Ok(())
+}
+
+#[pyclass(name = "PPGTimeSeries")]
+#[derive(Clone)]
+pub struct PyPPGTimeSeries {
+    #[pyo3(get)]
+    pub times: Vec<f64>,
+    #[pyo3(get)]
+    pub values: Vec<f64>,
+    #[pyo3(get)]
+    pub systolic_peaks: Vec<usize>,
+    #[pyo3(get)]
+    pub diastolic_peaks: Vec<usize>,
+}
+
+#[pymethods]
+impl PyPPGTimeSeries {
+    fn __repr__(&self) -> String {
+        format!(
+            "PPGTimeSeries(len={}, peaks_s={}, peaks_d={})",
+            self.times.len(),
+            self.systolic_peaks.len(),
+            self.diastolic_peaks.len()
+        )
+    }
+}
+
+impl From<PPGTimeSeries> for PyPPGTimeSeries {
+    fn from(ts: PPGTimeSeries) -> Self {
+        Self {
+            times: ts.times,
+            values: ts.values,
+            systolic_peaks: ts.systolic_peaks,
+            diastolic_peaks: ts.diastolic_peaks,
+        }
+    }
+}
+
+#[pyfunction(name = "generate_ppg_waveform")]
+pub fn py_generate_ppg_waveform(
+    t0: f64,
+    duration: f64,
+    fs: f64,
+    params: (f64, f64, f64, f64, f64, f64),
+) -> (Vec<f64>, Vec<f64>) {
+    generate_ppg_waveform(t0, duration, fs, params)
+}
+
+#[pyfunction(name = "generate_ppg_timeseries")]
+pub fn py_generate_ppg_timeseries(
+    start_time: f64,
+    rr_intervals: Vec<f64>,
+    count: usize,
+    beat_duration: f64,
+    fs: f64,
+    beat_params: (f64, f64, f64, f64, f64, f64),
+    noise_cfg: PyPPGNoiseConfig,
+) -> PyPPGTimeSeries {
+    let cfg = PPGNoiseConfig::from(noise_cfg);
+    let ts = generate_ppg_timeseries(
+        start_time,
+        &rr_intervals,
+        count,
+        beat_duration,
+        fs,
+        beat_params,
+        &cfg,
+    );
+    PyPPGTimeSeries::from(ts)
+}
+
+#[pyclass(name = "PPGNoiseConfig")]
+#[derive(Clone)]
+pub struct PyPPGNoiseConfig {
+    #[pyo3(get, set)]
+    pub amp_drift_std: f64,
+    #[pyo3(get, set)]
+    pub mu_drift_std: f64,
+    #[pyo3(get, set)]
+    pub sigma_drift_std: f64,
+    #[pyo3(get, set)]
+    pub onset_jitter_std: f64,
+    #[pyo3(get, set)]
+    pub global_noise_std: f64,
+    #[pyo3(get, set)]
+    pub smoothing_kernel: usize,
+}
+
+#[pymethods]
+impl PyPPGNoiseConfig {
+    #[new]
+    fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl Default for PyPPGNoiseConfig {
+    fn default() -> Self {
+        let cfg = PPGNoiseConfig::default();
+        cfg.into()
+    }
+}
+
+impl From<PPGNoiseConfig> for PyPPGNoiseConfig {
+    fn from(cfg: PPGNoiseConfig) -> Self {
+        Self {
+            amp_drift_std:    cfg.amp_drift_std,
+            mu_drift_std:     cfg.mu_drift_std,
+            sigma_drift_std:  cfg.sigma_drift_std,
+            onset_jitter_std: cfg.onset_jitter_std,
+            global_noise_std: cfg.global_noise_std,
+            smoothing_kernel: cfg.smoothing_kernel,
+        }
+    }
+}
+
+impl From<PyPPGNoiseConfig> for PPGNoiseConfig {
+    fn from(py_cfg: PyPPGNoiseConfig) -> Self {
+        Self {
+            amp_drift_std:    py_cfg.amp_drift_std,
+            mu_drift_std:     py_cfg.mu_drift_std,
+            sigma_drift_std:  py_cfg.sigma_drift_std,
+            onset_jitter_std: py_cfg.onset_jitter_std,
+            global_noise_std: py_cfg.global_noise_std,
+            smoothing_kernel: py_cfg.smoothing_kernel,
+        }
+    }
+}
+
+#[pyclass(name = "PPGSignalQuality")]
+#[derive(Clone, Copy)]
+pub enum PyPPGSignalQuality {
+    Reference,
+    High,
+    Moderate,
+    Poor,
+    Custom,
+}
+
+#[pymethods]
+impl PyPPGSignalQuality {
+    #[new]
+    fn new() -> Self {
+        PyPPGSignalQuality::Reference
+    }
+}
+
+impl From<PyPPGSignalQuality> for PPGSignalQuality {
+    fn from(q: PyPPGSignalQuality) -> Self {
+        match q {
+            PyPPGSignalQuality::Reference => PPGSignalQuality::Reference,
+            PyPPGSignalQuality::High => PPGSignalQuality::High,
+            PyPPGSignalQuality::Moderate => PPGSignalQuality::Moderate,
+            PyPPGSignalQuality::Poor => PPGSignalQuality::Poor,
+            PyPPGSignalQuality::Custom => PPGSignalQuality::Custom(PPGNoiseConfig::default()),
+        }
+    }
+}
+
+// ==========================================================
+// PPG Simulation Params
+// ==========================================================
+
+#[pyclass(name = "PPGSimulationParams")]
+#[derive(Clone)]
+pub struct PyPPGSimulationParams {
+    #[pyo3(get, set)]
+    pub fs: f64,
+    #[pyo3(get, set)]
+    pub duration: f64,
+    #[pyo3(get, set)]
+    pub beat_params: (f64, f64, f64, f64, f64, f64),
+    #[pyo3(get, set)]
+    pub noise_config: PyPPGNoiseConfig,
+    #[pyo3(get, set)]
+    pub seed: Option<u64>,
+}
+
+#[pymethods]
+impl PyPPGSimulationParams {
+    #[new]
+    fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl Default for PyPPGSimulationParams {
+    fn default() -> Self {
+        let p = PPGSimulationParams::default();
+        p.into()
+    }
+}
+
+impl From<PPGSimulationParams> for PyPPGSimulationParams {
+    fn from(p: PPGSimulationParams) -> Self {
+        Self {
+            fs: p.fs,
+            duration: p.duration,
+            beat_params: p.beat_params,
+            noise_config: p.noise_config.into(),
+            seed: p.seed,
+        }
+    }
+}
+
+impl From<PyPPGSimulationParams> for PPGSimulationParams {
+    fn from(py: PyPPGSimulationParams) -> Self {
+        Self {
+            fs: py.fs,
+            duration: py.duration,
+            beat_params: py.beat_params,
+            noise_config: py.noise_config.into(),
+            seed: py.seed,
+        }
+    }
+}
+
+// ==========================================================
+// Python Register
+// ==========================================================
+
+pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(py_analyze_ppg, m)?)?;
+    m.add_function(wrap_pyfunction!(py_generate_ppg_waveform, m)?)?;
+    m.add_function(wrap_pyfunction!(py_generate_ppg_timeseries, m)?)?;
+
+    m.add_class::<PyPPGTimeSeries>()?;
+    m.add_class::<PyPPGNoiseConfig>()?;
+    m.add_class::<PyPPGSignalQuality>()?;
+    m.add_class::<PyPPGSimulationParams>()?;
+
+    Ok(())
+}

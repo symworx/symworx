@@ -4,25 +4,7 @@
 use rand::{Rng, rng};
 use rand_distr::{Distribution, Normal};
 
-// ==========================================================
-// Noise Configuration
-// ==========================================================
-
-#[derive(Debug, Clone, Copy)]
-pub struct PPGNoiseParams {
-    pub onset_jitter_std: f64,
-    // Add more noise types later:
-    // pub amplitude_noise_std: f64,
-    // pub baseline_wander_std: f64,
-}
-
-impl Default for PPGNoiseParams {
-    fn default() -> Self {
-        Self {
-            onset_jitter_std: 0.0,
-        }
-    }
-}
+use super::PPGNoiseConfig;
 
 // ==========================================================
 // PPG Generation
@@ -37,8 +19,30 @@ pub struct PPGTimeSeries {
     pub diastolic_peaks: Vec<usize>,
 }
 
+/// High-level parameters for PPG simulation (for consistency with respiration)
+#[derive(Debug, Clone)]
+pub struct PPGSimulationParams {
+    pub fs: f64,
+    pub duration: f64,
+    pub beat_params: (f64, f64, f64, f64, f64, f64), // (amp_s, mu_s, sigma_s, amp_d, mu_d, sigma_d)
+    pub noise_config: PPGNoiseConfig,
+    pub seed: Option<u64>,
+}
+
+impl Default for PPGSimulationParams {
+    fn default() -> Self {
+        Self {
+            fs: 250.0,
+            duration: 10.0,
+            beat_params: (1.0, 0.2, 0.03, 0.35, 0.45, 0.06),
+            noise_config: PPGNoiseConfig::default(),
+            seed: None,
+        }
+    }
+}
+
 /// Generate a single PPG beat using two Gaussians (systolic + diastolic).
-pub fn create_ppg_waveform(
+pub fn generate_ppg_waveform(
     t0: f64,
     duration: f64,
     fs: f64,
@@ -70,14 +74,14 @@ pub fn create_ppg_waveform(
 }
 
 /// Stitch multiple PPG waveforms into one contiguous time series.
-pub fn create_ppg_timeseries(
+pub fn generate_ppg_timeseries(
     start_time: f64,
     rr_intervals: &[f64],
     count: usize,
     beat_duration: f64,
     fs: f64,
     beat_params: (f64, f64, f64, f64, f64, f64),
-    noise_cfg: &PPGNoiseParams,
+    noise_cfg: &PPGNoiseConfig,
 ) -> PPGTimeSeries {
     let mut times = Vec::new();
     let mut values = Vec::new();
@@ -98,7 +102,7 @@ pub fn create_ppg_timeseries(
         };
 
         let onset = current_t + jitter;
-        let (btimes, bvals) = create_ppg_waveform(onset, beat_duration, fs, beat_params);
+        let (btimes, bvals) = generate_ppg_waveform(onset, beat_duration, fs, beat_params);
 
         let base_index = times.len();
 
@@ -153,7 +157,10 @@ mod tests {
         let beat_duration = 0.9;
         let rr_intervals = vec![0.8; 10];
 
-        let noise = PPGNoiseParams { onset_jitter_std: 0.01 };
+        let noise = PPGNoiseConfig {
+            onset_jitter_std: 0.01,
+            ..Default::default()
+        };
 
         let ts = create_ppg_timeseries(
             0.0,
