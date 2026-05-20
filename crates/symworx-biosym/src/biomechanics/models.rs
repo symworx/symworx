@@ -49,7 +49,6 @@ impl GaitParams {
     }
 
     pub fn stride_time(&self) -> f64 {
-        // stride time (s) from speed and step length (approx)
         if let Some(cad) = self.cadence {
             120.0 / cad
         } else {
@@ -68,6 +67,7 @@ pub struct GaitData {
     pub left_step_times: Option<Array1<f64>>,
     pub right_step_times: Option<Array1<f64>>,
     pub stride_length: Option<Array1<f64>>,
+    pub step_length: Option<Array1<f64>>,
     pub pelvis_vertical_position: Option<Array1<f64>>,
 }
 
@@ -80,6 +80,7 @@ impl GaitData {
             left_step_times: None,
             right_step_times: None,
             stride_length: None,
+            step_length: None,
             pelvis_vertical_position: None,
         }
     }
@@ -94,6 +95,39 @@ impl GaitData {
             }
         }
         None
+    }
+
+    /// Calculate stride length = walking_speed * stride_intervals (in meters).
+    pub fn calculate_stride_length(&mut self, walking_speed: Option<f64>) -> Option<Array1<f64>> {
+        let speed = walking_speed.unwrap_or(1.3); // sensible default
+        if self.stride_intervals.is_none() {
+            self.calculate_stride_intervals();
+        }
+        if let Some(ref intervals) = self.stride_intervals {
+            if intervals.is_empty() {
+                return None;
+            }
+            let lengths = intervals.mapv(|dt| speed * dt);
+            self.stride_length = Some(lengths.clone());
+            Some(lengths)
+        } else {
+            None
+        }
+    }
+
+    /// Calculate step length as approximately half of stride length.
+    pub fn calculate_step_length(&mut self) -> Option<Array1<f64>> {
+        if self.stride_length.is_none() {
+            // Try to compute with default speed if not already done
+            self.calculate_stride_length(None);
+        }
+        if let Some(ref stride_len) = self.stride_length {
+            let step_len = stride_len.mapv(|l| l / 2.0);
+            self.step_length = Some(step_len.clone());
+            Some(step_len)
+        } else {
+            None
+        }
     }
 
     /// Calculate cadence in steps per minute.
@@ -115,7 +149,6 @@ impl GaitData {
     pub fn calculate_step_times(&mut self) {
         if let Some(ref times) = self.stride_times {
             if times.len() >= 2 {
-                // Simple alternating: odd indices left, even right (0-based)
                 let left: Vec<f64> = times.iter().step_by(2).copied().collect();
                 let right: Vec<f64> = times.iter().skip(1).step_by(2).copied().collect();
                 self.left_step_times = Some(Array1::from(left));
@@ -180,12 +213,32 @@ mod tests {
     }
 
     #[test]
+    fn test_calculate_stride_length() {
+        let mut data = GaitData::new(100.0);
+        data.stride_times = Some(array![0.0, 1.0, 2.0]);
+        data.calculate_stride_intervals();
+        let lengths = data.calculate_stride_length(Some(1.3)).unwrap();
+        assert_eq!(lengths.len(), 2);
+        assert!((lengths[0] - 1.3).abs() < 1e-9);
+    }
+
+    #[test]
+    fn test_calculate_step_length() {
+        let mut data = GaitData::new(100.0);
+        data.stride_times = Some(array![0.0, 1.0, 2.0]);
+        data.calculate_stride_intervals();
+        data.calculate_stride_length(Some(1.3));
+        let steps = data.calculate_step_length().unwrap();
+        assert!((steps[0] - 0.65).abs() < 1e-9);
+    }
+
+    #[test]
     fn test_calculate_cadence() {
         let mut data = GaitData::new(100.0);
         data.stride_times = Some(array![0.0, 1.0, 2.0]);
         data.calculate_stride_intervals();
         let cad = data.calculate_cadence().unwrap();
-        assert!((cad - 120.0).abs() < 1e-6); // 60 strides/min -> 120 steps/min
+        assert!((cad - 120.0).abs() < 1e-6);
     }
 
     #[test]
