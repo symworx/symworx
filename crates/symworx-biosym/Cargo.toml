@@ -11,7 +11,9 @@ description      = "Biological (phys, mech, cpg) modeling tools and resources"
 
 [dependencies]
 ndarray      = { workspace = true }
-rand         = { workspace = true }
-rand_distr   = { workspace = true }
+# rand and rand_distr kept minimal / optional for core biomechanics
+# rand         = { workspace = true }
+# rand_distr   = { workspace = true }
 
-symworx-core = { path = "../symworx-core"}
+symworx-core = { path = "../symworx-core" }
+symworx-math = { path = "../symworx-math" }
