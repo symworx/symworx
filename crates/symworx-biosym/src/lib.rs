@@ -1,9 +1,8 @@
-// biosym/src/lib.rs
+// symworx-biosym/src/lib.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
-#![allow(unused_imports)]
-#![allow(dead_code)]
-#![allow(unsafe_op_in_unsafe_fn)]
-#![allow(improper_ctypes_definitions)]
+pub mod biomechanics;
+// pub mod physiology;  // TODO
+// pub mod cpg;         // TODO (will use symworx-math::integrate)
 
-pub mod physiology;
+pub use biomechanics::*;
