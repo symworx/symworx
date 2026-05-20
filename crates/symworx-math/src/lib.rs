@@ -1,4 +1,4 @@
-// core/src/math/mod.rs
+// symworx-math/src/lib.rs
 // Copyright (C) 2026 cSYMd
 
 pub mod distributions;
@@ -16,6 +16,8 @@ pub use distributions::{
 pub use integration::{
     cumtrapz,
     trapz,
+    rk4_step,
+    rk4_integrate,
 };
 
 pub use special::{
@@ -41,7 +43,7 @@ pub mod special_fn {
     pub use super::special::*;
 }
 
-/// Numerical integration methods.
+/// Numerical integration methods (trapezoidal + ODE solvers).
 pub mod integrate {
     pub use super::integration::*;
 }
