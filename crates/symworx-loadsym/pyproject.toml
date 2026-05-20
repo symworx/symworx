@@ -1,0 +1,14 @@
+[build-system]
+requires = ["maturin>=1.5,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "symworx-loadsym"
+version = "0.1.0"
+description = "LOADsym - Training load quantification and optimization"
+requires-python = ">=3.12"
+license = { text = "MPL-2.0" }
+
+[tool.maturin]
+module-name = "symworx_loadsym"
+features = ["extension-module"]
