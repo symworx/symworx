@@ -9,11 +9,13 @@ license          = { workspace = true }
 repository       = { workspace = true }
 description      = "Biological (phys, mech, cpg) modeling tools and resources"
 
+[lib]
+name = "symworx_biosym"
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
 ndarray      = { workspace = true }
-# rand and rand_distr kept minimal / optional for core biomechanics
-# rand         = { workspace = true }
-# rand_distr   = { workspace = true }
+pyo3         = { version = "0.21", features = ["extension-module"] }
 
 symworx-core = { path = "../symworx-core" }
 symworx-math = { path = "../symworx-math" }
