@@ -1,8 +1,25 @@
 # SymWorx-Math
 
-This is a sub-crate to the [`symworx-core`](../symworx-core/README-CORE.md) crate.
+Numerical primitives for the SymWorx ecosystem (integration, special functions, distributions).
 
-**SymWorx** is a multi‑use computational framework designed for broad applicability across embedded systems, scientific computing, web applications, and educational environments.
-At its core, **SymWorx** provides a **Rust kernel** with **Python bindings**, ensuring consistency, safety, and performance across platforms.
+## Current Contents
 
-**SymWorx** is part of the **Computational Systems for Modeling & Dynamics** (cSYM-d) ecosystem.
+- Trapezoidal integration (`trapz`, `cumtrapz`)
+- **RK4 ODE integration** — `rk4_step` and `rk4_integrate` (used by BioSym CPG)
+- Special functions (Gamma, Beta, ln versions)
+- Basic distributions and kernels
+
+This crate is designed to stay lightweight and reusable across SymWorx crates and beyond.
+
+## Usage Example
+
+```rust
+use symworx_math::integrate::{rk4_step, rk4_integrate};
+use ndarray::Array1;
+
+let f = |t: f64, y: &Array1<f64>| y.clone(); // simple exponential
+let (times, states) = rk4_integrate(f, (0.0, 1.0), Array1::from(vec![1.0]), 0.1);
+```
+
+Part of the SymWorx monorepo (cSYM-d).
+**License:** MPL-2.0

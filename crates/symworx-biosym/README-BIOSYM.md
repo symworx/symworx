@@ -1,24 +1,42 @@
 # BioSym
 
-**BioSym** is part of the **SymWorx** namespace and serves as a biological systems modeling framework providing tools and resources for simulating and quantifying physiological and biomechanical signals.
+**BioSym** is the biological systems modeling crate in the **SymWorx** ecosystem.
+It provides tools for simulating and analyzing physiological and biomechanical signals, with a focus on gait, central pattern generators (CPG), and integrated cardio-locomotor-respiratory dynamics.
 
-**SymWorx** is a multi‑use computational framework designed for broad applicability across embedded systems, scientific computing, web applications, and educational environments.
-At its core, **SymWorx** provides a **Rust kernel** with **Python bindings**, ensuring consistency, safety, and performance across platforms.
+## Features (Current)
 
-**SymWorx** is part of the **Computational Systems for Modeling & Dynamics** (cSYM-d) ecosystem.
+- **Gait modeling** — `GaitParams` and `GaitData` with stride interval, cadence, stride/step length, and vertical oscillation calculations.
+- **Central Pattern Generator (CPG)** — Coupled Van der Pol oscillators for heart, bilateral legs, and respiration, driven by a dynamic `tau` parameter.
+- **Numerical integration** — Uses RK4 from `symworx-math` for stable simulation.
+- **Python bindings** — Full PyO3 support. Can be used standalone (`import symworx_biosym`) or via the unified `symworx` package.
+- **Independent builds** — `maturin develop` works directly from the crate directory.
 
 ## Philosophy
 
-The cSYM‑d philosophy emphasizes:
-i) **security** by minimizing unsafe code, reducing unintended execution paths, and lowering supply‑chain risk,
-ii) **robustness** through predictable behavior, strong typing, and explicit error handling, and 
-iii) **scalability** via consistent APIs across embedded, desktop, and cloud environments.
+SymWorx emphasizes security, robustness, and scalability. BioSym follows the same principles with strong typing, minimal unsafe code, and clean APIs suitable for embedded systems, research, and education.
 
-Much of the original work was developed in Python, but is now being rewritten in Rust.
-This shift was motivated by both a desire to deeply learn Rust and the opportunity to build a portable, high‑assurance computational engine that can 
-i) run on microcontrollers and bare‑metal systems, 
-ii) integrate seamlessly with Python for education, data science, and rapid prototyping, 
-iii) serve as a stable foundation for higher‑level simulation frameworks
+## Usage (Rust)
 
-**License:**
-This project is licensed under the [Mozilla Public License, version 2.0](https://www.mozilla.org/media/MPL/2.0/index.f75d2927d3c1.txt).
+```rust
+use symworx_biosym::{GaitParams, GaitData, SymCpgModel};
+
+let params = GaitParams::default().with_defaults();
+let mut data = GaitData::new(100.0);
+data.stride_times = Some(ndarray::array![0.0, 1.0, 2.0]);
+data.calculate_stride_intervals();
+
+let model = SymCpgModel::new(None);
+let (times, states) = model.run((0.0, 10.0), 0.01);
+```
+
+## Usage (Python)
+
+```python
+import symworx_biosym as biosym
+
+params = biosym.GaitParams()
+model = biosym.SymCpgModel()
+times, states = model.run(0.0, 10.0, 0.01)
+```
+
+**License:** MPL-2.0
