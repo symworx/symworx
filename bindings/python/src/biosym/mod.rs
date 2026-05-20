@@ -4,19 +4,14 @@
 use pyo3::prelude::*;
 
 pub mod physiology;
-// pub mod biomechanics;
-// pub mod optimization;
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    // Re-export everything from the standalone symworx_biosym package
+    // so users can do: import symworx.biosym as biosym
+    let biosym_mod = m.py().import("symworx_biosym")?;
+    m.add_submodule(&biosym_mod)?;
 
-    // let biomechanics_mod = PyModule::new(m.py(), "biomechanics")?;
-    // biomechanics::register(&biomechanics_mod)?;
-    // m.add_submodule(&biomechanics_mod)?;
-
-    // let cpg_mod = PyModule::new(m.py(), "cpg")?;
-    // cpg::register(&cpg_mod)?;
-    // m.add_submodule(&cpg_mod)?;
-
+    // Also keep physiology submodule if it has extra content
     let physiology_mod = PyModule::new(m.py(), "physiology")?;
     physiology::register(&physiology_mod)?;
     m.add_submodule(&physiology_mod)?;
