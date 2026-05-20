@@ -1,0 +1,21 @@
+[build-system]
+requires = ["maturin>=1.5,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "symworx"
+version = "0.1.0"
+description = "SymWorx - Rust core with Python bindings (cSYM-d ecosystem)"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MPL-2.0" }
+authors = [{ name = "nate berry", email = "nate-berry@outlook.com" }]
+
+[project.optional-dependencies]
+dev = ["maturin", "pytest"]
+
+[tool.maturin]
+python-source = "."
+module-name = "symworx"
+features = ["extension-module"]
+# Include the biosym and other crates via the Rust lib
