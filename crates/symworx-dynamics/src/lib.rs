@@ -34,4 +34,4 @@ pub use entropy::{sample_entropy};
 // Version info
 // ==========================================================
 /// Current version of the `symworx-dynamics` crate.
-pub const VERSION: &str = env!("CARGO_PKG_VERSION");;
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
