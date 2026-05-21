@@ -1,4 +1,4 @@
-// fitlters/adaptive/mod.rs
+// symworx/crates/symworx-signal/src/filters/adaptive/mod.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 

@@ -1,4 +1,4 @@
-// statistics/basic.rs
+// symworx/crates/symworx-stats/src/basic.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use std::cmp::Ordering;

@@ -1,4 +1,4 @@
-// core/src/statistics/pca.rs
+// symworx/crates/symworx-stats/src/pca.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 // 
 

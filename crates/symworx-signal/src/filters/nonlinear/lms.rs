@@ -1,7 +1,4 @@
-#![allow(unused_imports)]
-#![allow(dead_code)]
-
-// filters/linear/lms.rs
+// symworx/crates/symworx-signal/src/filters/nonlinear/lms.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 pub fn lms() {

@@ -1,4 +1,4 @@
-// core/src/processing/resample.rs
+// symworx/crates/symworx-signal/src/processing/resample.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use crate::processing::interpolation::interp_linear;

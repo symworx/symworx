@@ -1,38 +1,44 @@
-// symworx-math/src/lib.rs
-// Copyright (C) 2026 cSYMd
+// symworx/crates/symworx-math/src/lib.rs
+// Copyright (C) 2026 cSYMd, All rights reserved.
 
+//! # symworx-math
+//!
+//! Core mathematical utilities for the SymWorx ecosystem.
+//!
+//! This crate contains general-purpose numerical tools used across
+//! `symworx-core` and domain crates (especially `symworx-biosym`).
+
+#![allow(unused_imports)]
+#![warn(missing_docs)]
+#![doc(html_root_url = "https://docs.rs/symworx-math")]
+
+// ==========================================================
+// Modules
+// ==========================================================
 pub mod distributions;
 pub mod integration;
+pub mod oscillators;
 pub mod random;
 pub mod special;
 
+// ==========================================================
+// Main re-exports
+// ==========================================================
 pub use distributions::{
-    beta_kernel,
-    beta_pdf,
-    gamma_kernel,
-    gamma_pdf,
+    beta_kernel, beta_pdf, gamma_kernel, gamma_pdf,
 };
-
 pub use integration::{
-    cumtrapz,
-    trapz,
-    rk4_step,
-    rk4_integrate,
+    cumtrapz, trapz, rk4_step, rk4_integrate,
 };
-
+pub use oscillators::VanDerPol;
 pub use special::{
-    gamma,
-    ln_gamma,
-    beta,
-    ln_beta,
+    beta, gamma, ln_beta, ln_gamma,
 };
-
 pub use random::*;
 
 // ==========================================================
-// Namespaced re-exports
+// Namespaced re-exports (for convenience)
 // ==========================================================
-
 /// Probability distributions: kernels, PDFs, sampling.
 pub mod dist {
     pub use super::distributions::*;
@@ -48,7 +54,9 @@ pub mod integrate {
     pub use super::integration::*;
 }
 
-// /// Random sampling utilities.
-// pub mod random {
-//     pub use super::random::*;
-// }
+// ==========================================================
+// Version info
+// ==========================================================
+/// Current version of the `symworx-math` crate.
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+

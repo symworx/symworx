@@ -1,4 +1,4 @@
-// symworx/crates/loadsym/src/nutrition/bodycomp.rs
+// symworx/crates/symworx-loadsym/src/nutrition/bodycomp.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 // ==========================================================

@@ -1,4 +1,4 @@
-// src/core/statistics/variability.rs
+// symworx/crates/symworx-stats/src/variability.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 // ==========================================================

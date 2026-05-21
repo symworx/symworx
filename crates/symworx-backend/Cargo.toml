@@ -7,7 +7,7 @@ version          = { workspace = true }
 edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
-description      = "Error utilities -- part of the symworx-core crate"
+description      = "Backend utilities -- part of the symworx-core crate"
 
 [dependencies]
 tokio = { workspace = true }

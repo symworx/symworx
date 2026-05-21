@@ -1,4 +1,4 @@
-// core/src/io/parquet.rs
+// symworx/crates/symworx-io/src/parquet.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use parquet::record::Field;

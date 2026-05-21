@@ -1,4 +1,4 @@
-// filters/nonlinear/mod.rs
+// symworx/crates/symworx-signal/src/filters/time_frequency/mod.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 //
 

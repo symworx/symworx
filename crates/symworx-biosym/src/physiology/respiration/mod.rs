@@ -1,4 +1,4 @@
-// symworx-biosym/src/physiology/respiration/mod.rs
+// symworx/crates/symworx-biosym/src/physiology/respiration/mod.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 pub mod generation;

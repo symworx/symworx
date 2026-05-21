@@ -1,4 +1,4 @@
-// core/src/statistics/autocorrelation.rs
+// symworx/crates/symworx-stats/src/autocorrelation.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 // ==========================================================

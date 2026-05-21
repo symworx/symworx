@@ -1,4 +1,4 @@
-// core/src/math/distributions.rs
+// symworx/crates/symworx-math/src/distributions.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use crate::special;

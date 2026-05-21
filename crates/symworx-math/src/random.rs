@@ -1,4 +1,4 @@
-// core/src/math/random.rs
+// symworx/crates/symworx-math/src/random.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use rand::Rng;

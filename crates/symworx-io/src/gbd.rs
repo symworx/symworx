@@ -1,4 +1,4 @@
-// core/src/io/gbd.rs
+// symworx/crates/symworx-io/src/gbd.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use symworx_error::SymError;

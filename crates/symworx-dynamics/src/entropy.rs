@@ -1,4 +1,4 @@
-// src/statistics/entropy.rs
+// symworx/crates/symworx-dynamics/src/entropy.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use ndarray::prelude::*;

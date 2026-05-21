@@ -1,4 +1,4 @@
-// filters/nonlinear/mod.rs
+// symworx/crates/symworx-signal/src/filters/nonlinear/mod.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 // ==========================================================

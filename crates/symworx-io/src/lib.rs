@@ -1,5 +1,7 @@
-// core/src/io/mod.rs
-// Copyright (C) 2026 cSYMd
+// symworx/crates/symworx-io/src/lib.rs
+// Copyright (C) 2026 cSYMd, All rights reserved.
+
+#![warn(missing_docs)]
 
 pub mod csv;
 pub mod gbd;
@@ -14,7 +16,7 @@ pub use gbd::{GbdReader, GbdTable};
 pub use ibi::{IbiRecord, read_ibi};
 pub use parquet::ParquetReader;
 
-use traits::{SymReader, SymWriter};
+use traits::SymReader;
 
 /// Parent load function.
 ///
@@ -28,3 +30,9 @@ pub fn load_any(path: &str) -> Result<Vec<Vec<f64>>, SymError> {
         Err(SymError::UnsupportedFormat(path.into()))
     }
 }
+
+// ==========================================================
+// Version info
+// ==========================================================
+
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");

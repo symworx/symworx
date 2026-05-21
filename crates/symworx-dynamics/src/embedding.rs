@@ -1,4 +1,4 @@
-// core/src/dynamics/embedding.rs
+// symworx/crates/symworx-dynamics/src/embedding.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use symworx_stats::distance::euclidean;

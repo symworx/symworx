@@ -1,4 +1,4 @@
-// symworx-biosym/src/biomechanics/models.rs
+// symworx/crates/symworx-biosym/src/biomechanics/models.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use ndarray::Array1;

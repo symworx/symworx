@@ -1,4 +1,4 @@
-// src/statistics/correlation.rs
+// symworx/crates/symworx-stats/src/correlation.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use ndarray::{Array2, ArrayView1, Axis};

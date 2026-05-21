@@ -1,4 +1,4 @@
-// biosym/src/physiology/analysis/quality.rs
+// symworx/crates/symworx-biosym/src/physiology/ppg/quality.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use crate::physiology::ppg::PPGNoiseConfig;

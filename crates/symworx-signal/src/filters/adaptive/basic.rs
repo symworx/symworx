@@ -1,4 +1,4 @@
-// core/src/filters/adaptive/basic.rs
+// symworx/crates/symworx-signal/src/filters/adaptive/basic.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use symworx_stats::{mad, mean, median};

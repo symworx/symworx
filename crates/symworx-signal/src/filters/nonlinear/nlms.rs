@@ -1,4 +1,4 @@
-// filters/linear/butterworth.rs
+// symworx/crates/symworx-signal/src/filters/nonlinear/nlms.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 // ==========================================================

@@ -1,4 +1,4 @@
-// filters/nonlinear/kalman.rs
+// symworx/crates/symworx-signal/src/filters/nonlinear/kalman.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use ndarray::{array, Array1, Array2};

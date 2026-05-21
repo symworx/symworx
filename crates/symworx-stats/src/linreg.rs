@@ -1,4 +1,4 @@
-// core/src/statistics/linreg.rs
+// symworx/crates/symworx-stats/src/linreg.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use ndarray::{Array1, Array2, s};

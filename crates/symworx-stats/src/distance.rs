@@ -1,4 +1,4 @@
-// core/statistics/distance.rs
+// symworx/crates/symworx-stats/src/distance.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 // ==========================================================
@@ -27,4 +27,5 @@ pub fn euclidean(a: &[f64], b: &[f64]) -> f64 {
 // ==========================================================
 // TESTS
 // ==========================================================
+
 

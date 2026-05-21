@@ -1,13 +1,31 @@
-// symworx/crates/symworx-signal/lib.rs
+// symworx/crates/symworx-signal/src/lib.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
-// #![allow(unused_imports)]
-// #![allow(dead_code)]
-// #![allow(unsafe_op_in_unsafe_fn)]
-// #![allow(improper_ctypes_definitions)]
+//! # symworx-signal
+//!
+//! Digital signal processing tools for physiological and biomechanical data
+//! in the SymWorx ecosystem.
+//!
+//! This crate provides filtering, peak/event detection, and general signal
+//! processing utilities optimized for noisy real-world biological time series
+//! (PPG, ECG, accelerometry, force plates, etc.).
 
+#![allow(unused_imports)]
+#![warn(missing_docs)]
+#![doc(html_root_url = "https://docs.rs/symworx-signal")]
+
+// ==========================================================
+// Public API
+// ==========================================================
 pub mod filters;
 pub mod processing;
 
 pub use filters::*;
 pub use processing::*;
+
+// ==========================================================
+// Version info
+// ==========================================================
+/// Current version of the `symworx-signal` crate.
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+

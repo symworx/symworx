@@ -1,4 +1,4 @@
-// symworx/crates/symworx-signal/src/fitlers/mod.rs
+// symworx/crates/symworx-signal/src/filters/mod.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 pub mod adaptive;

@@ -1,4 +1,4 @@
-// symworx-core/src/signal/interpolation.rs
+// symworx/crates/symworx-signal/src/processing/interpolation.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 // ==========================================================

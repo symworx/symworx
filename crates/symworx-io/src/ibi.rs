@@ -1,4 +1,4 @@
-// core/src/io/ibi.rs
+// symworx/crates/symworx-io/src/ibi.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use std::fs::File;

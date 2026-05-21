@@ -1,4 +1,4 @@
-// core/src/statistics/spectral.rs
+// symworx/crates/symworx-stats/src/spectral.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 // ==========================================================

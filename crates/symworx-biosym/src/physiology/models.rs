@@ -1,4 +1,4 @@
-// biosym/src/physiology/models.rs
+// symworx/crates/symworx-biosym/src/physiology/models.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use symworx_core::processing::traits::PeakDetect;

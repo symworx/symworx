@@ -1,4 +1,4 @@
-// biosym/src/physiology/ppg/analysis.rs
+// symworx/crates/symworx-biosym/src/physiology/ppg/analysis.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 

@@ -1,4 +1,4 @@
-// filters/linear/chebyshev.rs
+// symworx/crates/symworx-signal/src/filters/linear/chebyshev.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use std::f64::consts::PI;
