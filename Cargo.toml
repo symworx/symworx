@@ -29,6 +29,7 @@ csv            = { version = "1.3" }
 ndarray        = { version = "0.15", features = ["std"] }
 ndarray-linalg = { version = "0.16", features = ["openblas"] }
 parquet        = { version = "51.0" }
+pyo3           = { version = "0.23", features = ["extension-module", "abi3-py312"] }
 rand           = { version = "0.9" }
 rand_distr     = { version = "0.5" }
 thiserror      = { version = "2.0.17" }

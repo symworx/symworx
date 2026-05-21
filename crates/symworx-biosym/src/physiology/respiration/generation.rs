@@ -1,9 +1,8 @@
 // symworx-biosym/src/physiology/respiration/generation.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
-use rand::Rng;
 use rand::rngs::StdRng;
-use rand::SeedableRng;
+use rand::{Rng, SeedableRng};
 
 /// Represents a respiration time-series signal.
 #[derive(Debug, Clone)]

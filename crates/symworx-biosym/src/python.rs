@@ -11,7 +11,7 @@ use crate::biomechanics::{GaitData, GaitParams};
 use crate::cpg::{CpgConfig, SymCpgModel, VanDerPol};
 
 #[pymodule]
-fn symworx_biosym(_py: Python, m: &PyModule) -> PyResult<()> {
+fn symworx_biosym(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyGaitParams>()?;
     m.add_class::<PyGaitData>()?;
     m.add_class::<PyVanDerPol>()?;

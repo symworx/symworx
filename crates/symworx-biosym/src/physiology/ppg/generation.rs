@@ -1,8 +1,8 @@
 // biosym/src/physiology/ppg/generation.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
-use rand::{Rng, rng};
-use rand_distr::{Distribution, Normal};
+use rand::rng;
+use symworx_math::random::sample;
 
 use super::PPGNoiseConfig;
 
@@ -91,12 +91,9 @@ pub fn generate_ppg_timeseries(
     let mut current_t = start_time;
     let mut rng = rng();
 
-    let normal = Normal::new(0.0, noise_cfg.onset_jitter_std)
-        .expect("Failed to create Normal distribution");
-
     for i in 0..count {
         let jitter = if noise_cfg.onset_jitter_std > 0.0 {
-            normal.sample(&mut rng)
+            sample::normal(&mut rng, 0.0, noise_cfg.onset_jitter_std)
         } else {
             0.0
         };

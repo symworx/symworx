@@ -15,7 +15,9 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 ndarray      = { workspace = true }
-pyo3         = { version = "0.21", features = ["extension-module"] }
+pyo3         = { workspace = true }
+rand         = { workspace = true }
+rand_distr   = { workspace = true }
 
 symworx-core = { path = "../symworx-core" }
 symworx-math = { path = "../symworx-math" }
