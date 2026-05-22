@@ -14,6 +14,7 @@ members = [
     "crates/symworx-runsym",
     "crates/symworx-signal",
     "crates/symworx-stats",
+    "crates/symworx-tui",
     "bindings/python",
 ]
 

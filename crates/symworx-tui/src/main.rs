@@ -1,14 +1,16 @@
+// symworx/crates/symworx-tui/src/convert.rs
+// Copyright (C) 2026 cSYMd, All rights reserved.
+
 //! symworx-tui — Terminal interface for selecting and visualizing biosym / physiological signals.
 //!
 //! This is the initial v0.1 focused on **file selection** for biosym signals.
 //! Next steps: integrate real signal loading from your Symworx crates + interactive Chart.
 
 use anyhow::Result;
-use color_eyre::eyre::WrapErr;
 use crossterm::event::{self, KeyCode, KeyEventKind};
 use ratatui::{
     layout::{Constraint, Layout},
-    style::{Color, Stylize},
+    style::{Color, Modifier, Style, Stylize},
     widgets::{Block, Borders, List, ListItem, ListState, Paragraph},
     DefaultTerminal, Frame,
 };
@@ -136,7 +138,7 @@ impl App {
 }
 
 fn main() -> Result<()> {
-    color_eyre::install()?;
+    color_eyre::install().expect("Failed to install color_eyre");
     ratatui::run(app)?;
     Ok(())
 }
@@ -299,7 +301,11 @@ fn render_file_select(frame: &mut Frame, app: &App, area: ratatui::layout::Rect)
 
     let list = List::new(items)
         .block(list_block)
-        .highlight_style(Color::Green.bold().on_dark_gray())
+        .highlight_style(
+            Style::default()
+                .fg(Color::Green)
+                .add_modifier(Modifier::BOLD)
+                .bg(Color::DarkGray))
         .highlight_symbol("▶ ");
 
     frame.render_stateful_widget(list, chunks[1], &mut app.list_state.clone());

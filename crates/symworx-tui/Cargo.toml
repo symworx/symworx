@@ -2,12 +2,6 @@
 name = "symworx-tui"
 version = "0.1.0"
 edition = "2021"
-authors = ["SymWorx Contributors"]
-description = "Terminal user interface for exploring and visualizing biosym / physiological signals (Symworx)"
-license = "MIT OR Apache-2.0"
-repository = "https://github.com/csymd/symworx"  # Update if needed
-keywords = ["tui", "ratatui", "signal", "physiological", "biosignal", "visualization"]
-categories = ["command-line-utilities", "visualization", "science"]
 
 [[bin]]
 name = "symview"
@@ -18,3 +12,6 @@ ratatui = "0.30"
 crossterm = "0.29"
 color-eyre = "0.6"
 anyhow = "1.0"
+
+polars = { version = "0.46", features = ["parquet", "csv", "lazy"] }
+symworx-io = { path = "../symworx-io" }
