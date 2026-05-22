@@ -15,7 +15,7 @@
 #![doc(html_root_url = "https://docs.rs/symworx-error")]
 
 // ==========================================================
-// Public API
+// Modules 
 // ==========================================================
 pub mod error;
 pub use error::*;

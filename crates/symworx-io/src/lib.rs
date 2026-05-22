@@ -3,6 +3,9 @@
 
 #![warn(missing_docs)]
 
+// ==========================================================
+// Modules
+// ==========================================================
 pub mod csv;
 pub mod gbd;
 pub mod ibi;
@@ -11,6 +14,9 @@ pub mod traits;
 
 use symworx_error::SymError;
 
+// ==========================================================
+// Re-exports
+// ==========================================================
 pub use csv::{CsvReader, CsvWriter};
 pub use gbd::{GbdReader, GbdTable};
 pub use ibi::{IbiRecord, read_ibi};

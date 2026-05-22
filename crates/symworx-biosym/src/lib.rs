@@ -36,10 +36,21 @@
 #![warn(missing_docs)]
 #![doc(html_root_url = "https://docs.rs/symworx-biosym")]
 
+// ==========================================================
+// Modules
+// ==========================================================
+/// Biomechanics modeling and utilities (Gait analysis, spatiotemporal metrics, stride/step).
 pub mod biomechanics;
+
+/// Central pattern generator using VdP
 pub mod cpg;
+
+/// Physiology modeling and utilities.
 pub mod physiology;
 
+// ==========================================================
+// Re-exports
+// ==========================================================
 pub use biomechanics::*;
 pub use cpg::*;
 pub use physiology::*;

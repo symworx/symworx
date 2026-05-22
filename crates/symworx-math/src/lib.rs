@@ -22,7 +22,7 @@ pub mod random;
 pub mod special;
 
 // ==========================================================
-// Main re-exports
+// Re-exports
 // ==========================================================
 pub use distributions::{
     beta_kernel, beta_pdf, gamma_kernel, gamma_pdf,

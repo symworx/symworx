@@ -150,15 +150,14 @@ impl From<PyPPGNoiseConfig> for PPGNoiseConfig {
         }
     }
 }
-
-#[pyclass(name = "PPGSignalQuality")]
-#[derive(Clone, Copy)]
+#[pyclass(name = "PPGSignalQuality", eq, eq_int)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PyPPGSignalQuality {
-    Reference,
-    High,
-    Moderate,
-    Poor,
-    Custom,
+    Reference = 0,
+    High      = 1,
+    Moderate  = 2,
+    Poor      = 3,
+    Custom    = 4,
 }
 
 #[pymethods]

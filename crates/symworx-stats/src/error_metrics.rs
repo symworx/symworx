@@ -1,4 +1,4 @@
-// core/src/statistics/errors.rs
+// symworx/crates/symworx-stats/src/error_metrics.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 // ==========================================================

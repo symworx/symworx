@@ -17,9 +17,15 @@
 // ==========================================================
 // Public API
 // ==========================================================
+/// Filters (e.g., Butterworth, Chebyshev, Kalman). 
 pub mod filters;
+
+/// Processing algorithms related to feature selection, interpolation, etc.
 pub mod processing;
 
+// ==========================================================
+// Re-exports
+// ==========================================================
 pub use filters::*;
 pub use processing::*;
 

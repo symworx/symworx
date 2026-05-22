@@ -39,7 +39,7 @@
 #![doc(html_root_url = "https://docs.rs/symworx-core")]
 
 // ==========================================================
-// Core re-exports
+// Re-exports
 // ==========================================================
 pub use symworx_error as error;
 pub use symworx_error::SymError;

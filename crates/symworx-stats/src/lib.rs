@@ -16,13 +16,29 @@
 // ==========================================================
 // Modules
 // ==========================================================
+
+/// Autocorrelation functions.
 pub mod autocorrelation;
+
+/// Basic statistics, including mean, median, mad. 
 pub mod basic;
+
+/// Correlation functions.
 pub mod correlation;
+
+/// Distance metrics (e.g., Euclidean).
 pub mod distance;
-pub mod error;
+
+/// Errors measurements. 
+pub mod error_metrics;
+
+/// Linear regression models (e.g., l1 and l2).
 pub mod linreg;
+
+/// Principal component analysis.
 pub mod pca;
+
+/// Variability measurements (e.g., ibi, rmssd, sdnn)
 pub mod variability;
 
 // ==========================================================
@@ -36,7 +52,7 @@ pub use correlation::{
     correlation_matrix, correlation_matrix_from_vec, pearson_correlation,
 };
 pub use distance::euclidean;
-pub use error::{
+pub use error_metrics::{
     mae, mse, rmse,
 };
 pub use linreg::{l1, l2};

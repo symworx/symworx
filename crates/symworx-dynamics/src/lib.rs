@@ -21,12 +21,15 @@
 #![doc(html_root_url = "https://docs.rs/symworx-dynamics")]
 
 // ==========================================================
-// Public API
+// Modules
 // ==========================================================
 pub mod embedding;
 pub mod entropy;
 pub mod rqa;
 
+// ==========================================================
+// Re-exports
+// ==========================================================
 pub use embedding::{edim, fnn};
 pub use entropy::{sample_entropy};
 

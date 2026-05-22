@@ -11,7 +11,13 @@
 
 #![warn(missing_docs)]
 
+// ==========================================================
+// Modules
+// ==========================================================
+/// Proecess management utilities
 pub mod process_manager;
+
+/// Web server/API background support
 pub mod server;
 
 // ==========================================================

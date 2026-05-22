@@ -2,7 +2,6 @@
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use pyo3::prelude::*;
-use ndarray::Array1;
 
 use symworx_biosym::cpg::{CpgConfig, SymCpgModel};
 use symworx_core::math::oscillators::VanDerPol;
