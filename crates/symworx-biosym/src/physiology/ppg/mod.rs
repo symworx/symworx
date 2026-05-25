@@ -1,4 +1,3 @@
-// symworx/crates/symworx-biosym/src/physiology/ppg/mod.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 pub mod analysis;

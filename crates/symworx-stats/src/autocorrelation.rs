@@ -1,12 +1,5 @@
-// symworx/crates/symworx-stats/src/autocorrelation.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
-// ==========================================================
-// Autocorrelation functions
-// ==========================================================
-// ----------------------------------------------------------
-// acf
-// ----------------------------------------------------------
 /// Calculates the autocorrelation of a given signal. 
 ///
 /// # Arguments
@@ -40,9 +33,9 @@ pub fn acf(signal: &[f64], unbiased: bool) -> Vec<f64> {
     acf
 }
 
-// ==========================================================
-// TESTS
-// ==========================================================
+
+// --- TESTS ---
+
 #[cfg(test)]
 mod test_acf {
     use super::*;

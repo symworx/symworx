@@ -1,17 +1,7 @@
-// symworx/crates/symworx-stats/src/basic.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use std::cmp::Ordering;
 
-// ==========================================================
-// Basic statistical functions
-// * mean             : mean of data
-// * median           : median of data
-// * mad              : mean absolute deviation
-// ==========================================================
-// ----------------------------------------------------------
-// Mean
-// ----------------------------------------------------------
 /// Calculates the mean of a time series of f64 values.
 ///
 /// # Arguments
@@ -27,9 +17,6 @@ pub fn mean(data: &[f64]) -> f64 {
     data.iter().sum::<f64>() / (data.len() as f64)
 }
 
-// ----------------------------------------------------------
-// Median
-// ----------------------------------------------------------
 /// Calculates the median of a slice of f64 values.
 /// 
 /// # Arguments
@@ -54,9 +41,6 @@ pub fn median(data: &[f64]) -> f64 {
     }
 }
 
-// ----------------------------------------------------------
-// Median absoluate deviation
-// ----------------------------------------------------------
 /// Compute Median Absolute Deviation (MAD)
 /// MAD = median(|x - median|) for x in data
 ///
@@ -71,9 +55,6 @@ pub fn mad(data: &[f64], med: f64) -> f64 {
     median(&deviations)
 }
 
-// ----------------------------------------------------------
-// Percentile calculations
-// ----------------------------------------------------------
 /// Calculate percentiles for a data slice.
 /// `p` is a list of percentiles in [0, 100].
 ///

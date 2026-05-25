@@ -1,4 +1,3 @@
-// symworx/crates/symworx-loadsym/src/load/mod.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 pub mod mechanical;

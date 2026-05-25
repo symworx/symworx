@@ -1,13 +1,7 @@
-// symworx/crates/symworx-signal/src/filters/adaptive/mod.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
-
-// ==========================================================
-// MODULES
-// ==========================================================
 pub mod basic;
+pub mod lms;
 
-// ==========================================================
-// EXPORTS
-// ==========================================================
 pub use basic::*;
+pub use lms::*;

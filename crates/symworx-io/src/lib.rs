@@ -1,4 +1,3 @@
-// symworx/crates/symworx-io/src/lib.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 #![warn(missing_docs)]

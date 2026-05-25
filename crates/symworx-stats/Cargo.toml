@@ -12,3 +12,4 @@ description      = "Statistical tools and resources -- part of the symworx-core 
 [dependencies]
 ndarray        = { workspace = true }
 ndarray-linalg = { workspace = true }
+rustfft        = { workspace = true }

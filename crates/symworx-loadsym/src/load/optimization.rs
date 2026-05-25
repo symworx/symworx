@@ -1,4 +1,3 @@
-// symworx/crates/symworx-loadsym/src/load/optimization.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 /// Optimize load parameters based on input data

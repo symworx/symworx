@@ -1,4 +1,3 @@
-// symworx/crates/symworx-signal/src/processing/traits.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use ndarray::ArrayView1;

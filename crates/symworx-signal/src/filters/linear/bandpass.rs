@@ -1,79 +1,108 @@
-// symworx/crates/symworx-signal/src/filters/linear/bandpass.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
-// ==========================================================
-// Butterworth Bandpass Filter
-// ==========================================================
-/// Butterworth bandpass filter 
+//! Butterworth bandpass filter (2nd order).
+//!
+//! Digital implementation using the bilinear transform.
+
+/// Second-order Butterworth bandpass filter.
+#[derive(Debug, Clone)]
 pub struct BandpassFilter {
-    a: [f64; 3],
     b: [f64; 3],
+    a: [f64; 3],
+    // Internal state for Direct Form II Transposed
     z1: f64,
-    z2: f64, 
+    z2: f64,
 }
 
 impl BandpassFilter {
-    // Create a new bandpass filter
+    /// Creates a new 2nd-order Butterworth bandpass filter.
+    ///
+    /// # Arguments
+    /// * `fs` — Sampling frequency (Hz)
+    /// * `f_low` — Lower cutoff frequency (Hz)
+    /// * `f_high` — Upper cutoff frequency (Hz)
+    /// * `q` — Quality factor (typically 0.5–2.0; higher = narrower band)
     pub fn new(fs: f64, f_low: f64, f_high: f64, q: f64) -> Self {
-        let (b, a) = bandpass(fs, f_low, f_high, q);
+        let (b, a) = design_bandpass(fs, f_low, f_high, q);
         Self { b, a, z1: 0.0, z2: 0.0 }
     }
 
-    // Resets internal state
+    /// Resets the filter's internal state.
     #[inline]
     pub fn reset(&mut self) {
         self.z1 = 0.0;
         self.z2 = 0.0;
     }
 
-    // Process sample
+    /// Processes a single sample.
     #[inline]
     pub fn process_sample(&mut self, x: f64) -> f64 {
-        // Direct Form II Transposed
         let y = self.b[0] * x + self.z1;
         self.z1 = self.b[1] * x - self.a[1] * y + self.z2;
         self.z2 = self.b[2] * x - self.a[2] * y;
         y
     }
 
-    // Process full signal
+    /// Processes an entire signal.
     pub fn process(&mut self, input: &[f64]) -> Vec<f64> {
         input.iter().map(|&x| self.process_sample(x)).collect()
     }
 }
 
-// ==========================================================
-// Butterworth Bandpass Filter (second order)
-// ==========================================================
-/// Butterworth bandpass filter (second order) using the bilinear transform.
-/// 
-/// Returns (b, a) where:
-///   y[n] = b0*x[n] + b1*x[n-1] + b2*x[n-2] - a1*y[n-1] - a2*y[n-2]
-fn bandpass(fs: f64, f_low: f64, f_high: f64, q: f64) -> ([f64; 3], [f64; 3]) {
-    // Normalize frequencies
+/// Designs a 2nd-order Butterworth bandpass filter using the bilinear transform.
+///
+/// Returns `(b, a)` coefficients for the transfer function.
+fn design_bandpass(fs: f64, f_low: f64, f_high: f64, q: f64) -> ([f64; 3], [f64; 3]) {
     let w0 = std::f64::consts::PI * (f_high + f_low) / fs;
     let bw = std::f64::consts::PI * (f_high - f_low) / fs;
-
-    // Bandwidth shaping
     let alpha = (bw / 2.0).sin() / (2.0 * q);
 
-    // Raw coefficients
-    let b0 =  alpha;
-    let b1 =  0.0;
+    let b0 = alpha;
+    let b1 = 0.0;
     let b2 = -alpha;
 
-    let a0 =  1.0 + alpha;
+    let a0 = 1.0 + alpha;
     let a1 = -2.0 * w0.cos();
-    let a2 =  1.0 - alpha;
+    let a2 = 1.0 - alpha;
 
-    // Normalize
+    // Normalize coefficients
     let b = [b0 / a0, b1 / a0, b2 / a0];
     let a = [1.0, a1 / a0, a2 / a0];
 
     (b, a)
 }
 
+// ——— Tests ———
 
-// ==========================================================
-// TESTS
-// ==========================================================
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_bandpass_creation() {
+        let filter = BandpassFilter::new(1000.0, 5.0, 15.0, 0.707);
+        assert_eq!(filter.b.len(), 3);
+        assert_eq!(filter.a.len(), 3);
+    }
+
+    #[test]
+    fn test_reset() {
+        let mut filter = BandpassFilter::new(500.0, 10.0, 20.0, 1.0);
+        filter.z1 = 0.5;
+        filter.z2 = -0.3;
+        filter.reset();
+        assert_eq!(filter.z1, 0.0);
+        assert_eq!(filter.z2, 0.0);
+    }
+
+    #[test]
+    fn test_process_constant() {
+        let mut filter = BandpassFilter::new(1000.0, 5.0, 15.0, 0.707);
+        let input = vec![1.0; 100];
+        let output = filter.process(&input);
+
+        assert_eq!(output.len(), 100);
+        // DC signal should be strongly attenuated by bandpass
+        assert!(output.iter().map(|&v| v.abs()).sum::<f64>() < 1.0);
+    }
+}

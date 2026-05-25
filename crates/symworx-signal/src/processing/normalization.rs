@@ -1,11 +1,5 @@
-// symworx/crates/symworx-signal/src/processing/normalization.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
-// ==========================================================
-// Normalization functions
-// ==========================================================
-// Min-Max Normalization
-// ----------------------------------------------------------
 /// Min-Max normalization scales the data to a fixed range, typically [0, 1]
 ///
 /// # Arguments
@@ -19,9 +13,6 @@ pub fn normalize(data: &[f64]) -> Vec<f64> {
     data.iter().map(|x| (x - min) / (max - min)).collect()
 }
 
-// ----------------------------------------------------------
-// Z-Score Normalization 
-// ----------------------------------------------------------
 /// Z-score normalization standardizes the data to have a mean of 0 and a standard deviation of 1
 ///
 /// # Arguments

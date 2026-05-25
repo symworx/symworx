@@ -1,4 +1,3 @@
-// symworx/crates/symworx-loadsym/src/load/physiological.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 /// Calculate physiological load from HR data

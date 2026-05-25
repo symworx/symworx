@@ -1,4 +1,3 @@
-// symworx/crates/symworx-stats/src/lib.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 //! # symworx-stats
@@ -13,10 +12,7 @@
 #![warn(missing_docs)]
 #![doc(html_root_url = "https://docs.rs/symworx-stats")]
 
-// ==========================================================
-// Modules
-// ==========================================================
-
+// Public API
 /// Autocorrelation functions.
 pub mod autocorrelation;
 
@@ -41,9 +37,7 @@ pub mod pca;
 /// Variability measurements (e.g., ibi, rmssd, sdnn)
 pub mod variability;
 
-// ==========================================================
-// Main re-exports
-// ==========================================================
+// Re-exports
 pub use autocorrelation::acf;
 pub use basic::{
     mad, mean, median, percentile,
@@ -51,18 +45,24 @@ pub use basic::{
 pub use correlation::{
     correlation_matrix, correlation_matrix_from_vec, pearson_correlation,
 };
-pub use distance::euclidean;
+pub use distance::{
+    euclidean,
+    manhattan,
+    cosine_distance,
+    chebyshev,
+};
 pub use error_metrics::{
     mae, mse, rmse,
 };
 pub use linreg::{l1, l2};
 pub use variability::{
-    ibi, intervals, rmssd, sdnn,
+    successive_differences,
+    mean_successive_difference,
+    rmssd,
+    sd_successive_difference,
 };
 
-// ==========================================================
 // Version info
-// ==========================================================
 /// Current version of the `symworx-stats` crate.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 

@@ -1,11 +1,9 @@
-// symworx/crates/symworx-signal/src/processing/resample.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use crate::processing::interpolation::interp_linear;
 
-// ==========================================================
-// RESAMPLING METHOD
-// ==========================================================
+/// Resampling structure.
+/// Includes Linear, Cubic (not implemented), and Splined (not implemented) methods.
 #[derive(Debug, Clone, Copy)]
 pub enum ResampleMethod {
     Linear,

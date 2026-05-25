@@ -1,4 +1,3 @@
-// symworx/crates/symworx-math/src/special.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 // ==========================================================

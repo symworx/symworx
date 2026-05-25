@@ -1,4 +1,3 @@
-// symworx/crates/symworx-loadsym/src/lib.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 //! # symworx-loadsym

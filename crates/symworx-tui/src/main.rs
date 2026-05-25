@@ -1,7 +1,6 @@
-// symworx/crates/symworx-tui/src/convert.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
-//! symworx-tui — Terminal interface for selecting and visualizing biosym / physiological signals.
+//! symworx-tui — Terminal interface for selecting and visualizing SymWorx data! 
 //!
 //! This is the initial v0.1 focused on **file selection** for biosym signals.
 //! Next steps: integrate real signal loading from your Symworx crates + interactive Chart.

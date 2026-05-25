@@ -1,4 +1,3 @@
-// symworx/crates/symworx-io/src/server.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 /// Represents the server component of the backend.

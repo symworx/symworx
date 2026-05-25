@@ -1,11 +1,6 @@
-// symworx/crates/symworx-signal/src/processing/interpolation.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
-// ==========================================================
-// INTERPOLATION METHODS
-// ==========================================================
-// Linear interpolation
-// ----------------------------------------------------------
+
 /// Linear interpolation of y(x) at new points x_new.
 /// Assumes x is strictly increasing.
 pub fn interp_linear(x: &[f64], y: &[f64], x_new: &[f64]) -> Vec<f64> {
@@ -45,22 +40,14 @@ pub fn interp1(x: &[f64], y: &[f64], x_new: &[f64]) -> Vec<f64> {
      interp_linear(x, y, x_new)
 }
 
-// ----------------------------------------------------------
-// Cubic interpolation
-// ----------------------------------------------------------
 /// Placeholder for cubic interpolation.
-///
 /// Currently unimplemented — returns a clone of `y` and logs a warning.
 pub fn interp_cubic(_x: &[f64], y: &[f64], _x_new: &[f64]) -> Vec<f64> {
     eprintln!("Warning: cubic interpolation is not implemented yet");
     y.to_vec()
 }
 
-// ----------------------------------------------------------
-// Spline interpolation (placeholder)
-// ----------------------------------------------------------
 /// Placeholder for spline interpolation.
-///
 /// Currently unimplemented — returns a clone of `y` and logs a warning.
 pub fn interp_spline(_x: &[f64], y: &[f64], _x_new: &[f64]) -> Vec<f64> {
     eprintln!("Warning: spline interpolation is not implemented yet");

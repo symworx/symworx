@@ -1,23 +1,36 @@
-// symworx/crates/symworx-signal/src/filters/nonlinear/kalman.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
-use ndarray::{array, Array1, Array2};
+//! Kalman Filter implementation for state estimation.
+//!
+//! Currently implements a simple 1D constant-velocity model.
+
+use ndarray::{array, Array1, Array2, Axis};
 use ndarray_linalg::Inverse;
 
-// ==========================================================
-// Kalman Filter
-// ==========================================================
+/// Simple 1D Kalman Filter (position + velocity state).
 #[derive(Debug, Clone)]
 pub struct KalmanFilter {
-    x: Array1<f64>,   // state (2,)
-    p: Array2<f64>,   // covariance (2,2)
-    f: Array2<f64>,   // state transition (2,2)
-    q: Array2<f64>,   // process noise (2,2)
-    h: Array2<f64>,   // measurement matrix (1,2)
-    r: Array2<f64>,   // measurement noise (1,1)
+    /// State vector: [position, velocity]
+    x: Array1<f64>,
+    /// State covariance matrix
+    p: Array2<f64>,
+    /// State transition matrix
+    f: Array2<f64>,
+    /// Process noise covariance
+    q: Array2<f64>,
+    /// Measurement matrix
+    h: Array2<f64>,
+    /// Measurement noise covariance
+    r: Array2<f64>,
 }
 
 impl KalmanFilter {
+    /// Creates a new Kalman Filter for constant velocity tracking.
+    ///
+    /// # Arguments
+    /// * `dt` — Time step (seconds)
+    /// * `process_var` — Process noise variance
+    /// * `meas_var` — Measurement noise variance
     pub fn new(dt: f64, process_var: f64, meas_var: f64) -> Self {
         let f = array![
             [1.0, dt],
@@ -29,80 +42,81 @@ impl KalmanFilter {
             [process_var * dt.powi(3) / 2.0, process_var * dt.powi(2)]
         ];
 
-        let h = array![[1.0, 0.0]]; // (1×2)
-
-        let r = array![[meas_var]]; // (1×1)
+        let h = array![[1.0, 0.0]];
+        let r = array![[meas_var]];
 
         let x = array![0.0, 0.0];
-        let p = Array2::eye(2) * 1e3;
+        let p = Array2::eye(2) * 1000.0; // High initial uncertainty
 
         Self { x, p, f, q, h, r }
     }
 
+    /// Prediction step (time update).
     pub fn predict(&mut self) {
-        // x = F x
         self.x = self.f.dot(&self.x);
-
-        // P = F P F^T + Q
         self.p = self.f.dot(&self.p).dot(&self.f.t()) + &self.q;
     }
 
+    /// Update step (measurement update).
     pub fn update(&mut self, z: f64) {
-        let z_vec = array![[z]]; // (1×1)
+        let z_vec = array![[z]];
 
-        // y = z - H x
-        let hx = self.h.dot(&self.x); // (1,)
-        let y = &z_vec - &hx.insert_axis(ndarray::Axis(0));
+        // Innovation (measurement residual)
+        let hx = self.h.dot(&self.x);
+        let y = z_vec - &hx.insert_axis(Axis(0));
 
-        // S = H P H^T + R
+        // Innovation covariance
         let s = self.h.dot(&self.p).dot(&self.h.t()) + &self.r;
 
-        // K = P H^T S^{-1}
-        let k = self.p.dot(&self.h.t()).dot(&s.inv().unwrap()); // (2×1)
+        // Kalman gain
+        let k: Array2<f64> = self.p
+            .dot(&self.h.t())
+            .dot(&s.inv().expect("Matrix inversion failed"));
 
-        // x = x + K y
-        let y_scalar = y[[0, 0]];
-        self.x = &self.x + &(&k.column(0) * y_scalar);
+        // State update: x = x + K * y
+        let correction = k.dot(&y);
+        self.x += &correction.column(0);   // Extract as 1D vector
 
-        // P = (I - K H) P
+        // Covariance update: P = (I - K H) P
         let i = Array2::eye(2);
         self.p = (i - k.dot(&self.h)).dot(&self.p);
     }
 
+    /// Returns current estimated (position, velocity).
     pub fn state(&self) -> (f64, f64) {
         (self.x[0], self.x[1])
     }
 }
 
+// ——— Tests ———
 
-// ==========================================================
-// TESTS
-// ==========================================================
 #[cfg(test)]
-mod test_kalman {
+mod tests {
     use super::*;
 
     #[test]
-    fn test_kalman_filter() {
-        let dt = 1.0;
-        let process_var = 1e-5;
-        let meas_var = 0.1;
-        let mut kf = KalmanFilter::new(dt, process_var, meas_var);
+    fn test_kalman_initialization() {
+        let kf = KalmanFilter::new(0.1, 1e-4, 0.1);
+        let (pos, vel) = kf.state();
+        assert_eq!(pos, 0.0);
+        assert_eq!(vel, 0.0);
+    }
 
-        // Simulate measurements of a constant velocity (position = velocity * time)
-        let true_velocity = 1.0; // m/s
-        let mut measurements = Vec::new();
-        for t in 0..10 {
-            let true_position = true_velocity * (t as f64);
-            let noisy_measurement = true_position + (rand::random::<f64>() - 0.5) * 0.2; // Add noise
-            measurements.push(noisy_measurement);
-        }
+    #[test]
+    fn test_kalman_predict_update() {
+        let mut kf = KalmanFilter::new(1.0, 1e-5, 0.1);
 
-        for z in measurements {
+        // Simulate constant velocity of 1.0
+        for t in 0..5 {
+            let true_pos = t as f64 * 1.0;
+            let noisy_z = true_pos + (t as f64 * 0.05); // small noise
+
             kf.predict();
-            kf.update(z);
+            kf.update(noisy_z);
+
             let (pos, vel) = kf.state();
-            println!("Measurement: {:.3}, Estimated Position: {:.3}, Estimated Velocity: {:.3}", z, pos, vel);
+            assert!(pos.is_finite());
+            assert!(vel.is_finite());
         }
     }
 }

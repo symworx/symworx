@@ -1,4 +1,3 @@
-// symworx/crates/symworx-math/src/oscillators/vdp.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use ndarray::Array1;

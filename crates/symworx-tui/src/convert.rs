@@ -1,4 +1,3 @@
-// symworx/crates/symworx-tui/src/convert.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 //! File conversion component for symview.

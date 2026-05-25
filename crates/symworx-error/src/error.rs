@@ -1,4 +1,3 @@
-// symworx/crates/symworx-error/src/error.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 use std::fmt;

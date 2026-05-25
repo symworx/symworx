@@ -1,4 +1,3 @@
-// symworx/crates/symworx-loadsym/src/load/mechanical.rs
 // Copyright (C) 2026 cSYMd, All rights reserved.
 
 /// Calculate mechanical load from force and velocity data
