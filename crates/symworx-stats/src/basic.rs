@@ -1,4 +1,5 @@
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
+// Licensed under the Mozilla Public License, Version 2.0.
 
 use std::cmp::Ordering;
 
@@ -98,9 +99,7 @@ pub fn percentile(data: &[f64], p: Vec<f64>) -> Vec<f64> {
 }
 
 
-// ==========================================================
 // TESTS
-// ==========================================================
 #[cfg(test)]
 mod test_mean {
     use super::*;

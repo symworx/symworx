@@ -1,8 +1,7 @@
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
+// Licensed under the Mozilla Public License, Version 2.0.
 
-// ==========================================================
 // Gamma Function
-// ==========================================================
 
 /// Computes the Gamma function Γ(x) for x > 0.
 ///
@@ -52,9 +51,7 @@ pub fn ln_gamma(x: f64) -> f64 {
     gamma(x).ln() 
 }
 
-// ==========================================================
 // Beta function 
-// ==========================================================
 
 /// Beta function B(a, b) = Γ(a)Γ(b) / Γ(a+b)
 ///
@@ -77,9 +74,7 @@ pub fn ln_beta(a: f64, b: f64) -> f64 {
 }
 
 
-// ==========================================================
 // TESTS
-// ==========================================================
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,4 +1,5 @@
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
+// Licensed under the Mozilla Public License, Version 2.0.
 
 /// Calculates the autocorrelation of a given signal. 
 ///
@@ -34,8 +35,7 @@ pub fn acf(signal: &[f64], unbiased: bool) -> Vec<f64> {
 }
 
 
-// --- TESTS ---
-
+// TESTS
 #[cfg(test)]
 mod test_acf {
     use super::*;

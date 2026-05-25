@@ -1,5 +1,4 @@
-// bindings/python/src/core/statistics.rs
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
 
 use ndarray::{Array1, Array2};
 use numpy::{PyArray2, IntoPyArray};

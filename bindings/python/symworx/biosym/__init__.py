@@ -1,4 +1,4 @@
 # symworx/biosym/__init__.py
-# Copyright (C) 2026 cSYMd, All rights reserved.
+# Copyright (c) 2026 SymWorx. All rights reserved.
 
 from . import biomechanics, cpg, physiology

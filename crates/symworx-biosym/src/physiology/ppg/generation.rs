@@ -1,13 +1,12 @@
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
+// Licensed under the Mozilla Public License, Version 2.0.
 
 use rand::rng;
 use symworx_math::random::sample;
 
 use super::PPGNoiseConfig;
 
-// ==========================================================
 // PPG Generation
-// ==========================================================
 
 /// Represents a PPG time-series signal.
 #[derive(Debug, Clone)]
@@ -138,9 +137,7 @@ pub fn generate_ppg_timeseries(
     }
 }
 
-// ==========================================================
 // TESTS
-// ==========================================================
 
 #[cfg(test)]
 mod tests {

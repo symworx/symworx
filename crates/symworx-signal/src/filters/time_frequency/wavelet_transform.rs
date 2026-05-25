@@ -1,4 +1,5 @@
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
+// Licensed under the Mozilla Public License, Version 2.0.
 
 //! Wavelet Transform (Continuous Wavelet Transform - CWT)
 //!
@@ -97,7 +98,7 @@ pub fn cwt_mexhat(signal: &[f64], fs: f64, min_scale: f64, max_scale: f64, num_s
 }
 
 
-// --- TESTS ---
+// TESTS
 
 #[cfg(test)]
 mod tests {

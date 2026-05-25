@@ -1,4 +1,5 @@
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
+// Licensed under the Mozilla Public License, Version 2.0.
 
 /// Min-Max normalization scales the data to a fixed range, typically [0, 1]
 ///
@@ -27,9 +28,7 @@ pub fn zscore(data: &[f64]) -> Vec<f64> {
 }
 
 
-// ==========================================================
 // TESTS
-// ==========================================================
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,4 +1,5 @@
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
+// Licensed under the Mozilla Public License, Version 2.0.
 
 /// Optimize load parameters based on input data
 pub fn optimize_load(parameters: &[f64], data: &[f64]) -> Vec<f64> {

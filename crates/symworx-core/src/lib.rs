@@ -1,4 +1,5 @@
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
+// Licensed under the Mozilla Public License, Version 2.0.
 
 //! # symworx-core
 //!
@@ -37,9 +38,7 @@
 #![warn(missing_docs)]
 #![doc(html_root_url = "https://docs.rs/symworx-core")]
 
-// ==========================================================
 // Re-exports
-// ==========================================================
 pub use symworx_error as error;
 pub use symworx_error::SymError;
 
@@ -57,8 +56,6 @@ pub use symworx_signal::filters;
 pub use symworx_io::traits::*;
 pub use symworx_stats::basic::*;
 
-// ==========================================================
 // Version info
-// ==========================================================
 /// Current version of the `symworx-core` crate.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

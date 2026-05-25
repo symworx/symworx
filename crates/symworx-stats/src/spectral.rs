@@ -1,4 +1,5 @@
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
+// Licensed under the Mozilla Public License, Version 2.0.
 
 //! Spectral analysis utilities
 //!
@@ -42,7 +43,7 @@ pub fn welch_psd(signal: &[f64], fs: f64) -> (Vec<f64>, Vec<f64>) {
 }
 
 
-// --- TESTS ---
+// TESTS
 
 #[cfg(test)]
 mod tests {

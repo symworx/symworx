@@ -1,4 +1,5 @@
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
+// Licensed under the Mozilla Public License, Version 2.0.
 
 //! # symworx-dynamics
 //!
@@ -19,21 +20,15 @@
 #![warn(missing_docs)]
 #![doc(html_root_url = "https://docs.rs/symworx-dynamics")]
 
-// ==========================================================
 // Modules
-// ==========================================================
 pub mod embedding;
 pub mod entropy;
 pub mod rqa;
 
-// ==========================================================
 // Re-exports
-// ==========================================================
 pub use embedding::{edim, fnn};
 pub use entropy::{sample_entropy};
 
-// ==========================================================
 // Version info
-// ==========================================================
 /// Current version of the `symworx-dynamics` crate.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

@@ -1,5 +1,4 @@
-// loadsym/src/nutrition.py.rs
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
 
 use pyo3::prelude::*;
 

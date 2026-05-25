@@ -1,5 +1,5 @@
 # loadsym/python/src/symworx/loadsy/nurition/__init__.py
-# Copyright (C) 2026 cSYMd, All rights reserved.
+# Copyright (c) 2026 SymWorx. All rights reserved.
 
 from ..loadsym import nutrition as _rust_nutrition
 

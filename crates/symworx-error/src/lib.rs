@@ -1,4 +1,5 @@
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
+// Licensed under the Mozilla Public License, Version 2.0.
 
 //! # symworx-error
 //!
@@ -13,14 +14,10 @@
 #![warn(missing_docs)]
 #![doc(html_root_url = "https://docs.rs/symworx-error")]
 
-// ==========================================================
 // Modules 
-// ==========================================================
 pub mod error;
 pub use error::*;
 
-// ==========================================================
 // Version info
-// ==========================================================
 /// Current version of the `symworx-error` crate.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

@@ -1,4 +1,5 @@
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
+// Licensed under the Mozilla Public License, Version 2.0.
 
 use rand::Rng;
 use rand_distr::{Distribution, Normal, Beta, Gamma};
@@ -27,9 +28,7 @@ pub mod sample {
 // pub mod sample {
 //     use super::*;
 
-//     // ==========================================================
 //     // Normal Distribution
-//     // ==========================================================
 //     /// Generate a sample from Normal(μ, σ) using Box-Muller transform.
 //     #[inline]
 //     pub fn normal(rng: &mut impl Rng, mean: f64, std_dev: f64) -> f64 {
@@ -46,9 +45,7 @@ pub mod sample {
 //         mean + std_dev * r * theta.cos()
 //     }
 
-//     // ==========================================================
 //     // Beta Distribution (to be implemented)
-//     // ==========================================================
 //     /// Generate a sample from Beta(α, β)
 //     pub fn beta(_rng: &mut impl Rng, alpha: f64, beta: f64) -> f64 {
 //         if alpha <= 0.0 || beta <= 0.0 {
@@ -58,9 +55,7 @@ pub mod sample {
 //         todo!("Beta sampling - coming soon")
 //     }
 
-//     // ==========================================================
 //     // Gamma Distribution (to be implemented)
-//     // ==========================================================
 //     /// Generate a sample from Gamma(shape, rate)
 //     pub fn gamma(_rng: &mut impl Rng, shape: f64, rate: f64) -> f64 {
 //         if shape <= 0.0 || rate <= 0.0 {

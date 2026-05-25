@@ -1,10 +1,9 @@
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
+// Licensed under the Mozilla Public License, Version 2.0.
 
 use crate::special;
 
-// ==========================================================
 // Beta kernel functions
-// ==========================================================
 
 /// Unnormalized Beta kernel: `x^(a-1) * (1-x)^(b-1)`
 ///
@@ -29,9 +28,7 @@ pub fn beta_pdf(x: f64, a: f64, b: f64) -> f64 {
     kernel / norm
 }
 
-// ==========================================================
 // Gamma kernel functions
-// ==========================================================
 
 /// Unnormalized Gamma kernel for shape-rate parameterization.
 ///
@@ -55,9 +52,7 @@ pub fn gamma_pdf(x: f64, shape: f64, rate: f64) -> f64 {
     kernel * norm
 }
 
-// ==========================================================
 // TESTS
-// ==========================================================
 
 #[cfg(test)]
 mod tests {

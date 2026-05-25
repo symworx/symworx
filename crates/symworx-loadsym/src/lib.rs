@@ -1,4 +1,5 @@
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
+// Licensed under the Mozilla Public License, Version 2.0.
 
 //! # symworx-loadsym
 //!
@@ -16,20 +17,14 @@
 #![warn(missing_docs)]
 #![doc(html_root_url = "https://docs.rs/symworx-loadsym")]
 
-// ==========================================================
 // Modules
-// ==========================================================
 pub mod load;
 pub mod nutrition;
 
-// ==========================================================
 // Re-exports
-// ==========================================================
 pub use load::*;
 pub use nutrition::*;
 
-// ==========================================================
 // Version info
-// ==========================================================
 /// Current version of the `symworx-loadsym` crate.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

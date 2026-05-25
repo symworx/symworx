@@ -1,4 +1,5 @@
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
+// Licensed under the Mozilla Public License, Version 2.0.
 
 //! Error and performance metrics
 //!
@@ -40,7 +41,7 @@ pub fn rmse(actual: &[f64], predicted: &[f64]) -> f64 {
 }
 
 
-// --- TESTS ---
+// TESTS
 #[cfg(test)]
 mod tests {
     use super::*;

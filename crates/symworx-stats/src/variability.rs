@@ -1,4 +1,5 @@
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
+// Licensed under the Mozilla Public License, Version 2.0.
 
 //! Time series variability and successive difference metrics
 //!
@@ -78,7 +79,7 @@ pub fn sd_successive_difference(data: &[f64]) -> f64 {
 }
 
 
-// --- TESTS ---
+// TESTS
 
 #[cfg(test)]
 mod tests {

@@ -1,4 +1,5 @@
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
+// Licensed under the Mozilla Public License, Version 2.0.
 
 //! # symworx-math
 //!
@@ -11,18 +12,14 @@
 #![warn(missing_docs)]
 #![doc(html_root_url = "https://docs.rs/symworx-math")]
 
-// ==========================================================
 // Modules
-// ==========================================================
 pub mod distributions;
 pub mod integration;
 pub mod oscillators;
 pub mod random;
 pub mod special;
 
-// ==========================================================
 // Re-exports
-// ==========================================================
 pub use distributions::{
     beta_kernel, beta_pdf, gamma_kernel, gamma_pdf,
 };
@@ -35,9 +32,7 @@ pub use special::{
 };
 pub use random::*;
 
-// ==========================================================
 // Namespaced re-exports (for convenience)
-// ==========================================================
 /// Probability distributions: kernels, PDFs, sampling.
 pub mod dist {
     pub use super::distributions::*;
@@ -53,9 +48,7 @@ pub mod integrate {
     pub use super::integration::*;
 }
 
-// ==========================================================
 // Version info
-// ==========================================================
 /// Current version of the `symworx-math` crate.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 

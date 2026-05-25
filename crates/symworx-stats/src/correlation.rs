@@ -1,4 +1,5 @@
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
+// Licensed under the Mozilla Public License, Version 2.0.
 
 use ndarray::{Array2, ArrayView1, Axis};
 
@@ -90,8 +91,7 @@ pub fn correlation_matrix_from_vec(data: &[Vec<f64>]) -> Array2<f64> {
 }
 
 
-// --- TESTS ---
-
+// TESTS
 #[cfg(test)]
 mod tests {
     use super::*;

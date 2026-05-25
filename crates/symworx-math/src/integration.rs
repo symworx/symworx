@@ -1,4 +1,5 @@
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
+// Licensed under the Mozilla Public License, Version 2.0.
 
 use ndarray::Array1;
 
@@ -37,9 +38,7 @@ pub fn trapz(y: &[f64], dx: f64) -> f64 {
     acc
 }
 
-// ============================================================
 // ODE Integration (RK4) - idiomatic, minimal deps
-// ============================================================
 
 /// Perform a single 4th-order Runge-Kutta (RK4) step.
 ///

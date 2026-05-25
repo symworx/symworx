@@ -1,10 +1,9 @@
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
+// Licensed under the Mozilla Public License, Version 2.0.
 
 use ndarray::prelude::*;
 
-// ===========================================================
 // Sample Entropy (SampEn)
-// ===========================================================
 /// Calculate Sample Entropy (SampEn) of a time series.
 ///
 /// # Arguments
@@ -67,9 +66,7 @@ pub fn sample_entropy(data: &[f64], m: usize, r: f64) -> f64 {
     -((count_m_plus_1 as f64) / (count_m as f64)).ln()
 }
 
-// ===========================================================
 // TESTS
-// ===========================================================
 #[cfg(test)]
 mod tests {
     use super::*;

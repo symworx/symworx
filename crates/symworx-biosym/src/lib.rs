@@ -1,4 +1,5 @@
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
+// Licensed under the Mozilla Public License, Version 2.0.
 
 //! # symworx-biosym
 //!
@@ -35,9 +36,7 @@
 #![warn(missing_docs)]
 #![doc(html_root_url = "https://docs.rs/symworx-biosym")]
 
-// ==========================================================
 // Modules
-// ==========================================================
 /// Biomechanics modeling and utilities (Gait analysis, spatiotemporal metrics, stride/step).
 pub mod biomechanics;
 
@@ -47,16 +46,12 @@ pub mod cpg;
 /// Physiology modeling and utilities.
 pub mod physiology;
 
-// ==========================================================
 // Re-exports
-// ==========================================================
 pub use biomechanics::*;
 pub use cpg::*;
 pub use physiology::*;
 
-// ==========================================================
 // Version info
-// ==========================================================
 /// Current version of the `symworx-biosym` crate.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 

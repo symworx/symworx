@@ -1,5 +1,5 @@
-// core/src/math/py.rs
-// Copyright (C) 2026 cSYMd
+// Copyright (c) 2026 SymWorx. All rights reserved.
+// Licensed under the Mozilla Public License, Version 2.0.
 
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;

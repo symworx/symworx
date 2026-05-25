@@ -1,4 +1,5 @@
-// Copyright (C) 2026 cSYMd, All rights reserved.
+// Copyright (c) 2026 SymWorx. All rights reserved.
+// Licensed under the Mozilla Public License, Version 2.0.
 
 //! Linear regression utilities.
 //!
@@ -102,8 +103,8 @@ fn soft_threshold(x: f64, lambda: f64) -> f64 {
     }
 }
 
-// --- TESTS ---
 
+// TESTS
 #[cfg(test)]
 mod tests {
     use super::*;
