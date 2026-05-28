@@ -17,5 +17,11 @@ pub mod process_manager;
 /// Web server/API background support
 pub mod server;
 
+#[cfg(feature = "supervision")]
+pub mod error;
+
+#[cfg(feature = "supervision")]
+pub mod shutdown;
+
 /// Crate version string.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

@@ -3,11 +3,11 @@
 **SymWorx** is a multi‑use computational framework designed for broad applicability across embedded systems, scientific computing, web applications, and educational environments.
 At its core, **SymWorx** provides a **Rust kernel** with **Python bindings**, ensuring consistency, safety, and performance across platforms.
 
-**SymWorx** is part of the **Computational Systems for Modeling & Dynamics** (cSYM-d) ecosystem.
+**SymWorx** is an open source platform that provides an isolated environment for modeling, analysis, and simulation. 
 
 ## Philosophy
 
-The cSYM‑d philosophy emphasizes:
+Our philosophy emphasizes:
 i) **security** by minimizing unafe code, reducing unintended execution paths, and lowering supply‑chain risk,
 ii) **robustness** through predictable behavior, strong typing, and explicit error handling, and 
 iii) **scalability** via consistent APIs across embedded, desktop, and cloud environments.

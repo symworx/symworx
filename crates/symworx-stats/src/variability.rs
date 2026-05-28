@@ -29,7 +29,7 @@ pub fn successive_differences(data: &[f64]) -> Vec<f64> {
 ///
 /// # Returns
 /// Mean successive difference. Returns `NaN` if `data` is empty.
-pub fn mean_successive_difference(data: &[f64]) -> f64 {
+pub fn mean_successive_differences(data: &[f64]) -> f64 {
     let diffs = successive_differences(data);
     if diffs.is_empty() {
         return f64::NAN;
@@ -65,7 +65,7 @@ pub fn rmssd(data: &[f64]) -> f64 {
 ///
 /// # Returns
 /// Standard deviation of successive differences. Returns `NaN` if `data.len() < 2`.
-pub fn sd_successive_difference(data: &[f64]) -> f64 {
+pub fn sd_successive_differences(data: &[f64]) -> f64 {
     if data.len() < 2 {
         return f64::NAN;
     }
@@ -94,7 +94,7 @@ mod tests {
     #[test]
     fn test_mean_successive_difference() {
         let data = [1.0, 2.0, 4.0];
-        assert_eq!(mean_successive_difference(&data), 1.5);
+        assert_eq!(mean_successive_differences(&data), 1.5);
     }
 
     #[test]
@@ -106,13 +106,13 @@ mod tests {
     #[test]
     fn test_sd_successive_difference() {
         let data = [1.0, 2.0, 4.0];
-        assert!((sd_successive_difference(&data) - 0.70710678118).abs() < 1e-8);
+        assert!((sd_successive_differences(&data) - 0.70710678118).abs() < 1e-8);
     }
 
     #[test]
     fn test_edge_cases() {
-        assert!(mean_successive_difference(&[]).is_nan());
+        assert!(mean_successive_differences(&[]).is_nan());
         assert!(rmssd(&[1.0, 2.0]).is_nan());
-        assert!(sd_successive_difference(&[5.0]).is_nan());
+        assert!(sd_successive_differences(&[5.0]).is_nan());
     }
 }

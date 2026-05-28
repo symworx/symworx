@@ -35,6 +35,9 @@ pub mod linreg;
 /// Principal component analysis.
 pub mod pca;
 
+/// Singular value decomposition.
+pub mod svd;
+
 /// Variability measurements (e.g., ibi, rmssd, sdnn)
 pub mod variability;
 
@@ -58,9 +61,9 @@ pub use error_metrics::{
 pub use linreg::{l1, l2};
 pub use variability::{
     successive_differences,
-    mean_successive_difference,
+    mean_successive_differences,
     rmssd,
-    sd_successive_difference,
+    sd_successive_differences,
 };
 
 // Version info

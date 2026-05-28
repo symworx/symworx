@@ -3,72 +3,83 @@
 
 //! Principal Component Analysis (PCA)
 //!
-//! Dimensionality reduction technique that transforms data into a new
-//! coordinate system where the greatest variance lies on the first components.
+//! Uses SVD internally for maximum numerical stability.
 
 use ndarray::{Array1, Array2, Axis, s};
-use ndarray_linalg::{Eigh, UPLO};
+use crate::svd::Svd;
 
 /// Fitted Principal Component Analysis model.
 #[derive(Debug, Clone)]
 pub struct Pca {
-    /// Principal components (eigenvectors), shape `(n_features, n_components)`
+    /// Principal components (right singular vectors)
     pub components: Array2<f64>,
     /// Explained variance for each component
     pub explained_variance: Array1<f64>,
-    /// Mean of the training data (used for centering)
+    /// Mean of the training data (used for centering new data)
     pub mean: Array1<f64>,
+    /// Number of components.
+    pub n_components: usize,
 }
 
 impl Pca {
-    /// Fit a PCA model to the data.
-    ///
-    /// # Arguments
-    /// * `data` - 2D array of shape `(n_samples, n_features)`
-    /// * `n_components` - Number of principal components to keep
-    ///
-    /// # Panics
-    /// Panics if eigen-decomposition fails.
+    /// Fit PCA model using SVD (numerically stable method).
     pub fn fit(data: &Array2<f64>, n_components: usize) -> Self {
         let n_samples = data.nrows();
 
-        // Compute mean per feature and center the data
+        // Center the data
         let mean = data.mean_axis(Axis(0)).expect("Data must not be empty");
         let centered = data - &mean;
 
-        // Compute covariance matrix
-        let cov = centered.t().dot(&centered) / ((n_samples - 1) as f64);
+        // Compute SVD
+        let svd = Svd::compute(&centered);
 
-        // Eigen decomposition
-        let (eigenvalues, eigenvectors) = cov
-            .eigh(UPLO::Upper)
-            .expect("Eigen decomposition failed");
-
-        // Sort by descending eigenvalues
-        let mut idx: Vec<usize> = (0..eigenvalues.len()).collect();
-        idx.sort_by(|&a, &b| eigenvalues[b].partial_cmp(&eigenvalues[a]).unwrap());
-
-        // Select top n_components
-        let components = eigenvectors.select(Axis(1), &idx[..n_components]);
-        let explained_variance = eigenvalues.select(Axis(0), &idx[..n_components]);
+        // Select top components
+        let components = svd.vt.slice(s![0..n_components, ..]).t().to_owned();
+        let explained_variance = svd.explained_variance_ratio()
+            .slice(s![0..n_components])
+            .to_owned();
 
         Self {
             components,
             explained_variance,
             mean,
+            n_components,
         }
     }
 
-    /// Transform data using the fitted PCA model.
-    ///
-    /// # Arguments
-    /// * `data` - 2D array of shape `(n_samples, n_features)`
-    ///
-    /// # Returns
-    /// Transformed data of shape `(n_samples, n_components)`
+    /// Transform new data into the principal component space.
     pub fn transform(&self, data: &Array2<f64>) -> Array2<f64> {
         let centered = data - &self.mean;
         centered.dot(&self.components)
+    }
+
+    /// Returns the explained variance ratio for each component
+    pub fn explained_variance_ratio(&self) -> Array1<f64> {
+        self.explained_variance.clone()
+    }
+
+    /// Returns the cumulative explained variance ratio.
+    pub fn cumulative_explained_variance_ratio(&self) -> Array1<f64> {
+        let mut cum = Array1::zeros(self.n_components());
+        let mut sum = 0.0;
+        for (i, &val) in self.explained_variance.iter().enumerate() {
+            sum += val;
+            cum[i] = sum;
+        }
+        cum
+    }
+
+    /// Number of components in this model.
+    pub fn n_components(&self) -> usize {
+        self.n_components
+    }
+
+    /// Transform data with whitening.
+    pub fn transform_whitened(&self, data: &Array2<f64>) -> Array2<f64> {
+        let transformed = self.transform(data);
+        let std_dev = self.explained_variance.mapv(f64::sqrt);
+
+        transformed / &std_dev.insert_axis(Axis(0))
     }
 }
 
@@ -99,5 +110,30 @@ mod tests {
 
         assert_eq!(transformed.shape(), &[10, 1]);
         assert!(pca.explained_variance[0] > 0.0);
+    }
+
+    #[test]
+    fn test_explained_variance_methods() {
+        let data = array![[1.0, 2.0], [2.0, 4.0], [3.0, 6.0], [4.0, 8.0]];
+        let pca = Pca::fit(&data, 2);
+
+        let ratios = pca.explained_variance_ratio();
+        let cum_ratios = pca.cumulative_explained_variance_ratio();
+
+        assert_eq!(ratios.len(), 2);
+        assert_eq!(cum_ratios.len(), 2);
+        assert!((cum_ratios[1] - 1.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_whitening() {
+        let data = array![[1.0, 3.0], [2.0, 5.0], [3.0, 7.0]];
+        let pca = Pca::fit(&data, 1);
+
+        let whitened = pca.transform_whitened(&data);
+        
+        // After whitening, variance should be close to 1
+        let var = whitened.var_axis(Axis(0), 0.0);
+        assert!((var[0] - 1.0).abs() < 0.1);
     }
 }

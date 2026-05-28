@@ -4,7 +4,19 @@ version          = { workspace = true }
 edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
-description      = "Backend utilities -- part of the symworx-core crate"
+description      = "Backend utilities for SymWorx (process supervision and shared infrastructure)"
 
 [dependencies]
 tokio = { workspace = true }
+
+[features]
+supervision = ["dep:thiserror", "dep:tokio-util"]
+
+[dependencies.thiserror]
+version = "1"
+optional = true
+
+[dependencies.tokio-util]
+version = "0.7"
+optional = true
+features = ["rt"]

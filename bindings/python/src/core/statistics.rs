@@ -27,10 +27,10 @@ use symworx_core::stats::{
     l1,
     l2,
     // variability
-    intervals,
-    ibi,
+    successive_differences,
+    mean_successive_differences,
     rmssd,
-    sdnn,
+    sd_successive_differences
 };
 
 // ==========================================================
@@ -134,12 +134,29 @@ pub fn py_rmse(actual: Vec<f64>, predicted: Vec<f64>) -> f64 {
 // ==========================================================
 
 #[pyfunction(name = "l1")]
-pub fn py_l1(x: Vec<Vec<f64>>, y: Vec<f64>) -> PyResult<Vec<f64>> {
+pub fn py_l1(
+    x: Vec<Vec<f64>>,
+    y: Vec<f64>,
+    alpha: Option<f64>,
+    max_iter: Option<usize>,
+    tol: Option<f64>,
+) -> PyResult<Vec<f64>> {
+    // Convert Python lists to ndarray
     let x_arr = Array2::from_shape_vec(
         (x.len(), x[0].len()),
-        x.into_iter().flatten().collect()).unwrap();
+        x.into_iter().flatten().collect(),
+    )
+    .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("Invalid X shape: {}", e)))?;
+
     let y_arr = Array1::from_vec(y);
-    let beta: Array1<f64> = l1(&x_arr, &y_arr);
+
+    // Use defaults if not provided
+    let alpha = alpha.unwrap_or(0.1);
+    let max_iter = max_iter.unwrap_or(200);
+    let tol = tol.unwrap_or(1e-6);
+
+    // Call the Rust Lasso implementation
+    let beta = l1(&x_arr, &y_arr, alpha, max_iter, tol);
 
     Ok(beta.to_vec())
 }
@@ -148,10 +165,13 @@ pub fn py_l1(x: Vec<Vec<f64>>, y: Vec<f64>) -> PyResult<Vec<f64>> {
 pub fn py_l2(x: Vec<Vec<f64>>, y: Vec<f64>) -> PyResult<Vec<f64>> {
     let x_arr = Array2::from_shape_vec(
         (x.len(), x[0].len()),
-        x.into_iter().flatten().collect()).unwrap();
-    let y_arr = Array1::from_vec(y);
-    let beta: Array1<f64> = l2(&x_arr, &y_arr);
+        x.into_iter().flatten().collect(),
+    )
+    .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("Invalid X shape: {}", e)))?;
 
+    let y_arr = Array1::from_vec(y);
+
+    let beta = l2(&x_arr, &y_arr);
     Ok(beta.to_vec())
 }
 
@@ -159,14 +179,14 @@ pub fn py_l2(x: Vec<Vec<f64>>, y: Vec<f64>) -> PyResult<Vec<f64>> {
 // Variabilty
 // ==========================================================
 
-#[pyfunction(name = "intervals")]
-pub fn py_intervals(data: Vec<f64>) -> Vec<f64> {
-    intervals(&data)
+#[pyfunction(name = "successive_differences")]
+pub fn py_successive_differences(data: Vec<f64>) -> Vec<f64> {
+    successive_differences(&data)
 }
 
-#[pyfunction(name = "ibi")]
-pub fn py_ibi(data: Vec<f64>) -> f64 {
-    ibi(&data)
+#[pyfunction(name = "mean_successive_differences")]
+pub fn py_mean_successive_differences(data: Vec<f64>) -> f64 {
+    mean_successive_differences(&data)
 }
 
 #[pyfunction(name = "rmssd")]
@@ -174,9 +194,9 @@ pub fn py_rmssd(data: Vec<f64>) -> f64 {
     rmssd(&data)
 }
 
-#[pyfunction(name = "sdnn")]
-pub fn py_sdnn(data: Vec<f64>) -> f64 {
-    sdnn(&data)
+#[pyfunction(name = "sd_successive_differences")]
+pub fn py_sd_successive_differences(data: Vec<f64>) -> f64 {
+    sd_successive_differences(&data)
 }
 
 // ==========================================================
@@ -212,10 +232,10 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_l2, m)?)?;
 
     // --- Variability --------------------------------------
-    m.add_function(wrap_pyfunction!(py_intervals, m)?)?;
-    m.add_function(wrap_pyfunction!(py_ibi, m)?)?;
+    m.add_function(wrap_pyfunction!(py_successive_differences, m)?)?;
+    m.add_function(wrap_pyfunction!(py_mean_successive_differences, m)?)?;
     m.add_function(wrap_pyfunction!(py_rmssd, m)?)?;
-    m.add_function(wrap_pyfunction!(py_sdnn, m)?)?;
+    m.add_function(wrap_pyfunction!(py_sd_successive_differences, m)?)?;
 
     Ok(())
 }
