@@ -117,3 +117,4 @@ dist/
 # Added by cargo
 
 /target
+/data

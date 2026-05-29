@@ -8,18 +8,31 @@ use anyhow::Result;
 use polars::prelude::*;
 use std::path::Path;
 
-use symworx_io::{read_ibi, CsvWriter};
+use symworx_io::read_ibi;
+use symworx_io::traits::SymWriter;
+use symworx_io::CsvWriter;
 
 pub fn parquet_to_csv(input: &Path, output: &Path) -> Result<()> {
-    let df = LazyFrame::scan_parquet(input, Default::default()).collect()?;
+    let lf = LazyFrame::scan_parquet(input, Default::default())?;
+    let df = lf.collect()?;
     let mut rows: Vec<Vec<f64>> = Vec::new();
+
     for i in 0..df.height() {
-        let row: Vec<f64> = df.get_row(i).0
+        let row = df.get_row(i)?;
+        let row_vec: Vec<f64> = row.0
             .into_iter()
-            .filter_map(|v| v.try_extract::<f64>().ok())
+            .filter_map(|v: polars::datatypes::AnyValue| {
+                v.try_extract::<f64>()
+                    .ok()
+                    .or_else(|| v.try_extract::<i64>().ok().map(|x| x as f64))
+            })
             .collect();
-        if !row.is_empty() { rows.push(row); }
+
+        if !row_vec.is_empty() {
+            rows.push(row_vec);
+        }
     }
+
     CsvWriter::write(output.to_str().unwrap(), &rows)?;
     Ok(())
 }

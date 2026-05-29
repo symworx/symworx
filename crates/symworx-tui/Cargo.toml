@@ -15,3 +15,7 @@ anyhow = "1.0"
 
 polars = { version = "0.46", features = ["parquet", "csv", "lazy"] }
 symworx-io = { path = "../symworx-io" }
+symworx-core = { path = "../symworx-core" }
+symworx-biosym = { path = "../symworx-biosym" }
+rand = { version = "0.9", features = ["std"] }
+csv = "1.3"

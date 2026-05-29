@@ -28,6 +28,7 @@ pub mod rqa;
 // Re-exports
 pub use embedding::{edim, fnn};
 pub use entropy::{sample_entropy};
+pub use rqa::{rqa, rqa_from_trajectory, RecurrencePlot, RqaResult, DEFAULT_LMIN, DEFAULT_VMIN};
 
 // Version info
 /// Current version of the `symworx-dynamics` crate.

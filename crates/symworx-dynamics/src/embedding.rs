@@ -3,10 +3,7 @@
 
 use symworx_stats::distance::euclidean;
 
-// Embedding
-// ----------------------------------------------------------
-// Time-delay embedding (edim)
-// ----------------------------------------------------------
+/// Calculate embedding dimension.
 pub fn edim(series: &[f64], m: usize, tau: usize) -> Vec<Vec<f64>> {
     let n = series.len();
     if m == 0 || tau == 0 || n < (m - 1) * tau + 1 {
@@ -27,9 +24,7 @@ pub fn edim(series: &[f64], m: usize, tau: usize) -> Vec<Vec<f64>> {
     out
 }
 
-// ----------------------------------------------------------
-// False Nearest Neighbors
-// ----------------------------------------------------------
+/// False Nearest Neighbor's.
 pub struct FnnResult {
     pub m: usize,
     pub fnn_ratio: f64,
