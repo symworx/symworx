@@ -3,9 +3,10 @@
 
 //! Signal processing utilities.
 //!
-//! Core tools for interpolation, normalization, resampling,
-//! peak detection, and feature extraction.
+//! Core tools for interpolation, normalization, resampling, decimation
+//! (for visualization), peak detection, and feature extraction.
 
+pub mod decimate;
 pub mod interpolation;
 pub mod normalization;
 pub mod peaks;
@@ -33,6 +34,9 @@ pub use peaks::{
     PeakFinder,
     PeakFinderBuilder,
 };
+
+// Decimation (for visualization)
+pub use decimate::min_max_decimate;
 
 // Resampling
 pub use resample::{

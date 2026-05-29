@@ -17,5 +17,6 @@ polars = { version = "0.46", features = ["parquet", "csv", "lazy"] }
 symworx-io = { path = "../symworx-io" }
 symworx-core = { path = "../symworx-core" }
 symworx-biosym = { path = "../symworx-biosym" }
+symworx-signal = { path = "../symworx-signal" }
 rand = { version = "0.9", features = ["std"] }
 csv = "1.3"

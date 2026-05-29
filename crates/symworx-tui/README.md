@@ -109,9 +109,9 @@ You can then load them directly in `symview`. This is the best way to quickly ge
 ## Tips
 
 - Put generated files in a `data/` directory — they will be discovered automatically.
-- Multi-column CSVs are supported (you will be prompted to choose which column to analyze).
+- Multi-column CSVs are supported with header awareness: the column picker will show actual names (e.g. "time", "ppg") when a header row is present.
 - **To exit the TUI**: Press `q` at any time. `Esc` will cancel sub-modes (e.g. column selection) or quit if nothing is active.
-- **Tab switching**: `Ctrl+1` / `Ctrl+2` / `Ctrl+3` or `Ctrl+Left` / `Ctrl+Right`
+- **Tab switching**: `Ctrl+1` / `Ctrl+2` / `Ctrl+3` or `Ctrl+Left` / `Ctrl+Right` (bare numbers no longer switch tabs to avoid conflicts while typing)
 - In the **Import** tab:
   - `Ctrl+G` → open the generate demo data menu (PPG / Respiration / Stride intervals)
   - `/` → enter filter mode

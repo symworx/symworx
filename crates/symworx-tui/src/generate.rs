@@ -46,7 +46,7 @@ pub fn generate_and_save(preset: DemoPreset, data_dir: &Path) -> Result<std::pat
 fn generate_ppg_resting(data_dir: &Path) -> Result<std::path::PathBuf> {
     let params = PPGSimulationParams {
         fs: 250.0,
-        duration: 30.0,
+        duration: 60.0,  // ~60s for more interesting processing demos
         beat_params: (1.0, 0.18, 0.025, 0.32, 0.42, 0.055),
         noise_config: PPGNoiseConfig {
             amp_drift_std: 0.03,
@@ -59,8 +59,8 @@ fn generate_ppg_resting(data_dir: &Path) -> Result<std::path::PathBuf> {
         seed: Some(42),
     };
 
-    // Slightly variable RR intervals (~70 bpm + RSA)
-    let mut rr: Vec<f64> = (0..40).map(|i| 0.85 + 0.04 * (i as f64 * 0.3).sin()).collect();
+    // Slightly variable RR intervals (~70 bpm + RSA) — sized for ~60s
+    let mut rr: Vec<f64> = (0..80).map(|i| 0.85 + 0.04 * (i as f64 * 0.3).sin()).collect();
     for r in &mut rr {
         *r += 0.015 * rand::random::<f64>() - 0.0075;
     }
@@ -87,8 +87,8 @@ fn generate_respiration_light(data_dir: &Path) -> Result<std::path::PathBuf> {
         fs: 50.0,
         tidal_volume: 0.5,
         insp_exp_ratio: 1.0 / 2.0,
-        kappa_insp: 2.5,
-        tau_exp: 0.6,
+        kappa_insp: 3.2,
+        tau_exp: 1.6,        // longer time constant → smoother, more natural expiration
         amplitude: 1.0,
         noise_level: 0.05,
         seed: Some(123),
@@ -96,8 +96,10 @@ fn generate_respiration_light(data_dir: &Path) -> Result<std::path::PathBuf> {
 
     let ts = generate_respiration_timeseries(&params);
 
+    // We save volume (not flow) because it produces a much nicer, more
+    // recognizable breathing waveform for demo/visualization purposes.
     let path = data_dir.join("demo_respiration.csv");
-    save_two_column(&path, &ts.times, &ts.flow, "time,flow")?;
+    save_two_column(&path, &ts.times, &ts.volume, "time,volume")?;
     Ok(path)
 }
 
