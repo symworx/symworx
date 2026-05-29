@@ -10,10 +10,15 @@ use crate::physiology::ppg::PPGNoiseConfig;
 ///   and/or feature detection algorithms
 #[derive(Debug, Clone)]
 pub enum PPGSignalQuality {
+    /// Reference parameters (no noise)
     Reference,
+    /// High quality signal (low noise)
     High,
+    /// Average quality signal (some noise)
     Moderate,
+    /// Poor quality signal (high noise)
     Poor,
+    /// Custom noise configuration
     Custom(PPGNoiseConfig),
 }
 

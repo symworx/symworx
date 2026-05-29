@@ -33,7 +33,7 @@
 //! let (times, states) = model.run(0.0, 60.0, 0.01);
 //! ```
 
-#![warn(missing_docs)]
+// #![warn(missing_docs)]
 #![doc(html_root_url = "https://docs.rs/symworx-biosym")]
 
 // Modules

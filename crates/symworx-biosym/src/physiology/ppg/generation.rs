@@ -11,19 +11,28 @@ use super::PPGNoiseConfig;
 /// Represents a PPG time-series signal.
 #[derive(Debug, Clone)]
 pub struct PPGTimeSeries {
+    /// Times associated with PPG time series
     pub times: Vec<f64>,
+    /// PPG readings
     pub values: Vec<f64>,
+    /// Systolic peaks from PPG
     pub systolic_peaks: Vec<usize>,
+    /// Diastolic peaks from PPG
     pub diastolic_peaks: Vec<usize>,
 }
 
 /// High-level parameters for PPG simulation (for consistency with respiration)
 #[derive(Debug, Clone)]
 pub struct PPGSimulationParams {
+    /// Sampling frequency
     pub fs: f64,
+    /// Duration of simulation
     pub duration: f64,
+    /// Parameters used to simulate signal
     pub beat_params: (f64, f64, f64, f64, f64, f64), // (amp_s, mu_s, sigma_s, amp_d, mu_d, sigma_d)
+    /// Noise parameter/configuration for simulation
     pub noise_config: PPGNoiseConfig,
+    /// Seed the simulation for reproducibility
     pub seed: Option<u64>,
 }
 

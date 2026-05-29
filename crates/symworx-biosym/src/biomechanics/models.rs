@@ -7,14 +7,22 @@ use ndarray::Array1;
 /// Adapted from Python GaitSimulationParams with idiomatic Rust.
 #[derive(Debug, Clone)]
 pub struct GaitParams {
-    pub walking_speed: f64,      // m/s
-    pub step_length: f64,        // m
-    pub cadence: Option<f64>,    // steps/min
-    pub mass: f64,               // kg
-    pub height: f64,             // m
-    pub leg_length: Option<f64>, // m
-    pub stride_variability: f64, // CV
-    pub asymmetry: f64,          // 0..1
+    /// Walking speed (m/s)
+    pub walking_speed: f64,
+    /// Step length (meters)
+    pub step_length: f64,   
+    /// Cadence (steps/min)
+    pub cadence: Option<f64>,
+    /// Mass (kg)
+    pub mass: f64,            
+    /// Height (meters)
+    pub height: f64,           
+    /// Leg Length (meters)
+    pub leg_length: Option<f64>,
+    /// Stride variability (CV)
+    pub stride_variability: f64,
+    /// Asymmetry [0..1]
+    pub asymmetry: f64,
 }
 
 impl Default for GaitParams {
@@ -72,6 +80,7 @@ pub struct GaitData {
 }
 
 impl GaitData {
+    /// Initiate a new `Gaitdata` Record
     pub fn new(fs: f64) -> Self {
         Self {
             fs,
@@ -190,6 +199,8 @@ impl GaitData {
     }
 }
 
+
+// TESTS
 #[cfg(test)]
 mod tests {
     use super::*;

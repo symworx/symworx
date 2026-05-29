@@ -7,25 +7,40 @@ use rand::{Rng, SeedableRng};
 /// Represents a respiration time-series signal.
 #[derive(Debug, Clone)]
 pub struct RespTimeSeries {
+    /// Times associated with PPG time series
     pub times: Vec<f64>,
+    /// Respiration (amplitude)
     pub flow: Vec<f64>,
+    /// Respiratory volume
     pub volume: Vec<f64>,
+    /// Peak inhalation
     pub inhalation_peaks: Vec<usize>,
+    /// Peak exhalation
     pub exhalation_peaks: Vec<usize>,
 }
 
 /// Respiration simulation parameters (gamma-based inspiration + exponential expiration)
 #[derive(Debug, Clone)]
 pub struct RespSimulationParams {
+    /// Breaths per minutes
     pub brpm: f64,
+    /// Duration (min)
     pub dur_min: f64,
+    /// Sampling Frequency
     pub fs: f64,
+    /// Tital volume
     pub tidal_volume: f64,
+    /// Inspiration/exhalation ration
     pub insp_exp_ratio: f64,
+    /// Inspiration simulation parameter
     pub kappa_insp: f64,
+    /// Exhalation simulation parmeter
     pub tau_exp: f64,
+    /// Amplitude for simulation
     pub amplitude: f64,
+    /// Noise level for simulation
     pub noise_level: f64,
+    /// Seed the simulation for reproducibility
     pub seed: Option<u64>,
 }
 
@@ -151,15 +166,15 @@ fn gamma(x: f64) -> f64 {
     // Lanczos coefficients for g=7
     const G: f64 = 7.0;
     const P: [f64; 9] = [
-        0.99999999999980993,
-        676.5203681218851,
-        -1259.1392167224028,
-        771.32342877765313,
-        -176.61502916214059,
-        12.507343278686905,
-        -0.13857109526572012,
-        9.9843695780195716e-6,
-        1.5056327351493116e-7,
+        0.999_999_999_999_809_9,
+        676.520_368_121_885_1,
+        -1_259.139_216_722_402_8,
+        771.323_428_777_653_1,
+        -176.615_029_162_140_6,
+        12.507_343_278_686_905,
+        -0.138_571_095_265_720_12,
+        9.984_369_578_019_576e-6,
+        1.505_632_735_149_311_6e-7,
     ];
 
     if x < 0.5 {
