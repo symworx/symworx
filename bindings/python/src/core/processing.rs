@@ -4,7 +4,7 @@ use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 
 use symworx_core::signal::processing::{
-    interpolation::{interp_linear, interp1, interp_cubic, interp_spline},
+    interpolation::{interp_cubic, interp_linear, interp_spline, interp1},
     normalization::{normalize, zscore},
     resample::{Resample, ResampleMethod},
 };
@@ -62,19 +62,25 @@ pub struct PyResampleMethod {
 #[pymethods]
 impl PyResampleMethod {
     #[classattr]
-    pub const LINEAR: Self = Self { inner: ResampleMethod::Linear };
+    pub const LINEAR: Self = Self {
+        inner: ResampleMethod::Linear,
+    };
 
     #[classattr]
-    pub const CUBIC: Self = Self { inner: ResampleMethod::Cubic };
+    pub const CUBIC: Self = Self {
+        inner: ResampleMethod::Cubic,
+    };
 
     #[classattr]
-    pub const SPLINE: Self = Self { inner: ResampleMethod::Spline };
+    pub const SPLINE: Self = Self {
+        inner: ResampleMethod::Spline,
+    };
 }
 
 #[pyclass(name = "Resample")]
 pub struct PyResample {
     inner: Resample<'static>,
-    data: Vec<f64>, 
+    data: Vec<f64>,
 }
 
 #[pymethods]
@@ -82,8 +88,7 @@ impl PyResample {
     #[new]
     pub fn new(y: Vec<f64>) -> Self {
         let data = y;
-        let slice: &'static [f64] =
-            unsafe { std::mem::transmute::<&[f64], &'static [f64]>(&data) };
+        let slice: &'static [f64] = unsafe { std::mem::transmute::<&[f64], &'static [f64]>(&data) };
 
         Self {
             inner: Resample::new(slice),

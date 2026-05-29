@@ -13,10 +13,12 @@ pub fn mae(actual: &[f64], predicted: &[f64]) -> f64 {
         return f64::NAN;
     }
 
-    actual.iter()
+    actual
+        .iter()
         .zip(predicted.iter())
         .map(|(a, p)| (a - p).abs())
-        .sum::<f64>() / actual.len() as f64
+        .sum::<f64>()
+        / actual.len() as f64
 }
 
 /// Computes the **Mean Squared Error (MSE)** between two slices.
@@ -27,10 +29,12 @@ pub fn mse(actual: &[f64], predicted: &[f64]) -> f64 {
         return f64::NAN;
     }
 
-    actual.iter()
+    actual
+        .iter()
         .zip(predicted.iter())
         .map(|(a, p)| (a - p).powi(2))
-        .sum::<f64>() / actual.len() as f64
+        .sum::<f64>()
+        / actual.len() as f64
 }
 
 /// Computes the **Root Mean Squared Error (RMSE)** between two slices.
@@ -39,7 +43,6 @@ pub fn mse(actual: &[f64], predicted: &[f64]) -> f64 {
 pub fn rmse(actual: &[f64], predicted: &[f64]) -> f64 {
     mse(actual, predicted).sqrt()
 }
-
 
 // TESTS
 #[cfg(test)]

@@ -9,7 +9,7 @@
 
 use ndarray::Array1;
 use num_complex::Complex;
-use rustfft::{FftPlanner, num_complex::Complex as RustFftComplex}; 
+use rustfft::{FftPlanner, num_complex::Complex as RustFftComplex};
 
 /// Computes the Hilbert transform of a real-valued signal using FFT.
 ///
@@ -26,10 +26,7 @@ pub fn hilbert(signal: &[f64]) -> Array1<Complex<f64>> {
     let fft = planner.plan_fft_forward(n);
 
     // Convert to complex
-    let mut buffer: Vec<Complex<f64>> = signal
-        .iter()
-        .map(|&x| Complex::new(x, 0.0))
-        .collect();
+    let mut buffer: Vec<Complex<f64>> = signal.iter().map(|&x| Complex::new(x, 0.0)).collect();
 
     // Forward FFT
     fft.process(&mut buffer);
@@ -43,7 +40,7 @@ pub fn hilbert(signal: &[f64]) -> Array1<Complex<f64>> {
         hilbert_spec[i] = buffer[i] * Complex::new(2.0, 0.0);
     }
 
-    if n % 2 == 0 {
+    if n.is_multiple_of(2) {
         hilbert_spec[n / 2] = buffer[n / 2]; // Nyquist
     }
 
@@ -111,7 +108,7 @@ impl AnalyticSignal {
     }
 }
 
-// --- Tests --- 
+// --- Tests ---
 
 #[cfg(test)]
 mod tests {
@@ -128,7 +125,10 @@ mod tests {
     fn test_analytic_signal() {
         // Simple sine wave
         let t: Vec<f64> = (0..512).map(|i| i as f64 / 512.0 * 10.0).collect();
-        let signal: Vec<f64> = t.iter().map(|&x| (2.0 * std::f64::consts::PI * 5.0 * x).sin()).collect();
+        let signal: Vec<f64> = t
+            .iter()
+            .map(|&x| (2.0 * std::f64::consts::PI * 5.0 * x).sin())
+            .collect();
 
         let analytic = AnalyticSignal::from_signal(&signal);
         let with_freq = analytic.with_frequency(512.0);

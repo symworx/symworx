@@ -17,9 +17,7 @@ pub fn successive_differences(data: &[f64]) -> Vec<f64> {
     if data.len() < 2 {
         return Vec::new();
     }
-    data.windows(2)
-        .map(|w| (w[1] - w[0]).abs())
-        .collect()
+    data.windows(2).map(|w| (w[1] - w[0]).abs()).collect()
 }
 
 /// Computes the mean of successive absolute differences.
@@ -50,10 +48,7 @@ pub fn rmssd(data: &[f64]) -> f64 {
     if data.len() < 3 {
         return f64::NAN;
     }
-    let sum_sq: f64 = data
-        .windows(2)
-        .map(|w| (w[1] - w[0]).abs().powi(2))
-        .sum();
+    let sum_sq: f64 = data.windows(2).map(|w| (w[1] - w[0]).abs().powi(2)).sum();
 
     (sum_sq / (data.len() - 1) as f64).sqrt()
 }
@@ -72,12 +67,13 @@ pub fn sd_successive_differences(data: &[f64]) -> f64 {
     let diffs = successive_differences(data);
     let mean = diffs.iter().sum::<f64>() / diffs.len() as f64;
 
-    diffs.iter()
+    diffs
+        .iter()
         .map(|&d| (d - mean).powi(2))
         .sum::<f64>()
-        .sqrt() / (diffs.len() as f64).sqrt()
+        .sqrt()
+        / (diffs.len() as f64).sqrt()
 }
-
 
 // TESTS
 

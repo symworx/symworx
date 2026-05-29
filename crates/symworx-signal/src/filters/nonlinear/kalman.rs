@@ -5,7 +5,7 @@
 //!
 //! Currently implements a simple 1D constant-velocity model.
 
-use ndarray::{array, Array1, Array2, Axis};
+use ndarray::{Array1, Array2, Axis, array};
 use ndarray_linalg::Inverse;
 
 /// Simple 1D Kalman Filter (position + velocity state).
@@ -33,13 +33,13 @@ impl KalmanFilter {
     /// * `process_var` — Process noise variance
     /// * `meas_var` — Measurement noise variance
     pub fn new(dt: f64, process_var: f64, meas_var: f64) -> Self {
-        let f = array![
-            [1.0, dt],
-            [0.0, 1.0]
-        ];
+        let f = array![[1.0, dt], [0.0, 1.0]];
 
         let q = array![
-            [process_var * dt.powi(4) / 4.0, process_var * dt.powi(3) / 2.0],
+            [
+                process_var * dt.powi(4) / 4.0,
+                process_var * dt.powi(3) / 2.0
+            ],
             [process_var * dt.powi(3) / 2.0, process_var * dt.powi(2)]
         ];
 
@@ -70,13 +70,14 @@ impl KalmanFilter {
         let s = self.h.dot(&self.p).dot(&self.h.t()) + &self.r;
 
         // Kalman gain
-        let k: Array2<f64> = self.p
+        let k: Array2<f64> = self
+            .p
             .dot(&self.h.t())
             .dot(&s.inv().expect("Matrix inversion failed"));
 
         // State update: x = x + K * y
         let correction = k.dot(&y);
-        self.x += &correction.column(0);   // Extract as 1D vector
+        self.x += &correction.column(0); // Extract as 1D vector
 
         // Covariance update: P = (I - K H) P
         let i = Array2::eye(2);

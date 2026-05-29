@@ -5,8 +5,8 @@
 //!
 //! Uses SVD internally for maximum numerical stability.
 
-use ndarray::{Array1, Array2, Axis, s};
 use crate::svd::Svd;
+use ndarray::{Array1, Array2, Axis, s};
 
 /// Fitted Principal Component Analysis model.
 #[derive(Debug, Clone)]
@@ -24,7 +24,7 @@ pub struct Pca {
 impl Pca {
     /// Fit PCA model using SVD (numerically stable method).
     pub fn fit(data: &Array2<f64>, n_components: usize) -> Self {
-        let n_samples = data.nrows();
+        let _n_samples = data.nrows();
 
         // Center the data
         let mean = data.mean_axis(Axis(0)).expect("Data must not be empty");
@@ -35,7 +35,8 @@ impl Pca {
 
         // Select top components
         let components = svd.vt.slice(s![0..n_components, ..]).t().to_owned();
-        let explained_variance = svd.explained_variance_ratio()
+        let explained_variance = svd
+            .explained_variance_ratio()
             .slice(s![0..n_components])
             .to_owned();
 
@@ -82,7 +83,6 @@ impl Pca {
         transformed / &std_dev.insert_axis(Axis(0))
     }
 }
-
 
 // TESTS
 #[cfg(test)]
@@ -131,7 +131,7 @@ mod tests {
         let pca = Pca::fit(&data, 1);
 
         let whitened = pca.transform_whitened(&data);
-        
+
         // After whitening, variance should be close to 1
         let var = whitened.var_axis(Axis(0), 0.0);
         assert!((var[0] - 1.0).abs() < 0.1);

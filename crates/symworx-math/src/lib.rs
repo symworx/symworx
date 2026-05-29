@@ -13,24 +13,27 @@
 #![doc(html_root_url = "https://docs.rs/symworx-math")]
 
 // Modules
+/// Generate data specific to a defined distribution.
 pub mod distributions;
+
+/// Integration.
 pub mod integration;
+
+/// Oscillators and related functions.
 pub mod oscillators;
+
+/// Random numbers.
 pub mod random;
+
+/// Special functions (e.g., beta, gamma).  
 pub mod special;
 
 // Re-exports
-pub use distributions::{
-    beta_kernel, beta_pdf, gamma_kernel, gamma_pdf,
-};
-pub use integration::{
-    cumtrapz, trapz, rk4_step, rk4_integrate,
-};
+pub use distributions::{beta_kernel, beta_pdf, gamma_kernel, gamma_pdf};
+pub use integration::{cumtrapz, rk4_integrate, rk4_step, trapz};
 pub use oscillators::VanDerPol;
-pub use special::{
-    beta, gamma, ln_beta, ln_gamma,
-};
 pub use random::*;
+pub use special::{beta, gamma, ln_beta, ln_gamma};
 
 // Namespaced re-exports (for convenience)
 /// Probability distributions: kernels, PDFs, sampling.
@@ -51,4 +54,3 @@ pub mod integrate {
 // Version info
 /// Current version of the `symworx-math` crate.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
-

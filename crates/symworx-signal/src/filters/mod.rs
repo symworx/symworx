@@ -9,11 +9,17 @@
 //! - Nonlinear / state estimation filters
 //! - Time-frequency transforms
 
+/// Adaptive algorithms
 pub mod adaptive;
-pub mod linear;
-pub mod nonlinear;
-pub mod time_frequency;
 
+/// Linear algorithms
+pub mod linear;
+
+/// Nonlinear algorithms
+pub mod nonlinear;
+
+/// Time-frequency algorithms
+pub mod time_frequency;
 
 // Linear filters
 pub use linear::{
@@ -23,34 +29,26 @@ pub use linear::{
 };
 
 // Adaptive filters
-pub use adaptive::{
-    adaptive_mean_filter,
-    adaptive_median_filter,
-    LmsFilter,
-    NlmsFilter,
-};
+pub use adaptive::{LmsFilter, NlmsFilter, adaptive_mean_filter, adaptive_median_filter};
 
 // Nonlinear / estimation filters
-pub use nonlinear::{
-    KalmanFilter,
-    RlsFilter,
-};
+pub use nonlinear::{KalmanFilter, RlsFilter};
 
 // Time-frequency analysis
 pub use time_frequency::{
-    // Hilbert
-    hilbert,
     AnalyticSignal,
 
-    // STFT
-    stft,
+    CwtResult,
     StftResult,
+    WaveletType,
     WindowType,
 
     // Wavelet
     cwt,
-    cwt_morlet,
     cwt_mexhat,
-    CwtResult,
-    WaveletType,
+    cwt_morlet,
+    // Hilbert
+    hilbert,
+    // STFT
+    stft,
 };

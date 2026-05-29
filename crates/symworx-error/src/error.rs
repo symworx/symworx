@@ -4,13 +4,19 @@
 use std::fmt;
 use std::io;
 
+/// SymError enum.
 #[derive(Debug)]
 pub enum SymError {
+    /// IO error.
     Io(io::Error),
+    /// CSV error.
     Csv(::csv::Error),
+    /// Parquet error.
     Parquet(::parquet::errors::ParquetError),
     // Edf(::edf::Error),
+    /// Parse float error.
     ParseFloat(std::num::ParseFloatError),
+    /// Unsupported string error.
     UnsupportedFormat(String),
     // UnsupportedFormat(String),
 }

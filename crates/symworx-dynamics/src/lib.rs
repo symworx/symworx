@@ -21,14 +21,17 @@
 #![doc(html_root_url = "https://docs.rs/symworx-dynamics")]
 
 // Modules
+/// Embedding dimension calculations (e.g., edim, fnn).
 pub mod embedding;
+/// Entropy measures (e.g., sample entropy, others tbd).
 pub mod entropy;
+/// Recurrence and cross-recurrence calculations.
 pub mod rqa;
 
 // Re-exports
 pub use embedding::{edim, fnn};
-pub use entropy::{sample_entropy};
-pub use rqa::{rqa, rqa_from_trajectory, RecurrencePlot, RqaResult, DEFAULT_LMIN, DEFAULT_VMIN};
+pub use entropy::sample_entropy;
+pub use rqa::{DEFAULT_LMIN, DEFAULT_VMIN, RecurrencePlot, RqaResult, rqa, rqa_from_trajectory};
 
 // Version info
 /// Current version of the `symworx-dynamics` crate.

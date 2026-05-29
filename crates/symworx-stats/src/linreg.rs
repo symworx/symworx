@@ -32,7 +32,7 @@ pub fn l2(x: &Array2<f64>, y: &Array1<f64>) -> Array1<f64> {
 pub fn l1(
     x: &Array2<f64>,
     y: &Array1<f64>,
-    alpha: f64,           // regularization strength
+    alpha: f64, // regularization strength
     max_iter: usize,
     tol: f64,
 ) -> Array1<f64> {
@@ -103,7 +103,6 @@ fn soft_threshold(x: f64, lambda: f64) -> f64 {
     }
 }
 
-
 // TESTS
 #[cfg(test)]
 mod tests {
@@ -128,6 +127,6 @@ mod tests {
         let coeffs = l1(&x, &y, 0.1, 200, 1e-6);
 
         assert_eq!(coeffs.len(), 2); // intercept + 1 slope
-        assert!(coeffs[1] > 1.0);   // slope should be positive and reasonable
+        assert!(coeffs[1] > 1.0); // slope should be positive and reasonable
     }
 }

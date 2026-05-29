@@ -88,15 +88,41 @@ pub fn cwt(
     }
 }
 
-// Convenience functions
-pub fn cwt_morlet(signal: &[f64], fs: f64, min_scale: f64, max_scale: f64, num_scales: usize) -> CwtResult {
-    cwt(signal, fs, WaveletType::Morlet, min_scale, max_scale, num_scales)
+/// Convenience function for Wavelet transform (Morelet).
+pub fn cwt_morlet(
+    signal: &[f64],
+    fs: f64,
+    min_scale: f64,
+    max_scale: f64,
+    num_scales: usize,
+) -> CwtResult {
+    cwt(
+        signal,
+        fs,
+        WaveletType::Morlet,
+        min_scale,
+        max_scale,
+        num_scales,
+    )
 }
 
-pub fn cwt_mexhat(signal: &[f64], fs: f64, min_scale: f64, max_scale: f64, num_scales: usize) -> CwtResult {
-    cwt(signal, fs, WaveletType::MexicanHat, min_scale, max_scale, num_scales)
+/// Convenience function for Wavelet transform (Mexican Hat).
+pub fn cwt_mexhat(
+    signal: &[f64],
+    fs: f64,
+    min_scale: f64,
+    max_scale: f64,
+    num_scales: usize,
+) -> CwtResult {
+    cwt(
+        signal,
+        fs,
+        WaveletType::MexicanHat,
+        min_scale,
+        max_scale,
+        num_scales,
+    )
 }
-
 
 // TESTS
 

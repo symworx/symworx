@@ -3,8 +3,4 @@
 
 pub mod generation;
 
-pub use generation::{
-    RespSimulationParams,
-    RespTimeSeries,
-    generate_respiration_timeseries,
-};
+pub use generation::{RespSimulationParams, RespTimeSeries, generate_respiration_timeseries};

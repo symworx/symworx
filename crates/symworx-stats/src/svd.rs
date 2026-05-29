@@ -11,15 +11,19 @@ use ndarray_linalg::SVD;
 /// Result of Singular Value Decomposition: A = U Σ Vᵀ
 #[derive(Debug, Clone)]
 pub struct Svd {
+    /// ( U \in \mathbb{R}^{m \times m} \) contains the left singular vectors (orthogonal)
     pub u: Array2<f64>,
+    /// \( \Sigma \in \mathbb{R}^{m \times n} \) is a diagonal matrix of singular values
     pub s: Array1<f64>,
+    /// \( V^T \in \mathbb{R}^{n \times n} \) contains the right singular vectors (orthogonal)
     pub vt: Array2<f64>,
 }
 
 impl Svd {
     /// Compute the thin SVD of matrix `A`.
     pub fn compute(a: &Array2<f64>) -> Self {
-        let (u_opt, s, vt_opt) = a.svd(true, true)
+        let (u_opt, s, vt_opt) = a
+            .svd(true, true)
             .expect("SVD computation failed. Matrix may be singular or ill-conditioned.");
 
         let u = u_opt.expect("U matrix was not computed");
@@ -45,7 +49,6 @@ impl Svd {
     }
 }
 
-
 // TESTS
 #[cfg(test)]
 mod tests {
@@ -54,11 +57,7 @@ mod tests {
 
     #[test]
     fn test_svd_basic() {
-        let a = array![
-            [1.0, 2.0],
-            [3.0, 4.0],
-            [5.0, 6.0]
-        ];
+        let a = array![[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]];
 
         let svd = Svd::compute(&a);
         assert_eq!(svd.s.len(), 2);
@@ -67,10 +66,7 @@ mod tests {
 
     #[test]
     fn test_svd_reconstruction() {
-        let a = array![
-            [1.0, 2.0],
-            [3.0, 4.0],
-        ];
+        let a = array![[1.0, 2.0], [3.0, 4.0],];
 
         let svd = Svd::compute(&a);
         let sigma = Array2::from_diag(&svd.s);

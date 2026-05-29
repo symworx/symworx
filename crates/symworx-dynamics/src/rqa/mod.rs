@@ -18,11 +18,11 @@
 //! let rp = RecurrencePlot::from_series(&series, 3, 1, 0.5, 1);
 //! ```
 
-mod plot;
 mod metrics;
+mod plot;
 mod utils;
 
+pub use metrics::{DEFAULT_LMIN, DEFAULT_VMIN, RqaResult, rqa, rqa_from_trajectory};
 pub use plot::RecurrencePlot;
-pub use metrics::{rqa, rqa_from_trajectory, RqaResult, DEFAULT_LMIN, DEFAULT_VMIN};
 
 // TODO (Phase 4): pub use metrics::crqa; + CrossRecurrencePlot + CrqaResult

@@ -27,10 +27,7 @@ pub fn manhattan(a: &[f64], b: &[f64]) -> f64 {
     if a.len() != b.len() {
         return f64::NAN;
     }
-    a.iter()
-        .zip(b.iter())
-        .map(|(x, y)| (x - y).abs())
-        .sum()
+    a.iter().zip(b.iter()).map(|(x, y)| (x - y).abs()).sum()
 }
 
 /// Cosine distance between two vectors (1 - cosine similarity).
@@ -87,7 +84,7 @@ mod tests {
     #[test]
     fn test_cosine_distance() {
         let a = [1.0, 2.0, 3.0];
-        let b = [2.0, 4.0, 6.0]; 
+        let b = [2.0, 4.0, 6.0];
         assert_eq!(cosine_distance(&a, &b), 0.0);
     }
 

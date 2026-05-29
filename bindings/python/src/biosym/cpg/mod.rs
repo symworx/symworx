@@ -15,7 +15,9 @@ pub struct PyVanDerPol {
 impl PyVanDerPol {
     #[new]
     fn new(mu: f64, x: f64, v: f64) -> Self {
-        Self { inner: VanDerPol::new(mu, x, v) }
+        Self {
+            inner: VanDerPol::new(mu, x, v),
+        }
     }
 
     fn derivative(&self, omega: f64, forcing: f64) -> (f64, f64) {
@@ -34,11 +36,15 @@ impl PyCpgConfig {
     #[new]
     #[pyo3(signature = ( ))]
     fn new() -> Self {
-        Self { inner: CpgConfig::default() }
+        Self {
+            inner: CpgConfig::default(),
+        }
     }
 
     #[getter]
-    fn epsilon(&self) -> f64 { self.inner.epsilon }
+    fn epsilon(&self) -> f64 {
+        self.inner.epsilon
+    }
 }
 
 #[pyclass(name = "SymCpgModel")]
@@ -52,7 +58,9 @@ impl PySymCpgModel {
     #[pyo3(signature = (config = None))]
     fn new(config: Option<PyCpgConfig>) -> Self {
         let cfg = config.map(|c| c.inner);
-        Self { inner: SymCpgModel::new(cfg) }
+        Self {
+            inner: SymCpgModel::new(cfg),
+        }
     }
 
     fn run(&self, t_start: f64, t_end: f64, dt: f64) -> (Vec<f64>, Vec<Vec<f64>>) {

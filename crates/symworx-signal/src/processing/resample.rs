@@ -7,18 +7,25 @@ use crate::processing::interpolation::interp_linear;
 /// Includes Linear, Cubic (not implemented), and Splined (not implemented) methods.
 #[derive(Debug, Clone, Copy)]
 pub enum ResampleMethod {
+    /// Linear interpolation.
     Linear,
+    /// Cubic interpolation.
     Cubic,
+    /// Splined interpolation.
     Spline,
 }
 
+/// A resampler for 1D signals.
 #[derive(Clone)]
 pub struct Resample<'a> {
+    /// Original signal to be resampled.
     y: &'a [f64],
+    /// Desired output length.
     target_len: Option<usize>,
 }
 
 impl<'a> Resample<'a> {
+    /// Create a new resampler method.
     #[inline]
     pub fn new(y: &'a [f64]) -> Self {
         Self {
@@ -27,12 +34,14 @@ impl<'a> Resample<'a> {
         }
     }
 
+    /// Sets the target output length.
     #[allow(clippy::wrong_self_convention)]
     #[inline]
     pub fn to_len(&mut self, n: usize) {
         self.target_len = Some(n);
     }
 
+    /// Sets the target length by applying a scaling factor.
     #[inline]
     pub fn scale(&mut self, factor: f64) {
         let old_len = self.y.len();
@@ -40,6 +49,7 @@ impl<'a> Resample<'a> {
         self.target_len = Some(new_len);
     }
 
+    /// Sets the target length based on old and new sampling rates.
     #[allow(clippy::wrong_self_convention)]
     #[inline]
     pub fn to_rate(&mut self, old_fs: f64, new_fs: f64) {
@@ -49,14 +59,16 @@ impl<'a> Resample<'a> {
         self.target_len = Some(new_len);
     }
 
+    /// Resamples the signal using specified method.
     pub fn method(&self, method: ResampleMethod) -> Vec<f64> {
         match method {
             ResampleMethod::Linear => self.linear_impl(),
-            ResampleMethod::Cubic  => todo!("Cubic resampling not implemented yet"),
+            ResampleMethod::Cubic => todo!("Cubic resampling not implemented yet"),
             ResampleMethod::Spline => todo!("Spline resampling not implemented yet"),
         }
     }
 
+    /// Internal linear interpolation method.
     fn linear_impl(&self) -> Vec<f64> {
         let old_len = self.y.len();
         let new_len = self.target_len.expect("target length not set");
@@ -73,6 +85,7 @@ impl<'a> Resample<'a> {
         interp_linear(&x, self.y, &x_new)
     }
 
+    /// Quick implementation of the linear interpolation method.
     #[inline]
     pub fn linear(&self) -> Vec<f64> {
         self.method(ResampleMethod::Linear)

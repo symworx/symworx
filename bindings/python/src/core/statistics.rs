@@ -1,36 +1,36 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 
 use ndarray::{Array1, Array2};
-use numpy::{PyArray2, IntoPyArray};
+use numpy::{IntoPyArray, PyArray2};
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 
 use symworx_core::stats::{
     // autocorrelation
     acf,
-    // basic 
-    mad,
-    mean,
-    median,
-    percentile,
     // correlation
     correlation_matrix,
-    pearson_correlation,
     correlation_matrix_from_vec,
     // distance
     euclidean,
-    // errors
-    mae,
-    mse,
-    rmse,
     // linreg
     l1,
     l2,
+    // basic
+    mad,
+    // errors
+    mae,
+    mean,
+    mean_successive_differences,
+    median,
+    mse,
+    pearson_correlation,
+    percentile,
+    rmse,
+    rmssd,
+    sd_successive_differences,
     // variability
     successive_differences,
-    mean_successive_differences,
-    rmssd,
-    sd_successive_differences
 };
 
 // ==========================================================
@@ -43,7 +43,7 @@ pub fn py_acf(signal: Vec<f64>, unbiased: bool) -> Vec<f64> {
 }
 
 // ==========================================================
-// Basic statistics 
+// Basic statistics
 // ==========================================================
 
 #[pyfunction(name = "mean")]
@@ -68,15 +68,11 @@ pub fn py_percentile(data: Vec<f64>, p: Vec<f64>) -> PyResult<Vec<f64>> {
 }
 
 // ==========================================================
-// Correlation 
+// Correlation
 // ==========================================================
 
 #[pyfunction(name = "pearson_correlation")]
-pub fn py_pearson_correlation(
-    data: Vec<Vec<f64>>,
-    col1: usize,
-    col2: usize
-) -> f64 {
+pub fn py_pearson_correlation(data: Vec<Vec<f64>>, col1: usize, col2: usize) -> f64 {
     let arr = correlation_matrix_from_vec(&data);
     pearson_correlation(&arr, col1, col2)
 }
@@ -84,7 +80,7 @@ pub fn py_pearson_correlation(
 #[pyfunction(name = "correlation_matrix")]
 pub fn py_correlation_matrix<'py>(
     py: Python<'py>,
-    data: Vec<Vec<f64>>
+    data: Vec<Vec<f64>>,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let arr = correlation_matrix_from_vec(&data);
 
@@ -94,7 +90,7 @@ pub fn py_correlation_matrix<'py>(
 #[pyfunction(name = "correlation_matrix_from_vec")]
 pub fn py_correlation_matrix_from_vec<'py>(
     py: Python<'py>,
-    data: Vec<Vec<f64>>
+    data: Vec<Vec<f64>>,
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let arr = correlation_matrix_from_vec(&data);
 
@@ -102,7 +98,7 @@ pub fn py_correlation_matrix_from_vec<'py>(
 }
 
 // ==========================================================
-// Euclidean distance 
+// Euclidean distance
 // ==========================================================
 
 #[pyfunction(name = "euclidean")]
@@ -142,11 +138,8 @@ pub fn py_l1(
     tol: Option<f64>,
 ) -> PyResult<Vec<f64>> {
     // Convert Python lists to ndarray
-    let x_arr = Array2::from_shape_vec(
-        (x.len(), x[0].len()),
-        x.into_iter().flatten().collect(),
-    )
-    .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("Invalid X shape: {}", e)))?;
+    let x_arr = Array2::from_shape_vec((x.len(), x[0].len()), x.into_iter().flatten().collect())
+        .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("Invalid X shape: {}", e)))?;
 
     let y_arr = Array1::from_vec(y);
 
@@ -163,11 +156,8 @@ pub fn py_l1(
 
 #[pyfunction(name = "l2")]
 pub fn py_l2(x: Vec<Vec<f64>>, y: Vec<f64>) -> PyResult<Vec<f64>> {
-    let x_arr = Array2::from_shape_vec(
-        (x.len(), x[0].len()),
-        x.into_iter().flatten().collect(),
-    )
-    .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("Invalid X shape: {}", e)))?;
+    let x_arr = Array2::from_shape_vec((x.len(), x[0].len()), x.into_iter().flatten().collect())
+        .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("Invalid X shape: {}", e)))?;
 
     let y_arr = Array1::from_vec(y);
 
@@ -204,7 +194,6 @@ pub fn py_sd_successive_differences(data: Vec<f64>) -> f64 {
 // ==========================================================
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
-
     // --- Autocorrelation ----------------------------------
     m.add_function(wrap_pyfunction!(py_acf, m)?)?;
 
@@ -226,7 +215,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_mae, m)?)?;
     m.add_function(wrap_pyfunction!(py_mse, m)?)?;
     m.add_function(wrap_pyfunction!(py_rmse, m)?)?;
- 
+
     // --- Linear regression --------------------------------
     m.add_function(wrap_pyfunction!(py_l1, m)?)?;
     m.add_function(wrap_pyfunction!(py_l2, m)?)?;

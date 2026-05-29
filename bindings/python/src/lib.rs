@@ -2,8 +2,8 @@
 
 use pyo3::prelude::*;
 
-mod core;
 mod biosym;
+mod core;
 mod loadsym;
 
 #[pymodule]

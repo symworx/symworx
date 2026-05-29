@@ -13,17 +13,15 @@ use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::Span,
-    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Row, Table, Cell, Tabs, Sparkline},
+    widgets::{
+        Block, Borders, Cell, List, ListItem, ListState, Paragraph, Row, Sparkline, Table, Tabs,
+    },
     DefaultTerminal, Frame,
 };
 mod convert;
 mod generate;
 
-use std::{
-    fs,
-    path::PathBuf,
-    time::Duration,
-};
+use std::{fs, path::PathBuf, time::Duration};
 
 /// Top-level tabs for the application
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -190,7 +188,13 @@ fn compute_basic_stats(data: &[f64]) -> BasicStats {
         (sorted[sorted.len() / 2 - 1] + sorted[sorted.len() / 2]) / 2.0
     };
 
-    BasicStats { mean, std, min, max, median }
+    BasicStats {
+        mean,
+        std,
+        min,
+        max,
+        median,
+    }
 }
 
 impl App {
@@ -233,7 +237,10 @@ impl App {
                     if path.is_file() {
                         if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
                             // Common biosignal / physiological file extensions
-                            if matches!(ext.to_lowercase().as_str(), "csv" | "txt" | "dat" | "bin" | "biosym") {
+                            if matches!(
+                                ext.to_lowercase().as_str(),
+                                "csv" | "txt" | "dat" | "bin" | "biosym"
+                            ) {
                                 self.file_list.push(path);
                             }
                         }
@@ -283,24 +290,32 @@ impl App {
                 let signal = LoadedSignal::new(series.clone(), "RR intervals".to_string());
                 self.loaded_signal = Some(signal);
                 self.current_tab = Tab::Explore;
-                self.status = format!("Loaded IBI (RR intervals): {} samples — switched to Explore tab", series.len());
+                self.status = format!(
+                    "Loaded IBI (RR intervals): {} samples — switched to Explore tab",
+                    series.len()
+                );
                 self.manual_path.clear();
                 return Ok(());
             }
         }
 
         // General tabular file (CSV, Parquet, etc.)
-        let ext = path.extension().and_then(|e| e.to_str()).map(|s| s.to_lowercase());
+        let ext = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|s| s.to_lowercase());
 
         if ext.as_deref() == Some("csv") {
             // Smarter CSV handling: support headers for better UX in column picker
             use csv::ReaderBuilder;
 
-            let mut rdr = ReaderBuilder::new()
-                .has_headers(true)
-                .from_path(&path)?;
+            let mut rdr = ReaderBuilder::new().has_headers(true).from_path(&path)?;
 
-            let headers = rdr.headers()?.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+            let headers = rdr
+                .headers()?
+                .iter()
+                .map(|s| s.to_string())
+                .collect::<Vec<_>>();
 
             let mut data: Vec<Vec<f64>> = Vec::new();
 
@@ -329,13 +344,23 @@ impl App {
             }
 
             if num_columns == 1 {
-                let series: Vec<f64> = data.into_iter().filter_map(|row| row.first().copied()).collect();
-                let name = headers.first().cloned().unwrap_or_else(|| "series".to_string());
+                let series: Vec<f64> = data
+                    .into_iter()
+                    .filter_map(|row| row.first().copied())
+                    .collect();
+                let name = headers
+                    .first()
+                    .cloned()
+                    .unwrap_or_else(|| "series".to_string());
 
                 let signal = LoadedSignal::new(series.clone(), name);
                 self.loaded_signal = Some(signal);
                 self.current_tab = Tab::Explore;
-                self.status = format!("Loaded {} ({} samples, single column) — switched to Explore tab", path.display(), series.len());
+                self.status = format!(
+                    "Loaded {} ({} samples, single column) — switched to Explore tab",
+                    path.display(),
+                    series.len()
+                );
                 self.manual_path.clear();
                 return Ok(());
             }
@@ -351,7 +376,11 @@ impl App {
                 path: path.clone(),
                 data,
                 columns: num_columns,
-                headers: if headers.len() == num_columns { Some(headers) } else { None },
+                headers: if headers.len() == num_columns {
+                    Some(headers)
+                } else {
+                    None
+                },
             });
 
             self.status = format!(
@@ -363,7 +392,8 @@ impl App {
 
         // Fallback for Parquet / other formats (no header support yet)
         use symworx_core::io::load_any;
-        let path_str = path.to_str()
+        let path_str = path
+            .to_str()
             .ok_or_else(|| anyhow::anyhow!("Path contains invalid UTF-8: {}", path.display()))?;
         let data = load_any(path_str)?;
 
@@ -380,8 +410,12 @@ impl App {
         }
 
         if num_columns == 1 {
-            let series: Vec<f64> = data.into_iter().filter_map(|row| row.first().copied()).collect();
-            let name = path.file_name()
+            let series: Vec<f64> = data
+                .into_iter()
+                .filter_map(|row| row.first().copied())
+                .collect();
+            let name = path
+                .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or("series")
                 .to_string();
@@ -389,7 +423,11 @@ impl App {
             let signal = LoadedSignal::new(series.clone(), name);
             self.loaded_signal = Some(signal);
             self.current_tab = Tab::Explore;
-            self.status = format!("Loaded {} ({} samples, single column) — switched to Explore tab", path.display(), series.len());
+            self.status = format!(
+                "Loaded {} ({} samples, single column) — switched to Explore tab",
+                path.display(),
+                series.len()
+            );
             self.manual_path.clear();
             return Ok(());
         }
@@ -425,11 +463,10 @@ fn app(terminal: &mut DefaultTerminal) -> std::io::Result<()> {
 
         if event::poll(tick_rate)? {
             if let event::Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press {
-                    if handle_key(&mut app, key.code, key.modifiers) {
-                        return Ok(()); // quit requested
+                if key.kind == KeyEventKind::Press 
+                    && handle_key(&mut app, key.code, key.modifiers) {
+                        return Ok(()); // quit
                     }
-                }
             }
         }
     }
@@ -446,9 +483,15 @@ fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool {
     // so it can be used to cancel sub-modes like column selection)
     match code {
         // Tab switching via Ctrl+1 / Ctrl+2 / Ctrl+3
-        KeyCode::Char('1') if modifiers.contains(KeyModifiers::CONTROL) => app.current_tab = Tab::Import,
-        KeyCode::Char('2') if modifiers.contains(KeyModifiers::CONTROL) => app.current_tab = Tab::Explore,
-        KeyCode::Char('3') if modifiers.contains(KeyModifiers::CONTROL) => app.current_tab = Tab::Dynamics,
+        KeyCode::Char('1') if modifiers.contains(KeyModifiers::CONTROL) => {
+            app.current_tab = Tab::Import
+        }
+        KeyCode::Char('2') if modifiers.contains(KeyModifiers::CONTROL) => {
+            app.current_tab = Tab::Explore
+        }
+        KeyCode::Char('3') if modifiers.contains(KeyModifiers::CONTROL) => {
+            app.current_tab = Tab::Dynamics
+        }
 
         // Tab switching via Ctrl+Left / Ctrl+Right (keep this behavior)
         KeyCode::Left if modifiers.contains(KeyModifiers::CONTROL) => {
@@ -504,7 +547,8 @@ fn handle_import_keys(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> 
                 return false;
             }
             KeyCode::Char('2') => {
-                if let Err(e) = generate_demo_and_load(app, generate::DemoPreset::LightRespiration) {
+                if let Err(e) = generate_demo_and_load(app, generate::DemoPreset::LightRespiration)
+                {
                     app.status = format!("Generation failed: {e}");
                 }
                 app.pending_generate = false;
@@ -700,16 +744,12 @@ fn generate_demo_and_load(app: &mut App, preset: generate::DemoPreset) -> anyhow
     // All demo files have headers and put the interesting data (ppg/flow/stride) in column 1.
     let series: Vec<f64> = {
         use csv::ReaderBuilder;
-        let mut rdr = ReaderBuilder::new()
-            .has_headers(true)
-            .from_path(&path)?;
+        let mut rdr = ReaderBuilder::new().has_headers(true).from_path(&path)?;
         let mut out = Vec::new();
-        for rec in rdr.records() {
-            if let Ok(record) = rec {
-                if let Some(val_str) = record.get(1) {
-                    if let Ok(v) = val_str.parse::<f64>() {
-                        out.push(v);
-                    }
+        for record in rdr.records().flatten() {
+            if let Some(val_stgr) = record.get(1) {
+                if let Ok(v) = val_stgr.parse::<f64>() {
+                    out.push(v);
                 }
             }
         }
@@ -717,7 +757,9 @@ fn generate_demo_and_load(app: &mut App, preset: generate::DemoPreset) -> anyhow
     };
 
     if series.is_empty() {
-        return Err(anyhow::anyhow!("Generated file contained no usable signal data in column 1"));
+        return Err(anyhow::anyhow!(
+            "Generated file contained no usable signal data in column 1"
+        ));
     }
 
     let signal = LoadedSignal::new(series.clone(), preset.name().to_string());
@@ -794,28 +836,45 @@ fn handle_explore_keys(app: &mut App, code: KeyCode, modifiers: KeyModifiers) ->
             match code {
                 KeyCode::Char('1') => {
                     app.process_selection = 0;
-                    app.status = format!("Moving Average — window: {} (←/→ or -/+ to adjust, Enter to apply)", app.process_window);
+                    app.status = format!(
+                        "Moving Average — window: {} (←/→ or -/+ to adjust, Enter to apply)",
+                        app.process_window
+                    );
                 }
                 KeyCode::Char('2') => {
                     app.process_selection = 1;
-                    app.status = format!("Median Filter — window: {} (←/→ or -/+ to adjust, Enter to apply)", app.process_window);
+                    app.status = format!(
+                        "Median Filter — window: {} (←/→ or -/+ to adjust, Enter to apply)",
+                        app.process_window
+                    );
                 }
                 KeyCode::Char('3') => {
                     app.process_selection = 2;
-                    app.status = "Detrend (subtract mean) — press Enter to apply, Esc to cancel".to_string();
+                    app.status =
+                        "Detrend (subtract mean) — press Enter to apply, Esc to cancel".to_string();
                 }
                 KeyCode::Left | KeyCode::Char('-') | KeyCode::Char('_') => {
                     if app.process_selection < 2 {
                         app.process_window = (app.process_window.saturating_sub(1)).max(3);
-                        let name = if app.process_selection == 0 { "Moving Average" } else { "Median Filter" };
-                        app.status = format!("{} — window: {} (Enter to apply)", name, app.process_window);
+                        let name = if app.process_selection == 0 {
+                            "Moving Average"
+                        } else {
+                            "Median Filter"
+                        };
+                        app.status =
+                            format!("{} — window: {} (Enter to apply)", name, app.process_window);
                     }
                 }
                 KeyCode::Right | KeyCode::Char('+') | KeyCode::Char('=') => {
                     if app.process_selection < 2 {
                         app.process_window = (app.process_window + 1).min(101);
-                        let name = if app.process_selection == 0 { "Moving Average" } else { "Median Filter" };
-                        app.status = format!("{} — window: {} (Enter to apply)", name, app.process_window);
+                        let name = if app.process_selection == 0 {
+                            "Moving Average"
+                        } else {
+                            "Median Filter"
+                        };
+                        app.status =
+                            format!("{} — window: {} (Enter to apply)", name, app.process_window);
                     }
                 }
                 KeyCode::Enter => {
@@ -883,10 +942,10 @@ fn handle_dynamics_keys(_app: &mut App, _code: KeyCode) -> bool {
 
 fn ui(frame: &mut Frame, app: &App) {
     let main_layout = Layout::vertical([
-        Constraint::Length(1),  // tab bar
-        Constraint::Length(1),  // action bar / key hints
-        Constraint::Min(8),     // main content
-        Constraint::Length(2),  // footer / status
+        Constraint::Length(1), // tab bar
+        Constraint::Length(1), // action bar / key hints
+        Constraint::Min(8),    // main content
+        Constraint::Length(2), // footer / status
     ])
     .split(frame.area());
 
@@ -969,7 +1028,8 @@ fn render_import_tab(frame: &mut Frame, app: &App, area: Rect) {
         let mut lines = vec![
             format!("\n\nFile: {}\n", pending.path.display()),
             format!("This file contains {} columns.\n\n", pending.columns),
-            "Press the number key for the column you want to load as the main series:\n\n".to_string(),
+            "Press the number key for the column you want to load as the main series:\n\n"
+                .to_string(),
         ];
 
         if let Some(headers) = &pending.headers {
@@ -984,14 +1044,12 @@ fn render_import_tab(frame: &mut Frame, app: &App, area: Rect) {
 
         lines.push("\nPress Esc to cancel.".to_string());
 
-        let content = Paragraph::new(lines.join(""))
-            .centered()
-            .block(
-                Block::new()
-                    .title(" Select Column to Load ")
-                    .borders(Borders::ALL)
-                    .border_style(Color::Yellow),
-            );
+        let content = Paragraph::new(lines.join("")).centered().block(
+            Block::new()
+                .title(" Select Column to Load ")
+                .borders(Borders::ALL)
+                .border_style(Color::Yellow),
+        );
 
         frame.render_widget(content, area);
         return;
@@ -1004,7 +1062,7 @@ fn render_import_tab(frame: &mut Frame, app: &App, area: Rect) {
              1 = Resting PPG (30s)\n\
              2 = Light activity respiration\n\
              3 = Simple stride/gait intervals\n\n\
-             Press a number (1-3) or Esc to cancel."
+             Press a number (1-3) or Esc to cancel.",
         )
         .centered()
         .block(
@@ -1019,9 +1077,9 @@ fn render_import_tab(frame: &mut Frame, app: &App, area: Rect) {
 
     // Split: top instructions, middle file list + info, bottom filter hint
     let chunks = Layout::vertical([
-        Constraint::Length(4),   // instructions
-        Constraint::Min(8),      // file list + info panel
-        Constraint::Length(2),   // filter hint
+        Constraint::Length(4), // instructions
+        Constraint::Min(8),    // file list + info panel
+        Constraint::Length(2), // filter hint
     ])
     .split(area);
 
@@ -1038,7 +1096,9 @@ fn render_import_tab(frame: &mut Frame, app: &App, area: Rect) {
         .border_style(Color::Yellow);
 
     let input_text = if app.manual_path.is_empty() {
-        "→  Type a full path and press Enter, or select from the list below".dim().to_string()
+        "→  Type a full path and press Enter, or select from the list below"
+            .dim()
+            .to_string()
     } else {
         format!("→  {}", app.manual_path)
     };
@@ -1047,11 +1107,8 @@ fn render_import_tab(frame: &mut Frame, app: &App, area: Rect) {
     frame.render_widget(input_para, chunks[0]);
 
     // Main content area: file list on left, info on right
-    let list_chunks = Layout::horizontal([
-        Constraint::Percentage(65),
-        Constraint::Percentage(35),
-    ])
-    .split(chunks[1]);
+    let list_chunks = Layout::horizontal([Constraint::Percentage(65), Constraint::Percentage(35)])
+        .split(chunks[1]);
 
     // === Filtered file list ===
     let filtered_files: Vec<&PathBuf> = if app.file_filter.is_empty() {
@@ -1075,18 +1132,15 @@ fn render_import_tab(frame: &mut Frame, app: &App, area: Rect) {
         app.file_list.len()
     );
 
-    let list_block = Block::new()
-        .title(list_title)
-        .borders(Borders::ALL);
+    let list_block = Block::new().title(list_title).borders(Borders::ALL);
 
     let items: Vec<ListItem> = filtered_files
         .iter()
         .map(|p| {
-            let name = p.file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or("???");
+            let name = p.file_name().and_then(|n| n.to_str()).unwrap_or("???");
 
-            let ext = p.extension()
+            let ext = p
+                .extension()
                 .and_then(|e| e.to_str())
                 .unwrap_or("")
                 .to_uppercase();
@@ -1106,7 +1160,8 @@ fn render_import_tab(frame: &mut Frame, app: &App, area: Rect) {
             Style::default()
                 .fg(Color::Green)
                 .add_modifier(Modifier::BOLD)
-                .bg(Color::DarkGray))
+                .bg(Color::DarkGray),
+        )
         .highlight_symbol("▶ ");
 
     frame.render_stateful_widget(_list, list_chunks[0], &mut app.list_state.clone());
@@ -1121,7 +1176,10 @@ fn render_import_tab(frame: &mut Frame, app: &App, area: Rect) {
         // Find the corresponding file in the filtered list
         if let Some(path) = filtered_files.get(selected_idx) {
             let meta = std::fs::metadata(path).ok();
-            let size = meta.as_ref().map(|m| format_file_size(m.len())).unwrap_or_else(|| "Unknown".to_string());
+            let size = meta
+                .as_ref()
+                .map(|m| format_file_size(m.len()))
+                .unwrap_or_else(|| "Unknown".to_string());
             let modified = meta
                 .and_then(|m| m.modified().ok())
                 .map(|t| {
@@ -1175,7 +1233,12 @@ fn render_import_tab(frame: &mut Frame, app: &App, area: Rect) {
     let filter_status = if app.file_filter.is_empty() {
         "Filter: (none)".dim()
     } else {
-        format!("Filter: \"{}\"  ({} matches)", app.file_filter, filtered_files.len()).into()
+        format!(
+            "Filter: \"{}\"  ({} matches)",
+            app.file_filter,
+            filtered_files.len()
+        )
+        .into()
     };
     // We can keep a small status in the main area or remove this.
 }
@@ -1191,24 +1254,31 @@ fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
         ];
 
         for (i, name) in names.iter().enumerate() {
-            let prefix = if i == app.process_selection { "▶ " } else { "  " };
+            let prefix = if i == app.process_selection {
+                "▶ "
+            } else {
+                "  "
+            };
             if i < 2 {
-                lines.push(format!("{} {}  —  window = {}\n", prefix, name, app.process_window));
+                lines.push(format!(
+                    "{} {}  —  window = {}\n",
+                    prefix, name, app.process_window
+                ));
             } else {
                 lines.push(format!("{} {}\n", prefix, name));
             }
         }
 
-        lines.push("\n\n←/→ or -/+ : Adjust window     Enter : Apply     Esc : Cancel\n".to_string());
+        lines.push(
+            "\n\n←/→ or -/+ : Adjust window     Enter : Apply     Esc : Cancel\n".to_string(),
+        );
 
-        let content = Paragraph::new(lines.join(""))
-            .centered()
-            .block(
-                Block::new()
-                    .title(" Processing ")
-                    .borders(Borders::ALL)
-                    .border_style(Color::Yellow),
-            );
+        let content = Paragraph::new(lines.join("")).centered().block(
+            Block::new()
+                .title(" Processing ")
+                .borders(Borders::ALL)
+                .border_style(Color::Yellow),
+        );
 
         frame.render_widget(content, area);
         return;
@@ -1221,7 +1291,7 @@ fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
             "\n\nNo signal loaded yet.\n\n\
              Go to the Import tab (press 1), load a file with Enter,\n\
              then switch back here (press 2) to explore statistics and processing.\n\n\
-             Press 'p' for processing controls once a signal is loaded."
+             Press 'p' for processing controls once a signal is loaded.",
         )
         .centered()
         .block(
@@ -1238,9 +1308,9 @@ fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
 fn render_explore_content(frame: &mut Frame, _app: &App, area: Rect, signal: &LoadedSignal) {
     // Better layout: small header + stats (compact) + big visualization
     let chunks = Layout::vertical([
-        Constraint::Length(3),   // header (name + length)
-        Constraint::Length(6),   // stats table
-        Constraint::Min(6),      // sparkline visualization
+        Constraint::Length(3), // header (name + length)
+        Constraint::Length(6), // stats table
+        Constraint::Min(6),    // sparkline visualization
     ])
     .split(area);
 
@@ -1251,7 +1321,11 @@ fn render_explore_content(frame: &mut Frame, _app: &App, area: Rect, signal: &Lo
         signal.n_samples,
         signal.original.len()
     ))
-    .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+    .style(
+        Style::default()
+            .fg(Color::Cyan)
+            .add_modifier(Modifier::BOLD),
+    )
     .block(Block::new().borders(Borders::ALL).title(" Loaded Signal "));
     frame.render_widget(header, chunks[0]);
 
@@ -1340,7 +1414,7 @@ fn render_dynamics_tab(frame: &mut Frame, app: &App, area: Rect) {
         Paragraph::new(
             "\n\nThis tab will host RQA, RecurrencePlot visualization,\n\
              embedding dimension analysis, and related nonlinear tools.\n\n\
-             (Implementation planned after Explore tab is solid)"
+             (Implementation planned after Explore tab is solid)",
         )
         .centered()
     } else {

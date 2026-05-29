@@ -27,7 +27,6 @@ pub fn zscore(data: &[f64]) -> Vec<f64> {
     data.iter().map(|x| (x - mean) / std_dev).collect()
 }
 
-
 // TESTS
 #[cfg(test)]
 mod tests {
@@ -45,8 +44,8 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0];
         let z_scored = z_score(data);
         let mean = z_scored.iter().sum::<f64>() / z_scored.len as f64;
-        let std_dev = (z_scored.iter().map(|x| (x - mean).powi(2))
-                       .sum::<f64>() / z_scored.len as f64).sqrt();
+        let std_dev =
+            (z_scored.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / z_scored.len as f64).sqrt();
 
         assert!((mean - 0.0).abs() < 1e-6);
         assert!((std_dev - 1.0).abs() < 1e-5);

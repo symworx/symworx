@@ -24,7 +24,7 @@ pub struct CpgConfig {
     pub rsa: f64,
     pub cardio_to_resp: f64,
     pub loco_to_resp: f64,
-    pub epsilon: f64,        // tau adaptation rate
+    pub epsilon: f64, // tau adaptation rate
     pub tau_initial: f64,
 }
 
@@ -108,21 +108,21 @@ impl SymCpgModel {
         let d_tau = self.config.epsilon * (tau_target - tau);
 
         Array1::from(vec![
-            d_h.0, d_h.1,
-            d_l.0, d_l.1,
-            d_r.0, d_r.1,
-            d_resp.0, d_resp.1,
-            d_tau,
+            d_h.0, d_h.1, d_l.0, d_l.1, d_r.0, d_r.1, d_resp.0, d_resp.1, d_tau,
         ])
     }
 
     /// Run the coupled CPG using RK4 from symworx-math.
     pub fn run(&self, t_span: (f64, f64), dt: f64) -> (Vec<f64>, Vec<Array1<f64>>) {
         let y0 = Array1::from(vec![
-            self.heart.x, self.heart.v,
-            self.left.x, self.left.v,
-            self.right.x, self.right.v,
-            self.resp.x, self.resp.v,
+            self.heart.x,
+            self.heart.v,
+            self.left.x,
+            self.left.v,
+            self.right.x,
+            self.right.v,
+            self.resp.x,
+            self.resp.v,
             self.tau,
         ]);
 

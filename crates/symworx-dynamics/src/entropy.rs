@@ -27,7 +27,7 @@ pub fn sample_entropy(data: &[f64], m: usize, r: f64) -> f64 {
     if std_dev < 1e-12 {
         return 0.0; // constant or near-constant signal
     }
-    
+
     // Safety checks
     const EPSILON: f64 = 1e-10;
     if r < EPSILON {
@@ -40,7 +40,7 @@ pub fn sample_entropy(data: &[f64], m: usize, r: f64) -> f64 {
     // Correct loop bounds:
     // i + m < n  ⇒  i <= n - m - 1
     for i in 0..(n - m - 1) {
-        for j in (i + 1)..(n - m) {          
+        for j in (i + 1)..(n - m) {
             let mut match_m = true;
 
             for k in 0..m {

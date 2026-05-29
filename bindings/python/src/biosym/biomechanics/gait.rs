@@ -1,8 +1,8 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 
-use pyo3::prelude::*;
 use ndarray::Array1;
-use symworx_biosym::biomechanics::{GaitParams, GaitData};
+use pyo3::prelude::*;
+use symworx_biosym::biomechanics::{GaitData, GaitParams};
 
 #[pyclass(name = "GaitParams")]
 #[derive(Clone)]
@@ -14,12 +14,16 @@ pub struct PyGaitParams {
 impl PyGaitParams {
     #[new]
     fn new() -> Self {
-        Self { inner: GaitParams::new() }
+        Self {
+            inner: GaitParams::new(),
+        }
     }
 
     #[staticmethod]
     fn default() -> Self {
-        Self { inner: GaitParams::default() }
+        Self {
+            inner: GaitParams::default(),
+        }
     }
 
     fn with_defaults(&mut self) {
@@ -27,7 +31,9 @@ impl PyGaitParams {
     }
 
     #[getter]
-    fn walking_speed(&self) -> f64 { self.inner.walking_speed }
+    fn walking_speed(&self) -> f64 {
+        self.inner.walking_speed
+    }
 
     #[setter]
     fn set_walking_speed(&mut self, v: f64) {
@@ -45,7 +51,9 @@ pub struct PyGaitData {
 impl PyGaitData {
     #[new]
     fn new(fs: f64) -> Self {
-        Self { inner: GaitData::new(fs) }
+        Self {
+            inner: GaitData::new(fs),
+        }
     }
 
     #[getter]

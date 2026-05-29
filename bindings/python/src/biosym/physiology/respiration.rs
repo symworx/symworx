@@ -4,9 +4,7 @@ use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 
 use symworx_biosym::physiology::{
-    RespSimulationParams,
-    RespTimeSeries,
-    generate_respiration_timeseries,
+    RespSimulationParams, RespTimeSeries, generate_respiration_timeseries,
 };
 
 #[pyclass(name = "RespTimeSeries")]
@@ -123,9 +121,7 @@ impl From<PyRespSimulationParams> for RespSimulationParams {
 }
 
 #[pyfunction(name = "generate_respiration_timeseries")]
-pub fn py_generate_respiration_timeseries(
-    params: PyRespSimulationParams,
-) -> PyRespTimeSeries {
+pub fn py_generate_respiration_timeseries(params: PyRespSimulationParams) -> PyRespTimeSeries {
     let rust_params = RespSimulationParams::from(params);
     let ts = generate_respiration_timeseries(&rust_params);
     PyRespTimeSeries::from(ts)

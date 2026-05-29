@@ -68,13 +68,7 @@ pub struct RqaResult {
 /// [`RqaResult`] with all standard measures (RR, DET, LAM, Lmax, Lentr, TT, ...).
 ///
 /// See also [`rqa_from_trajectory`] for pre-embedded data.
-pub fn rqa(
-    series: &[f64],
-    m: usize,
-    tau: usize,
-    radius: f64,
-    theiler: usize,
-) -> RqaResult {
+pub fn rqa(series: &[f64], m: usize, tau: usize, radius: f64, theiler: usize) -> RqaResult {
     if m == 0 || tau == 0 || series.len() < (m - 1) * tau + 1 {
         return RqaResult::default();
     }
@@ -87,11 +81,7 @@ pub fn rqa(
 ///
 /// Use this when you have already performed embedding (or have multivariate
 /// phase-space data) and want full control.
-pub fn rqa_from_trajectory(
-    trajectory: &Array2<f64>,
-    radius: f64,
-    theiler: usize,
-) -> RqaResult {
+pub fn rqa_from_trajectory(trajectory: &Array2<f64>, radius: f64, theiler: usize) -> RqaResult {
     if trajectory.nrows() == 0 {
         return RqaResult::default();
     }

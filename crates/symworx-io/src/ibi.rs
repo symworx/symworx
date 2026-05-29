@@ -2,14 +2,16 @@
 // Licensed under the Mozilla Public License, Version 2.0.
 
 use std::fs::File;
-use std::io::{Read, BufReader};
+use std::io::{BufReader, Read};
 
 use symworx_error::SymError;
 
 /// IBI data record structure.
 #[derive(Debug, Clone)]
 pub struct IbiRecord {
+    /// Timestamp corresponding to RR intervals.
     pub timestamp: u32,
+    /// The RR interval (ms).
     pub rr_ms: u16,
 }
 

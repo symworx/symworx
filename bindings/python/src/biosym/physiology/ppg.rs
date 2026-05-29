@@ -4,13 +4,8 @@ use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 
 use symworx_biosym::physiology::{
-    PPGTimeSeries,
-    PPGNoiseConfig,
-    PPGSignalQuality,
-    PPGSimulationParams,
-    analyze_ppg,
-    generate_ppg_waveform,
-    generate_ppg_timeseries,
+    PPGNoiseConfig, PPGSignalQuality, PPGSimulationParams, PPGTimeSeries, analyze_ppg,
+    generate_ppg_timeseries, generate_ppg_waveform,
 };
 
 // ==========================================================
@@ -127,9 +122,9 @@ impl Default for PyPPGNoiseConfig {
 impl From<PPGNoiseConfig> for PyPPGNoiseConfig {
     fn from(cfg: PPGNoiseConfig) -> Self {
         Self {
-            amp_drift_std:    cfg.amp_drift_std,
-            mu_drift_std:     cfg.mu_drift_std,
-            sigma_drift_std:  cfg.sigma_drift_std,
+            amp_drift_std: cfg.amp_drift_std,
+            mu_drift_std: cfg.mu_drift_std,
+            sigma_drift_std: cfg.sigma_drift_std,
             onset_jitter_std: cfg.onset_jitter_std,
             global_noise_std: cfg.global_noise_std,
             smoothing_kernel: cfg.smoothing_kernel,
@@ -140,9 +135,9 @@ impl From<PPGNoiseConfig> for PyPPGNoiseConfig {
 impl From<PyPPGNoiseConfig> for PPGNoiseConfig {
     fn from(py_cfg: PyPPGNoiseConfig) -> Self {
         Self {
-            amp_drift_std:    py_cfg.amp_drift_std,
-            mu_drift_std:     py_cfg.mu_drift_std,
-            sigma_drift_std:  py_cfg.sigma_drift_std,
+            amp_drift_std: py_cfg.amp_drift_std,
+            mu_drift_std: py_cfg.mu_drift_std,
+            sigma_drift_std: py_cfg.sigma_drift_std,
             onset_jitter_std: py_cfg.onset_jitter_std,
             global_noise_std: py_cfg.global_noise_std,
             smoothing_kernel: py_cfg.smoothing_kernel,
@@ -153,10 +148,10 @@ impl From<PyPPGNoiseConfig> for PPGNoiseConfig {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum PyPPGSignalQuality {
     Reference = 0,
-    High      = 1,
-    Moderate  = 2,
-    Poor      = 3,
-    Custom    = 4,
+    High = 1,
+    Moderate = 2,
+    Poor = 3,
+    Custom = 4,
 }
 
 #[pymethods]

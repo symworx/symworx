@@ -1,18 +1,26 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-use ndarray::Array1;
 use crate::integrate::rk4_integrate;
+use ndarray::Array1;
 
-/// Van der Pol oscillator parameters and state.
+/// Van der Pol oscillator.
+///
+/// A nonlinear oscillator commonly used in biological and
+/// physical systems (e.g., heartbeats, neural activity, gait).
 #[derive(Debug, Clone)]
 pub struct VanDerPol {
+    /// The strength of the nonlinear damping.
+    /// (higher values produce more relaxed oscillators.
     pub mu: f64,
+    /// Current position/displacement.
     pub x: f64,
+    /// Current velocity.
     pub v: f64,
 }
 
 impl VanDerPol {
+    /// Creates a new Van der Pol oscillator with given params/state.
     pub fn new(mu: f64, x: f64, v: f64) -> Self {
         Self { mu, x, v }
     }

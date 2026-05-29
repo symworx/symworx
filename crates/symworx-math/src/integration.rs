@@ -80,7 +80,9 @@ where
 
     while t < t_end {
         let step = dt.min(t_end - t);
-        if step <= 0.0 { break; }
+        if step <= 0.0 {
+            break;
+        }
         y = rk4_step(&f, t, &y, step);
         t += step;
         times.push(t);

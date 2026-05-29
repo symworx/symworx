@@ -5,7 +5,9 @@ use ndarray::ArrayView1;
 
 use super::peaks::{PeakFinder, PeakFinderBuilder};
 
+/// Provides a `.peaks()` method for slices of `f64`.
 pub trait PeakDetect {
+    /// Returns builder to configur epeak detection.
     fn peaks(&self) -> PeakFinderBuilder<'_>;
 }
 

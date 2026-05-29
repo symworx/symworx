@@ -19,7 +19,8 @@ pub fn parquet_to_csv(input: &Path, output: &Path) -> Result<()> {
 
     for i in 0..df.height() {
         let row = df.get_row(i)?;
-        let row_vec: Vec<f64> = row.0
+        let row_vec: Vec<f64> = row
+            .0
             .into_iter()
             .filter_map(|v: polars::datatypes::AnyValue| {
                 v.try_extract::<f64>()
@@ -48,12 +49,11 @@ pub fn ibi_to_csv(input: &Path, output: &Path) -> Result<()> {
 }
 
 pub fn convert_to_csv(input: &Path, output: Option<&Path>) -> Result<()> {
-    let out = output.map(|p| p.to_path_buf())
-        .unwrap_or_else(|| {
-            let mut p = input.to_path_buf();
-            p.set_extension("csv");
-            p
-        });
+    let out = output.map(|p| p.to_path_buf()).unwrap_or_else(|| {
+        let mut p = input.to_path_buf();
+        p.set_extension("csv");
+        p
+    });
 
     match input.extension().and_then(|e| e.to_str()) {
         Some("parquet") => parquet_to_csv(input, &out),

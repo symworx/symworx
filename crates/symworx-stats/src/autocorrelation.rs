@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-/// Calculates the autocorrelation of a given signal. 
+/// Calculates the autocorrelation of a given signal.
 ///
 /// # Arguments
 /// * `signal` - A slice of f64 values representing the input signal.
@@ -22,18 +22,13 @@ pub fn acf(signal: &[f64], unbiased: bool) -> Vec<f64> {
             sum += centered[i] * centered[i + lag];
         }
 
-        let norm = if unbiased {
-            (n - lag) as f64
-        } else {
-            n as f64
-        };
+        let norm = if unbiased { (n - lag) as f64 } else { n as f64 };
 
         acf.push(sum / norm);
     }
 
     acf
 }
-
 
 // TESTS
 #[cfg(test)]

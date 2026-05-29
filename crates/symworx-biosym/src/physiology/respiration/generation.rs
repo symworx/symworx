@@ -62,7 +62,8 @@ pub fn generate_respiration_timeseries(params: &RespSimulationParams) -> RespTim
 
     // Use accurate gamma
     let gamma_k = gamma(params.kappa_insp);
-    let insp_norm = params.tidal_volume / (insp_time * (gamma_k / params.kappa_insp.powf(params.kappa_insp)));
+    let insp_norm =
+        params.tidal_volume / (insp_time * (gamma_k / params.kappa_insp.powf(params.kappa_insp)));
 
     let mut rng = match params.seed {
         Some(s) => StdRng::seed_from_u64(s),

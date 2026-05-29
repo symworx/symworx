@@ -58,9 +58,8 @@ pub fn generate_ppg_waveform(
         let t = t0 + i as f64 * dt;
         let rel = t - t0;
 
-        let g = |amp: f64, mu: f64, sigma: f64, x: f64| {
-            amp * (-0.5 * ((x - mu) / sigma).powi(2)).exp()
-        };
+        let g =
+            |amp: f64, mu: f64, sigma: f64, x: f64| amp * (-0.5 * ((x - mu) / sigma).powi(2)).exp();
 
         let val = g(amp_s, mu_s, sigma_s, rel) + g(amp_d, mu_d, sigma_d, rel);
 
@@ -155,15 +154,7 @@ mod tests {
             ..Default::default()
         };
 
-        let ts = create_ppg_timeseries(
-            0.0,
-            &rr_intervals,
-            10,
-            beat_duration,
-            fs,
-            params,
-            &noise,
-        );
+        let ts = create_ppg_timeseries(0.0, &rr_intervals, 10, beat_duration, fs, params, &noise);
 
         assert!(!ts.times.is_empty());
         assert!(!ts.values.is_empty());

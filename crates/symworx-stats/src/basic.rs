@@ -19,10 +19,10 @@ pub fn mean(data: &[f64]) -> f64 {
 }
 
 /// Calculates the median of a slice of f64 values.
-/// 
+///
 /// # Arguments
 /// * `data` - A slice of f64 values for which the median is to be calculated.
-/// 
+///
 /// # Returns
 /// The median value as an f64. If the input slice is empty, it returns NaN.
 pub fn median(data: &[f64]) -> f64 {
@@ -98,7 +98,6 @@ pub fn percentile(data: &[f64], p: Vec<f64>) -> Vec<f64> {
         .collect()
 }
 
-
 // TESTS
 #[cfg(test)]
 mod test_mean {
@@ -106,7 +105,7 @@ mod test_mean {
 
     #[test]
     fn test_mean_odd() {
-        let data = vec![3.0, 4.0, 5.0,];
+        let data = vec![3.0, 4.0, 5.0];
         let mu = mean(&data);
         assert_eq!(mu, 4.0_f64);
     }

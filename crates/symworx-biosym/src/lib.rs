@@ -54,4 +54,3 @@ pub use physiology::*;
 // Version info
 /// Current version of the `symworx-biosym` crate.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
-

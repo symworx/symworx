@@ -17,10 +17,7 @@ pub fn adaptive_mean_filter(data: &[f64], k: f64) -> Vec<f64> {
     }
 
     let mu = mean(data);
-    let variance = data
-        .iter()
-        .map(|&x| (x - mu).powi(2))
-        .sum::<f64>() / data.len() as f64;
+    let variance = data.iter().map(|&x| (x - mu).powi(2)).sum::<f64>() / data.len() as f64;
     let std = variance.sqrt();
     let threshold = k * std;
 

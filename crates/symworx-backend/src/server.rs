@@ -5,14 +5,22 @@
 pub struct Server;
 
 impl Server {
+    // /// Initiate a new server.
+    // fn default() -> Self {
+    //     Self::new()
+    // }
+
+    /// Initiate a new server.
     pub fn new() -> Self {
         Self
     }
 
+    /// Start the server.
     pub fn start(&mut self) {
         // TODO: implement server start logic
     }
 
+    /// Stop the server.
     pub fn stop(&mut self) {
         // TODO: implement server stop logic
     }

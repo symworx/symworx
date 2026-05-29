@@ -6,49 +6,31 @@
 //! Core tools for interpolation, normalization, resampling, decimation
 //! (for visualization), peak detection, and feature extraction.
 
+/// Decimation algorithms.
 pub mod decimate;
+
+/// Interpolation algorithms.
 pub mod interpolation;
+
+/// Data and signal normalization.
 pub mod normalization;
+
+/// Peak detection algorithms.
 pub mod peaks;
+
+/// Resampling algorithms.
 pub mod resample;
+
+/// Traits for signal processing
 pub mod traits;
 
-
-// Interpolation
-pub use interpolation::{
-    interp1,
-    interp_cubic,
-    interp_linear,
-    interp_spline,
-};
-
-// Normalization
-pub use normalization::{
-    normalize,
-    zscore,
-};
-
-// Peak detection
-pub use peaks::{
-    Peak,
-    PeakFinder,
-    PeakFinderBuilder,
-};
-
-// Decimation (for visualization)
+pub use interpolation::{interp_cubic, interp_linear, interp_spline, interp1};
+pub use normalization::{normalize, zscore};
+pub use peaks::{Peak, PeakFinder, PeakFinderBuilder};
 pub use decimate::min_max_decimate;
-
-// Resampling
-pub use resample::{
-    Resample,
-    ResampleMethod,
-};
-
-// Traits
+pub use resample::{Resample, ResampleMethod};
 pub use traits::PeakDetect;
 
-
-// Namespaced convenience exports
 /// Interpolation functions.
 pub mod interp {
     pub use super::interpolation::*;

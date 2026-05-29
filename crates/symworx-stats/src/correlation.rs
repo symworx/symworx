@@ -90,7 +90,6 @@ pub fn correlation_matrix_from_vec(data: &[Vec<f64>]) -> Array2<f64> {
     correlation_matrix(&array)
 }
 
-
 // TESTS
 #[cfg(test)]
 mod tests {
@@ -99,12 +98,7 @@ mod tests {
 
     #[test]
     fn test_pearson_two_variables() {
-        let data = array![
-            [1.0, 2.0],
-            [2.0, 4.0],
-            [3.0, 6.0],
-            [4.0, 8.0]
-        ];
+        let data = array![[1.0, 2.0], [2.0, 4.0], [3.0, 6.0], [4.0, 8.0]];
 
         let r = pearson_correlation(&data, 0, 1);
         assert!((r - 1.0).abs() < 1e-8);
@@ -113,10 +107,10 @@ mod tests {
     #[test]
     fn test_correlation_matrix_3_variables() {
         let data = array![
-            [1.0,  2.0,  3.0],
-            [2.0,  4.0,  6.0],
-            [3.0,  6.0,  9.0],
-            [4.0,  8.0, 12.0]
+            [1.0, 2.0, 3.0],
+            [2.0, 4.0, 6.0],
+            [3.0, 6.0, 9.0],
+            [4.0, 8.0, 12.0]
         ];
 
         let matrix = correlation_matrix(&data);

@@ -9,8 +9,11 @@
 /// Standard Least Mean Squares (LMS) adaptive filter.
 #[derive(Debug, Clone)]
 pub struct LmsFilter {
+    /// Weights used in LMS
     weights: Vec<f64>,
-    mu: f64,        // step size
+    /// Step size
+    mu: f64, 
+    /// Length 
     length: usize,
 }
 
@@ -21,12 +24,13 @@ pub struct LmsFilter {
 #[derive(Debug, Clone)]
 pub struct NlmsFilter {
     weights: Vec<f64>,
-    mu: f64,        // normalized step size (typically 0.1 - 1.0)
+    mu: f64, // normalized step size (typically 0.1 - 1.0)
     length: usize,
-    epsilon: f64,   // small constant to avoid division by zero
+    epsilon: f64, // small constant to avoid division by zero
 }
 
 impl LmsFilter {
+    /// Initiate a new LMS Filter
     pub fn new(length: usize, mu: f64) -> Self {
         assert!(length > 0);
         assert!(mu > 0.0);
@@ -37,12 +41,18 @@ impl LmsFilter {
         }
     }
 
+    /// Perform one adaptation step using the LMS algorithm.
     pub fn adapt(&mut self, input: f64, desired: f64) -> f64 {
         let input_vec: Vec<f64> = std::iter::once(input)
             .chain(self.weights.iter().copied().take(self.length - 1))
             .collect();
 
-        let output: f64 = self.weights.iter().zip(&input_vec).map(|(&w, &x)| w * x).sum();
+        let output: f64 = self
+            .weights
+            .iter()
+            .zip(&input_vec)
+            .map(|(&w, &x)| w * x)
+            .sum();
         let error = desired - output;
 
         for (w, &x) in self.weights.iter_mut().zip(&input_vec) {
@@ -52,21 +62,29 @@ impl LmsFilter {
         error
     }
 
+    /// Process a batch of samples with LMS adaptation.
     pub fn process(&mut self, inputs: &[f64], desired: &[f64]) -> Vec<f64> {
         assert_eq!(inputs.len(), desired.len());
-        inputs.iter().zip(desired).map(|(&x, &d)| self.adapt(x, d)).collect()
+        inputs
+            .iter()
+            .zip(desired)
+            .map(|(&x, &d)| self.adapt(x, d))
+            .collect()
     }
 
+    /// Returns a copy of the current filter weights.
     pub fn weights(&self) -> Vec<f64> {
         self.weights.clone()
     }
 
+    /// Reset all filter weights to zero.
     pub fn reset(&mut self) {
         self.weights.fill(0.0);
     }
 }
 
 impl NlmsFilter {
+    /// Initiate a new NLMS filter
     pub fn new(length: usize, mu: f64, epsilon: f64) -> Self {
         assert!(length > 0);
         assert!(mu > 0.0);
@@ -78,12 +96,18 @@ impl NlmsFilter {
         }
     }
 
+    /// Perform one adaptation step using the NLMS algorithm.
     pub fn adapt(&mut self, input: f64, desired: f64) -> f64 {
         let input_vec: Vec<f64> = std::iter::once(input)
             .chain(self.weights.iter().copied().take(self.length - 1))
             .collect();
 
-        let output: f64 = self.weights.iter().zip(&input_vec).map(|(&w, &x)| w * x).sum();
+        let output: f64 = self
+            .weights
+            .iter()
+            .zip(&input_vec)
+            .map(|(&w, &x)| w * x)
+            .sum();
         let error = desired - output;
 
         // Compute input power
@@ -97,15 +121,22 @@ impl NlmsFilter {
         error
     }
 
+    /// Process a batch of samples with NLMS adaptation.
     pub fn process(&mut self, inputs: &[f64], desired: &[f64]) -> Vec<f64> {
         assert_eq!(inputs.len(), desired.len());
-        inputs.iter().zip(desired).map(|(&x, &d)| self.adapt(x, d)).collect()
+        inputs
+            .iter()
+            .zip(desired)
+            .map(|(&x, &d)| self.adapt(x, d))
+            .collect()
     }
 
+    /// Returns a copy of the current filter weights.
     pub fn weights(&self) -> Vec<f64> {
         self.weights.clone()
     }
 
+    /// Reset all filter weights to zero.
     pub fn reset(&mut self) {
         self.weights.fill(0.0);
     }

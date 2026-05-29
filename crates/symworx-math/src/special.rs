@@ -1,7 +1,6 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-// Gamma Function
 
 /// Computes the Gamma function Γ(x) for x > 0.
 ///
@@ -13,7 +12,7 @@ pub fn gamma(x: f64) -> f64 {
         return f64::NAN; // can return 0.0 / f64::INFINITY for +inf on poles
     }
 
-    // Lanczos approximation with g=5, n=6 coefficients 
+    // Lanczos approximation with g=5, n=6 coefficients
     // (balancing speed and accuracy)
     const G: f64 = 5.0;
     const P: [f64; 6] = [
@@ -48,10 +47,10 @@ pub fn ln_gamma(x: f64) -> f64 {
         return f64::NAN;
     }
     // TODO: implement dedicated ln_gamma later for better accuracy
-    gamma(x).ln() 
+    gamma(x).ln()
 }
 
-// Beta function 
+// Beta function
 
 /// Beta function B(a, b) = Γ(a)Γ(b) / Γ(a+b)
 ///
@@ -72,7 +71,6 @@ pub fn ln_beta(a: f64, b: f64) -> f64 {
     }
     ln_gamma(a) + ln_gamma(b) - ln_gamma(a + b)
 }
-
 
 // TESTS
 #[cfg(test)]

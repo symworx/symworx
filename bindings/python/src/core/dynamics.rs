@@ -6,8 +6,8 @@ use pyo3::wrap_pyfunction;
 
 use numpy::{IntoPyArray, PyArray2};
 use symworx_core::dynamics::{
-    edim, fnn, sample_entropy, rqa, rqa_from_trajectory, RecurrencePlot, RqaResult,
-    DEFAULT_LMIN, DEFAULT_VMIN,
+    DEFAULT_LMIN, DEFAULT_VMIN, RecurrencePlot, RqaResult, edim, fnn, rqa, rqa_from_trajectory,
+    sample_entropy,
 };
 
 // ================================================
@@ -165,10 +165,9 @@ impl PyRecurrencePlot {
         let dim = trajectory[0].len();
         let flat: Vec<f64> = trajectory.into_iter().flatten().collect();
 
-        let arr = Array2::from_shape_vec((n, dim), flat)
-            .map_err(|e| {
-                pyo3::exceptions::PyValueError::new_err(format!("Invalid trajectory shape: {}", e))
-            })?;
+        let arr = Array2::from_shape_vec((n, dim), flat).map_err(|e| {
+            pyo3::exceptions::PyValueError::new_err(format!("Invalid trajectory shape: {}", e))
+        })?;
 
         let rp = RecurrencePlot::from_trajectory(&arr, radius, theiler);
         Ok(PyRecurrencePlot { inner: rp })
@@ -209,13 +208,7 @@ pub fn py_sample_entropy(data: Vec<f64>, m: usize, r: f64) -> f64 {
 // --- New RQA functions ---
 
 #[pyfunction(name = "rqa")]
-pub fn py_rqa(
-    data: Vec<f64>,
-    m: usize,
-    tau: usize,
-    radius: f64,
-    theiler: usize,
-) -> PyRqaResult {
+pub fn py_rqa(data: Vec<f64>, m: usize, tau: usize, radius: f64, theiler: usize) -> PyRqaResult {
     let res = rqa(&data, m, tau, radius, theiler);
     PyRqaResult::from(res)
 }
@@ -234,8 +227,9 @@ pub fn py_rqa_from_trajectory(
     let dim = trajectory[0].len();
     let flat: Vec<f64> = trajectory.into_iter().flatten().collect();
 
-    let arr = Array2::from_shape_vec((n, dim), flat)
-        .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("Invalid trajectory shape: {}", e)))?;
+    let arr = Array2::from_shape_vec((n, dim), flat).map_err(|e| {
+        pyo3::exceptions::PyValueError::new_err(format!("Invalid trajectory shape: {}", e))
+    })?;
 
     let res = rqa_from_trajectory(&arr, radius, theiler);
     Ok(PyRqaResult::from(res))

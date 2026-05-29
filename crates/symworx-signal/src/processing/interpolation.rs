@@ -1,7 +1,6 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-
 /// Linear interpolation of y(x) at new points x_new.
 /// Assumes x is strictly increasing.
 pub fn interp_linear(x: &[f64], y: &[f64], x_new: &[f64]) -> Vec<f64> {
@@ -38,7 +37,7 @@ pub fn interp_linear(x: &[f64], y: &[f64], x_new: &[f64]) -> Vec<f64> {
 /// Alias for interp_linear, providing a familiar name to other
 ///   scientific computing libraries.
 pub fn interp1(x: &[f64], y: &[f64], x_new: &[f64]) -> Vec<f64> {
-     interp_linear(x, y, x_new)
+    interp_linear(x, y, x_new)
 }
 
 /// Placeholder for cubic interpolation.

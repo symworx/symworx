@@ -12,16 +12,24 @@ pub struct ProcessManager {
 }
 
 impl ProcessManager {
+    // /// Initiate a new server.
+    // fn default() -> Self {
+    //     Self::new()
+    // }
+    
+    /// Initiate a new process.
     pub fn new() -> Self {
         Self {
             server: Server::new(),
         }
     }
 
+    /// Start the process.
     pub fn start(&mut self) {
         self.server.start();
     }
 
+    /// Stop the process.
     pub fn stop(&mut self) {
         self.server.stop();
     }

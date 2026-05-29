@@ -1,13 +1,12 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-use std::fs::File;
 use csv::{ReaderBuilder, WriterBuilder};
+use std::fs::File;
 
 use symworx_error::SymError;
 
 use crate::traits::{SymReader, SymWriter};
-
 
 /// CSV Reader implementation for `symworx-io`.
 ///
@@ -18,14 +17,12 @@ impl SymReader for CsvReader {
     type Output = Vec<Vec<f64>>;
 
     fn read(path: &str) -> Result<Self::Output, SymError> {
-        let mut rdr = ReaderBuilder::new()
-            .has_headers(false)
-            .from_path(path)?; 
+        let mut rdr = ReaderBuilder::new().has_headers(false).from_path(path)?;
 
         let mut rows = Vec::new();
 
         for result in rdr.records() {
-            let record = result?; 
+            let record = result?;
 
             let row = record
                 .iter()
@@ -52,7 +49,7 @@ impl SymWriter for CsvWriter {
         let mut wtr = WriterBuilder::new().from_writer(file);
 
         for row in data {
-            wtr.serialize(row)?; 
+            wtr.serialize(row)?;
         }
 
         wtr.flush().map_err(SymError::Io)

@@ -11,7 +11,7 @@ use symworx_core::signal::filters::{
 };
 
 // ==========================================================
-// Adaptive filters 
+// Adaptive filters
 // ==========================================================
 
 #[pyfunction(name = "adaptive_mean_filter")]
@@ -19,7 +19,6 @@ pub fn py_adaptive_mean_filter(data: Vec<f64>, k: f64) -> PyResult<Vec<f64>> {
     let out = adaptive_mean_filter(&data, k);
     Ok(out)
 }
-
 
 #[pyfunction(name = "adaptive_median_filter")]
 pub fn py_adaptive_median_filter(data: Vec<f64>, k: f64) -> PyResult<Vec<f64>> {
@@ -41,9 +40,7 @@ impl PyBandpassFilter {
     #[new]
     fn new(fs: f64, f_low: f64, f_high: f64, q: f64) -> Self {
         Self {
-            inner: BandpassFilter::new(
-                fs, f_low, f_high, q
-            ),
+            inner: BandpassFilter::new(fs, f_low, f_high, q),
         }
     }
 
@@ -69,10 +66,8 @@ pub struct PyChebyshevFilter {
 impl PyChebyshevFilter {
     #[new]
     fn new(fs: f64, f_low: f64, f_high: f64, ripple_db: f64) -> Self {
-        Self { 
-            inner: ChebyshevFilter::new(
-                fs, f_low, f_high, ripple_db
-            ),
+        Self {
+            inner: ChebyshevFilter::new(fs, f_low, f_high, ripple_db),
         }
     }
 
@@ -89,9 +84,8 @@ impl PyChebyshevFilter {
     }
 }
 
-
 // ==========================================================
-// Nonlinear Filters 
+// Nonlinear Filters
 // ==========================================================
 #[pyclass(name = "KalmanFilter")]
 pub struct PyKalmanFilter {
@@ -103,9 +97,7 @@ impl PyKalmanFilter {
     #[new]
     fn new(dt: f64, process_var: f64, meas_var: f64) -> Self {
         Self {
-            inner: KalmanFilter::new(
-                dt, process_var, meas_var,
-            )
+            inner: KalmanFilter::new(dt, process_var, meas_var),
         }
     }
 
@@ -127,13 +119,11 @@ impl PyKalmanFilter {
 // ==========================================================
 // Placeholder
 
-
 // ==========================================================
 // PYTHON REGISTER
 // ==========================================================
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
-
     m.add_function(wrap_pyfunction!(py_adaptive_mean_filter, m)?)?;
     m.add_function(wrap_pyfunction!(py_adaptive_median_filter, m)?)?;
 

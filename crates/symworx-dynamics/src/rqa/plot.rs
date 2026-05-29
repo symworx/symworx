@@ -83,13 +83,7 @@ impl RecurrencePlot {
     /// * `m` — Embedding dimension.
     /// * `tau` — Time delay (lag).
     /// * `radius`, `theiler` — See [`RecurrencePlot::from_trajectory`].
-    pub fn from_series(
-        series: &[f64],
-        m: usize,
-        tau: usize,
-        radius: f64,
-        theiler: usize,
-    ) -> Self {
+    pub fn from_series(series: &[f64], m: usize, tau: usize, radius: f64, theiler: usize) -> Self {
         let embedded = crate::edim(series, m, tau);
         if embedded.is_empty() {
             return Self::new();
@@ -117,11 +111,7 @@ mod tests {
     #[test]
     fn test_rp_from_small_trajectory_theiler() {
         // 3 points, theiler=1 should kill the main diagonal and immediate neighbors
-        let traj = array![
-            [0.0, 0.0],
-            [1.0, 0.0],
-            [0.0, 1.0],
-        ];
+        let traj = array![[0.0, 0.0], [1.0, 0.0], [0.0, 1.0],];
 
         let rp = RecurrencePlot::from_trajectory(&traj, 10.0, 1);
         assert_eq!(rp.n_points, 3);

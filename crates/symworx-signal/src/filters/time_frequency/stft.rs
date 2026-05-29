@@ -12,8 +12,11 @@ use rustfft::{FftPlanner, num_complex::Complex};
 /// Window function for STFT.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum WindowType {
+    /// Hann windowing
     Hann,
+    /// Hamming windowing
     Hamming,
+    /// Rectangular windowing
     Rectangular,
 }
 
@@ -48,7 +51,10 @@ pub fn stft(
     window_type: WindowType,
 ) -> StftResult {
     assert!(window_length > 1, "Window length must be > 1");
-    assert!(overlap < window_length, "Overlap must be less than window length");
+    assert!(
+        overlap < window_length,
+        "Overlap must be less than window length"
+    );
 
     let hop = window_length - overlap;
     let n_windows = (signal.len() - window_length) / hop + 1;
@@ -71,10 +77,16 @@ pub fn stft(
     // Generate window
     let window: Vec<f64> = match window_type {
         WindowType::Hann => (0..window_length)
-            .map(|i| 0.5 * (1.0 - (2.0 * std::f64::consts::PI * i as f64 / (window_length - 1) as f64).cos()))
+            .map(|i| {
+                0.5 * (1.0
+                    - (2.0 * std::f64::consts::PI * i as f64 / (window_length - 1) as f64).cos())
+            })
             .collect(),
         WindowType::Hamming => (0..window_length)
-            .map(|i| 0.54 - 0.46 * (2.0 * std::f64::consts::PI * i as f64 / (window_length - 1) as f64).cos())
+            .map(|i| {
+                0.54 - 0.46
+                    * (2.0 * std::f64::consts::PI * i as f64 / (window_length - 1) as f64).cos()
+            })
             .collect(),
         WindowType::Rectangular => vec![1.0; window_length],
     };

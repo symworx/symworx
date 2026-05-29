@@ -49,11 +49,17 @@ impl RlsFilter {
     /// Performs one RLS adaptation step.
     pub fn adapt(&mut self, input: f64, desired: f64) -> f64 {
         let input_vec: Vec<f64> = std::iter::once(input)
-            .chain(self.weights.iter().copied().take(self.length.saturating_sub(1)))
+            .chain(
+                self.weights
+                    .iter()
+                    .copied()
+                    .take(self.length.saturating_sub(1)),
+            )
             .collect();
 
         // Compute output
-        let output: f64 = self.weights
+        let output: f64 = self
+            .weights
             .iter()
             .zip(&input_vec)
             .map(|(&w, &x)| w * x)
@@ -69,7 +75,8 @@ impl RlsFilter {
             }
         }
 
-        let lambda_pi_input = self.lambda + pi.iter().zip(&input_vec).map(|(&p, &x)| p * x).sum::<f64>();
+        let lambda_pi_input =
+            self.lambda + pi.iter().zip(&input_vec).map(|(&p, &x)| p * x).sum::<f64>();
         let k: Vec<f64> = pi.iter().map(|&val| val / lambda_pi_input).collect();
 
         // Update weights
@@ -91,16 +98,19 @@ impl RlsFilter {
     /// Process multiple samples with online adaptation.
     pub fn process(&mut self, inputs: &[f64], desired: &[f64]) -> Vec<f64> {
         assert_eq!(inputs.len(), desired.len());
-        inputs.iter()
+        inputs
+            .iter()
             .zip(desired.iter())
             .map(|(&x, &d)| self.adapt(x, d))
             .collect()
     }
 
+    /// Clone the weights for analysis.
     pub fn weights(&self) -> Vec<f64> {
         self.weights.clone()
     }
 
+    /// Reset weights used in analysis.
     pub fn reset(&mut self) {
         self.weights.fill(0.0);
         for i in 0..self.length {
@@ -111,7 +121,7 @@ impl RlsFilter {
     }
 }
 
-// --- Tests ---
+// TESTS
 
 #[cfg(test)]
 mod tests {

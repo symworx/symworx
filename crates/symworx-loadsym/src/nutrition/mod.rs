@@ -4,7 +4,13 @@
 pub mod bodycomp;
 
 pub use bodycomp::{
+    ActivityLevel,
+    DeficitLevel,
+    DeficitStrategy, 
+    WeightlossModel,
     calculate_bmr,
     calculate_tdee,
-    ActivityLevel
+    calculate_deficit,
+    calculate_deficit_from_active,
+    calculate_weightloss, 
 };

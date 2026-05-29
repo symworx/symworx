@@ -8,10 +8,7 @@ pub mod quality;
 
 pub use analysis::analyze_ppg;
 pub use generation::{
-    PPGSimulationParams,
-    PPGTimeSeries,
-    generate_ppg_waveform,
-    generate_ppg_timeseries,
+    PPGSimulationParams, PPGTimeSeries, generate_ppg_timeseries, generate_ppg_waveform,
 };
 pub use noise::PPGNoiseConfig;
 pub use quality::PPGSignalQuality;

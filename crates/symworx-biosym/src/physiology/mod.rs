@@ -3,23 +3,14 @@
 
 //! Physiology module.
 //!
-//! 
+//!
 
 pub mod ppg;
 pub mod respiration;
 
 // EXPORTS
 pub use ppg::{
-    analyze_ppg,
-    PPGSimulationParams,
-    PPGTimeSeries,
-    generate_ppg_waveform,
-    generate_ppg_timeseries,
-    PPGNoiseConfig,
-    PPGSignalQuality,
+    PPGNoiseConfig, PPGSignalQuality, PPGSimulationParams, PPGTimeSeries, analyze_ppg,
+    generate_ppg_timeseries, generate_ppg_waveform,
 };
-pub use respiration::{
-    RespSimulationParams,
-    RespTimeSeries,
-    generate_respiration_timeseries,
-};
+pub use respiration::{RespSimulationParams, RespTimeSeries, generate_respiration_timeseries};
