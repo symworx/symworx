@@ -13,3 +13,5 @@ description      = "Statistical tools and resources -- part of the symworx-core 
 ndarray        = { workspace = true }
 ndarray-linalg = { workspace = true }
 rustfft        = { workspace = true }
+
+symworx-math   = { path = "../symworx-math" }

@@ -5,9 +5,9 @@ use pyo3::prelude::*;
 pub mod dynamics;
 pub mod filters;
 pub mod io;
+pub mod math;
 pub mod processing;
 pub mod statistics;
-// pub mod math;
 // pub mod backend;
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
@@ -30,6 +30,10 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     let statistics_mod = PyModule::new(m.py(), "statistics")?;
     statistics::register(&statistics_mod)?;
     m.add_submodule(&statistics_mod)?;
+
+    let math_mod = PyModule::new(m.py(), "math")?;
+    math::register(&math_mod)?;
+    m.add_submodule(&math_mod)?;
 
     Ok(())
 }

@@ -5,30 +5,41 @@
 //!
 //! General-purpose functions for analyzing variability in any sequential
 //! signal (e.g. heart rate intervals, gait stride times, respiration cycles, etc.).
+//!
+//! The core `successive_differences` primitive is signed and lives in
+//! `symworx-math`. This module re-exports it and builds higher-level
+//! variability descriptors on top.
+
+use symworx_math::series;
+
+/// Returns the signed differences between consecutive elements.
+///
+/// This is the canonical "successive differences" primitive, re-exported
+/// from `symworx-math` for convenience.
+///
+/// It preserves direction (e.g. deceleration vs acceleration in intervals).
+///
+/// For the absolute version, see [`successive_absolute_differences`].
+pub use series::successive_differences;
 
 /// Returns the absolute differences between consecutive elements.
 ///
-/// # Arguments
-/// * `data` - Input signal
-///
-/// # Returns
-/// Vector of successive differences. Returns empty vector if `data.len() < 2`.
-pub fn successive_differences(data: &[f64]) -> Vec<f64> {
-    if data.len() < 2 {
-        return Vec::new();
-    }
-    data.windows(2).map(|w| (w[1] - w[0]).abs()).collect()
-}
+/// Re-exported from `symworx-math`.
+pub use series::successive_absolute_differences;
 
-/// Computes the mean of successive absolute differences.
+/// Computes the mean of successive absolute differences (MSD).
+///
+/// This uses the absolute differences internally, as is conventional
+/// for many variability measures (e.g. in heart rate variability and gait
+/// analysis).
 ///
 /// # Arguments
 /// * `data` - Input signal
 ///
 /// # Returns
-/// Mean successive difference. Returns `NaN` if `data` is empty.
+/// Mean successive absolute difference. Returns `NaN` if `data` is empty.
 pub fn mean_successive_differences(data: &[f64]) -> f64 {
-    let diffs = successive_differences(data);
+    let diffs = successive_absolute_differences(data);
     if diffs.is_empty() {
         return f64::NAN;
     }
@@ -84,12 +95,20 @@ mod tests {
     #[test]
     fn test_successive_differences() {
         let data = [1.0, 2.0, 4.0];
+        // Now signed (not absolute)
         assert_eq!(successive_differences(&data), vec![1.0, 2.0]);
+    }
+
+    #[test]
+    fn test_successive_differences_signed() {
+        let data = [4.0, 2.0, 5.0];
+        assert_eq!(successive_differences(&data), vec![-2.0, 3.0]);
     }
 
     #[test]
     fn test_mean_successive_difference() {
         let data = [1.0, 2.0, 4.0];
+        // Uses absolute differences internally
         assert_eq!(mean_successive_differences(&data), 1.5);
     }
 

@@ -7,6 +7,11 @@
 //!
 //! This crate contains general-purpose numerical tools used across
 //! `symworx-core` and domain crates (especially `symworx-biosym`).
+//!
+//! ## Notable Modules
+//!
+//! - [`series`] — Low-level operations on ordered sequences
+//!   (the canonical home for successive differences and similar primitives).
 
 #![allow(unused_imports)]
 #![warn(missing_docs)]
@@ -28,12 +33,16 @@ pub mod random;
 /// Special functions (e.g., beta, gamma).  
 pub mod special;
 
+/// Series and sequential operations (differences, etc.).
+pub mod series;
+
 // Re-exports
 pub use distributions::{beta_kernel, beta_pdf, gamma_kernel, gamma_pdf};
 pub use integration::{cumtrapz, rk4_integrate, rk4_step, trapz};
 pub use oscillators::VanDerPol;
 pub use random::*;
 pub use special::{beta, gamma, ln_beta, ln_gamma};
+pub use series::{successive_absolute_differences, successive_differences};
 
 // Namespaced re-exports (for convenience)
 /// Probability distributions: kernels, PDFs, sampling.
@@ -49,6 +58,11 @@ pub mod special_fn {
 /// Numerical integration methods (trapezoidal + ODE solvers).
 pub mod integrate {
     pub use super::integration::*;
+}
+
+/// Series and sequential difference operations.
+pub mod series_ops {
+    pub use super::series::*;
 }
 
 // Version info

@@ -11,7 +11,8 @@ Key crates:
 - `symworx-io` — Loading/saving signals (CSV, Parquet, IBI, etc.)
 - `symworx-dynamics` — Embedding, entropy, RQA/CRQA (core algorithms)
 - `symworx-tui` — Terminal UI (`symview`) — current primary focus
-- `symworx-stats`, `symworx-math`, `symworx-backend`, Python bindings, etc.
+- `symworx-math` — Low-level numerical and sequence primitives (including the canonical home for series operations in `src/series.rs`)
+- `symworx-stats`, `symworx-backend`, Python bindings, etc.
 
 ## Development Focus
 
@@ -87,6 +88,9 @@ cargo run -p symworx-tui --example generate_biosym_demo
 - Demo generation: `crates/symworx-tui/src/generate.rs`
 - Conversion logic: `crates/symworx-tui/src/convert.rs`
 - RQA core (already implemented): `crates/symworx-dynamics/src/rqa/`
+- Low-level series / sequence primitives (canonical implementation): `crates/symworx-math/src/series.rs`
+
+**Important:** Successive difference logic and other general sequence operations belong in `symworx-math`, **not** in `symworx-stats`, `symworx-signal`, or domain crates like `symworx-biosym`. Re-use via `symworx-core::math::series` (or direct `symworx-math`).
 
 ## Python Bindings
 
@@ -94,6 +98,6 @@ RQA and RecurrencePlot are exposed via PyO3 in `bindings/python/`. Keep the Rust
 
 ---
 
-**Last updated:** During active TUI visualization work (Explore tab Sparkline implementation).
+**Last updated:** After migrating successive difference primitives to `symworx-math/src/series.rs` and clarifying crate responsibilities for sequence operations.
 
 When you start a new session, read this file and respect the TUI input priority rules above.

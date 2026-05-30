@@ -3,19 +3,21 @@
 
 use ndarray::Array1;
 
+use symworx_core::math::series;
+
 //! Pure (stateless) gait metric calculations.
 //!
 //! These helpers contain the core math extracted from `GaitData` methods.
 //! They are intentionally decoupled from mutable state so they are easy to
 //! test, reuse, and call from generation or analysis code later.
 
-/// Compute successive differences between stride times.
+/// Compute successive (signed) differences between stride times.
+///
+/// This is sourced from the canonical implementation in `symworx-math`
+/// (re-exported through `symworx-core`).
 pub fn compute_stride_intervals(stride_times: &Array1<f64>) -> Array1<f64> {
-    if stride_times.len() >= 2 {
-        &stride_times.slice(ndarray::s![1..]) - &stride_times.slice(ndarray::s![..-1])
-    } else {
-        Array1::zeros(0)
-    }
+    let diffs = series::successive_differences(stride_times.as_slice().unwrap_or(&[]));
+    Array1::from(diffs)
 }
 
 /// Scale stride intervals by walking speed to obtain lengths (meters).
