@@ -98,6 +98,55 @@ pub fn percentile(data: &[f64], p: Vec<f64>) -> Vec<f64> {
         .collect()
 }
 
+/// Calculates the population standard deviation of a slice of f64 values.
+///
+/// sd = sqrt( mean( (x_i - mean)^2 ) )  (divide by n)
+///
+/// Returns NaN for n < 2 (consistent with other basic stats on insufficient data).
+pub fn std_dev(data: &[f64]) -> f64 {
+    let n = data.len();
+    if n < 2 {
+        return f64::NAN;
+    }
+    let mu = mean(data);
+    if mu.is_nan() {
+        return f64::NAN;
+    }
+    let variance: f64 = data.iter().map(|&x| (x - mu).powi(2)).sum::<f64>() / n as f64;
+    variance.sqrt()
+}
+
+/// Calculates the sample standard deviation (Bessel's correction, divide by n-1).
+///
+/// Returns NaN for n < 2.
+pub fn std_dev_sample(data: &[f64]) -> f64 {
+    let n = data.len();
+    if n < 2 {
+        return f64::NAN;
+    }
+    let mu = mean(data);
+    if mu.is_nan() {
+        return f64::NAN;
+    }
+    let variance: f64 = data.iter().map(|&x| (x - mu).powi(2)).sum::<f64>() / (n - 1) as f64;
+    variance.sqrt()
+}
+
+/// Coefficient of variation (CV = std_dev / |mean|), using population std.
+///
+/// Returns NaN if mean is zero or data insufficient.
+pub fn cv(data: &[f64]) -> f64 {
+    let mu = mean(data);
+    if mu == 0.0 || mu.is_nan() {
+        return f64::NAN;
+    }
+    let sd = std_dev(data);
+    if sd.is_nan() {
+        return f64::NAN;
+    }
+    sd / mu.abs()
+}
+
 // TESTS
 #[cfg(test)]
 mod test_mean {
@@ -141,5 +190,39 @@ mod test_median {
         let data: Vec<f64> = vec![];
         let med = median(&data);
         assert!(med.is_nan());
+    }
+}
+
+#[cfg(test)]
+mod test_std_dev {
+    use super::*;
+
+    #[test]
+    fn test_std_dev_basic() {
+        let data = vec![2.0, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0];
+        // Known population sd ≈ 2.0 (for this set)
+        let sd = std_dev(&data);
+        assert!((sd - 2.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_std_dev_sample() {
+        let data = vec![2.0, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0];
+        let sd = std_dev_sample(&data);
+        // sqrt( variance with n-1 ) > population
+        assert!(sd > 2.0 && sd < 2.2);
+    }
+
+    #[test]
+    fn test_std_dev_insufficient() {
+        assert!(std_dev(&[42.0]).is_nan());
+        assert!(std_dev(&[]).is_nan());
+    }
+
+    #[test]
+    fn test_cv() {
+        let data = vec![10.0, 20.0, 30.0];
+        let c = cv(&data);
+        assert!((c - 0.40824829046).abs() < 1e-8); // sd=8.16496... / mean=20
     }
 }

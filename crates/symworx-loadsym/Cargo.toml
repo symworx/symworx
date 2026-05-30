@@ -10,6 +10,6 @@ description      = "Load and periodization modeling"
 
 [dependencies]
 ndarray         = { version = "0.15", features = ["std"] }
-# numpy           = { version = "0.21" }
+thiserror       = { workspace = true }
 
 symworx-core    = { path = "../symworx-core" }

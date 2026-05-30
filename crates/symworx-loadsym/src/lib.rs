@@ -6,22 +6,32 @@
 //! Training load quantification, optimization, nutrition, and energy expenditure
 //! modeling for the SymWorx ecosystem.
 //!
-//! This crate provides tools for calculating acute:chronic workload ratios,
-//! training impulse (TRIMP), recovery modeling, nutritional macros, and
-//! energy balance in athletic and clinical contexts.
+//! ## Core Capabilities (2026)
+//! - Low-level mechanical & physiological load (expanding toward TRIMP family, sRPE, etc.).
+//! - **ACWR / EWMA / risk classification** — the primary primitives for
+//!   populating `player_load_metrics` (acute/chronic, acwr, ewma_*, risk_level).
+//! - Monotony, strain, readiness, adaptive capacity, life-stress, and periodization
+//!   recommendations (ported from the original Python loadsym design).
+//! - Nutrition & body-composition modeling (BMR, TDEE, deficit strategies, weight-loss trajectories).
+//!
+//! ## Relationship to UNCG Spartans & Legacy
+//! This is the **canonical computation engine** for the cSYMd ecosystem.
+//! High-level orchestration, vendor-specific CSV parsers (Catapult, StatsSports, etc.),
+//! and DB writes live in consuming applications (e.g. uncg-spartans import scripts).
+//!
+//! The original pure-Python loadsym (~/worx/symworx/loadsym) serves as the
+//! design reference and test oracle for the modeling layer.
 
-#![allow(unused_imports)]
-#![allow(dead_code)]
-#![allow(unsafe_op_in_unsafe_fn)]
-#![allow(improper_ctypes_definitions)]
 #![warn(missing_docs)]
 #![doc(html_root_url = "https://docs.rs/symworx-loadsym")]
 
 // Modules
+pub mod error;
 pub mod load;
 pub mod nutrition;
 
 // Re-exports
+pub use error::{LoadSymError, Result};
 pub use load::*;
 pub use nutrition::*;
 

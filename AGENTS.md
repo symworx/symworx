@@ -92,12 +92,30 @@ cargo run -p symworx-tui --example generate_biosym_demo
 
 **Important:** Successive difference logic and other general sequence operations belong in `symworx-math`, **not** in `symworx-stats`, `symworx-signal`, or domain crates like `symworx-biosym`. Re-use via `symworx-core::math::series` (or direct `symworx-math`).
 
+## Crate Responsibilities & Dependency Hygiene
+
+The workspace strongly prefers **minimal, intentional dependencies**. Every new dependency (especially those bringing native code, large transitive graphs, or platform-specific build requirements) must be justified.
+
+### Linear Algebra & Heavy Dependencies
+- `ndarray-linalg` (and its transitive dependencies such as `cauchy`, `lax`, and LAPACK backends like OpenBLAS) is considered **heavy**.
+- In `symworx-stats`, SVD, PCA, and the high-quality `l2`/`l1` regression implementations live behind an opt-in **`linalg`** feature.
+  - The feature is **off by default** in the standalone `symworx-stats` crate. This keeps the dependency footprint small for common use cases (basic statistics, variability metrics, correlations, etc.).
+  - `symworx-core` enables the `linalg` feature on `symworx-stats` by default for convenience, since most consumers go through `symworx-core`.
+- Do **not** add `ndarray-linalg` (or similar) unconditionally to `symworx-math`, `symworx-stats`, or leaf crates unless the functionality is core to that crate *and* cannot reasonably be feature-gated.
+- When a heavy dependency is truly required, prefer feature-gating it and documenting the cost (compile time, binary size, native requirements).
+
+### General Rules
+- Prefer pure-Rust or already-present workspace dependencies when possible.
+- `symworx-math` is the canonical home for low-level numerical and sequence primitives.
+- `symworx-stats` owns statistical descriptors and light modeling on top of those primitives.
+- If you need to add a new dependency, follow the "When to Ask vs. When to Just Do It" rule above.
+
 ## Python Bindings
 
 RQA and RecurrencePlot are exposed via PyO3 in `bindings/python/`. Keep the Rust side as the source of truth.
 
 ---
 
-**Last updated:** After migrating successive difference primitives to `symworx-math/src/series.rs` and clarifying crate responsibilities for sequence operations.
+**Last updated:** After introducing the `linalg` feature in `symworx-stats` (opt-in by default in the crate, enabled via `symworx-core`) and documenting dependency hygiene principles.
 
 When you start a new session, read this file and respect the TUI input priority rules above.

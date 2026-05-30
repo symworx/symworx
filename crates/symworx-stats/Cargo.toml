@@ -9,9 +9,16 @@ license          = { workspace = true }
 repository       = { workspace = true }
 description      = "Statistical tools and resources -- part of the symworx-core crate"
 
+[features]
+default = []
+## Enables SVD, PCA, and fast linear regression (l2/l1) via LAPACK.
+## This pulls in ndarray-linalg + its backend (OpenBLAS by default in the workspace)
+## plus transitive deps such as cauchy. Only enable if you actually need
+## the advanced linear algebra functionality.
+linalg = ["dep:ndarray-linalg"]
+
 [dependencies]
 ndarray        = { workspace = true }
-ndarray-linalg = { workspace = true }
-rustfft        = { workspace = true }
+ndarray-linalg = { workspace = true, optional = true }
 
 symworx-math   = { path = "../symworx-math" }

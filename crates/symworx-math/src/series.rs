@@ -94,6 +94,96 @@ pub fn successive_absolute_differences_iter(data: &[f64]) -> impl Iterator<Item 
     data.windows(2).map(|w| (w[1] - w[0]).abs())
 }
 
+// ============================================================
+// Rolling window statistics (canonical home per AGENTS.md)
+// These power ACWR, EWMA, and load monitoring calculations
+// in symworx-loadsym and other consumers.
+// ============================================================
+
+/// Computes a simple rolling (moving) mean over a sliding window.
+///
+/// Returns a Vec of the same length as `data`.
+/// The first `window - 1` entries are `f64::NAN` (insufficient history).
+/// Window size 0 or 1 returns NaNs for all (or original for w=1).
+///
+/// This is the building block for acute/chronic load windows (e.g. 7d, 28d).
+pub fn rolling_mean(data: &[f64], window: usize) -> Vec<f64> {
+    if window == 0 {
+        return vec![f64::NAN; data.len()];
+    }
+    if window == 1 {
+        return data.to_vec();
+    }
+    let n = data.len();
+    if n == 0 {
+        return vec![];
+    }
+    let mut out = vec![f64::NAN; n];
+    if window > n {
+        return out;
+    }
+    let mut sum: f64 = data[..window].iter().sum();
+    out[window - 1] = sum / window as f64;
+    for i in window..n {
+        sum += data[i] - data[i - window];
+        out[i] = sum / window as f64;
+    }
+    out
+}
+
+/// Computes rolling population standard deviation over a sliding window.
+///
+/// Same NaN prefix semantics as [`rolling_mean`].
+/// Useful for monotony calculations (sd of daily loads).
+pub fn rolling_std(data: &[f64], window: usize) -> Vec<f64> {
+    if window <= 1 {
+        return vec![f64::NAN; data.len()];
+    }
+    let n = data.len();
+    if n == 0 {
+        return vec![];
+    }
+    let mut out = vec![f64::NAN; n];
+    if window > n {
+        return out;
+    }
+    // Use two-pass per window for simplicity + correctness (small windows)
+    for i in (window - 1)..n {
+        let start = i + 1 - window;
+        let slice = &data[start..=i];
+        let mu = slice.iter().sum::<f64>() / window as f64;
+        let var = slice.iter().map(|&x| (x - mu).powi(2)).sum::<f64>() / window as f64;
+        out[i] = var.sqrt();
+    }
+    out
+}
+
+/// Exponentially Weighted Moving Average (EWMA).
+///
+/// `span` controls the decay (common in sports science: span=7 or 28).
+/// alpha = 2 / (span + 1). Matches pandas `ewm(span=...)` convention.
+///
+/// Returns same-length Vec. First value = data[0] (no prior).
+/// NaN inputs propagate naturally.
+pub fn ewma(data: &[f64], span: usize) -> Vec<f64> {
+    if data.is_empty() {
+        return vec![];
+    }
+    if span == 0 {
+        return vec![f64::NAN; data.len()];
+    }
+    let alpha = 2.0 / (span as f64 + 1.0);
+    let mut out = Vec::with_capacity(data.len());
+    let mut prev = data[0];
+    out.push(prev);
+    for &x in &data[1..] {
+        let next = alpha * x + (1.0 - alpha) * prev;
+        out.push(next);
+        prev = next;
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -131,5 +221,45 @@ mod tests {
         let data = [0.0, 1.0, 3.0];
         let collected: Vec<_> = successive_differences_iter(&data).collect();
         assert_eq!(collected, vec![1.0, 2.0]);
+    }
+
+    #[test]
+    fn test_rolling_mean_basic() {
+        let data = [1.0, 2.0, 3.0, 4.0, 5.0];
+        let rm = rolling_mean(&data, 3);
+        assert!(rm[0].is_nan() && rm[1].is_nan());
+        assert!((rm[2] - 2.0).abs() < 1e-12);
+        assert!((rm[3] - 3.0).abs() < 1e-12);
+        assert!((rm[4] - 4.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_rolling_mean_window_too_large() {
+        let data = [10.0, 20.0];
+        let rm = rolling_mean(&data, 5);
+        assert!(rm.iter().all(|v| v.is_nan()));
+    }
+
+    #[test]
+    fn test_rolling_std() {
+        let data = [2.0, 2.0, 2.0, 2.0];
+        let rs = rolling_std(&data, 2);
+        assert!(rs[0].is_nan());
+        assert!((rs[1] - 0.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_ewma_matches_alpha() {
+        let data = [1.0, 2.0, 3.0];
+        // span=1 => alpha=1.0 (follows exactly)
+        let e = ewma(&data, 1);
+        assert_eq!(e, vec![1.0, 2.0, 3.0]);
+    }
+
+    #[test]
+    fn test_ewma_decay() {
+        let data = [10.0, 10.0, 10.0, 10.0];
+        let e = ewma(&data, 3); // alpha ≈ 0.5
+        assert!((e[3] - 10.0).abs() < 1e-10);
     }
 }

@@ -42,7 +42,9 @@ pub use integration::{cumtrapz, rk4_integrate, rk4_step, trapz};
 pub use oscillators::VanDerPol;
 pub use random::*;
 pub use special::{beta, gamma, ln_beta, ln_gamma};
-pub use series::{successive_absolute_differences, successive_differences};
+pub use series::{
+    ewma, rolling_mean, rolling_std, successive_absolute_differences, successive_differences,
+};
 
 // Namespaced re-exports (for convenience)
 /// Probability distributions: kernels, PDFs, sampling.

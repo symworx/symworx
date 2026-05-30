@@ -72,7 +72,10 @@ mod tests {
         let sigma = Array2::from_diag(&svd.s);
         let reconstructed = svd.u.dot(&sigma).dot(&svd.vt);
 
-        let max_error = (&a - &reconstructed).mapv(f64::abs).max().unwrap();
+        let max_error = (&a - &reconstructed)
+            .mapv(f64::abs)
+            .into_iter()
+            .fold(0.0_f64, |acc, v| acc.max(v));
         assert!(max_error < 1e-8, "Reconstruction error too large");
     }
 }

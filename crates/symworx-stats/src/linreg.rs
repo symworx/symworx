@@ -6,9 +6,19 @@
 //! Includes Ordinary Least Squares (L2) and Lasso (L1) regression via coordinate descent.
 
 use ndarray::{Array1, Array2, Axis, s};
+
+#[cfg(feature = "linalg")]
 use ndarray_linalg::Inverse;
 
 /// Ordinary Least Squares (L2) linear regression with intercept.
+///
+/// This implementation uses LAPACK (via `ndarray-linalg`) for a fast and
+/// numerically stable matrix inverse when the `linalg` feature is enabled.
+///
+/// When the `linalg` feature is **not** enabled, this function will panic
+/// with a clear message. For dependency-minimal builds, enable the feature
+/// only where regression is actually needed.
+#[cfg(feature = "linalg")]
 pub fn l2(x: &Array2<f64>, y: &Array1<f64>) -> Array1<f64> {
     let n_samples = x.nrows();
     let n_features = x.ncols();
@@ -26,6 +36,18 @@ pub fn l2(x: &Array2<f64>, y: &Array1<f64>) -> Array1<f64> {
 
     // Return slopes only (exclude intercept)
     beta.slice(s![1.., ..]).to_owned().remove_axis(Axis(1))
+}
+
+/// Ordinary Least Squares (L2) linear regression with intercept (stub).
+///
+/// This version is active when the `linalg` feature is disabled.
+/// It will panic at runtime with instructions to enable the feature.
+#[cfg(not(feature = "linalg"))]
+pub fn l2(_x: &Array2<f64>, _y: &Array1<f64>) -> Array1<f64> {
+    panic!(
+        "symworx_stats::l2 requires the `linalg` feature (which pulls ndarray-linalg + cauchy + LAPACK backend). \
+         Enable it in Cargo.toml with features = [\"linalg\"] on the symworx-stats dependency if you need regression."
+    )
 }
 
 /// Lasso regression (L1 regularized) using coordinate descent.
@@ -109,6 +131,7 @@ mod tests {
     use super::*;
     use ndarray::array;
 
+    #[cfg(feature = "linalg")]
     #[test]
     fn test_l2_regression() {
         let x = array![[1.0], [2.0], [3.0], [4.0]];
