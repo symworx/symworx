@@ -1,15 +1,15 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-use ndarray::Array1;
-
-use symworx_core::math::series;
-
 //! Pure (stateless) gait metric calculations.
 //!
 //! These helpers contain the core math extracted from `GaitData` methods.
 //! They are intentionally decoupled from mutable state so they are easy to
 //! test, reuse, and call from generation or analysis code later.
+
+use ndarray::Array1;
+
+use symworx_core::math::series;
 
 /// Compute successive (signed) differences between stride times.
 ///

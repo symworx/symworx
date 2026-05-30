@@ -12,6 +12,7 @@ pyo3            = { workspace = true }
 ndarray         = { workspace = true }
 ndarray-linalg  = { workspace = true }
 numpy           = { version = "0.23" }
+rand            = { workspace = true }
 
 symworx-core    = { path = "../../crates/symworx-core", version = "0.1" }
 symworx-biosym  = { path = "../../crates/symworx-biosym", version = "0.1" }

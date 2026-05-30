@@ -111,7 +111,7 @@ pub fn calculate_tdee(bmr: f64, activity_level: ActivityLevel) -> f64 {
 pub fn calculate_deficit(bmr: f64, tdee: f64, deficit_level: DeficitLevel) -> f64 {
     let mut deficit = deficit_level.as_calories();
 
-    if ((tdee - deficit) > bmr) {
+    if (tdee - deficit) > bmr {
         deficit = tdee - bmr;
     }
 
