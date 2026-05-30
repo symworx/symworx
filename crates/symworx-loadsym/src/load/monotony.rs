@@ -24,7 +24,7 @@ pub fn compute_monotony(daily_loads: &[f64]) -> Result<f64> {
     let m = mean(daily_loads);
     let s = std_dev(daily_loads);
     if s == 0.0 || !s.is_finite() {
-        // Perfectly consistent load → very low monotony (or define as 1.0 by convention)
+        // Perfectly consistent load -> very low monotony (or define as 1.0 by convention)
         return Ok(1.0);
     }
     Ok(m / s)

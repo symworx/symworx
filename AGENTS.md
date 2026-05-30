@@ -110,6 +110,14 @@ The workspace strongly prefers **minimal, intentional dependencies**. Every new 
 - `symworx-stats` owns statistical descriptors and light modeling on top of those primitives.
 - If you need to add a new dependency, follow the "When to Ask vs. When to Just Do It" rule above.
 
+### Unit Conventions (Body Measurements)
+- **Human body linear dimensions** (height, leg length, step length, stride length, etc.) are standardized to **meters** across the workspace.
+  - `symworx-biosym` (gait parameters) uses meters.
+  - `symworx-loadsym` nutrition functions (`calculate_bmr`, `calculate_weightloss`, `calculate_bmi`) accept height in **meters** (`height_m`).
+- Legacy equations that internally require different units (e.g. Mifflin-St Jeor BMR expects cm) must perform the conversion **inside the function**.
+- Mass is consistently expressed in **kilograms (kg)** everywhere.
+- This convention was adopted to reduce cross-crate bugs and follow SI/biomechanics norms. See the 2026 loadsym height migration for rationale.
+
 ## Python Bindings
 
 RQA and RecurrencePlot are exposed via PyO3 in `bindings/python/`. Keep the Rust side as the source of truth.

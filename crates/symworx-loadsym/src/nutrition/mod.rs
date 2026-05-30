@@ -6,11 +6,13 @@ pub mod bodycomp;
 pub use bodycomp::{
     ActivityLevel,
     DeficitLevel,
-    DeficitStrategy, 
+    DeficitStrategy,
     WeightlossModel,
+    calculate_bmi,
     calculate_bmr,
-    calculate_tdee,
+    calculate_calorie_targets,
     calculate_deficit,
     calculate_deficit_from_active,
-    calculate_weightloss, 
+    calculate_tdee,
+    calculate_weightloss,
 };

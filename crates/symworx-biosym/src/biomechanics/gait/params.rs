@@ -65,3 +65,17 @@ impl GaitParams {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_gait_params_with_defaults() {
+        let params = GaitParams::default().with_defaults();
+        assert!(params.leg_length.is_some());
+        let leg_len = params.leg_length.unwrap();
+        assert!((leg_len - 1.75 * 0.53).abs() < 0.01);
+        assert!(params.cadence.is_some());
+    }
+}
