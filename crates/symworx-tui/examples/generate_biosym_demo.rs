@@ -5,10 +5,13 @@ use std::fs;
 use std::path::Path;
 
 use symworx_biosym::physiology::ppg::{
-    generate_ppg_timeseries, PPGNoiseConfig, PPGSimulationParams,
+    generate_ppg_timeseries,
+    PPGNoiseConfig,
+    PPGSimulationParams,
 };
 use symworx_biosym::physiology::respiration::{
-    generate_respiration_timeseries, RespSimulationParams,
+    generate_respiration_timeseries,
+    RespSimulationParams,
 };
 
 fn main() {
