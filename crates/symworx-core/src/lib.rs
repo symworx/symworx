@@ -56,6 +56,9 @@ pub use symworx_signal::filters;
 pub use symworx_signal::processing::{Peak, PeakDetect, PeakFinderBuilder};
 pub use symworx_stats::basic::*;
 
+// Convenience re-exports for common series/sequence operations
+pub use symworx_math::series::{successive_absolute_differences, successive_differences};
+
 // Version info
 /// Current version of the `symworx-core` crate.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

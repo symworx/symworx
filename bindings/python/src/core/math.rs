@@ -18,6 +18,9 @@ use symworx_core::math::{
     trapz,
     // Random 
     random::sample,
+    // Series / sequence operations (new from math migration)
+    successive_absolute_differences,
+    successive_differences,
 };
 
 // ==========================================================
@@ -97,6 +100,20 @@ pub fn py_trapz(x: Vec<f64>, y: Vec<f64>) -> PyResult<f64> {
 }
 
 // ==========================================================
+// Series / Sequential Differences (from symworx-math migration)
+// ==========================================================
+
+#[pyfunction(name = "successive_differences")]
+pub fn py_successive_differences(data: Vec<f64>) -> Vec<f64> {
+    successive_differences(&data)
+}
+
+#[pyfunction(name = "successive_absolute_differences")]
+pub fn py_successive_absolute_differences(data: Vec<f64>) -> Vec<f64> {
+    successive_absolute_differences(&data)
+}
+
+// ==========================================================
 // Python Registration
 // ==========================================================
 
@@ -115,5 +132,10 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_beta_sample, m)?)?;
     m.add_function(wrap_pyfunction!(py_gamma_sample, m)?)?;
     m.add_function(wrap_pyfunction!(py_normal_sample, m)?)?;
+
+    // Series / Differences (new from symworx-math)
+    m.add_function(wrap_pyfunction!(py_successive_differences, m)?)?;
+    m.add_function(wrap_pyfunction!(py_successive_absolute_differences, m)?)?;
+
     Ok(())
 }
