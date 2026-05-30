@@ -7,22 +7,17 @@
 //! modeling for the SymWorx ecosystem.
 //!
 //! ## Core Capabilities (2026)
-//! - Low-level mechanical & physiological load (expanding toward TRIMP family, sRPE, etc.).
+//! - Low-level mechanical & physiological load
+//!   (expanding toward TRIMP family, sRPE, etc.).
 //! - **ACWR / EWMA / risk classification** — the primary primitives for
 //!   populating `player_load_metrics` (acute/chronic, acwr, ewma_*, risk_level).
-//! - Monotony, strain, readiness, adaptive capacity, life-stress, and periodization
-//!   recommendations (ported from the original Python loadsym design).
-//! - Nutrition & body-composition modeling (BMR, TDEE, deficit strategies, weight-loss trajectories).
+//! - Monotony, strain, readiness, adaptive capacity, life-stress, and
+//!   periodization recommendations
+//! - Nutrition & body-composition modeling.
+//!   (BMR, TDEE, deficit strategies, weight-loss trajectories)
 //!
-//! ## Relationship to UNCG Spartans & Legacy
-//! This is the **canonical computation engine** for the cSYMd ecosystem.
-//! High-level orchestration, vendor-specific CSV parsers (Catapult, StatsSports, etc.),
-//! and DB writes live in consuming applications (e.g. uncg-spartans import scripts).
-//!
-//! The original pure-Python loadsym (~/worx/symworx/loadsym) serves as the
-//! design reference and test oracle for the modeling layer.
 
-#![warn(missing_docs)]
+// #![warn(missing_docs)]
 #![doc(html_root_url = "https://docs.rs/symworx-loadsym")]
 
 // Modules

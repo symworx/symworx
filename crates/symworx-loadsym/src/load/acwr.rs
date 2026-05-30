@@ -3,18 +3,13 @@
 
 //! Acute:Chronic Workload Ratio (ACWR), EWMA variants, and risk classification.
 //!
-//! These are the core functions needed to populate `player_load_metrics` tables
-//! (acute_load, chronic_load, acwr, ewma_acute, ewma_chronic, risk_level) for
-//! the UNCG Spartans data platform and general sports science use.
-//!
-//! ## Design notes (migration from legacy + literature)
+//! ## Notes
 //! - Acute window typically 7 days, chronic 28 days (configurable).
 //! - Supports both "coupled" (current acute overlaps chronic) and "uncoupled".
 //! - EWMA uses the common span-based formulation (alpha = 2/(span+1)).
 //! - Risk bucketing follows Gabbett-style thresholds by default (extensible).
 //!
 //! The heavy lifting for rolling means uses `symworx_math::series::{rolling_mean, ewma}`
-//! (canonical home per workspace AGENTS.md).
 
 use crate::error::{LoadSymError, Result};
 use symworx_core::math::series::{ewma as ewma_series, rolling_mean};

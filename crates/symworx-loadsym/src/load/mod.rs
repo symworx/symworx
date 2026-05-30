@@ -1,10 +1,15 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
+/// Acute/Chronic work/load ratio
 pub mod acwr;
+/// Mechanical load calculations
 pub mod mechanical;
+/// Exercise monotony and load
 pub mod monotony;
+/// Load optimization algorithms
 pub mod optimization;
+/// Physiological load calculations
 pub mod physiological;
 
 // re-exports of specific functions

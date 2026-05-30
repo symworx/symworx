@@ -5,9 +5,6 @@
 //!
 //! Monotony = mean(daily_load) / sd(daily_load) over a week (or window).
 //! Strain   = weekly (or window) total load × monotony.
-//!
-//! These appear in the legacy Python SessionContext and life-stress modeling.
-//! They are also useful inputs when deriving risk or programming recommendations.
 
 use crate::error::{LoadSymError, Result};
 use symworx_core::stats::{mean, std_dev};

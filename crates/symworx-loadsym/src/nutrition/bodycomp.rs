@@ -298,10 +298,10 @@ pub fn calculate_weightloss(
     let mut cumulative_deficit = 0.0;
 
     while current_weight > target_weight_kg + 0.05 {
-        // Calculate current BMI using the dedicated helper (expects meters)
+        // Calculate current BMI using the dedicated helper
         let bmi = calculate_bmi(current_weight, height_m);
 
-        // Calculate current BMR and TDEE (BMR now expects meters)
+        // Calculate current BMR and TDEE 
         let bmr = calculate_bmr(current_weight, height_m, age_years, is_male);
         let tdee = calculate_tdee(bmr, activity_level);
 
