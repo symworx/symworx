@@ -8,8 +8,8 @@
 //!
 //! ## Core Modules
 //!
-//! - [`biomechanics`] — Gait analysis, spatiotemporal metrics, stride/step
-//!   length, symmetry, and related data models.
+//! - [`biomechanics`] — Gait analysis (`biomechanics::gait`), spatiotemporal metrics,
+//!   stride/step length, symmetry, and related data models.
 //! - [`cpg`] — Central Pattern Generator using coupled Van der Pol oscillators
 //!   (heart, legs, respiration) with dynamic effort (`tau`) modulation.
 //! - [`physiology`] — Foundational physiological signal processing (PPG,
@@ -37,7 +37,8 @@
 #![doc(html_root_url = "https://docs.rs/symworx-biosym")]
 
 // Modules
-/// Biomechanics modeling and utilities (Gait analysis, spatiotemporal metrics, stride/step).
+/// Biomechanics modeling and utilities.
+/// Re-exports gait parameters and data models from the `gait` submodule.
 pub mod biomechanics;
 
 /// Central pattern generator using VdP
