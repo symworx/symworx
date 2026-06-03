@@ -4,8 +4,10 @@ use pyo3::prelude::*;
 
 use symworx_loadsym::nutrition::{
     ActivityLevel,
+    BmrConfig,
     DeficitLevel,
     DeficitStrategy,
+    Gender,
     WeightlossModel,
     calculate_bmi,
     calculate_bmr,
@@ -19,6 +21,23 @@ use symworx_loadsym::nutrition::{
 // ==========================================================
 // Bodycomposition
 // ==========================================================
+
+#[pyclass]
+#[derive(Clone, Copy)]
+pub struct PyGender {
+    pub inner: Gender,
+}
+
+#[pymethods]
+impl PyGender {
+    #[classattr]
+    pub const MALE: Self = Self { inner: Gender::Male };
+    #[classattr]
+    pub const FEMALE: Self = Self { inner: Gender::Female };
+    pub fn __repr__(&self) -> String {
+        format!("Gender::{:?}", self.inner)
+    }
+}
 
 #[pyclass]
 #[derive(Clone, Copy)]
@@ -126,7 +145,8 @@ pub fn py_calculate_bmr(
     age_years: f64,
     is_male: bool,
 ) -> PyResult<f64> {
-    Ok(calculate_bmr(weight_kg, height_m, age_years, is_male))
+    let gender = if is_male { Gender::Male } else { Gender::Female };
+    Ok(calculate_bmr(weight_kg, height_m, age_years, gender, BmrConfig::default()))
 }
 
 #[pyfunction(name = "calculate_bmi")]
@@ -228,22 +248,31 @@ pub fn py_calculate_weightloss(
         _ => DeficitStrategy::Balanced,
     };
 
+    let gender = if is_male { Gender::Male } else { Gender::Female };
     let model = calculate_weightloss(
         age_years,
-        is_male,
+        gender,
         height_m,
         starting_weight_kg,
         target_weight_kg,
         act_level,
         def_level,
         strat,
+        BmrConfig::default(),
     );
 
     // Convert to a Python dict for easy consumption
     Python::with_gil(|py| {
         let dict = pyo3::types::PyDict::new(py);
+        dict.set_item("gender", format!("{:?}", model.gender))?;
         dict.set_item("deficit_level", format!("{:?}", model.deficit_level))?;
         dict.set_item("deficit_strategy", format!("{:?}", model.deficit_strategy))?;
+        dict.set_item("bmr_config_obesity", format!("{:?}", model.bmr_config.obesity_adjustment))?;
+        dict.set_item("activity_level", format!("{:?}", model.activity_level))?;
+        dict.set_item("age_years", model.age_years)?;
+        dict.set_item("height_m", model.height_m)?;
+        dict.set_item("starting_weight_kg", model.starting_weight_kg)?;
+        dict.set_item("target_weight_kg", model.target_weight_kg)?;
         dict.set_item("week", model.week)?;
         dict.set_item("weight_kg", model.weight_kg)?;
         dict.set_item("bmi", model.bmi)?;
@@ -258,6 +287,7 @@ pub fn py_calculate_weightloss(
 // ==========================================================
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Enums / Classes
+    m.add_class::<PyGender>()?;
     m.add_class::<PyActivityLevel>()?;
     m.add_class::<PyDeficitLevel>()?;
     m.add_class::<PyDeficitStrategy>()?;

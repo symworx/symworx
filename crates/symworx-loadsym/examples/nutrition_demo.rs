@@ -5,6 +5,7 @@
 
 use symworx_loadsym::nutrition::{
     ActivityLevel, DeficitLevel, DeficitStrategy,
+    BmrConfig, Gender,
     calculate_bmr, calculate_bmi, calculate_tdee,
     calculate_calorie_targets, calculate_weightloss,
 };
@@ -17,7 +18,8 @@ fn main() {
     let age = 32.0;
     let is_male = true;
 
-    let bmr = calculate_bmr(weight, height_m, age, is_male);
+    let gender = if is_male { Gender::Male } else { Gender::Female };
+    let bmr = calculate_bmr(weight, height_m, age, gender, BmrConfig::default());
     let bmi = calculate_bmi(weight, height_m);
     let tdee = calculate_tdee(bmr, ActivityLevel::Moderate);
 
@@ -41,13 +43,14 @@ fn main() {
     println!("Running 12-week weight loss simulation (moderate deficit)...");
     let trajectory = calculate_weightloss(
         age,
-        is_male,
+        gender,
         height_m,
         weight,
         72.0, // target
         ActivityLevel::Moderate,
         DeficitLevel::Moderate,
         DeficitStrategy::Balanced,
+        BmrConfig::default(),
     );
 
     let weeks = trajectory.week.len();

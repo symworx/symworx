@@ -1,23 +1,11 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-//! Body composition and energy balance modeling.
+//! Calorie and energy expenditure calculations: BMR (Mifflin-St Jeor + obesity
+//! adjustments), TDEE, BMI, deficit targets, and calorie intake/activity splits.
 //!
-//! This module provides tools for estimating daily energy needs and
-//! simulating weight loss trajectories. It is commonly used alongside
-//! training load calculations in `symworx-loadsym`.
-//!
-//! # Key Concepts
-//!
-//! - **BMR** (Basal Metabolic Rate): Energy expended at complete rest.
-//! - **TDEE** (Total Daily Energy Expenditure): BMR scaled by activity level.
-//! - **Caloric Deficit**: The daily energy shortfall used to drive weight loss.
-//! - **Deficit Strategy**: How a deficit is split between reduced intake and
-//!   increased activity.
-//!
-//! All energy values are in **kilocalories (kcal)**.
-
-const KCAL_PER_KG: f64 = 7700.0;
+//! See the parent [`crate::nutrition`] module for overview and unit conventions
+//! (height in meters, mass in kg, energy in kcal).
 
 // Enums
 
@@ -25,7 +13,7 @@ const KCAL_PER_KG: f64 = 7700.0;
 ///
 /// These multipliers are applied to BMR using the standard Harris-Benedict / Mifflin-St Jeor approach.
 /// Typical real-world values range from ~1.2 (desk job, little exercise) to ~1.9+ (very hard training + physical job).
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ActivityLevel {
     /// Little or no exercise, desk job (×1.2)
     Sedentary,
@@ -63,7 +51,7 @@ impl ActivityLevel {
 ///
 /// The percentage approach (relative to `TDEE - BMR`) tends to scale better across
 /// individuals of different sizes and activity levels.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DeficitLevel {
     /// Very conservative deficit (~150 kcal or 15% of active calories)
     Light,
@@ -111,7 +99,7 @@ impl DeficitLevel {
 /// This affects the split between:
 /// - Lower target caloric intake, and
 /// - Higher target activity calories.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DeficitStrategy {
     /// 75% of the deficit comes from eating less, 25% from moving more.
     CaloricRestriction,
@@ -134,29 +122,47 @@ impl DeficitStrategy {
     }
 }
 
-// Structs
+/// Gender used to select the constant term in the Mifflin-St Jeor BMR equation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Gender {
+    /// Male (constant +5)
+    Male,
+    /// Female (constant -161)
+    Female,
+}
 
-/// Result of a weight-loss simulation produced by [`calculate_weightloss`].
+/// Strategy for adjusting BMR calculations when BMI indicates obesity.
 ///
-/// Each vector has the same length and corresponds to one simulated week.
-/// The first entry (`index 0`) represents the starting state (week 0).
-#[derive(Debug, Clone)]
-pub struct WeightlossModel {
-    /// The deficit severity used for the simulation.
-    pub deficit_level: DeficitLevel,
-    /// How the deficit was split between intake and activity.
-    pub deficit_strategy: DeficitStrategy,
+/// Obesity can cause overestimation of BMR when using raw weight (much of the
+/// mass is not metabolically active). Two common adjustment approaches are provided.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum ObesityAdjustment {
+    /// No adjustment (use raw weight in BMR equation).
+    None,
+    /// Use adjusted body weight = ideal_weight + factor * (actual - ideal).
+    ///
+    /// Common clinical choice, factor=0.25 means 25% of excess weight is counted.
+    /// Ideal weight here is based on BMI=22.5.
+    AdjustedWeight { factor: f64 },
+    /// For BMI > 30, smoothly reduce the weight coefficient (10.0) in MSJ.
+    ///
+    /// Quadratic reduction up to a cap; provides a continuous transition without
+    /// an explicit "ideal weight".
+    ReducedCoefficient,
+}
 
-    /// Week number (0 = start, 1 = after first week of deficit, ...).
-    pub week: Vec<u32>,
-    /// Body weight in kilograms at the end of each week.
-    pub weight_kg: Vec<f64>,
-    /// Body Mass Index (BMI) at the end of each week.
-    pub bmi: Vec<f64>,
-    /// Caloric deficit applied during that week.
-    pub weekly_deficit_kcal: Vec<f64>,
-    /// Running total of all deficits accumulated so far.
-    pub total_deficit_kcal: Vec<f64>,
+/// Configuration for BMR calculation, primarily controlling obesity adjustment behavior.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct BmrConfig {
+    pub obesity_adjustment: ObesityAdjustment,
+}
+
+impl Default for BmrConfig {
+    fn default() -> Self {
+        Self {
+            obesity_adjustment: ObesityAdjustment::AdjustedWeight { factor: 0.25 },
+        }
+    }
 }
 
 // Functions 
@@ -168,14 +174,62 @@ pub struct WeightlossModel {
 /// This is the most widely used modern BMR equation for adults.
 ///
 /// # Arguments
-/// - `height_m`: Height in **meters**. The function converts internally to cm
-///   because the Mifflin-St Jeor equation is traditionally defined with cm.
-pub fn calculate_bmr(weight_kg: f64, height_m: f64, age_years: f64, is_male: bool) -> f64 {
+/// - `height_m`: Height in **meters** (SymWorx convention). The function converts
+///   internally to cm because the Mifflin-St Jeor equation is traditionally defined with cm.
+/// - `config`: Controls obesity adjustment (see [`BmrConfig`] and [`ObesityAdjustment`]).
+///
+/// Returns `f64::NAN` for clearly invalid inputs (age outside adult range, unrealistic
+/// height/weight). Callers should handle NaN or pre-validate.
+pub fn calculate_bmr(weight_kg: f64, height_m: f64, age_years: f64, gender: Gender, config: BmrConfig) -> f64 {
+    // Basic validation (adult-oriented; formula not intended for children/elderly extremes)
+    if weight_kg < 20.0 || height_m < 0.5 || age_years < 18.0 || age_years > 99.0 {
+        return f64::NAN;
+    }
+
     let height_cm = height_m * 100.0;
-    if is_male {
-        10.0 * weight_kg + 6.25 * height_cm - 5.0 * age_years + 5.0
-    } else {
-        10.0 * weight_kg + 6.25 * height_cm - 5.0 * age_years - 161.0
+    let bmi = calculate_bmi(weight_kg, height_m);
+
+    // Baseline Mifflin-St Jeor (using actual weight)
+    let mut bmr = match gender {
+        Gender::Male => 10.0 * weight_kg + 6.25 * height_cm - 5.0 * age_years + 5.0,
+        Gender::Female => 10.0 * weight_kg + 6.25 * height_cm - 5.0 * age_years - 161.0,
+    };
+
+    // Apply obesity adjustment if configured and applicable
+    if let Some(adjusted_weight) = get_adjusted_weight(weight_kg, height_m, bmi, config.obesity_adjustment) {
+        bmr = match gender {
+            Gender::Male => 10.0 * adjusted_weight + 6.25 * height_cm - 5.0 * age_years + 5.0,
+            Gender::Female => 10.0 * adjusted_weight + 6.25 * height_cm - 5.0 * age_years - 161.0,
+        };
+    } else if let ObesityAdjustment::ReducedCoefficient = config.obesity_adjustment {
+        if bmi > 30.0 {
+            let excess_bmi = bmi - 30.0;
+            let reduction = (0.018 * excess_bmi * excess_bmi).min(4.5);
+            let weight_coeff = (10.0 - reduction).max(6.0);
+
+            bmr = weight_coeff * weight_kg
+                + 6.25 * height_cm
+                - 5.0 * age_years
+                + if gender == Gender::Male { 5.0 } else { -161.0 };
+        }
+    }
+
+    bmr.round()
+}
+
+/// Returns adjusted weight if applicable, otherwise None
+fn get_adjusted_weight(
+    weight_kg: f64,
+    height_m: f64,
+    bmi: f64,
+    adjustment: ObesityAdjustment,
+) -> Option<f64> {
+    match adjustment {
+        ObesityAdjustment::AdjustedWeight { factor } if bmi > 30.0 => {
+            let ideal_weight = 22.5 * height_m * height_m; // Healthy BMI midpoint
+            Some(ideal_weight + factor * (weight_kg - ideal_weight))
+        }
+        _ => None,
     }
 }
 
@@ -190,7 +244,10 @@ pub fn calculate_tdee(bmr: f64, activity_level: ActivityLevel) -> f64 {
 ///
 /// Formula: `BMI = weight_kg / (height_m * height_m)`
 ///
-/// Returns the standard BMI value (kg/m²).
+/// # Arguments
+/// - `height_m`: meters (SymWorx convention).
+///
+/// Returns the standard BMI value (kg/m²). Returns NaN if height <= 0.
 pub fn calculate_bmi(weight_kg: f64, height_m: f64) -> f64 {
     if height_m <= 0.0 {
         return f64::NAN;
@@ -203,13 +260,8 @@ pub fn calculate_bmi(weight_kg: f64, height_m: f64) -> f64 {
 /// The returned deficit is capped so that daily intake never falls below BMR
 /// (i.e. the maximum possible deficit is `tdee - bmr`).
 pub fn calculate_deficit(bmr: f64, tdee: f64, deficit_level: DeficitLevel) -> f64 {
-    let mut deficit = deficit_level.as_calories();
-
-    if (tdee - deficit) > bmr {
-        deficit = tdee - bmr;
-    }
-
-    deficit
+    let max_deficit = (tdee - bmr).max(0.0);
+    deficit_level.as_calories().min(max_deficit)
 }
 
 /// Calculate a target daily caloric deficit as a percentage of active calories.
@@ -247,101 +299,6 @@ pub fn calculate_calorie_targets(
     (target_intake, target_activity)
 }
 
-
-/// Simulate a weekly weight-loss trajectory from a starting weight to a target weight.
-///
-/// The simulation uses a constant weekly deficit based on the provided
-/// [`DeficitLevel`] and [`DeficitStrategy`]. Weight loss is modeled at
-/// approximately **7700 kcal per kg** of body fat.
-///
-/// # Arguments
-/// - `starting_weight_kg`, `target_weight_kg`: Current and goal weights.
-/// - `activity_level`: Used to estimate TDEE at each step (recalculated as weight drops).
-/// - `deficit_level` + `strategy`: Control how aggressive the deficit is and how it is split.
-///
-/// # Note on units
-/// `height_m` is expected in **meters** (the SymWorx workspace convention for body measurements).
-///
-/// # Returns
-/// A [`WeightlossModel`] containing parallel vectors for each simulated week.
-///
-/// # Safety & Termination
-/// The simulation stops when any of the following occur:
-/// - Target weight is reached (within 50 g).
-/// - BMI drops below 18.0 (clinically underweight / unsafe zone).
-/// - More than 78 weeks (~1.5 years) have elapsed.
-///
-/// The returned trajectory is always safe to use for display or further analysis,
-/// but callers should inspect the final BMI and total duration.
-pub fn calculate_weightloss(
-    age_years: f64,
-    is_male: bool,
-    height_m: f64,
-    starting_weight_kg: f64,
-    target_weight_kg: f64,
-    activity_level: ActivityLevel,
-    deficit_level: DeficitLevel,
-    strategy: DeficitStrategy,
-) -> WeightlossModel {
-    let mut trajectory = WeightlossModel {
-        deficit_level,
-        deficit_strategy: strategy,
-        week: vec![],
-        weight_kg: vec![],
-        bmi: vec![],
-        weekly_deficit_kcal: vec![],
-        total_deficit_kcal: vec![],
-    };
-
-    let mut current_weight = starting_weight_kg;
-    let mut week = 0u32;
-    let mut cumulative_deficit = 0.0;
-
-    while current_weight > target_weight_kg + 0.05 {
-        // Calculate current BMI using the dedicated helper
-        let bmi = calculate_bmi(current_weight, height_m);
-
-        // Calculate current BMR and TDEE 
-        let bmr = calculate_bmr(current_weight, height_m, age_years, is_male);
-        let tdee = calculate_tdee(bmr, activity_level);
-
-        // Calculate this week's deficit
-        let weekly_deficit = calculate_deficit_from_active(tdee, bmr, deficit_level);
-
-        // Apply weight loss (1 kg ≈ 7700 kcal)
-        let weight_loss_this_week = weekly_deficit / KCAL_PER_KG;
-        current_weight -= weight_loss_this_week;
-
-        // Prevent overshooting the target
-        if current_weight < target_weight_kg {
-            current_weight = target_weight_kg;
-        }
-
-        // Record data
-        cumulative_deficit += weekly_deficit;
-
-        trajectory.week.push(week);
-        trajectory.weight_kg.push(current_weight);
-        trajectory.bmi.push(bmi);
-        trajectory.weekly_deficit_kcal.push(weekly_deficit);
-        trajectory.total_deficit_kcal.push(cumulative_deficit);
-
-        week += 1;
-
-        // Safety measures
-        if bmi < 18.0 {
-            // unsafe / unrecommended BMI
-            break;
-        }
-        if week > 78 {
-            // 1.5 years
-            break;
-        }
-    }
-
-    trajectory
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -360,9 +317,22 @@ mod tests {
 
     #[test]
     fn test_calculate_bmr_mifflin_male() {
-        // 30yo male, 70kg, 1.75m
-        let bmr = calculate_bmr(70.0, 1.75, 30.0, true);
+        // 30yo male, 70kg, 1.75m — baseline (no obesity)
+        let bmr = calculate_bmr(70.0, 1.75, 30.0, Gender::Male, BmrConfig::default());
         assert!(bmr > 1600.0 && bmr < 1700.0);
+    }
+
+    #[test]
+    fn test_calculate_bmr_with_obesity_adjustment() {
+        // Obese male: 120kg, 1.70m (~41.5 BMI)
+        let weight = 120.0;
+        let height = 1.70;
+        let age = 35.0;
+        let baseline = calculate_bmr(weight, height, age, Gender::Male, BmrConfig { obesity_adjustment: ObesityAdjustment::None });
+        let adjusted = calculate_bmr(weight, height, age, Gender::Male, BmrConfig::default()); // default = AdjustedWeight 0.25
+        // Adjusted should be noticeably lower than raw (less weight plugged into coeff)
+        assert!(adjusted < baseline - 50.0);
+        assert!(adjusted.is_finite());
     }
 
     #[test]
@@ -371,26 +341,5 @@ mod tests {
         assert!((intake - 2250.0).abs() < 1.0);
         // target activity = active cals + portion of deficit
         assert!(activity > 1100.0 && activity < 1200.0);
-    }
-
-    #[test]
-    fn test_calculate_weightloss_smoke() {
-        // Just ensure the simulation runs and produces a trajectory without crashing
-        let model = calculate_weightloss(
-            30.0,
-            true,
-            1.75,
-            82.0,
-            78.0,
-            ActivityLevel::Moderate,
-            DeficitLevel::Moderate,
-            DeficitStrategy::Balanced,
-        );
-        assert!(!model.week.is_empty());
-        assert_eq!(model.weight_kg.len(), model.week.len());
-        // BMI should be plausible throughout
-        for &b in &model.bmi {
-            assert!(b > 15.0 && b < 35.0);
-        }
     }
 }
