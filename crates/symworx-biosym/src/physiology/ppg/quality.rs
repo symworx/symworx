@@ -61,3 +61,10 @@ impl From<PPGSignalQuality> for PPGNoiseConfig {
         }
     }
 }
+
+impl PPGSignalQuality {
+    /// Recommended bandpass + peak-detection settings for analysis.
+    pub fn analysis_processing(&self) -> crate::physiology::common::PhysiologyProcessingParams {
+        super::processing::ppg_processing_for_quality(self.clone())
+    }
+}

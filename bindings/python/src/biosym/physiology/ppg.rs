@@ -4,18 +4,69 @@ use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 
 use symworx_biosym::physiology::{
-    PPGNoiseConfig, PPGSignalQuality, PPGSimulationParams, PPGTimeSeries, analyze_ppg,
-    generate_ppg_timeseries, generate_ppg_waveform,
+    analyze_ppg, analyze_ppg_with_quality, PPGNoiseConfig, PPGSignalQuality, PpgAnalysis,
+    PPGSimulationParams, PPGTimeSeries, generate_ppg_timeseries, generate_ppg_waveform,
 };
 
 // ==========================================================
 // PPG
 // ==========================================================
 
+#[pyclass(name = "PpgAnalysis")]
+#[derive(Clone)]
+pub struct PyPpgAnalysis {
+    #[pyo3(get)]
+    pub mean: f64,
+    #[pyo3(get)]
+    pub std_dev: f64,
+    #[pyo3(get)]
+    pub duration_sec: f64,
+    #[pyo3(get)]
+    pub mean_hr_bpm: f64,
+    #[pyo3(get)]
+    pub peak_indices: Vec<usize>,
+    #[pyo3(get)]
+    pub rr_intervals_sec: Vec<f64>,
+    #[pyo3(get)]
+    pub hrv_rmssd_sec: Option<f64>,
+    #[pyo3(get)]
+    pub hrv_sdnn_sec: Option<f64>,
+}
+
+impl From<PpgAnalysis> for PyPpgAnalysis {
+    fn from(a: PpgAnalysis) -> Self {
+        Self {
+            mean: a.summary.mean,
+            std_dev: a.summary.std_dev,
+            duration_sec: a.summary.duration_sec,
+            mean_hr_bpm: a.mean_hr_bpm,
+            peak_indices: a.intervals.peak_indices,
+            rr_intervals_sec: a.intervals.intervals_sec,
+            hrv_rmssd_sec: a.hrv.rmssd_sec,
+            hrv_sdnn_sec: a.hrv.sdnn_sec,
+        }
+    }
+}
+
+fn ppg_timeseries_from_py(ts: PyPPGTimeSeries) -> PPGTimeSeries {
+    PPGTimeSeries {
+        times: ts.times,
+        values: ts.values,
+        systolic_peaks: ts.systolic_peaks,
+        diastolic_peaks: ts.diastolic_peaks,
+    }
+}
+
 #[pyfunction(name = "analyze_ppg")]
-pub fn py_analyze_ppg() -> PyResult<()> {
-    analyze_ppg();
-    Ok(())
+pub fn py_analyze_ppg(ts: PyPPGTimeSeries) -> PyPpgAnalysis {
+    PyPpgAnalysis::from(analyze_ppg(&ppg_timeseries_from_py(ts)))
+}
+
+#[pyfunction(name = "analyze_ppg_with_quality")]
+pub fn py_analyze_ppg_with_quality(ts: PyPPGTimeSeries, quality: PyPPGSignalQuality) -> PyPpgAnalysis {
+    let rust_ts = ppg_timeseries_from_py(ts);
+    let quality: PPGSignalQuality = quality.into();
+    PyPpgAnalysis::from(analyze_ppg_with_quality(&rust_ts, quality))
 }
 
 #[pyclass(name = "PPGTimeSeries")]
@@ -238,6 +289,7 @@ impl From<PyPPGSimulationParams> for PPGSimulationParams {
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_analyze_ppg, m)?)?;
+    m.add_function(wrap_pyfunction!(py_analyze_ppg_with_quality, m)?)?;
     m.add_function(wrap_pyfunction!(py_generate_ppg_waveform, m)?)?;
     m.add_function(wrap_pyfunction!(py_generate_ppg_timeseries, m)?)?;
 
@@ -245,6 +297,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyPPGNoiseConfig>()?;
     m.add_class::<PyPPGSignalQuality>()?;
     m.add_class::<PyPPGSimulationParams>()?;
+    m.add_class::<PyPpgAnalysis>()?;
 
     Ok(())
 }

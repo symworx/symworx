@@ -163,7 +163,7 @@ mod tests {
             ..Default::default()
         };
 
-        let ts = create_ppg_timeseries(0.0, &rr_intervals, 10, beat_duration, fs, params, &noise);
+        let ts = generate_ppg_timeseries(0.0, &rr_intervals, 10, beat_duration, fs, params, &noise);
 
         assert!(!ts.times.is_empty());
         assert!(!ts.values.is_empty());

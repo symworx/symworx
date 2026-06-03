@@ -138,26 +138,14 @@ pub fn generate_respiration_timeseries(params: &RespSimulationParams) -> RespTim
         volume[i] = cum;
     }
 
-    // Peak detection
-    let mut inhalation_peaks = Vec::new();
-    let mut exhalation_peaks = Vec::new();
-
-    for i in 1..(n_samples - 1) {
-        if flow[i] > flow[i - 1] && flow[i] > flow[i + 1] {
-            if flow[i] > 0.0 {
-                inhalation_peaks.push(i);
-            } else {
-                exhalation_peaks.push(i);
-            }
-        }
-    }
+    let phase_peaks = super::peaks::phase_peak_indices(&flow);
 
     RespTimeSeries {
         times,
         flow,
         volume,
-        inhalation_peaks,
-        exhalation_peaks,
+        inhalation_peaks: phase_peaks.inhalation_peak_indices,
+        exhalation_peaks: phase_peaks.exhalation_peak_indices,
     }
 }
 

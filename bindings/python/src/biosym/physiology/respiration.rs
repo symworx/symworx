@@ -4,6 +4,7 @@ use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 
 use symworx_biosym::physiology::{
+    analyze_respiration, analyze_respiration_with_quality, RespAnalysis, RespSignalQuality,
     RespSimulationParams, RespTimeSeries, generate_respiration_timeseries,
 };
 
@@ -120,6 +121,101 @@ impl From<PyRespSimulationParams> for RespSimulationParams {
     }
 }
 
+#[pyclass(name = "RespAnalysis")]
+#[derive(Clone)]
+pub struct PyRespAnalysis {
+    #[pyo3(get)]
+    pub mean: f64,
+    #[pyo3(get)]
+    pub std_dev: f64,
+    #[pyo3(get)]
+    pub duration_sec: f64,
+    #[pyo3(get)]
+    pub mean_brpm: f64,
+    #[pyo3(get)]
+    pub peak_indices: Vec<usize>,
+    #[pyo3(get)]
+    pub breath_intervals_sec: Vec<f64>,
+    #[pyo3(get)]
+    pub insp_intervals_sec: Vec<f64>,
+    #[pyo3(get)]
+    pub exp_intervals_sec: Vec<f64>,
+    #[pyo3(get)]
+    pub inhalation_peak_indices: Vec<usize>,
+    #[pyo3(get)]
+    pub exhalation_peak_indices: Vec<usize>,
+    #[pyo3(get)]
+    pub insp_peak_intervals_sec: Vec<f64>,
+    #[pyo3(get)]
+    pub exp_peak_intervals_sec: Vec<f64>,
+}
+
+impl From<RespAnalysis> for PyRespAnalysis {
+    fn from(a: RespAnalysis) -> Self {
+        Self {
+            mean: a.summary.mean,
+            std_dev: a.summary.std_dev,
+            duration_sec: a.summary.duration_sec,
+            mean_brpm: a.mean_brpm,
+            peak_indices: a.intervals.peak_indices,
+            breath_intervals_sec: a.intervals.intervals_sec,
+            insp_intervals_sec: a.insp_intervals_sec,
+            exp_intervals_sec: a.exp_intervals_sec,
+            inhalation_peak_indices: a.phase_peaks.inhalation_peak_indices,
+            exhalation_peak_indices: a.phase_peaks.exhalation_peak_indices,
+            insp_peak_intervals_sec: a.insp_peak_intervals_sec,
+            exp_peak_intervals_sec: a.exp_peak_intervals_sec,
+        }
+    }
+}
+
+fn resp_timeseries_from_py(ts: PyRespTimeSeries) -> RespTimeSeries {
+    RespTimeSeries {
+        times: ts.times,
+        flow: ts.flow,
+        volume: ts.volume,
+        inhalation_peaks: ts.inhalation_peaks,
+        exhalation_peaks: ts.exhalation_peaks,
+    }
+}
+
+#[pyclass(name = "RespSignalQuality", eq, eq_int)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum PyRespSignalQuality {
+    Reference = 0,
+    High = 1,
+    Moderate = 2,
+    Poor = 3,
+}
+
+impl From<PyRespSignalQuality> for RespSignalQuality {
+    fn from(q: PyRespSignalQuality) -> Self {
+        match q {
+            PyRespSignalQuality::Reference => RespSignalQuality::Reference,
+            PyRespSignalQuality::High => RespSignalQuality::High,
+            PyRespSignalQuality::Moderate => RespSignalQuality::Moderate,
+            PyRespSignalQuality::Poor => RespSignalQuality::Poor,
+        }
+    }
+}
+
+#[pyfunction(name = "analyze_respiration")]
+pub fn py_analyze_respiration(ts: PyRespTimeSeries) -> PyRespAnalysis {
+    PyRespAnalysis::from(analyze_respiration(&resp_timeseries_from_py(ts)))
+}
+
+#[pyfunction(name = "analyze_respiration_with_quality")]
+pub fn py_analyze_respiration_with_quality(
+    ts: PyRespTimeSeries,
+    quality: PyRespSignalQuality,
+) -> PyRespAnalysis {
+    let rust_ts = resp_timeseries_from_py(ts);
+    PyRespAnalysis::from(analyze_respiration_with_quality(
+        &rust_ts,
+        quality.into(),
+    ))
+}
+
 #[pyfunction(name = "generate_respiration_timeseries")]
 pub fn py_generate_respiration_timeseries(params: PyRespSimulationParams) -> PyRespTimeSeries {
     let rust_params = RespSimulationParams::from(params);
@@ -129,9 +225,13 @@ pub fn py_generate_respiration_timeseries(params: PyRespSimulationParams) -> PyR
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_generate_respiration_timeseries, m)?)?;
+    m.add_function(wrap_pyfunction!(py_analyze_respiration, m)?)?;
+    m.add_function(wrap_pyfunction!(py_analyze_respiration_with_quality, m)?)?;
 
     m.add_class::<PyRespTimeSeries>()?;
     m.add_class::<PyRespSimulationParams>()?;
+    m.add_class::<PyRespAnalysis>()?;
+    m.add_class::<PyRespSignalQuality>()?;
 
     Ok(())
 }
