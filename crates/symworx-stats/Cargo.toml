@@ -22,3 +22,6 @@ ndarray        = { workspace = true }
 ndarray-linalg = { workspace = true, optional = true }
 
 symworx-math   = { path = "../symworx-math" }
+
+[lints]
+workspace = true

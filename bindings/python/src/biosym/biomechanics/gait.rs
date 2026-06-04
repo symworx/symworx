@@ -2,7 +2,10 @@
 
 use ndarray::Array1;
 use pyo3::prelude::*;
-use symworx_biosym::biomechanics::{GaitData, GaitParams};
+use symworx_biosym::biomechanics::{
+    GaitData,
+    GaitParams,
+};
 
 #[pyclass(name = "GaitParams")]
 #[derive(Clone)]

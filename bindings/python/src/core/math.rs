@@ -1,26 +1,29 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-use pyo3::prelude::*;
-use pyo3::wrap_pyfunction;
-use pyo3::exceptions::PyValueError;
-
-use rand::{Rng, rng};
-
+use pyo3::{
+    exceptions::PyValueError,
+    prelude::*,
+    wrap_pyfunction,
+};
+use rand::{
+    Rng,
+    rng,
+};
 use symworx_core::math::{
     // Distributions
     beta_kernel,
     beta_pdf,
-    gamma_kernel,
-    gamma_pdf,
     // Integration
     cumtrapz,
-    trapz,
-    // Random 
+    gamma_kernel,
+    gamma_pdf,
+    // Random
     random::sample,
     // Series / sequence operations (new from math migration)
     successive_absolute_differences,
     successive_differences,
+    trapz,
 };
 
 // ==========================================================
@@ -128,7 +131,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_cumtrapz, m)?)?;
     m.add_function(wrap_pyfunction!(py_trapz, m)?)?;
 
-    // Sample 
+    // Sample
     m.add_function(wrap_pyfunction!(py_beta_sample, m)?)?;
     m.add_function(wrap_pyfunction!(py_gamma_sample, m)?)?;
     m.add_function(wrap_pyfunction!(py_normal_sample, m)?)?;

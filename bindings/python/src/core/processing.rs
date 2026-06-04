@@ -1,12 +1,24 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 
-use pyo3::prelude::*;
-use pyo3::wrap_pyfunction;
-
+use pyo3::{
+    prelude::*,
+    wrap_pyfunction,
+};
 use symworx_core::signal::processing::{
-    interpolation::{interp_cubic, interp_linear, interp_spline, interp1},
-    normalization::{normalize, zscore},
-    resample::{Resample, ResampleMethod},
+    interpolation::{
+        interp_cubic,
+        interp_linear,
+        interp_spline,
+        interp1,
+    },
+    normalization::{
+        normalize,
+        zscore,
+    },
+    resample::{
+        Resample,
+        ResampleMethod,
+    },
 };
 
 // ==========================================================
@@ -86,8 +98,16 @@ pub struct PyResample {
 #[pymethods]
 impl PyResample {
     #[new]
+    #[allow(unsafe_code)]
     pub fn new(y: Vec<f64>) -> Self {
         let data = y;
+
+        // SAFETY: We keep the original `data: Vec<f64>` alive in the same
+        // struct for the entire lifetime of `PyResample`. The transmute to
+        // `'static` is only to satisfy the `Resample<'static>` requirement
+        // (an implementation detail of the resampling helper). The backing
+        // data is never mutated while the reference is held by the inner
+        // Resample, and the slice is derived directly from `data`.
         let slice: &'static [f64] = unsafe { std::mem::transmute::<&[f64], &'static [f64]>(&data) };
 
         Self {

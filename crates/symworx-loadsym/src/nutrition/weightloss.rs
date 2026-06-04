@@ -50,7 +50,7 @@ pub struct WeightlossModel {
     pub total_deficit_kcal: Vec<f64>,
 }
 
-// Functions 
+// Functions
 
 /// Simulate a weekly weight-loss trajectory from a starting weight to a target weight.
 ///
@@ -206,10 +206,19 @@ mod tests {
 
     #[test]
     fn test_weightloss_includes_start_and_config() {
-        let cfg = BmrConfig { obesity_adjustment: ObesityAdjustment::None };
+        let cfg = BmrConfig {
+            obesity_adjustment: ObesityAdjustment::None,
+        };
         let model = calculate_weightloss(
-            40.0, Gender::Female, 1.65, 95.0, 70.0,
-            ActivityLevel::Light, DeficitLevel::Light, DeficitStrategy::CaloricRestriction, cfg,
+            40.0,
+            Gender::Female,
+            1.65,
+            95.0,
+            70.0,
+            ActivityLevel::Light,
+            DeficitLevel::Light,
+            DeficitStrategy::CaloricRestriction,
+            cfg,
         );
         assert_eq!(model.week[0], 0);
         assert_eq!(model.gender, Gender::Female);

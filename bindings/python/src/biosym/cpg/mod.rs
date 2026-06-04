@@ -1,8 +1,10 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 
 use pyo3::prelude::*;
-
-use symworx_biosym::cpg::{CpgConfig, SymCpgModel};
+use symworx_biosym::cpg::{
+    CpgConfig,
+    SymCpgModel,
+};
 use symworx_core::math::oscillators::VanDerPol;
 
 #[pyclass(name = "VanDerPol")]

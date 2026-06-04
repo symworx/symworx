@@ -15,7 +15,6 @@
 //!   periodization recommendations
 //! - Nutrition & body-composition modeling.
 //!   (BMR, TDEE, deficit strategies, weight-loss trajectories)
-//!
 
 // #![warn(missing_docs)]
 #![doc(html_root_url = "https://docs.rs/symworx-loadsym")]
@@ -26,7 +25,10 @@ pub mod load;
 pub mod nutrition;
 
 // Re-exports
-pub use error::{LoadSymError, Result};
+pub use error::{
+    LoadSymError,
+    Result,
+};
 pub use load::*;
 pub use nutrition::*;
 

@@ -1,8 +1,9 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-use crate::integrate::rk4_integrate;
 use ndarray::Array1;
+
+use crate::integrate::rk4_integrate;
 
 /// Van der Pol oscillator.
 ///

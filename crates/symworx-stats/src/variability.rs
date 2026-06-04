@@ -10,8 +10,10 @@
 //! `symworx-math`. This module re-exports it and builds higher-level
 //! variability descriptors on top.
 
-use symworx_math::series;
-
+/// Returns the absolute differences between consecutive elements.
+///
+/// Re-exported from `symworx-math`.
+pub use series::successive_absolute_differences;
 /// Returns the signed differences between consecutive elements.
 ///
 /// This is the canonical "successive differences" primitive, re-exported
@@ -21,11 +23,7 @@ use symworx_math::series;
 ///
 /// For the absolute version, see [`successive_absolute_differences`].
 pub use series::successive_differences;
-
-/// Returns the absolute differences between consecutive elements.
-///
-/// Re-exported from `symworx-math`.
-pub use series::successive_absolute_differences;
+use symworx_math::series;
 
 /// Computes the mean of successive absolute differences (MSD).
 ///

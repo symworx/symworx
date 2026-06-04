@@ -3,8 +3,9 @@
 
 //! Internal utilities for RQA (line detection, Theiler window, etc.).
 
-use ndarray::Array2;
 use std::collections::HashMap;
+
+use ndarray::Array2;
 
 /// Find lengths of all diagonal lines (parallel to main diagonal) with length ≥ min_length.
 ///
@@ -126,8 +127,9 @@ pub(crate) fn count_recurrences(matrix: &Array2<bool>) -> usize {
 // TESTS
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::Array2;
+
+    use super::*;
 
     #[test]
     fn test_diagonal_line_detection_simple() {

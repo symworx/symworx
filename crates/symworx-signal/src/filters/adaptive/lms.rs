@@ -12,8 +12,8 @@ pub struct LmsFilter {
     /// Weights used in LMS
     weights: Vec<f64>,
     /// Step size
-    mu: f64, 
-    /// Length 
+    mu: f64,
+    /// Length
     length: usize,
 }
 

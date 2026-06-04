@@ -1,14 +1,22 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 
-use pyo3::exceptions::PyIOError;
-use pyo3::prelude::*;
-use pyo3::wrap_pyfunction;
-
+use pyo3::{
+    exceptions::PyIOError,
+    prelude::*,
+    wrap_pyfunction,
+};
 use symworx_core::io::{
-    csv::{CsvReader, CsvWriter},
+    csv::{
+        CsvReader,
+        CsvWriter,
+    },
     gbd::GbdReader,
-    load_any, read_ibi,
-    traits::{SymReader, SymWriter},
+    load_any,
+    read_ibi,
+    traits::{
+        SymReader,
+        SymWriter,
+    },
 };
 
 // ===========================================================

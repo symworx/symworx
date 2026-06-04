@@ -105,8 +105,9 @@ impl RecurrencePlot {
 // TESTS
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::array;
+
+    use super::*;
 
     #[test]
     fn test_rp_from_small_trajectory_theiler() {

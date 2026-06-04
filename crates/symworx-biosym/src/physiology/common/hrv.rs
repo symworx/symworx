@@ -1,7 +1,10 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-use symworx_core::stats::{self, variability};
+use symworx_core::stats::{
+    self,
+    variability,
+};
 
 /// Heart rate variability metrics derived from RR intervals (seconds).
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -30,7 +33,10 @@ pub fn compute_hrv_metrics(rr_intervals_sec: &[f64]) -> HrvMetrics {
         None
     };
 
-    HrvMetrics { rmssd_sec, sdnn_sec }
+    HrvMetrics {
+        rmssd_sec,
+        sdnn_sec,
+    }
 }
 
 #[cfg(test)]

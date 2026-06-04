@@ -1,12 +1,18 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 
-use pyo3::prelude::*;
-use pyo3::wrap_pyfunction;
-
+use pyo3::{
+    prelude::*,
+    wrap_pyfunction,
+};
 use symworx_core::signal::filters::{
-    adaptive::basic::{adaptive_mean_filter, adaptive_median_filter},
-    linear::bandpass::BandpassFilter,
-    linear::chebyshev::ChebyshevFilter,
+    adaptive::basic::{
+        adaptive_mean_filter,
+        adaptive_median_filter,
+    },
+    linear::{
+        bandpass::BandpassFilter,
+        chebyshev::ChebyshevFilter,
+    },
     nonlinear::kalman::KalmanFilter,
 };
 

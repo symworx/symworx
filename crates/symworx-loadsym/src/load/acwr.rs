@@ -11,8 +11,15 @@
 //!
 //! The heavy lifting for rolling means uses `symworx_math::series::{rolling_mean, ewma}`
 
-use crate::error::{LoadSymError, Result};
-use symworx_core::math::series::{ewma as ewma_series, rolling_mean};
+use symworx_core::math::series::{
+    ewma as ewma_series,
+    rolling_mean,
+};
+
+use crate::error::{
+    LoadSymError,
+    Result,
+};
 
 /// Result of an ACWR / load window calculation for a single point (or the latest day).
 #[derive(Debug, Clone, PartialEq)]

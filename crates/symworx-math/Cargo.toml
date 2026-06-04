@@ -12,3 +12,6 @@ description      = "Mathematical tools and resources -- part of the symworx-core
 ndarray  = { workspace = true }
 rand     = { workspace = true }
 rand_distr = { workspace = true }
+
+[lints]
+workspace = true

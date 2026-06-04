@@ -16,3 +16,6 @@ symworx-io       = { path = "../symworx-io" }
 symworx-math     = { path = "../symworx-math" }
 symworx-signal   = { path = "../symworx-signal" }
 symworx-stats    = { path = "../symworx-stats", features = ["linalg"] }
+
+[lints]
+workspace = true

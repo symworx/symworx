@@ -11,34 +11,33 @@ pub mod signal;
 pub mod stats;
 
 pub use hrv::{
+    HrvMetrics,
     compute_hrv_metrics,
-    HrvMetrics
 };
 pub use intervals::IntervalSeries;
 pub use peaks::{
+    PhysiologyPeak,
     detect_intervals,
     detect_peaks,
     local_maxima_indices,
     peaks_to_intervals,
-    PhysiologyPeak,
 };
 pub use processing::{
-    apply_bandpass,
-    apply_peak_overrides,
-    preprocess_signal,
     BandpassParams,
     PeakDetectionParams,
     PhysiologyProcessingParams,
+    apply_bandpass,
+    apply_peak_overrides,
+    preprocess_signal,
 };
 pub use signal::PhysiologySignal;
 pub use stats::{
+    PhysiologySummary,
     summarize_signal,
-    PhysiologySummary
 };
-
 // Re-export core peak types used across physiology.
 pub use symworx_core::{
-    Peak, 
-    PeakDetect, 
-    PeakFinderBuilder
+    Peak,
+    PeakDetect,
+    PeakFinderBuilder,
 };

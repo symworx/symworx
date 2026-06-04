@@ -6,8 +6,10 @@
 //! Uses RK4 integrator from symworx-math.
 
 use ndarray::Array1;
-
-use symworx_core::math::{VanDerPol, rk4_integrate};
+use symworx_core::math::{
+    VanDerPol,
+    rk4_integrate,
+};
 
 /// Configuration for the coupled CPG model (frequencies, couplings, tau dynamics).
 #[derive(Debug, Clone)]
@@ -140,8 +142,9 @@ pub fn instantaneous_freq(x: &Array1<f64>, t: &Array1<f64>, min_dist: usize) -> 
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::array;
+
+    use super::*;
 
     #[test]
     fn test_van_der_pol_derivative() {

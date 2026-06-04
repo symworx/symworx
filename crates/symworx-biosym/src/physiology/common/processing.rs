@@ -1,8 +1,10 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-use symworx_core::signal::BandpassFilter;
-use symworx_core::PeakFinderBuilder;
+use symworx_core::{
+    PeakFinderBuilder,
+    signal::BandpassFilter,
+};
 
 use super::signal::PhysiologySignal;
 
@@ -56,7 +58,11 @@ impl PhysiologyProcessingParams {
 }
 
 /// Apply cascaded bandpass filtering in place on a sample vector.
-pub fn apply_bandpass(samples: &[f64], fs: f64, params: &BandpassParams) -> Result<Vec<f64>, &'static str> {
+pub fn apply_bandpass(
+    samples: &[f64],
+    fs: f64,
+    params: &BandpassParams,
+) -> Result<Vec<f64>, &'static str> {
     params.validate(fs)?;
     let stages = params.stages.max(1);
     let mut out = samples.to_vec();
@@ -87,9 +93,7 @@ pub fn apply_peak_overrides<'a>(
     base_height: f64,
     overrides: &PeakDetectionParams,
 ) -> PeakFinderBuilder<'a> {
-    let min_interval = overrides
-        .min_interval_sec
-        .unwrap_or(base_min_interval_sec);
+    let min_interval = overrides.min_interval_sec.unwrap_or(base_min_interval_sec);
     let distance = ((min_interval * fs).round() as usize).max(1);
     let prominence = overrides.min_prominence.unwrap_or(base_prominence);
     let height = overrides.min_height.unwrap_or(base_height);
@@ -117,7 +121,10 @@ mod tests {
         let filtered = apply_bandpass(&samples, fs, &params).unwrap();
         // Ignore startup transient; tail should be strongly attenuated.
         let tail_energy: f64 = filtered[100..].iter().map(|v| v.abs()).sum();
-        assert!(tail_energy < 2.0, "DC tail should be attenuated, energy={tail_energy}");
+        assert!(
+            tail_energy < 2.0,
+            "DC tail should be attenuated, energy={tail_energy}"
+        );
     }
 
     #[test]

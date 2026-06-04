@@ -47,9 +47,5 @@ pub fn infer_fs(times: &[f64]) -> Option<f64> {
         return None;
     }
     let dt = times[1] - times[0];
-    if dt > 0.0 {
-        Some(1.0 / dt)
-    } else {
-        None
-    }
+    if dt > 0.0 { Some(1.0 / dt) } else { None }
 }

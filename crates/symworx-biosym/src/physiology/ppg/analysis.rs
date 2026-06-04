@@ -1,23 +1,28 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-use symworx_core::{PeakDetect, PeakFinderBuilder};
-
-use crate::physiology::common::{
-    apply_peak_overrides, 
-    compute_hrv_metrics, 
-    detect_intervals, 
-    preprocess_signal,
-    summarize_signal, 
-    HrvMetrics, 
-    IntervalSeries, 
-    PhysiologyProcessingParams, 
-    PhysiologySignal,
-    PhysiologySummary,
+use symworx_core::{
+    PeakDetect,
+    PeakFinderBuilder,
 };
 
-use super::processing::ppg_processing_for_quality;
-use super::{PPGSignalQuality, PPGTimeSeries};
+use super::{
+    PPGSignalQuality,
+    PPGTimeSeries,
+    processing::ppg_processing_for_quality,
+};
+use crate::physiology::common::{
+    HrvMetrics,
+    IntervalSeries,
+    PhysiologyProcessingParams,
+    PhysiologySignal,
+    PhysiologySummary,
+    apply_peak_overrides,
+    compute_hrv_metrics,
+    detect_intervals,
+    preprocess_signal,
+    summarize_signal,
+};
 
 const PPG_BASE_MIN_INTERVAL_SEC: f64 = 0.4;
 const PPG_BASE_PROMINENCE: f64 = 0.12;
@@ -115,7 +120,10 @@ pub fn analyze_ppg_with_quality(ts: &PPGTimeSeries, quality: PPGSignalQuality) -
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::physiology::ppg::{generate_ppg_timeseries, PPGNoiseConfig};
+    use crate::physiology::ppg::{
+        PPGNoiseConfig,
+        generate_ppg_timeseries,
+    };
 
     fn synthetic_sine_ppg(fs: f64, duration_sec: f64) -> PPGTimeSeries {
         let n = (duration_sec * fs).round() as usize;
@@ -154,10 +162,7 @@ mod tests {
             !intervals.peak_indices.is_empty(),
             "expected peaks on synthetic sine"
         );
-        assert_eq!(
-            intervals.peak_times.len(),
-            intervals.peak_indices.len()
-        );
+        assert_eq!(intervals.peak_times.len(), intervals.peak_indices.len());
     }
 
     #[test]

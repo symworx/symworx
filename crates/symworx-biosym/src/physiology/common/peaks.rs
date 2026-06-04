@@ -1,10 +1,15 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-use symworx_core::{Peak, PeakFinderBuilder};
+use symworx_core::{
+    Peak,
+    PeakFinderBuilder,
+};
 
-use super::intervals::IntervalSeries;
-use super::signal::PhysiologySignal;
+use super::{
+    intervals::IntervalSeries,
+    signal::PhysiologySignal,
+};
 
 /// Alias for a detected peak from symworx-core signal processing.
 pub type PhysiologyPeak = Peak;

@@ -8,7 +8,6 @@
 //! test, reuse, and call from generation or analysis code later.
 
 use ndarray::Array1;
-
 use symworx_core::math::series;
 
 /// Compute successive (signed) differences between stride times.
@@ -50,8 +49,9 @@ pub fn split_step_times(stride_times: &Array1<f64>) -> (Array1<f64>, Array1<f64>
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::array;
+
+    use super::*;
 
     #[test]
     fn test_compute_stride_intervals_basic() {

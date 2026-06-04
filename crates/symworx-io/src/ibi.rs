@@ -1,8 +1,13 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-use std::fs::File;
-use std::io::{BufReader, Read};
+use std::{
+    fs::File,
+    io::{
+        BufReader,
+        Read,
+    },
+};
 
 use symworx_error::SymError;
 

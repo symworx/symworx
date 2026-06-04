@@ -13,3 +13,6 @@ ndarray         = { version = "0.15", features = ["std"] }
 thiserror       = { workspace = true }
 
 symworx-core    = { path = "../symworx-core" }
+
+[lints]
+workspace = true

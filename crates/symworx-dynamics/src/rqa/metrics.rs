@@ -5,9 +5,14 @@
 
 use ndarray::Array2;
 
-use crate::rqa::plot::RecurrencePlot;
-use crate::rqa::utils::{
-    count_recurrences, find_diagonal_line_lengths, find_vertical_line_lengths, line_length_entropy,
+use crate::rqa::{
+    plot::RecurrencePlot,
+    utils::{
+        count_recurrences,
+        find_diagonal_line_lengths,
+        find_vertical_line_lengths,
+        line_length_entropy,
+    },
 };
 
 /// Minimum diagonal line length considered for DET / Lmax / Lentr calculations.
@@ -142,8 +147,9 @@ fn quantify(matrix: &Array2<bool>, _theiler: usize) -> RqaResult {
 // TESTS
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::array;
+
+    use super::*;
 
     fn almost_eq(a: f64, b: f64) -> bool {
         (a - b).abs() < 1e-9

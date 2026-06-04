@@ -1,11 +1,19 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 
-use pyo3::prelude::*;
-use pyo3::wrap_pyfunction;
-
+use pyo3::{
+    prelude::*,
+    wrap_pyfunction,
+};
 use symworx_biosym::physiology::{
-    analyze_ppg, analyze_ppg_with_quality, PPGNoiseConfig, PPGSignalQuality, PpgAnalysis,
-    PPGSimulationParams, PPGTimeSeries, generate_ppg_timeseries, generate_ppg_waveform,
+    PPGNoiseConfig,
+    PPGSignalQuality,
+    PPGSimulationParams,
+    PPGTimeSeries,
+    PpgAnalysis,
+    analyze_ppg,
+    analyze_ppg_with_quality,
+    generate_ppg_timeseries,
+    generate_ppg_waveform,
 };
 
 // ==========================================================
@@ -63,7 +71,10 @@ pub fn py_analyze_ppg(ts: PyPPGTimeSeries) -> PyPpgAnalysis {
 }
 
 #[pyfunction(name = "analyze_ppg_with_quality")]
-pub fn py_analyze_ppg_with_quality(ts: PyPPGTimeSeries, quality: PyPPGSignalQuality) -> PyPpgAnalysis {
+pub fn py_analyze_ppg_with_quality(
+    ts: PyPPGTimeSeries,
+    quality: PyPPGSignalQuality,
+) -> PyPpgAnalysis {
     let rust_ts = ppg_timeseries_from_py(ts);
     let quality: PPGSignalQuality = quality.into();
     PyPpgAnalysis::from(analyze_ppg_with_quality(&rust_ts, quality))

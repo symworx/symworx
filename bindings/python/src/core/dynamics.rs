@@ -1,12 +1,23 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 
 use ndarray::Array2;
-use pyo3::prelude::*;
-use pyo3::wrap_pyfunction;
-
-use numpy::{IntoPyArray, PyArray2};
+use numpy::{
+    IntoPyArray,
+    PyArray2,
+};
+use pyo3::{
+    prelude::*,
+    wrap_pyfunction,
+};
 use symworx_core::dynamics::{
-    DEFAULT_LMIN, DEFAULT_VMIN, RecurrencePlot, RqaResult, edim, fnn, rqa, rqa_from_trajectory,
+    DEFAULT_LMIN,
+    DEFAULT_VMIN,
+    RecurrencePlot,
+    RqaResult,
+    edim,
+    fnn,
+    rqa,
+    rqa_from_trajectory,
     sample_entropy,
 };
 

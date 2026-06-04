@@ -22,18 +22,23 @@ pub mod nonlinear;
 pub mod time_frequency;
 
 // Linear filters
+// Adaptive filters
+pub use adaptive::{
+    LmsFilter,
+    NlmsFilter,
+    adaptive_mean_filter,
+    adaptive_median_filter,
+};
 pub use linear::{
     BandpassFilter,
     ChebyshevFilter,
     // Add more as you implement them (FIR, Bessel, etc.)
 };
-
-// Adaptive filters
-pub use adaptive::{LmsFilter, NlmsFilter, adaptive_mean_filter, adaptive_median_filter};
-
 // Nonlinear / estimation filters
-pub use nonlinear::{KalmanFilter, RlsFilter};
-
+pub use nonlinear::{
+    KalmanFilter,
+    RlsFilter,
+};
 // Time-frequency analysis
 pub use time_frequency::{
     AnalyticSignal,

@@ -8,20 +8,49 @@
 //! Explore (stats + processing + visualization), and Dynamics.
 
 use anyhow::Result;
-use crossterm::event::{self, KeyCode, KeyEventKind, KeyModifiers};
+use crossterm::event::{
+    self,
+    KeyCode,
+    KeyEventKind,
+    KeyModifiers,
+};
 use ratatui::{
-    layout::{Constraint, Layout, Rect},
-    style::{Color, Modifier, Style, Stylize},
+    layout::{
+        Constraint,
+        Layout,
+        Rect,
+    },
+    style::{
+        Color,
+        Modifier,
+        Style,
+        Stylize,
+    },
     text::Span,
     widgets::{
-        Block, Borders, Cell, List, ListItem, ListState, Paragraph, Row, Sparkline, Table, Tabs,
+        Block,
+        Borders,
+        Cell,
+        List,
+        ListItem,
+        ListState,
+        Paragraph,
+        Row,
+        Sparkline,
+        Table,
+        Tabs,
     },
-    DefaultTerminal, Frame,
+    DefaultTerminal,
+    Frame,
 };
 mod convert;
 mod generate;
 
-use std::{fs, path::PathBuf, time::Duration};
+use std::{
+    fs,
+    path::PathBuf,
+    time::Duration,
+};
 
 /// Top-level tabs for the application
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -463,10 +492,10 @@ fn app(terminal: &mut DefaultTerminal) -> std::io::Result<()> {
 
         if event::poll(tick_rate)? {
             if let event::Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press 
-                    && handle_key(&mut app, key.code, key.modifiers) {
-                        return Ok(()); // quit
-                    }
+                if key.kind == KeyEventKind::Press && handle_key(&mut app, key.code, key.modifiers)
+                {
+                    return Ok(()); // quit
+                }
             }
         }
     }

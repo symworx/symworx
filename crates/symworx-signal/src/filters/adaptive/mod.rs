@@ -4,7 +4,7 @@
 /// Basic filtering techniques (e.g., rollmean, rollmedian, etc)
 pub mod basic;
 
-/// Least mean squares and normalized least mean squares 
+/// Least mean squares and normalized least mean squares
 pub mod lms;
 
 pub use basic::*;

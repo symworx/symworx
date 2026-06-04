@@ -4,13 +4,15 @@
 //! File conversion component for symview.
 //! Uses symworx-io for .ibi + CSV, Polars for Parquet.
 
-use anyhow::Result;
-use polars::prelude::*;
 use std::path::Path;
 
-use symworx_io::read_ibi;
-use symworx_io::traits::SymWriter;
-use symworx_io::CsvWriter;
+use anyhow::Result;
+use polars::prelude::*;
+use symworx_io::{
+    read_ibi,
+    traits::SymWriter,
+    CsvWriter,
+};
 
 pub fn parquet_to_csv(input: &Path, output: &Path) -> Result<()> {
     let lf = LazyFrame::scan_parquet(input, Default::default())?;

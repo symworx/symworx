@@ -1,10 +1,9 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-use crate::server::Server;
-
 #[cfg(feature = "supervision")]
 use crate::error::BackendError;
+use crate::server::Server;
 
 /// Manages the lifecycle of backend processes.
 pub struct ProcessManager {
@@ -16,7 +15,7 @@ impl ProcessManager {
     // fn default() -> Self {
     //     Self::new()
     // }
-    
+
     /// Initiate a new process.
     pub fn new() -> Self {
         Self {

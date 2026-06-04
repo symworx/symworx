@@ -29,7 +29,7 @@ pub struct PPGSimulationParams {
     /// Duration of simulation
     pub duration: f64,
     /// Parameters used to simulate signal
-    pub beat_params: (f64, f64, f64, f64, f64, f64), // (amp_s, mu_s, sigma_s, amp_d, mu_d, sigma_d)
+    pub beat_params: (f64, f64, f64, f64, f64, f64), /* (amp_s, mu_s, sigma_s, amp_d, mu_d, sigma_d) */
     /// Noise parameter/configuration for simulation
     pub noise_config: PPGNoiseConfig,
     /// Seed the simulation for reproducibility

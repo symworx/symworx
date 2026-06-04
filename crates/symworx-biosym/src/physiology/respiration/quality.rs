@@ -2,7 +2,9 @@
 // Licensed under the Mozilla Public License, Version 2.0.
 
 use crate::physiology::common::{
-    BandpassParams, PeakDetectionParams, PhysiologyProcessingParams,
+    BandpassParams,
+    PeakDetectionParams,
+    PhysiologyProcessingParams,
 };
 
 /// Respiration signal quality presets for analysis tuning.

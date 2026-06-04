@@ -24,4 +24,3 @@ pub struct GbdTable {
     /// Number of rows in the table.
     pub rows: Vec<Vec<String>>,
 }
-

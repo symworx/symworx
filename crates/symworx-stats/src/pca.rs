@@ -5,8 +5,14 @@
 //!
 //! Uses SVD internally for maximum numerical stability.
 
+use ndarray::{
+    Array1,
+    Array2,
+    Axis,
+    s,
+};
+
 use crate::svd::Svd;
-use ndarray::{Array1, Array2, Axis, s};
 
 /// Fitted Principal Component Analysis model.
 #[derive(Debug, Clone)]
@@ -87,8 +93,9 @@ impl Pca {
 // TESTS
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::array;
+
+    use super::*;
 
     #[test]
     fn test_pca_basic() {

@@ -1,7 +1,10 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-use ndarray::{Array1, ArrayView1};
+use ndarray::{
+    Array1,
+    ArrayView1,
+};
 
 /// Represents a detected peak in a 1D signal.
 #[derive(Debug, Clone, PartialEq)]

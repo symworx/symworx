@@ -15,3 +15,6 @@ num-complex    = { workspace = true }
 rustfft        = { workspace = true }
 
 symworx-stats  = { path = "../symworx-stats" }
+
+[lints]
+workspace = true

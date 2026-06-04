@@ -1,11 +1,17 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 
-use pyo3::prelude::*;
-use pyo3::wrap_pyfunction;
-
+use pyo3::{
+    prelude::*,
+    wrap_pyfunction,
+};
 use symworx_biosym::physiology::{
-    analyze_respiration, analyze_respiration_with_quality, RespAnalysis, RespSignalQuality,
-    RespSimulationParams, RespTimeSeries, generate_respiration_timeseries,
+    RespAnalysis,
+    RespSignalQuality,
+    RespSimulationParams,
+    RespTimeSeries,
+    analyze_respiration,
+    analyze_respiration_with_quality,
+    generate_respiration_timeseries,
 };
 
 #[pyclass(name = "RespTimeSeries")]
@@ -210,10 +216,7 @@ pub fn py_analyze_respiration_with_quality(
     quality: PyRespSignalQuality,
 ) -> PyRespAnalysis {
     let rust_ts = resp_timeseries_from_py(ts);
-    PyRespAnalysis::from(analyze_respiration_with_quality(
-        &rust_ts,
-        quality.into(),
-    ))
+    PyRespAnalysis::from(analyze_respiration_with_quality(&rust_ts, quality.into()))
 }
 
 #[pyfunction(name = "generate_respiration_timeseries")]

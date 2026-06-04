@@ -11,3 +11,6 @@ description      = "Nonlinear Dynamics tools and resources -- part of the symwor
 [dependencies]
 ndarray       = { workspace = true }
 symworx-stats = { path = "../symworx-stats" }
+
+[lints]
+workspace = true

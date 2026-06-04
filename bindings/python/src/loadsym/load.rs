@@ -1,14 +1,22 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 
-use pyo3::prelude::*;
-use pyo3::wrap_pyfunction;
-
+use pyo3::{
+    prelude::*,
+    wrap_pyfunction,
+};
 use symworx_loadsym::load::{
-    calculate_mechanical_load, calculate_physiological_load, optimize_load,
+    AcwrSnapshot,
+    RiskLevel,
+    calculate_mechanical_load,
+    calculate_physiological_load,
     // New high-value surface
-    classify_acwr, compute_acute_chronic, compute_acwr_series, compute_ewma_acute_chronic,
-    compute_monotony, compute_strain,
-    AcwrSnapshot, RiskLevel,
+    classify_acwr,
+    compute_acute_chronic,
+    compute_acwr_series,
+    compute_ewma_acute_chronic,
+    compute_monotony,
+    compute_strain,
+    optimize_load,
 };
 
 // ==========================================================
@@ -16,7 +24,10 @@ use symworx_loadsym::load::{
 // ==========================================================
 
 #[pyfunction(name = "calculate_mechanical_load")]
-pub fn py_calculate_mechanical_load(force_data: Vec<f64>, velocity_data: Vec<f64>) -> PyResult<f64> {
+pub fn py_calculate_mechanical_load(
+    force_data: Vec<f64>,
+    velocity_data: Vec<f64>,
+) -> PyResult<f64> {
     if force_data.len() != velocity_data.len() {
         return Err(pyo3::exceptions::PyValueError::new_err(format!(
             "force_data and velocity_data must have the same length ({} vs {})",
@@ -97,7 +108,8 @@ pub fn py_classify_acwr(acwr: f64) -> String {
 
 #[pyfunction(name = "compute_monotony")]
 pub fn py_compute_monotony(daily_loads: Vec<f64>) -> PyResult<f64> {
-    compute_monotony(&daily_loads).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
+    compute_monotony(&daily_loads)
+        .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
 }
 
 #[pyfunction(name = "compute_strain")]

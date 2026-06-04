@@ -1,12 +1,18 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-use parquet::file::reader::{FileReader, SerializedFileReader};
-use parquet::record::Field;
 use std::fs::File;
 
-use crate::traits::SymReader;
+use parquet::{
+    file::reader::{
+        FileReader,
+        SerializedFileReader,
+    },
+    record::Field,
+};
 use symworx_error::SymError;
+
+use crate::traits::SymReader;
 
 /// Read in Parquet files.
 pub struct ParquetReader;

@@ -1,10 +1,17 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 
-use ndarray::{Array1, Array2};
-use numpy::{IntoPyArray, PyArray2};
-use pyo3::prelude::*;
-use pyo3::wrap_pyfunction;
-
+use ndarray::{
+    Array1,
+    Array2,
+};
+use numpy::{
+    IntoPyArray,
+    PyArray2,
+};
+use pyo3::{
+    prelude::*,
+    wrap_pyfunction,
+};
 use symworx_core::stats::{
     // autocorrelation
     acf,

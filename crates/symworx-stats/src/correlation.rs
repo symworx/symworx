@@ -1,7 +1,11 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-use ndarray::{Array2, ArrayView1, Axis};
+use ndarray::{
+    Array2,
+    ArrayView1,
+    Axis,
+};
 
 /// Computes Pearson correlation coefficient between two columns.
 /// # Arguments
@@ -93,8 +97,9 @@ pub fn correlation_matrix_from_vec(data: &[Vec<f64>]) -> Array2<f64> {
 // TESTS
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::array;
+
+    use super::*;
 
     #[test]
     fn test_pearson_two_variables() {

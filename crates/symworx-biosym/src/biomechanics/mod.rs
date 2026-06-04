@@ -3,4 +3,7 @@
 
 pub mod gait;
 
-pub use gait::{GaitData, GaitParams};
+pub use gait::{
+    GaitData,
+    GaitParams,
+};

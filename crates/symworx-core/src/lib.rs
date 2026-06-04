@@ -39,27 +39,34 @@
 #![doc(html_root_url = "https://docs.rs/symworx-core")]
 
 // Re-exports
-pub use symworx_error as error;
-pub use symworx_error::SymError;
-
 // Main modules
 pub use symworx_backend as backend;
 pub use symworx_dynamics as dynamics;
+pub use symworx_error as error;
+pub use symworx_error::SymError;
 pub use symworx_io as io;
-pub use symworx_math as math;
-pub use symworx_signal as signal;
-pub use symworx_stats as stats;
-
 // Re-export of commonly used items
 pub use symworx_io::traits::*;
-pub use symworx_signal::filters;
-pub use symworx_signal::processing::{Peak, PeakDetect, PeakFinderBuilder};
-pub use symworx_stats::basic::*;
-
+pub use symworx_math as math;
 // Convenience re-exports for common series/sequence operations
 pub use symworx_math::series::{
-    ewma, rolling_mean, rolling_std, successive_absolute_differences, successive_differences,
+    ewma,
+    rolling_mean,
+    rolling_std,
+    successive_absolute_differences,
+    successive_differences,
 };
+pub use symworx_signal as signal;
+pub use symworx_signal::{
+    filters,
+    processing::{
+        Peak,
+        PeakDetect,
+        PeakFinderBuilder,
+    },
+};
+pub use symworx_stats as stats;
+pub use symworx_stats::basic::*;
 
 // Version info
 /// Current version of the `symworx-core` crate.

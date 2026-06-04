@@ -5,7 +5,12 @@
 //!
 //! Currently implements a simple 1D constant-velocity model.
 
-use ndarray::{Array1, Array2, Axis, array};
+use ndarray::{
+    Array1,
+    Array2,
+    Axis,
+    array,
+};
 use ndarray_linalg::Inverse;
 
 /// Simple 1D Kalman Filter (position + velocity state).

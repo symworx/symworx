@@ -3,14 +3,22 @@
 //! This module provides very simple preset-based generation for the TUI.
 //! The goal is convenience for demos and testing, not full modeling control.
 
-use std::path::{Path, PathBuf};
+use std::path::{
+    Path,
+    PathBuf,
+};
 
 use anyhow::Result;
-use symworx_biosym::physiology::ppg::{
-    generate_ppg_timeseries, PPGNoiseConfig, PPGSimulationParams,
-};
-use symworx_biosym::physiology::respiration::{
-    generate_respiration_timeseries, RespSimulationParams,
+use symworx_biosym::physiology::{
+    ppg::{
+        generate_ppg_timeseries,
+        PPGNoiseConfig,
+        PPGSimulationParams,
+    },
+    respiration::{
+        generate_respiration_timeseries,
+        RespSimulationParams,
+    },
 };
 
 /// Available demo presets (keep this small and opinionated).

@@ -14,3 +14,6 @@ ndarray      = { workspace = true }
 parquet      = { workspace = true }
 
 symworx-error = { path = "../symworx-error" }
+
+[lints]
+workspace = true

@@ -1,10 +1,14 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-use crate::physiology::common::{
-    BandpassParams, PeakDetectionParams, PhysiologyProcessingParams,
+use crate::physiology::{
+    common::{
+        BandpassParams,
+        PeakDetectionParams,
+        PhysiologyProcessingParams,
+    },
+    ppg::PPGSignalQuality,
 };
-use crate::physiology::ppg::PPGSignalQuality;
 
 /// Legacy PPG bandpass: 0.5–5.0 Hz (4th-order equivalent via 2 cascaded 2nd-order sections).
 pub fn ppg_default_bandpass() -> BandpassParams {

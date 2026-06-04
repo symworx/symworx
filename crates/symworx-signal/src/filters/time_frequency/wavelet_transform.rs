@@ -6,8 +6,12 @@
 //! Useful for multi-resolution time-frequency analysis of non-stationary
 //! signals (e.g., gait, heart rate variability, EEG, respiration).
 
-use ndarray::{Array1, Array2};
 use std::f64::consts::PI;
+
+use ndarray::{
+    Array1,
+    Array2,
+};
 
 /// Common mother wavelets for CWT.
 #[derive(Debug, Clone, Copy)]

@@ -1,7 +1,6 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 
 use pyo3::prelude::*;
-
 use symworx_loadsym::nutrition::{
     ActivityLevel,
     BmrConfig,
@@ -31,9 +30,13 @@ pub struct PyGender {
 #[pymethods]
 impl PyGender {
     #[classattr]
-    pub const MALE: Self = Self { inner: Gender::Male };
+    pub const MALE: Self = Self {
+        inner: Gender::Male,
+    };
     #[classattr]
-    pub const FEMALE: Self = Self { inner: Gender::Female };
+    pub const FEMALE: Self = Self {
+        inner: Gender::Female,
+    };
     pub fn __repr__(&self) -> String {
         format!("Gender::{:?}", self.inner)
     }
@@ -145,8 +148,18 @@ pub fn py_calculate_bmr(
     age_years: f64,
     is_male: bool,
 ) -> PyResult<f64> {
-    let gender = if is_male { Gender::Male } else { Gender::Female };
-    Ok(calculate_bmr(weight_kg, height_m, age_years, gender, BmrConfig::default()))
+    let gender = if is_male {
+        Gender::Male
+    } else {
+        Gender::Female
+    };
+    Ok(calculate_bmr(
+        weight_kg,
+        height_m,
+        age_years,
+        gender,
+        BmrConfig::default(),
+    ))
 }
 
 #[pyfunction(name = "calculate_bmi")]
@@ -248,7 +261,11 @@ pub fn py_calculate_weightloss(
         _ => DeficitStrategy::Balanced,
     };
 
-    let gender = if is_male { Gender::Male } else { Gender::Female };
+    let gender = if is_male {
+        Gender::Male
+    } else {
+        Gender::Female
+    };
     let model = calculate_weightloss(
         age_years,
         gender,
@@ -267,7 +284,10 @@ pub fn py_calculate_weightloss(
         dict.set_item("gender", format!("{:?}", model.gender))?;
         dict.set_item("deficit_level", format!("{:?}", model.deficit_level))?;
         dict.set_item("deficit_strategy", format!("{:?}", model.deficit_strategy))?;
-        dict.set_item("bmr_config_obesity", format!("{:?}", model.bmr_config.obesity_adjustment))?;
+        dict.set_item(
+            "bmr_config_obesity",
+            format!("{:?}", model.bmr_config.obesity_adjustment),
+        )?;
         dict.set_item("activity_level", format!("{:?}", model.activity_level))?;
         dict.set_item("age_years", model.age_years)?;
         dict.set_item("height_m", model.height_m)?;

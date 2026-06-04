@@ -24,11 +24,26 @@ pub mod resample;
 /// Traits for signal processing
 pub mod traits;
 
-pub use interpolation::{interp_cubic, interp_linear, interp_spline, interp1};
-pub use normalization::{normalize, zscore};
-pub use peaks::{Peak, PeakFinder, PeakFinderBuilder};
 pub use decimate::min_max_decimate;
-pub use resample::{Resample, ResampleMethod};
+pub use interpolation::{
+    interp_cubic,
+    interp_linear,
+    interp_spline,
+    interp1,
+};
+pub use normalization::{
+    normalize,
+    zscore,
+};
+pub use peaks::{
+    Peak,
+    PeakFinder,
+    PeakFinderBuilder,
+};
+pub use resample::{
+    Resample,
+    ResampleMethod,
+};
 pub use traits::PeakDetect;
 
 /// Interpolation functions.

@@ -36,3 +36,35 @@ rand_distr     = { version = "0.5" }
 rustfft        = { version = "6.4.1" }
 thiserror      = { version = "2.0.17" }
 tokio          = { version = "1", features = ["full"] }
+
+[workspace.lints.rust]
+# We use `deny` (not `forbid`) for `unsafe_code` because this workspace
+# deliberately depends on `ndarray` (and `ndarray-linalg` behind the
+# opt-in `linalg` feature) for performance-critical array operations
+# across signal processing, nonlinear dynamics (RQA), biosym generators,
+# and stats.
+#
+# `ndarray`'s internals and macros (e.g. `s![]`, `slice_mut`, views, etc.)
+# use unsafe for speed and to implement zero-copy slicing. Using `forbid`
+# overrules the `#[allow(unsafe_code)]` attributes that ndarray places
+# around those expansions, producing errors even on ordinary safe API use.
+#
+# `deny` still gives strong protection: any direct `unsafe {}` we write
+# in our own code will cause a build error unless we add a targeted
+# `#[allow(unsafe_code)]` with a safety justification immediately next to it.
+#
+# We keep the policy at the project root (no per-crate `[lints]` overrides)
+# so the rule is uniform and easy to maintain.
+unsafe_code = "deny"
+
+[workspace.lints.clippy]
+# Pragmatic clippy configuration for the codebase.
+# Kept relativley lightweight to avoid pedantic global checks.
+# Can still use `#[allow(...)]` attributes where justified.
+manual_map = "warn"
+needless_pass_by_value = "warn"
+redundant_pub_crate = "warn"
+
+# We already use some uncommon naming conventions for builder-style
+# APIs (e.g. `Resample::to_len`, `to_rate`) and PyO3 wrappers.
+wrong_self_convention = "allow"

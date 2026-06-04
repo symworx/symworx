@@ -3,7 +3,10 @@
 
 /// Calculate mechanical load from force and velocity data
 pub fn calculate_mechanical_load(force_data: &[f64], velocity_data: &[f64]) -> f64 {
-    force_data.iter().zip(velocity_data.iter())
+    force_data
+        .iter()
+        .zip(velocity_data.iter())
         .map(|(f, v)| f * v)
-        .sum::<f64>() / force_data.len() as f64
+        .sum::<f64>()
+        / force_data.len() as f64
 }

@@ -27,14 +27,21 @@ pub mod parquet;
 /// Additional traits used in io.
 pub mod traits;
 
-use symworx_error::SymError;
-
 // Re-exports
-pub use csv::{CsvReader, CsvWriter};
-pub use gbd::{GbdReader, GbdTable};
-pub use ibi::{IbiRecord, read_ibi};
+pub use csv::{
+    CsvReader,
+    CsvWriter,
+};
+pub use gbd::{
+    GbdReader,
+    GbdTable,
+};
+pub use ibi::{
+    IbiRecord,
+    read_ibi,
+};
 pub use parquet::ParquetReader;
-
+use symworx_error::SymError;
 use traits::SymReader;
 
 /// Parent load function.

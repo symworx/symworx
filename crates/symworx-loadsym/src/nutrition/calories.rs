@@ -165,7 +165,7 @@ impl Default for BmrConfig {
     }
 }
 
-// Functions 
+// Functions
 
 /// Calculate Basal Metabolic Rate (BMR) using the Mifflin-St Jeor equation.
 ///
@@ -180,7 +180,13 @@ impl Default for BmrConfig {
 ///
 /// Returns `f64::NAN` for clearly invalid inputs (age outside adult range, unrealistic
 /// height/weight). Callers should handle NaN or pre-validate.
-pub fn calculate_bmr(weight_kg: f64, height_m: f64, age_years: f64, gender: Gender, config: BmrConfig) -> f64 {
+pub fn calculate_bmr(
+    weight_kg: f64,
+    height_m: f64,
+    age_years: f64,
+    gender: Gender,
+    config: BmrConfig,
+) -> f64 {
     // Basic validation (adult-oriented; formula not intended for children/elderly extremes)
     if weight_kg < 20.0 || height_m < 0.5 || age_years < 18.0 || age_years > 99.0 {
         return f64::NAN;
@@ -196,7 +202,9 @@ pub fn calculate_bmr(weight_kg: f64, height_m: f64, age_years: f64, gender: Gend
     };
 
     // Apply obesity adjustment if configured and applicable
-    if let Some(adjusted_weight) = get_adjusted_weight(weight_kg, height_m, bmi, config.obesity_adjustment) {
+    if let Some(adjusted_weight) =
+        get_adjusted_weight(weight_kg, height_m, bmi, config.obesity_adjustment)
+    {
         bmr = match gender {
             Gender::Male => 10.0 * adjusted_weight + 6.25 * height_cm - 5.0 * age_years + 5.0,
             Gender::Female => 10.0 * adjusted_weight + 6.25 * height_cm - 5.0 * age_years - 161.0,
@@ -207,9 +215,7 @@ pub fn calculate_bmr(weight_kg: f64, height_m: f64, age_years: f64, gender: Gend
             let reduction = (0.018 * excess_bmi * excess_bmi).min(4.5);
             let weight_coeff = (10.0 - reduction).max(6.0);
 
-            bmr = weight_coeff * weight_kg
-                + 6.25 * height_cm
-                - 5.0 * age_years
+            bmr = weight_coeff * weight_kg + 6.25 * height_cm - 5.0 * age_years
                 + if gender == Gender::Male { 5.0 } else { -161.0 };
         }
     }
@@ -328,7 +334,15 @@ mod tests {
         let weight = 120.0;
         let height = 1.70;
         let age = 35.0;
-        let baseline = calculate_bmr(weight, height, age, Gender::Male, BmrConfig { obesity_adjustment: ObesityAdjustment::None });
+        let baseline = calculate_bmr(
+            weight,
+            height,
+            age,
+            Gender::Male,
+            BmrConfig {
+                obesity_adjustment: ObesityAdjustment::None,
+            },
+        );
         let adjusted = calculate_bmr(weight, height, age, Gender::Male, BmrConfig::default()); // default = AdjustedWeight 0.25
         // Adjusted should be noticeably lower than raw (less weight plugged into coeff)
         assert!(adjusted < baseline - 50.0);
@@ -337,7 +351,8 @@ mod tests {
 
     #[test]
     fn test_calculate_calorie_targets() {
-        let (intake, activity) = calculate_calorie_targets(2500.0, 1600.0, 500.0, DeficitStrategy::Balanced);
+        let (intake, activity) =
+            calculate_calorie_targets(2500.0, 1600.0, 500.0, DeficitStrategy::Balanced);
         assert!((intake - 2250.0).abs() < 1.0);
         // target activity = active cals + portion of deficit
         assert!(activity > 1100.0 && activity < 1200.0);

@@ -14,10 +14,17 @@ pub mod physiological;
 
 // re-exports of specific functions
 pub use acwr::{
-    classify_acwr, compute_acute_chronic, compute_acwr_series, compute_ewma_acute_chronic,
-    AcwrSnapshot, RiskLevel,
+    AcwrSnapshot,
+    RiskLevel,
+    classify_acwr,
+    compute_acute_chronic,
+    compute_acwr_series,
+    compute_ewma_acute_chronic,
 };
 pub use mechanical::calculate_mechanical_load;
-pub use monotony::{compute_monotony, compute_strain};
+pub use monotony::{
+    compute_monotony,
+    compute_strain,
+};
 pub use optimization::optimize_load;
 pub use physiological::calculate_physiological_load;
