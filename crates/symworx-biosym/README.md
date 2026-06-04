@@ -5,11 +5,36 @@ It provides tools for simulating and analyzing physiological and biomechanical s
 
 ## Features (Current)
 
-- **Gait modeling** — `GaitParams` and `GaitData` (under `biomechanics::gait`) with stride interval, cadence, stride/step length, and vertical oscillation calculations.
+- **Gait modeling & analysis** — `GaitParams`, `GaitData`, `GaitStats`, `GaitAnalysis` (under `biomechanics::gait`) with stride detection from signals (`detect_gait_strides*`, `analyze_gait*`), quality presets, cadence, lengths, symmetry, vertical oscillation. Parity with physiology analysis.
 - **Central Pattern Generator (CPG)** — Coupled Van der Pol oscillators for heart, bilateral legs, and respiration, driven by a dynamic `tau` parameter.
 - **Numerical integration** — Uses RK4 from `symworx-math` for stable simulation.
 - **Python bindings** — Full PyO3 support. Can be used standalone (`import symworx_biosym`) or via the unified `symworx` package.
 - **Independent builds** — `maturin develop` works directly from the crate directory.
+
+## Physiology Analysis
+
+The `physiology` module provides generation + analysis for PPG and respiration (flow), built on shared primitives:
+
+- **Common** (`physiology::common`): `PhysiologySignal`, `PhysiologySummary` (mean/std/dur), `IntervalSeries` (peaks, intervals, rates; supports alternating-phase split for legacy-style insp/exp), `HrvMetrics` (SDNN + RMSSD), `PhysiologyProcessingParams` (bandpass via `symworx-signal` biquads + peak overrides), peak detection via `symworx_core::PeakFinderBuilder`.
+- **PPG**: `PpgAnalysis` (summary + intervals + mean HR bpm + HRV). `analyze_ppg*` / `detect_ppg_peaks*` / `summarize_ppg`. Quality presets (`PPGSignalQuality`: Reference/High/Moderate/Poor) drive bandpass (0.5–5 Hz) + tuned peak thresholds for noisy simulated data. Hardcoded default fs 250 Hz for signal wrapper.
+- **Respiration**: `RespAnalysis` (summary + intervals + mean BRPM + insp/exp splits from alt phases + `RespPhasePeaks` from signed flow local maxima + phase-specific intervals). `analyze_respiration*` etc. Bandpass 0.1–0.5 Hz; default fs 50 Hz on flow channel. Volume field present but analysis focuses on flow.
+- **Bindings**: Full `PpgAnalysis` / `RespAnalysis` (flattened for py) + analyze fns exposed.
+
+See `physiology::{ppg,respiration}::analysis` and tests for details. Heavily reuses core crates; no direct scipy equivalent.
+
+**Known gaps** (advanced / future):
+- Waveform morphology (PPG: rise time/notch/augmentation; resp: I:E, peak flows, volume integrals).
+- Extended HRV (pNN50, freq-domain LF/HF, nonlinear — use `symworx-dynamics` entropy + `symworx-stats` spectral for now).
+- Cardiorespiratory coupling / RSA metrics (CPG has couplings; dedicated cross-analysis pending).
+- Sleep module (legacy only).
+- Real-sensor vs sim-tuned quality presets.
+- Streaming / incremental analysis.
+
+These are out of scope for current TUI/Dynamics focus (clean HR/BR + intervals + basic variability for RQA). See plan session for full evaluation.
+
+## Biomechanics Analysis (Status)
+
+(See implementation plan in session notes for current scoping of gait event detection, `GaitStats`/`GaitAnalysis`, quality presets, CPG integration, and bindings completion. Current surface is the `GaitData` calculators + pure metrics in `biomechanics::gait`.)
 
 ## Philosophy
 

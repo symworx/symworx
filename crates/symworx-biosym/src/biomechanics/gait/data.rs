@@ -3,7 +3,10 @@
 
 use ndarray::Array1;
 
-use super::metrics;
+use super::metrics::{
+    self,
+    GaitStats,
+};
 
 /// Simple container for gait event times and derived metrics.
 /// Focus on core calculations first.
@@ -128,6 +131,44 @@ impl GaitData {
             Some(Array1::from(oscillations))
         }
     }
+
+    /// Calculate (or derive) left and right step intervals.
+    /// Populates step times from stride_times if not already present.
+    pub fn calculate_step_intervals(&mut self) -> Option<(Array1<f64>, Array1<f64>)> {
+        if self.left_step_times.is_none() || self.right_step_times.is_none() {
+            self.calculate_step_times();
+        }
+        let l = self.left_step_times.as_ref()?;
+        let r = self.right_step_times.as_ref()?;
+        if l.len() < 2 || r.len() < 2 {
+            return None;
+        }
+        let li = metrics::compute_intervals_from_times(l);
+        let ri = metrics::compute_intervals_from_times(r);
+        Some((li, ri))
+    }
+
+    /// Compute relative symmetry index (0 = symmetric) from left/right step intervals.
+    pub fn calculate_symmetry(&mut self) -> Option<f64> {
+        let (li, ri) = self.calculate_step_intervals()?;
+        metrics::compute_symmetry_index(&li, &ri)
+    }
+
+    /// Produce a `GaitStats` snapshot using currently populated series + optional provided speed.
+    /// Does not mutate; uses existing stride_intervals / lengths / osc etc. (vert osc computed on demand if pos present).
+    pub fn to_gait_stats(&self, provided_speed: Option<f64>) -> GaitStats {
+        let intervals = self
+            .stride_intervals
+            .as_ref()
+            .cloned()
+            .unwrap_or_else(|| Array1::zeros(0));
+        let stride_l = self.stride_length.as_ref();
+        let step_l = self.step_length.as_ref();
+        let vert = self.calculate_vertical_oscillation();
+        let vert_ref = vert.as_ref();
+        let sym = None; // populate via &mut calculate_symmetry if desired
+        metrics::compute_gait_stats(&intervals, stride_l, step_l, vert_ref, provided_speed, sym)
+    }
 }
 
 // TESTS
@@ -139,8 +180,7 @@ mod tests {
 
     #[test]
     fn test_gait_params_defaults() {
-        // Note: this test lives here for historical reasons but exercises GaitParams.
-        // In a future pass it can move to params.rs tests.
+        // Exercises GaitParams (via reexport). See params.rs for dedicated tests.
         let p = crate::GaitParams::default().with_defaults();
         assert!(p.leg_length.is_some());
         assert!(p.cadence.is_some());
@@ -192,5 +232,29 @@ mod tests {
         data.calculate_step_times();
         assert!(data.left_step_times.is_some());
         assert!(data.right_step_times.is_some());
+    }
+
+    #[test]
+    fn test_calculate_step_intervals_and_symmetry() {
+        let mut data = GaitData::new(100.0);
+        data.stride_times = Some(array![0.0, 1.0, 2.0, 3.0, 4.0]);
+        let (li, ri) = data.calculate_step_intervals().expect("step intervals");
+        assert_eq!(li.len(), 2);
+        assert_eq!(ri.len(), 2);
+        // symmetric times -> symmetry ~0
+        let sym = data.calculate_symmetry().expect("symmetry");
+        assert!(sym < 1e-9);
+    }
+
+    #[test]
+    fn test_to_gait_stats() {
+        let mut data = GaitData::new(100.0);
+        data.stride_times = Some(array![0.0, 1.0, 2.0]);
+        data.calculate_stride_intervals();
+        data.calculate_stride_length(Some(1.3));
+        let stats = data.to_gait_stats(Some(1.3));
+        assert_eq!(stats.n_strides, 2);
+        assert!((stats.mean_stride_time_s - 1.0).abs() < 1e-9);
+        assert!((stats.mean_stride_length_m.unwrap() - 1.3).abs() < 1e-9);
     }
 }
