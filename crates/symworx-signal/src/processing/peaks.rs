@@ -102,6 +102,20 @@ pub struct PeakFinderBuilder<'a> {
 }
 
 impl<'a> PeakFinderBuilder<'a> {
+    /// Build a peak finder directly from a slice reference.
+    ///
+    /// This is the canonical way to obtain a [`PeakFinderBuilder`] when you
+    /// already hold a `&'a [f64]`. Using this (or the equivalent `slice.peaks()`
+    /// on an *owned* container like `Vec<f64>`) ensures the builder's internal
+    /// lifetime is tied to the data's actual lifetime.
+    ///
+    /// Prefer this over calling `.peaks()` on a `&'a [f64]` parameter, because
+    /// the extension trait method introduces an extra borrow of the reference
+    /// itself (see `PeakDetect`).
+    pub fn from_slice(slice: &'a [f64]) -> Self {
+        PeakFinder::new(ArrayView1::from(slice))
+    }
+
     /// Sets the minimum peak height.
     pub fn height(mut self, h: f64) -> Self {
         self.config.height = Some(h);

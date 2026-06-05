@@ -113,13 +113,15 @@ mod tests {
     #[test]
     fn test_rmssd() {
         let data = [1.0, 2.0, 4.0];
-        assert!((rmssd(&data) - 1.41421356237).abs() < 1e-8); // sqrt(2)
+        // diffs = [1,2], rms = sqrt( (1+4)/2 ) = sqrt(2.5)
+        assert!((rmssd(&data) - 2.5f64.sqrt()).abs() < 1e-8);
     }
 
     #[test]
     fn test_sd_successive_difference() {
         let data = [1.0, 2.0, 4.0];
-        assert!((sd_successive_differences(&data) - 0.70710678118).abs() < 1e-8);
+        // diffs=[1,2], pop std (ddof=0) = 0.5
+        assert!((sd_successive_differences(&data) - 0.5).abs() < 1e-8);
     }
 
     #[test]

@@ -12,23 +12,33 @@ use ndarray::Array2;
 /// Because the input matrix already has Theiler-window cells forced to `false`,
 /// lines are naturally terminated at the Theiler boundary. Both upper and lower
 /// triangles are scanned.
+///
+/// Supports rectangular matrices (nrows may != ncols), e.g. for cross-recurrence.
 pub(crate) fn find_diagonal_line_lengths(matrix: &Array2<bool>, min_length: usize) -> Vec<usize> {
-    let n = matrix.nrows();
-    if n == 0 || min_length == 0 {
+    let nrows = matrix.nrows();
+    let ncols = matrix.ncols();
+    if nrows == 0 || ncols == 0 || min_length == 0 {
         return Vec::new();
     }
 
     let mut lengths = Vec::new();
 
-    // All diagonals: offset from -(n-1) to +(n-1)
-    // offset > 0  =>  matrix[i, i+offset]
-    // offset < 0  =>  matrix[i-offset, i]
-    for offset in -(n as isize - 1)..=(n as isize - 1) {
+    // All diagonals: offset from -(nrows-1) to +(ncols-1)
+    // offset > 0  =>  matrix[i, i+offset]  (upper triangle if square)
+    // offset < 0  =>  matrix[i+off, i]     (lower)
+    let min_offset = -(nrows as isize - 1);
+    let max_offset = ncols as isize - 1;
+
+    for offset in min_offset..=max_offset {
         let mut current_len = 0usize;
 
         if offset >= 0 {
             let off = offset as usize;
-            for i in 0..(n - off) {
+            if off >= ncols {
+                continue;
+            }
+            let max_i = std::cmp::min(nrows, ncols - off);
+            for i in 0..max_i {
                 if matrix[[i, i + off]] {
                     current_len += 1;
                 } else if current_len > 0 {
@@ -40,7 +50,11 @@ pub(crate) fn find_diagonal_line_lengths(matrix: &Array2<bool>, min_length: usiz
             }
         } else {
             let off = (-offset) as usize;
-            for i in 0..(n - off) {
+            if off >= nrows {
+                continue;
+            }
+            let max_i = std::cmp::min(ncols, nrows - off);
+            for i in 0..max_i {
                 if matrix[[i + off, i]] {
                     current_len += 1;
                 } else if current_len > 0 {
@@ -63,18 +77,22 @@ pub(crate) fn find_diagonal_line_lengths(matrix: &Array2<bool>, min_length: usiz
 /// Find lengths of all vertical lines with length ≥ min_length.
 ///
 /// Vertical lines indicate laminar (trapping) states.
+///
+/// Supports rectangular matrices (e.g. cross-recurrence plots where
+/// nrows may != ncols). Scans each column fully from top to bottom.
 pub(crate) fn find_vertical_line_lengths(matrix: &Array2<bool>, min_length: usize) -> Vec<usize> {
-    let n = matrix.nrows();
-    if n == 0 || min_length == 0 {
+    let nrows = matrix.nrows();
+    let ncols = matrix.ncols();
+    if nrows == 0 || ncols == 0 || min_length == 0 {
         return Vec::new();
     }
 
     let mut lengths = Vec::new();
 
-    for col in 0..n {
+    for col in 0..ncols {
         let mut current_len = 0usize;
 
-        for row in 0..n {
+        for row in 0..nrows {
             if matrix[[row, col]] {
                 current_len += 1;
             } else if current_len > 0 {

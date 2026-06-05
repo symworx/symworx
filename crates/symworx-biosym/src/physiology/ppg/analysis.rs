@@ -1,10 +1,7 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-use symworx_core::{
-    PeakDetect,
-    PeakFinderBuilder,
-};
+use symworx_core::PeakFinderBuilder;
 
 use super::{
     PPGSignalQuality,
@@ -48,7 +45,7 @@ pub fn ppg_peak_finder<'a>(
     processing: &PhysiologyProcessingParams,
 ) -> PeakFinderBuilder<'a> {
     apply_peak_overrides(
-        signal.samples.peaks(),
+        PeakFinderBuilder::from_slice(&signal.samples),
         signal.fs,
         PPG_BASE_MIN_INTERVAL_SEC,
         PPG_BASE_PROMINENCE,

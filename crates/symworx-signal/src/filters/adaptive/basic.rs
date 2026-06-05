@@ -59,10 +59,12 @@ mod tests {
     #[test]
     fn test_adaptive_mean_filter() {
         let data = vec![10.0, 10.1, 9.9, 50.0];
-        let filtered = adaptive_mean_filter(&data, 2.0);
+        // Use k=1.5 so the (contaminated) z-score still flags the outlier for this small data.
+        // (With mean/std the max z for a single outlier in 4 pts is ~1.73.)
+        let filtered = adaptive_mean_filter(&data, 1.5);
 
         assert_eq!(filtered.len(), 4);
-        assert!((filtered[3] - 20.0).abs() < 1e-6); // should be replaced with mean
+        assert!((filtered[3] - 20.0).abs() < 1e-6); // replaced with (contaminated) mean
     }
 
     #[test]
@@ -71,11 +73,12 @@ mod tests {
         let filtered = adaptive_median_filter(&data, 2.0);
 
         assert_eq!(filtered.len(), 4);
-        // Median should be 1.0, MAD small → 100.0 replaced with median
+        // Median of 4 pts (even) is avg of 2 middle after sort: (1.0 + 1.1)/2 = 1.05
+        // MAD small → 100.0 replaced with median (1.05)
         assert_eq!(filtered[0], 1.0);
         assert_eq!(filtered[1], 1.1);
         assert_eq!(filtered[2], 0.9);
-        assert_eq!(filtered[3], 1.0); // replaced
+        assert_eq!(filtered[3], 1.05); // replaced
     }
 
     #[test]

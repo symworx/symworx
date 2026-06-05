@@ -28,9 +28,9 @@
 //! ```rust
 //! use symworx_biosym::{GaitParams, SymCpgModel};
 //!
-//! let params = GaitParams::with_defaults();
-//! let mut model = SymCpgModel::new(None); // default config
-//! let (times, states) = model.run(0.0, 60.0, 0.01);
+//! let params = GaitParams::default().with_defaults();
+//! let model = SymCpgModel::new(None); // default config
+//! let (times, states) = model.run((0.0, 60.0), 0.01);
 //! ```
 //!
 //! Gait analysis: `GaitData` + `to_gait_stats` / calculate_* for intervals, cadence, lengths, symmetry.

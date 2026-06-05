@@ -41,10 +41,16 @@ impl Pca {
 
         // Select top components
         let components = svd.vt.slice(s![0..n_components, ..]).t().to_owned();
-        let explained_variance = svd
-            .explained_variance_ratio()
-            .slice(s![0..n_components])
-            .to_owned();
+
+        // Use population variance convention (s^2 / n) to match var_axis(0.0) in whitening tests
+        let n_samples = centered.nrows() as f64;
+        let explained_variance = if n_samples > 0.0 {
+            svd.s
+                .slice(s![0..n_components])
+                .mapv(|s| (s * s) / n_samples)
+        } else {
+            Array1::zeros(n_components)
+        };
 
         Self {
             components,
@@ -60,16 +66,23 @@ impl Pca {
         centered.dot(&self.components)
     }
 
-    /// Returns the explained variance ratio for each component
+    /// Returns the explained variance ratio for each component (relative to total variance
+    /// captured by the fitted components).
     pub fn explained_variance_ratio(&self) -> Array1<f64> {
-        self.explained_variance.clone()
+        let total = self.explained_variance.sum();
+        if total < 1e-12 {
+            Array1::zeros(self.explained_variance.len())
+        } else {
+            &self.explained_variance / total
+        }
     }
 
     /// Returns the cumulative explained variance ratio.
     pub fn cumulative_explained_variance_ratio(&self) -> Array1<f64> {
+        let ratios = self.explained_variance_ratio();
         let mut cum = Array1::zeros(self.n_components());
         let mut sum = 0.0;
-        for (i, &val) in self.explained_variance.iter().enumerate() {
+        for (i, &val) in ratios.iter().enumerate() {
             sum += val;
             cum[i] = sum;
         }

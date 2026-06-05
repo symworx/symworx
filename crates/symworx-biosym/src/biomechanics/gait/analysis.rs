@@ -2,19 +2,12 @@
 // Licensed under the Mozilla Public License, Version 2.0.
 
 use ndarray::Array1;
-use symworx_core::{
-    PeakDetect,
-    PeakFinderBuilder,
-};
+use symworx_core::PeakFinderBuilder;
 
 use super::{
     GaitData,
     GaitSignalQuality,
     GaitStats,
-    metrics::{
-        compute_gait_stats,
-        compute_stride_lengths,
-    },
     processing::gait_processing_for_quality,
 };
 use crate::{
@@ -43,7 +36,7 @@ pub fn gait_peak_finder<'a>(
     processing: &PhysiologyProcessingParams,
 ) -> PeakFinderBuilder<'a> {
     crate::common::processing::apply_peak_overrides(
-        signal.peaks(),
+        PeakFinderBuilder::from_slice(signal),
         fs,
         GAIT_BASE_MIN_INTERVAL_SEC,
         GAIT_BASE_PROMINENCE,
@@ -151,8 +144,6 @@ pub fn analyze_gait(data: &mut GaitData, walking_speed: Option<f64>) -> GaitAnal
 
 #[cfg(test)]
 mod tests {
-    use ndarray::array;
-
     use super::*;
 
     fn synthetic_stride_signal(fs: f64, stride_sec: f64, n_strides: usize) -> (Vec<f64>, Vec<f64>) {
@@ -163,9 +154,19 @@ mod tests {
         for i in 0..n {
             let tt = i as f64 / fs;
             t.push(tt);
-            // Simple peaks at stride times (positive pulse)
+            // Pulse with a distinct apex (1.0) in the center of each "on" window so that
+            // the strict local-max finder detects it even without bandpass. The overall
+            // pulse shape is close to the original so that bandpass + min_height=0.05
+            // in quality presets still yields usable peaks for the tests.
             let phase = (tt % stride_sec) / stride_sec;
-            let val = if phase < 0.1 { 1.0 } else { 0.0 };
+            let in_pulse = phase < 0.1;
+            let mut val = if in_pulse { 0.5 } else { 0.0 };
+            if in_pulse {
+                let pulse_phase = phase / 0.1;
+                if (pulse_phase - 0.5).abs() < 0.02 {
+                    val = 1.0;
+                }
+            }
             sig.push(val);
         }
         (t, sig)
@@ -196,7 +197,7 @@ mod tests {
     fn analyze_signal_with_quality() {
         let fs = 100.0;
         let stride = 1.0;
-        let (_, sig) = synthetic_stride_signal(fs, stride, 8);
+        let (_, sig) = synthetic_stride_signal(fs, stride, 12);
         let a = analyze_gait_signal_with_quality(&sig, fs, GaitSignalQuality::Reference);
         assert!(a.stats.n_strides >= 4);
         assert!(a.stats.mean_stride_time_s > 0.5 && a.stats.mean_stride_time_s < 1.5);

@@ -64,7 +64,11 @@ pub fn stft(
     );
 
     let hop = window_length - overlap;
-    let n_windows = (signal.len() - window_length) / hop + 1;
+    let n_windows = if signal.len() < window_length {
+        0
+    } else {
+        (signal.len() - window_length) / hop + 1
+    };
 
     if n_windows < 1 {
         return StftResult {

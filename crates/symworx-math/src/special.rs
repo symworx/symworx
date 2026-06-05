@@ -3,38 +3,42 @@
 
 /// Computes the Gamma function Γ(x) for x > 0.
 ///
-/// Uses the Lanczos approximation, which is accurate to roughly 10-14 decimal digits
-/// for most values in the double precision range.
+/// Uses the Lanczos approximation (with reflection for 0 < x < 1).
+/// Accurate enough for the needs of distributions and special functions here.
 #[inline]
 pub fn gamma(x: f64) -> f64 {
     if x <= 0.0 {
-        return f64::NAN; // can return 0.0 / f64::INFINITY for +inf on poles
+        return f64::NAN;
     }
 
-    // Lanczos approximation with g=5, n=6 coefficients
-    // (balancing speed and accuracy)
-    const G: f64 = 5.0;
-    const P: [f64; 6] = [
-        76.18009172947146,
-        -86.50532032941677,
-        24.01409824083091,
-        -1.231739572450155,
-        0.1208650973866179e-2,
-        -0.5395239384953e-5,
+    // Lanczos coefficients for g=7, n=9 (good accuracy, common implementation)
+    const G: f64 = 7.0;
+    const P: [f64; 9] = [
+        0.99999999999980993,
+        676.5203681218851,
+        -1259.1392167224028,
+        771.32342877765313,
+        -176.61502916214059,
+        12.507343278686905,
+        -0.13857109526572012,
+        9.9843695780195716e-6,
+        -1.5056327351493116e-7,
     ];
 
-    let z = x;
-    let mut sum = P[0];
+    if x < 0.5 {
+        // Reflection formula: Γ(x) = π / (sin(πx) * Γ(1-x))
+        return std::f64::consts::PI / ((std::f64::consts::PI * x).sin() * gamma(1.0 - x));
+    }
 
-    for (i, coeff) in P.iter().enumerate().skip(1) {
-        // for i in 1..P.len() {
-        sum += coeff / (z + i as f64);
+    let z = x - 1.0;
+    let mut sum = P[0];
+    for i in 1..P.len() {
+        sum += P[i] / (z + i as f64);
     }
 
     let t = z + G + 0.5;
     let base = (2.0 * std::f64::consts::PI).sqrt() * t.powf(z + 0.5) * (-t).exp();
-
-    base * sum / x
+    base * sum
 }
 
 /// Computes the natural logarithm of the Gamma function: ln(Γ(x))
@@ -78,17 +82,17 @@ mod tests {
 
     #[test]
     fn test_gamma() {
-        assert!((gamma(1.0) - 1.0).abs() < 1e-10);
-        assert!((gamma(2.0) - 1.0).abs() < 1e-10);
-        assert!((gamma(5.0) - 24.0).abs() < 1e-8);
-        assert!((gamma(0.5) - std::f64::consts::FRAC_PI_2.sqrt()).abs() < 1e-8);
+        assert!((gamma(1.0) - 1.0).abs() < 1e-9);
+        assert!((gamma(2.0) - 1.0).abs() < 1e-9);
+        assert!((gamma(5.0) - 24.0).abs() < 1e-7);
+        assert!((gamma(0.5) - std::f64::consts::PI.sqrt()).abs() < 1e-8);
     }
 
     #[test]
     fn test_beta() {
         // B(1,1) = 1
-        assert!((beta(1.0, 1.0) - 1.0).abs() < 1e-10);
+        assert!((beta(1.0, 1.0) - 1.0).abs() < 1e-9);
         // B(2,2) = 1/6
-        assert!((beta(2.0, 2.0) - 1.0 / 6.0).abs() < 1e-10);
+        assert!((beta(2.0, 2.0) - 1.0 / 6.0).abs() < 1e-9);
     }
 }

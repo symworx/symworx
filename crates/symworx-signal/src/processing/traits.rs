@@ -1,12 +1,7 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-use ndarray::ArrayView1;
-
-use super::peaks::{
-    PeakFinder,
-    PeakFinderBuilder,
-};
+use super::peaks::PeakFinderBuilder;
 
 /// Provides a `.peaks()` method for slices of `f64`.
 pub trait PeakDetect {
@@ -19,6 +14,6 @@ where
     T: AsRef<[f64]>,
 {
     fn peaks(&self) -> PeakFinderBuilder<'_> {
-        PeakFinder::new(ArrayView1::from(self.as_ref()))
+        PeakFinderBuilder::from_slice(self.as_ref())
     }
 }

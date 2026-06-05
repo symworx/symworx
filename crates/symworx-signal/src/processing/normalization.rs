@@ -35,17 +35,17 @@ mod tests {
     #[test]
     fn test_normalize() {
         let data = vec![1.0, 2.0, 3.0];
-        let normalized = normalize(data);
+        let normalized = normalize(&data);
         assert_eq!(normalized, vec![0.0, 0.5, 1.0]);
     }
 
     #[test]
-    fn test_z_score() {
+    fn test_zscore() {
         let data = vec![1.0, 2.0, 3.0];
-        let z_scored = z_score(data);
-        let mean = z_scored.iter().sum::<f64>() / z_scored.len as f64;
+        let zscored = zscore(&data);
+        let mean = zscored.iter().sum::<f64>() / zscored.len() as f64;
         let std_dev =
-            (z_scored.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / z_scored.len as f64).sqrt();
+            (zscored.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / zscored.len() as f64).sqrt();
 
         assert!((mean - 0.0).abs() < 1e-6);
         assert!((std_dev - 1.0).abs() < 1e-5);

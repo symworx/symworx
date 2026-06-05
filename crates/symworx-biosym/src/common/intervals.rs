@@ -59,10 +59,22 @@ impl IntervalSeries {
 
     /// Mean event rate over the full recording window (events per minute).
     /// Supports both index-based (from sampled signals) and pure time-based events.
+    ///
+    /// Uses the number of inter-event *intervals* (i.e. n_events - 1) so that
+    /// a recording with events spanning D seconds and I intervals reports
+    /// rate = (I / D) * 60. This matches the convention in mean_instantaneous_rate
+    /// and the "n_strides = intervals.len()" used elsewhere in gait stats.
     pub fn mean_rate_over_window(&self, duration_sec: f64) -> f64 {
         if duration_sec <= 0.0 {
             return f64::NAN;
         }
+        // Prefer the derived intervals count when present (normal case after
+        // from_times or from_peak_indices with >=2 events).
+        if !self.intervals_sec.is_empty() {
+            return 60.0 * self.intervals_sec.len() as f64 / duration_sec;
+        }
+        // Fallback for manually constructed or edge-case series that have
+        // event times but no intervals populated yet.
         let n = if !self.peak_indices.is_empty() {
             self.peak_indices.len()
         } else if !self.peak_times.is_empty() {
@@ -70,7 +82,10 @@ impl IntervalSeries {
         } else {
             return f64::NAN;
         };
-        60.0 * n as f64 / duration_sec
+        if n < 2 {
+            return f64::NAN;
+        }
+        60.0 * (n - 1) as f64 / duration_sec
     }
 
     /// Mean rate from consecutive intervals (events per minute).
@@ -135,7 +150,12 @@ mod tests {
         let series = IntervalSeries::from_times(&times);
         assert!(series.peak_indices.is_empty());
         assert_eq!(series.peak_times, times);
-        assert_eq!(series.intervals_sec, vec![1.1, 1.1, 1.2]);
+        // Use tolerant compare because 1.1 and 1.2 are not exactly representable
+        let expected = vec![1.1, 1.1, 1.2];
+        assert_eq!(series.intervals_sec.len(), expected.len());
+        for (a, b) in series.intervals_sec.iter().zip(expected.iter()) {
+            assert!((a - b).abs() < 1e-9, "interval diff too large: {a} vs {b}");
+        }
         assert!(
             (series.mean_instantaneous_rate() - (60.0 / 1.1 + 60.0 / 1.1 + 60.0 / 1.2) / 3.0).abs()
                 < 1e-9

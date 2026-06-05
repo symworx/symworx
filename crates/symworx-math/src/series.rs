@@ -52,9 +52,9 @@
 /// ```
 /// use symworx_math::series::successive_differences;
 ///
-/// let times = [0.0, 1.2, 2.5, 3.7];
+/// let times = [0.0, 1.0, 3.0, 6.0];
 /// let diffs = successive_differences(&times);
-/// assert_eq!(diffs, vec![1.2, 1.3, 1.2]);
+/// assert_eq!(diffs, vec![1.0, 2.0, 3.0]);
 /// ```
 pub fn successive_differences(data: &[f64]) -> Vec<f64> {
     if data.len() < 2 {
@@ -192,7 +192,11 @@ mod tests {
     fn test_successive_differences_basic() {
         let data = [0.0, 1.2, 2.5, 3.7];
         let diffs = successive_differences(&data);
-        assert_eq!(diffs, vec![1.2, 1.3, 1.2]);
+        // Use tolerance because 1.2/2.5/3.7 are not exactly representable in f64
+        assert_eq!(diffs.len(), 3);
+        assert!((diffs[0] - 1.2).abs() < 1e-12);
+        assert!((diffs[1] - 1.3).abs() < 1e-12);
+        assert!((diffs[2] - 1.2).abs() < 1e-12);
     }
 
     #[test]

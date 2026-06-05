@@ -237,7 +237,9 @@ mod tests {
     #[test]
     fn test_calculate_step_intervals_and_symmetry() {
         let mut data = GaitData::new(100.0);
-        data.stride_times = Some(array![0.0, 1.0, 2.0, 3.0, 4.0]);
+        // Use 6 stride times (even count) so split_step_times produces equal
+        // (3+3) step times per side → 2 step *intervals* per side.
+        data.stride_times = Some(array![0.0, 1.0, 2.0, 3.0, 4.0, 5.0]);
         let (li, ri) = data.calculate_step_intervals().expect("step intervals");
         assert_eq!(li.len(), 2);
         assert_eq!(ri.len(), 2);

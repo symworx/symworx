@@ -11,3 +11,5 @@
 
 pub mod intervals;
 pub mod processing;
+
+pub use intervals::IntervalSeries;

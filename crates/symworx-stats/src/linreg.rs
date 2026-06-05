@@ -32,14 +32,14 @@ pub fn l2(x: &Array2<f64>, y: &Array1<f64>) -> Array1<f64> {
     x_aug.slice_mut(s![.., 1..]).assign(x);
 
     let xtx = x_aug.t().dot(&x_aug);
-    let _xty = x_aug.t().dot(y);
+    let xty = x_aug.t().dot(y);
 
     let beta = xtx
         .inv()
-        .expect("Matrix inversion failed — XᵀX is singular");
+        .expect("Matrix inversion failed — XᵀX is singular")
+        .dot(&xty);
 
-    // Return slopes only (exclude intercept)
-    beta.slice(s![1.., ..]).to_owned().remove_axis(Axis(1))
+    beta
 }
 
 /// Ordinary Least Squares (L2) linear regression with intercept (stub).
@@ -143,8 +143,9 @@ mod tests {
         let y = array![2.0, 3.0, 5.0, 7.0];
 
         let coeffs = l2(&x, &y);
-        assert_eq!(coeffs.len(), 1);
-        assert!((coeffs[0] - 1.6).abs() < 0.2);
+        assert_eq!(coeffs.len(), 2); // intercept + slope
+        assert!((coeffs[0] - 0.0).abs() < 1e-9); // intercept
+        assert!((coeffs[1] - 1.7).abs() < 1e-9); // exact slope for this data
     }
 
     #[test]

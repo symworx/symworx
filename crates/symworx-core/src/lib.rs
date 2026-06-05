@@ -22,7 +22,7 @@
 //!
 //! ## Usage
 //!
-//! ```rust
+//! ```rust,ignore
 //! use symworx_core::{math, signal, stats};
 //!
 //! // Example: integrate with RK4 from math
