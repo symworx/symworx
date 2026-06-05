@@ -61,16 +61,18 @@ pub mod common;
 
 // Re-exports
 pub use biomechanics::*;
-pub use cpg::*;
-pub use physiology::*;
-
 // Surface shared cross-domain items at the crate root for convenience
 // (new code should prefer `symworx_biosym::common::*`).
+pub use common::IntervalSeries;
 pub use common::processing::{
-    BandpassParams, PeakDetectionParams, PhysiologyProcessingParams, apply_bandpass,
+    BandpassParams,
+    PeakDetectionParams,
+    PhysiologyProcessingParams,
+    apply_bandpass,
     apply_peak_overrides,
 };
-pub use common::IntervalSeries;
+pub use cpg::*;
+pub use physiology::*;
 
 // Compatibility shim so `crate::processing::...` and any old references continue to work.
 // New code: use `crate::common::processing`.
