@@ -8,7 +8,7 @@ use super::{
     PPGTimeSeries,
     processing::ppg_processing_for_quality,
 };
-use crate::physiology::common::{
+use crate::common::{
     HrvMetrics,
     IntervalSeries,
     PhysiologyProcessingParams,
@@ -117,10 +117,7 @@ pub fn analyze_ppg_with_quality(ts: &PPGTimeSeries, quality: PPGSignalQuality) -
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::physiology::ppg::{
-        PPGNoiseConfig,
-        generate_ppg_timeseries,
-    };
+    use super::{PPGNoiseConfig, generate_ppg_timeseries};
 
     fn synthetic_sine_ppg(fs: f64, duration_sec: f64) -> PPGTimeSeries {
         let n = (duration_sec * fs).round() as usize;

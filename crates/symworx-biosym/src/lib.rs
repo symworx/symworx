@@ -10,8 +10,8 @@
 //!
 //! - [`biomechanics`] — Gait analysis (`biomechanics::gait`), spatiotemporal metrics,
 //!   stride/step length, symmetry, and related data models.
-//! - [`cpg`] — Central Pattern Generator using coupled Van der Pol oscillators
-//!   (heart, legs, respiration) with dynamic effort (`tau`) modulation.
+//! - [`biosystems`] — Cross-domain and integrative modeling frameworks
+//!   (coupled oscillators / CPG, fatigue, intensity, run performance models, etc.).
 //! - [`physiology`] — Foundational physiological signal processing (PPG,
 //!   respiration, etc.).
 //!
@@ -19,8 +19,6 @@
 //!
 //! - Idiomatic Rust core with minimal dependencies
 //! - Fixed-step RK4 integration (sourced from `symworx-math`)
-//! - Full PyO3 bindings for Python interop
-//! - Standalone Python package via `maturin` (`import symworx_biosym`)
 //! - Also available under the unified `symworx.biosym` namespace
 //!
 //! ## Quick Start (Rust)
@@ -32,50 +30,99 @@
 //! let model = SymCpgModel::new(None); // default config
 //! let (times, states) = model.run((0.0, 60.0), 0.01);
 //! ```
-//!
-//! Gait analysis: `GaitData` + `to_gait_stats` / calculate_* for intervals, cadence, lengths, symmetry.
 
 // #![warn(missing_docs)]
 #![doc(html_root_url = "https://docs.rs/symworx-biosym")]
 
 // Modules
-/// Biomechanics modeling and utilities.
-/// Re-exports gait parameters, data, `GaitStats`, `GaitAnalysis`, and
-/// quality-aware stride detection (`detect_gait_strides*`, `analyze_gait*`).
-pub mod biomechanics;
 
-/// Central pattern generator using VdP
-pub mod cpg;
+/// Gait analysis and modeling primitives.
+///
+/// Provides `GaitParams`, `GaitData`, `GaitStats`, `GaitAnalysis`, stride
+/// detection, symmetry, and related spatiotemporal metrics. Also available
+/// under the `biomechanics` grouping.
+pub mod gait;
 
-/// Physiology modeling and utilities.
-pub mod physiology;
+/// Cross-domain and integrative modeling frameworks.
+///
+/// Home for blended models that cross physiology and biomechanics boundaries:
+/// coupled oscillators (CPG), fatigue, intensity, run performance, etc.
+/// The previous `cpg` module lives here (see the `cpg` compatibility shim below).
+pub mod biosystems;
 
-/// Shared cross-domain primitives (e.g. `IntervalSeries` for event timing in PPG,
-/// respiration, gait, etc., plus processing parameters).
-/// Preferred path for new code: `common::*` (also re-exported at root and via
-/// `physiology::common` for backward compatibility). This is the home for
-/// cross-biomech and cross-physiology utilities so future domains (CMJ, pedaling,
-/// etc.) can rely on them without creating direct dependencies between physiology
-/// and biomechanics.
+/// PPG generation and analysis.
+pub mod ppg;
+
+/// Respiration generation and analysis.
+pub mod respiration;
+
+/// Grouped access to physiological signal tools (PPG + respiration).
+///
+/// Provided for discoverability and backward compatibility. All items are
+/// also available directly via the flat modules (`ppg`, `respiration`) or
+/// at the crate root.
+pub mod physiology {
+    // Re-exports so `physiology::PPGTimeSeries`, `physiology::analyze_ppg`, etc. continue to work.
+    pub use crate::ppg::*;
+    pub use crate::{
+        common,
+        ppg,
+        respiration,
+        respiration::*,
+    };
+}
+
+/// Grouped access to biomechanical modeling tools.
+///
+/// Currently contains `gait`. The RunSym functionality (runner/shoe modeling,
+/// running performance simulation, fatigue/intensity effects on locomotion, etc.)
+/// will be developed as additional modules under the biomechanics domain.
+///
+/// All items are also available directly via the flat modules (e.g. `gait`) or at the
+/// crate root.
+pub mod biomechanics {
+    pub use crate::gait;
+    // Re-exports so `biomechanics::GaitParams`, `biomechanics::analyze_gait`, etc. continue to work.
+    pub use crate::gait::*;
+
+    // Future RunSym modules (e.g. `running` or runner/shoe models) can be added
+    // as top-level peers and re-exported here for namespacing:
+    // pub use crate::running as running;
+}
+
+/// Shared cross-domain primitives.
+///
+/// `IntervalSeries`, processing parameters, signal containers, peak helpers,
+/// HRV, etc. Preferred path for new code. Used by physiology, biomechanics,
+/// and biosystems so that domains do not depend directly on each other.
 pub mod common;
 
-// Re-exports
-pub use biomechanics::*;
-// Surface shared cross-domain items at the crate root for convenience
-// (new code should prefer `symworx_biosym::common::*`).
-pub use common::IntervalSeries;
-pub use common::processing::{
-    BandpassParams,
-    PeakDetectionParams,
-    PhysiologyProcessingParams,
-    apply_bandpass,
-    apply_peak_overrides,
+// Re-exports at the crate root for a convenient "batteries-included" experience.
+// New code is encouraged to use the flat modules (`gait`, `ppg`, `respiration`, `biosystems`)
+// or the named groupings (`biomechanics`, `physiology`) below.
+pub use biosystems::*;
+pub use common::{
+    IntervalSeries,
+    processing::{
+        BandpassParams,
+        PeakDetectionParams,
+        PhysiologyProcessingParams,
+        apply_bandpass,
+        apply_peak_overrides,
+    },
 };
-pub use cpg::*;
-pub use physiology::*;
+pub use gait::*;
+pub use ppg::*;
+pub use respiration::*;
 
-// Compatibility shim so `crate::processing::...` and any old references continue to work.
-// New code: use `crate::common::processing`.
+// Temporary compatibility shim for code that still uses the old `cpg` path.
+// Preferred: `symworx_biosym::biosystems` (or `biosystems::cpg`).
+pub mod cpg {
+    pub use crate::biosystems::cpg::*;
+}
+
+// Temporary compatibility shim so `crate::processing::...` references continue to work.
+// Preferred: `crate::common::processing`.
 pub mod processing {
     pub use crate::common::processing::*;
 }

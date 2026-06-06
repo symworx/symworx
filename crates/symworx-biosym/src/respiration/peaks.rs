@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-use crate::physiology::common::local_maxima_indices;
+use crate::common::local_maxima_indices;
 
 /// Inhalation and exhalation peak indices partitioned by flow sign.
 #[derive(Debug, Clone, Default, PartialEq)]

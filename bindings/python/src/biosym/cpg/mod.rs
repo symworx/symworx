@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 
 use pyo3::prelude::*;
-use symworx_biosym::cpg::{
+use symworx_biosym::biosystems::cpg::{
     CpgConfig,
     SymCpgModel,
 };

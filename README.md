@@ -35,26 +35,27 @@ This **SymWorx** repository is a monorepo that contains a variety of `Rust` crat
 
 ### [Core](crates/symworx-core/README.md)
 
-**Overview**: The `core` crate contains a variety of resources used across the subsequent simulation focused crates.
+**Overview**: The `symworx-core` crate contains a variety of resources used across the subsequent simulation focused crates.
 This includes backend resources, io, filters, processing, nonlinear dynamics, and statistics.
 
 
 ### [BioSym](crates/symworx-biosym/README.md)
 
-**Overview**: The `biosym` crate contains modeling and simulation tools for biological signals and responses. 
-Specifically, `biosym` contains physiological (ppg and respiratory) and biomechanical (gait). 
+**Overview**: The `symworx-biosym` crate contains modeling and simulation tools for biological signals and responses. 
+Specifically, `symworx-biosym` contains physiological (ppg and respiratory) and biomechanical (gait). 
 It also contains a central pattern generator (cpg) that integrates these signals.
+
+#### RunSym (integrated)
+
+**Note**: The former standalone `symworx-runsym` crate has been removed. Its functionality (modeling physiological and biomechanical responses to running, including runner/shoe interactions, fatigue, intensity, and performance simulation) is now being built out directly inside `symworx-biosym` under the biomechanics area (as discussed in the reorganization).
+
+See `crates/symworx-biosym/src/` (particularly the `gait` module and future `running`-related modules under the `biomechanics` grouping) for the in-progress implementation. Legacy Python code lives at the external `~/worx/symworx/runsym` for reference during the port.
 
 
 ### [LoadSym](crates/symworx-loadsym/README.md)
 
-**Overview**: The `loadsym` crate contains resources for quantifying and optimizing (exercise programming) training load (physiological and mechanical).
+**Overview**: The `symworx-loadsym` crate contains resources for quantifying and optimizing (exercise programming) training load (physiological and mechanical).
 It also contains resources centered around nutrition and energy 
 (e.g., basal metabolic rate, total daily energy expenditure, etc.)
 
 
-### [RunSym](crates/symworx-runsym/README.md)
-
-**Overview**: The `runsym` crate contains resources and for modeling the physiological and biomechanical responses to running. 
-These resources are focused on athletic performance but may later be expanded to isolate product related effects on performance 
-(e.g., the role of footwear or apparel on overall run performance or running related injury risk).

@@ -7,7 +7,6 @@ crates=(
     biosym
     cores
     loadsym
-    runsym
 )
 
 for crate in "${crates[@]}"; do

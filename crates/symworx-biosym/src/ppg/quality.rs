@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-use crate::physiology::ppg::PPGNoiseConfig;
+use super::PPGNoiseConfig;
 
 /// Define a `PPGSignalQuality` enum to set default
 ///  quality params (with flexibility for custom settings)
@@ -64,7 +64,7 @@ impl From<PPGSignalQuality> for PPGNoiseConfig {
 
 impl PPGSignalQuality {
     /// Recommended bandpass + peak-detection settings for analysis.
-    pub fn analysis_processing(&self) -> crate::physiology::common::PhysiologyProcessingParams {
+    pub fn analysis_processing(&self) -> crate::common::PhysiologyProcessingParams {
         super::processing::ppg_processing_for_quality(self.clone())
     }
 }

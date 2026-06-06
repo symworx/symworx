@@ -5,7 +5,7 @@
 ///
 /// This type is intentionally general (used for RR intervals in PPG, breath
 /// intervals in respiration, stride intervals in gait, etc.) and lives in the
-/// crate root `common` layer so that `physiology` and `biomechanics` (and future
+/// crate root `common` layer so that domains (and future
 /// domains) can share it without creating cross-dependencies.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct IntervalSeries {

@@ -16,6 +16,8 @@
 //! ## Example
 //! ```ignore
 //! use symworx_biosym::GaitParams;
+//! use symworx_biosym::gait::{GaitData, GaitStats};
+//! // or via grouping:
 //! use symworx_biosym::biomechanics::gait::{GaitData, GaitStats};
 //!
 //! let params = GaitParams::default().with_defaults();
@@ -64,6 +66,5 @@ pub use processing::{
 pub use quality::GaitSignalQuality;
 
 // Re-export IntervalSeries for gait event analysis (time-based stride events etc.).
-// Preferred location is now `common::IntervalSeries` (also available at crate root
-// and re-exported from `physiology::common` for backward compatibility).
+// Preferred location is `common::IntervalSeries` (also available at crate root).
 pub use crate::common::IntervalSeries;

@@ -1,16 +1,18 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 // Licensed under the Mozilla Public License, Version 2.0.
 
-//! Generic signal processing primitives shared across physiology and biomechanics
+//! Generic signal processing primitives shared across domains
 //! (bandpass, peak detection overrides, etc.).
 //!
 //! Re-exported at crate root for convenience and under `common::processing`
-//! (the canonical path for future biomech + physio code).
+//! (the canonical path for future code).
 
 use symworx_core::{
     PeakFinderBuilder,
     signal::BandpassFilter,
 };
+
+use super::signal::PhysiologySignal;
 
 /// Bandpass filter settings (2nd-order Butterworth stages via symworx-signal).
 #[derive(Debug, Clone, PartialEq)]
@@ -95,6 +97,18 @@ pub fn apply_peak_overrides<'a>(
         .distance(distance)
         .prominence(prominence)
         .height(height)
+}
+
+/// Apply optional bandpass from processing params (using the common
+/// PhysiologySignal container).
+pub fn preprocess_signal(
+    mut signal: PhysiologySignal,
+    params: &PhysiologyProcessingParams,
+) -> Result<PhysiologySignal, &'static str> {
+    if let Some(ref bp) = params.bandpass {
+        signal.samples = apply_bandpass(&signal.samples, signal.fs, bp)?;
+    }
+    Ok(signal)
 }
 
 #[cfg(test)]

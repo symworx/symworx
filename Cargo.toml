@@ -10,7 +10,6 @@ members = [
     "crates/symworx-io",
     "crates/symworx-loadsym",
     "crates/symworx-math",
-    "crates/symworx-runsym",
     "crates/symworx-signal",
     "crates/symworx-stats",
     "crates/symworx-tui",
