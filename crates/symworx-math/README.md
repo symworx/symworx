@@ -20,6 +20,3 @@ use ndarray::Array1;
 let f = |t: f64, y: &Array1<f64>| y.clone(); // simple exponential
 let (times, states) = rk4_integrate(f, (0.0, 1.0), Array1::from(vec![1.0]), 0.1);
 ```
-
-Part of the SymWorx monorepo (cSYM-d).
-**License:** MPL-2.0
