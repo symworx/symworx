@@ -4,10 +4,7 @@ use ndarray::{
     Array1,
     Array2,
 };
-use numpy::{
-    IntoPyArray,
-    PyArray2,
-};
+use numpy::PyArray2;
 use pyo3::{
     prelude::*,
     wrap_pyfunction,
@@ -91,7 +88,16 @@ pub fn py_correlation_matrix<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let arr = correlation_matrix_from_vec(&data);
 
-    Ok(arr.into_pyarray(py))
+    // Reconstruct as Vec<Vec<f64>> (cheap for small correlation matrices)
+    // and use from_vec2 so the resulting PyArray uses whatever ndarray version
+    // the numpy crate was compiled against. This avoids ndarray version
+    // mismatches between the workspace (0.15) and numpy (which resolved 0.16).
+    let n = arr.nrows();
+    let mat: Vec<Vec<f64>> = (0..n)
+        .map(|i| (0..n).map(|j| arr[[i, j]]).collect())
+        .collect();
+
+    Ok(PyArray2::from_vec2(py, &mat)?)
 }
 
 #[pyfunction(name = "correlation_matrix_from_vec")]
@@ -101,7 +107,16 @@ pub fn py_correlation_matrix_from_vec<'py>(
 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let arr = correlation_matrix_from_vec(&data);
 
-    Ok(arr.into_pyarray(py))
+    // Reconstruct as Vec<Vec<f64>> (cheap for small correlation matrices)
+    // and use from_vec2 so the resulting PyArray uses whatever ndarray version
+    // the numpy crate was compiled against. This avoids ndarray version
+    // mismatches between the workspace (0.15) and numpy (which resolved 0.16).
+    let n = arr.nrows();
+    let mat: Vec<Vec<f64>> = (0..n)
+        .map(|i| (0..n).map(|j| arr[[i, j]]).collect())
+        .collect();
+
+    Ok(PyArray2::from_vec2(py, &mat)?)
 }
 
 // ==========================================================

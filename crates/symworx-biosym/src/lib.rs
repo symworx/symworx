@@ -63,10 +63,10 @@ pub mod respiration;
 /// at the crate root.
 pub mod physiology {
     // Re-exports so `physiology::PPGTimeSeries`, `physiology::analyze_ppg`, etc. continue to work.
-    pub use crate::ppg::*;
     pub use crate::{
         common,
         ppg,
+        ppg::*,
         respiration,
         respiration::*,
     };

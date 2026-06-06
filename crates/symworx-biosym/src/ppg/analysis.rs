@@ -116,8 +116,11 @@ pub fn analyze_ppg_with_quality(ts: &PPGTimeSeries, quality: PPGSignalQuality) -
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use super::{PPGNoiseConfig, generate_ppg_timeseries};
+    use super::{
+        PPGNoiseConfig,
+        generate_ppg_timeseries,
+        *,
+    };
 
     fn synthetic_sine_ppg(fs: f64, duration_sec: f64) -> PPGTimeSeries {
         let n = (duration_sec * fs).round() as usize;

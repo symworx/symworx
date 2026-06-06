@@ -15,13 +15,17 @@ default = []
 ## This pulls in ndarray-linalg + its backend (OpenBLAS by default in the workspace)
 ## plus transitive deps such as cauchy. Only enable if you actually need
 ## the advanced linear algebra functionality.
-linalg = ["dep:ndarray-linalg"]
+linalg = ["dep:ndarray-linalg", "dep:openblas-build"]
 
 [dependencies]
 ndarray        = { workspace = true }
 ndarray-linalg = { workspace = true, optional = true }
+openblas-build = { workspace = true, optional = true }
 
 symworx-math   = { path = "../symworx-math" }
+
+[build-dependencies]
+openblas-build = { workspace = true }
 
 [lints]
 workspace = true

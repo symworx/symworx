@@ -1,10 +1,7 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 
 use ndarray::Array2;
-use numpy::{
-    IntoPyArray,
-    PyArray2,
-};
+use numpy::PyArray2;
 use pyo3::{
     prelude::*,
     wrap_pyfunction,
@@ -120,7 +117,14 @@ impl PyRecurrencePlot {
     /// Shape is (n_points, n_points). True = recurrent.
     #[getter]
     fn matrix<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray2<bool>> {
-        self.inner.matrix.clone().into_pyarray(py)
+        // Reconstruct as Vec<Vec<bool>> and use from_vec2 to avoid ndarray
+        // version mismatches (workspace uses 0.15, numpy resolved against 0.16).
+        let n = self.inner.n_points;
+        let mat: Vec<Vec<bool>> = (0..n)
+            .map(|i| (0..n).map(|j| self.inner.matrix[[i, j]]).collect())
+            .collect();
+
+        PyArray2::from_vec2(py, &mat).unwrap()
     }
 
     #[getter]

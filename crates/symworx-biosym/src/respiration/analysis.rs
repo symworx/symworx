@@ -145,7 +145,10 @@ pub fn analyze_respiration_with_quality(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{RespSimulationParams, generate_respiration_timeseries};
+    use crate::{
+        RespSimulationParams,
+        generate_respiration_timeseries,
+    };
 
     fn synthetic_resp_flow(fs: f64, brpm: f64, duration_sec: f64) -> RespTimeSeries {
         let n = (duration_sec * fs).round() as usize;
