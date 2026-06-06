@@ -3,24 +3,25 @@
 [workspace]
 resolver = "2"
 members = [
-    # "crates/backend",
+    "crates/symworx-backend",
     "crates/symworx-biosym",
     "crates/symworx-core",
     "crates/symworx-dynamics",
+    "crates/symworx-embed",
     "crates/symworx-io",
     "crates/symworx-loadsym",
     "crates/symworx-math",
     "crates/symworx-signal",
     "crates/symworx-stats",
     "crates/symworx-tui",
-    "bindings/python",
+    "bindings/python", 
 ]
 
 [workspace.package]
 version    = "0.1.0"
 edition    = "2024"
 license    = "MPL-2.0"
-repository = "https://github.com/csymd/symworx"
+repository = "https://github.com/symworx/symworx"
 authors    = ["ntberry nate-berry@outlook.com"]
 
 [workspace.dependencies]

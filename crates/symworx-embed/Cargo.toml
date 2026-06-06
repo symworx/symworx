@@ -1,17 +1,16 @@
 # Copyright (C) 2026 SymWorx, All rights reserved.
 
 [package]
-name = "symworx-math"
+name = "symworx-embed"
 version          = { workspace = true }
 edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
-description      = "Mathematical tools and resources -- part of the symworx-core crate"
+description      = "Embedded algorithms and utilities"
 
 [dependencies]
-ndarray  = { workspace = true }
-rand     = { workspace = true }
-rand_distr = { workspace = true }
+ndarray         = { version = "0.15", features = ["std"] }
+thiserror       = { workspace = true }
 
 [lints]
 workspace = true

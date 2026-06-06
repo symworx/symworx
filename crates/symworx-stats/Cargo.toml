@@ -1,5 +1,4 @@
-# symworx/crates/symworx-stats/Cargo.toml
-# Copyright (C) 2026 cSYMd, All rights reserved.
+# Copyright (C) 2026 SymWorx, All rights reserved.
 
 [package]
 name = "symworx-stats"

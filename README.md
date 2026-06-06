@@ -8,8 +8,11 @@ At its core, **SymWorx** provides a **Rust kernel** with **Python bindings**, en
 ## Philosophy
 
 Our philosophy emphasizes:
+
 i) **security** by minimizing unafe code, reducing unintended execution paths, and lowering supply‑chain risk,
+
 ii) **robustness** through predictable behavior, strong typing, and explicit error handling, and 
+
 iii) **scalability** via consistent APIs across embedded, desktop, and cloud environments.
 
 Much of the original work was developed in Python, but is now being rewritten in Rust.
