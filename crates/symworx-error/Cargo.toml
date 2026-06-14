@@ -9,5 +9,9 @@ repository       = { workspace = true }
 
 [dependencies]
 csv         = { workspace = true }
-parquet     = { workspace = true }
+parquet     = { workspace = true, optional = true }
 thiserror   = { workspace = true }
+
+[features]
+default = []
+parquet = ["dep:parquet"]

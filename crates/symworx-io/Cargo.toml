@@ -11,18 +11,22 @@ description      = "I/O utilities -- part of the symworx-core crate"
 [dependencies]
 csv          = { workspace = true }
 ndarray      = { workspace = true }
-# Use parquet with minimal features to avoid pulling in all compression codecs (brotli, etc.)
-# which were causing version conflicts with polars' own parquet stack in the tui.
-# Enable "brotli" (or other codecs) explicitly via the "brotli" feature below if needed for your Parquet files.
-parquet = { version = "52.0", default-features = false, features = ["arrow", "brotli"] }
-brotli = { workspace = true }
-alloc-no-stdlib = { workspace = true }
+# Parquet support is optional (to keep heavy arrow/compression stacks
+# out of default library builds). The workspace entry sets default-features = false
+# for a minimal parquet. "brotli" feature (below) additionally enables compression
+# support and the controlled brotli-decompressor/alloc versions.
+# TUI enables the "parquet" feature on us by default so that core Import tab
+# conversion ("c" key) and load work for .parquet without polars.
+parquet = { workspace = true, optional = true }
+brotli-decompressor = { workspace = true, optional = true }
+alloc-no-stdlib = { workspace = true, optional = true }
 
 symworx-error = { path = "../symworx-error" }
 
 [features]
 default = []
-brotli = ["parquet/brotli"]
+parquet = ["dep:parquet", "symworx-error/parquet"]
+brotli = ["parquet", "parquet/brotli", "dep:brotli-decompressor", "dep:alloc-no-stdlib"]
 
 [lints]
 workspace = true

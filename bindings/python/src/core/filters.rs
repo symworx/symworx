@@ -187,6 +187,7 @@ impl PyKalmanFilter {
     }
 
     /// Prediction step. control is optional (length must match control dimension if provided).
+    #[pyo3(signature = (control=None))]
     fn predict(&mut self, control: Option<Vec<f64>>) {
         let u = control.map(vec_to_array1);
         self.inner.predict(u.as_ref());
@@ -206,13 +207,15 @@ impl PyKalmanFilter {
     /// Run forward filter over a sequence of observations.
     /// Returns list of filtered state vectors (one per time step).
     /// controls: optional list of control vectors (same length as zs).
+    #[pyo3(signature = (zs, controls=None))]
     fn filter(
         &mut self,
         zs: Vec<Vec<f64>>,
         controls: Option<Vec<Vec<f64>>>,
     ) -> PyResult<Vec<Vec<f64>>> {
         let zs: Vec<Array1<f64>> = zs.into_iter().map(vec_to_array1).collect();
-        let controls = controls.map(|cs| cs.into_iter().map(vec_to_array1).collect());
+        let controls: Option<Vec<Array1<f64>>> =
+            controls.map(|cs| cs.into_iter().map(vec_to_array1).collect());
 
         let run = self.inner.run_forward(&zs, controls.as_deref());
         Ok(run

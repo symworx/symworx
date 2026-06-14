@@ -2,40 +2,24 @@
 // Licensed under the Mozilla Public License, Version 2.0.
 
 //! File conversion component for symview.
-//! Uses symworx-io for .ibi + CSV, Polars for Parquet.
+//!
+//! All I/O goes through `symworx-io` (ParquetReader for .parquet when the
+//! "parquet" feature is enabled on symworx-io — which the TUI enables by
+//! default). Polars is never used for conversion or file I/O.
 
 use std::path::Path;
 
 use anyhow::Result;
-use polars::prelude::*;
 use symworx_io::{
     read_ibi,
-    traits::SymWriter,
+    traits::{SymReader, SymWriter},
     CsvWriter,
+    ParquetReader,
 };
 
 pub fn parquet_to_csv(input: &Path, output: &Path) -> Result<()> {
-    let lf = LazyFrame::scan_parquet(input, Default::default())?;
-    let df = lf.collect()?;
-    let mut rows: Vec<Vec<f64>> = Vec::new();
-
-    for i in 0..df.height() {
-        let row = df.get_row(i)?;
-        let row_vec: Vec<f64> = row
-            .0
-            .into_iter()
-            .filter_map(|v: polars::datatypes::AnyValue| {
-                v.try_extract::<f64>()
-                    .ok()
-                    .or_else(|| v.try_extract::<i64>().ok().map(|x| x as f64))
-            })
-            .collect();
-
-        if !row_vec.is_empty() {
-            rows.push(row_vec);
-        }
-    }
-
+    // Use the controlled symworx-io ParquetReader (no polars/arrow stack here).
+    let rows = ParquetReader::read(input.to_str().unwrap())?;
     CsvWriter::write(output.to_str().unwrap(), &rows)?;
     Ok(())
 }

@@ -13,6 +13,7 @@ pub enum SymError {
     Io(io::Error),
     /// CSV error.
     Csv(::csv::Error),
+    #[cfg(feature = "parquet")]
     /// Parquet error.
     Parquet(::parquet::errors::ParquetError),
     // Edf(::edf::Error),
@@ -28,6 +29,7 @@ impl fmt::Display for SymError {
         match self {
             SymError::Io(e) => write!(f, "IO error: {}", e),
             SymError::Csv(e) => write!(f, "CSV error: {}", e),
+            #[cfg(feature = "parquet")]
             SymError::Parquet(e) => write!(f, "Parquet error: {}", e),
             // SymError::Edf(e) => write!(f, "EDF error: {}", e),
             SymError::ParseFloat(e) => write!(f, "Parse float error: {}", e),
@@ -52,6 +54,7 @@ impl From<::csv::Error> for SymError {
     }
 }
 
+#[cfg(feature = "parquet")]
 impl From<::parquet::errors::ParquetError> for SymError {
     fn from(e: ::parquet::errors::ParquetError) -> Self {
         SymError::Parquet(e)

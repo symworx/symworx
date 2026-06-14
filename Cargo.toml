@@ -30,7 +30,7 @@ ndarray        = { version = "0.15", features = ["std"] }
 ndarray-linalg = { version = "0.16", features = ["openblas"] }
 openblas-build = { version = "0.10", features = ["rustls"] }
 num-complex    = { version = "0.4" }
-parquet        = { version = "52.0" }
+parquet        = { version = "52.0", default-features = false }
 brotli-decompressor = { version = "4.0", features = ["std"] }
 brotli = { version = "6.0", features = ["std"] }
 alloc-no-stdlib     = { version = "3.0" }
@@ -63,7 +63,10 @@ polars         = { version = "0.51" }
 # `polars` (dataframes, parquet, csv, lazy) is also heavy (pulls arrow + multiple
 # compression backends). It is centralized here for version consistency (we may
 # use it beyond the TUI in the future) but should remain opt-in via features in
-# consuming crates (see `polars-parquet` feature in symworx-tui).
+# consuming crates (see the `polars` feature in symworx-tui for optional
+# in-memory DataFrame work *after* loading via symworx-io; the `parquet`
+# feature on symworx-io itself is used for actual Parquet I/O and is enabled
+# for the TUI by default).
 #
 # `ndarray`'s internals and macros (e.g. `s![]`, `slice_mut`, views, etc.)
 # use unsafe for speed and to implement zero-copy slicing. Using `forbid`

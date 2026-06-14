@@ -152,22 +152,22 @@ pub struct PyOutlierCriterion {
 
 #[pymethods]
 impl PyOutlierCriterion {
-    #[classattr]
-    pub const fn local_mad(half_window: usize, k: f64) -> Self {
+    #[staticmethod]
+    pub fn local_mad(half_window: usize, k: f64) -> Self {
         Self {
             inner: OutlierCriterion::LocalMAD { half_window, k },
         }
     }
 
-    #[classattr]
-    pub const fn percent_change(threshold: f64) -> Self {
+    #[staticmethod]
+    pub fn percent_change(threshold: f64) -> Self {
         Self {
             inner: OutlierCriterion::PercentChange(threshold),
         }
     }
 
-    #[classattr]
-    pub const fn absolute(threshold: f64) -> Self {
+    #[staticmethod]
+    pub fn absolute(threshold: f64) -> Self {
         Self {
             inner: OutlierCriterion::Absolute(threshold),
         }
@@ -182,15 +182,15 @@ pub struct PyFillStrategy {
 
 #[pymethods]
 impl PyFillStrategy {
-    #[classattr]
-    pub const fn local_median(half_window: usize) -> Self {
+    #[staticmethod]
+    pub fn local_median(half_window: usize) -> Self {
         Self {
             inner: FillStrategy::LocalMedian { half_window },
         }
     }
 
-    #[classattr]
-    pub const fn local_mean(half_window: usize) -> Self {
+    #[staticmethod]
+    pub fn local_mean(half_window: usize) -> Self {
         Self {
             inner: FillStrategy::LocalMean { half_window },
         }

@@ -21,6 +21,7 @@ pub mod gbd;
 /// IBI module and related utilities.
 pub mod ibi;
 
+#[cfg(feature = "parquet")]
 /// Parquet module and related utilities.
 pub mod parquet;
 
@@ -40,6 +41,7 @@ pub use ibi::{
     IbiRecord,
     read_ibi,
 };
+#[cfg(feature = "parquet")]
 pub use parquet::ParquetReader;
 use symworx_error::SymError;
 use traits::SymReader;
@@ -51,7 +53,10 @@ pub fn load_any(path: &str) -> Result<Vec<Vec<f64>>, SymError> {
     if path.ends_with(".csv") {
         CsvReader::read(path)
     } else if path.ends_with(".parquet") {
-        ParquetReader::read(path)
+        #[cfg(feature = "parquet")]
+        return ParquetReader::read(path);
+        #[cfg(not(feature = "parquet"))]
+        return Err(SymError::UnsupportedFormat(path.into()));
     } else {
         Err(SymError::UnsupportedFormat(path.into()))
     }
