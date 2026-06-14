@@ -14,6 +14,10 @@ default = []
 ## This pulls in ndarray-linalg + its backend (OpenBLAS by default in the workspace)
 ## plus transitive deps such as cauchy. Only enable if you actually need
 ## the advanced linear algebra functionality.
+##
+## Note: symworx-signal has a direct (unconditional) ndarray-linalg dependency
+## because core signal processing (deconvolution etc.) requires it. The opt-in
+## restriction exists primarily here in stats.
 linalg = ["dep:ndarray-linalg", "dep:openblas-build"]
 
 [dependencies]

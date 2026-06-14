@@ -7,6 +7,11 @@
 /// intervals in respiration, stride intervals in gait, etc.) and lives in the
 /// crate root `common` layer so that domains (and future
 /// domains) can share it without creating cross-dependencies.
+///
+/// Interval derivation now delegates to `symworx_core::math::series` per
+/// project guidelines (single source of truth for successive differences).
+use symworx_core::math::series::successive_differences;
+
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct IntervalSeries {
     pub peak_indices: Vec<usize>,
@@ -23,7 +28,7 @@ impl IntervalSeries {
         }
 
         let peak_times: Vec<f64> = indices.iter().map(|&i| i as f64 / fs).collect();
-        let intervals_sec: Vec<f64> = peak_times.windows(2).map(|w| w[1] - w[0]).collect();
+        let intervals_sec = successive_differences(&peak_times);
         let instantaneous_rates: Vec<f64> = intervals_sec.iter().map(|&dt| 60.0 / dt).collect();
 
         Self {
@@ -43,7 +48,7 @@ impl IntervalSeries {
             return Self::default();
         }
         let peak_times = times.to_vec();
-        let intervals_sec: Vec<f64> = peak_times.windows(2).map(|w| w[1] - w[0]).collect();
+        let intervals_sec = successive_differences(&peak_times);
         let instantaneous_rates: Vec<f64> = intervals_sec
             .iter()
             .map(|&dt| if dt > 0.0 { 60.0 / dt } else { f64::NAN })
@@ -116,6 +121,26 @@ impl IntervalSeries {
         }
         (even, odd)
     }
+}
+
+/// Convenience wrapper around the core robust ("dynamics") interpolation for
+/// cleaning RR / inter-event interval series prior to windowed HRV or entropy
+/// analysis.
+///
+/// See `symworx_core::signal::processing::{OutlierCriterion, FillStrategy, robust_interpolate}`
+/// (also re-exported via `symworx_core`) for the full set of options (LocalMAD,
+/// PercentChange, LocalMedian / LinearInterp, etc.).
+///
+/// Example for 4 h sleep-restricted bout preprocessing:
+/// ```ignore
+/// let cleaned = clean_intervals(&raw_rr_sec, OutlierCriterion::PercentChange(0.20), FillStrategy::LinearInterp);
+/// ```
+pub fn clean_intervals(
+    intervals_sec: &[f64],
+    crit: symworx_core::signal::processing::OutlierCriterion,
+    strat: symworx_core::signal::processing::FillStrategy,
+) -> Vec<f64> {
+    symworx_core::signal::processing::robust_interpolate(intervals_sec, crit, strat)
 }
 
 #[cfg(test)]

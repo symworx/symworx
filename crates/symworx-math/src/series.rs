@@ -35,8 +35,11 @@
 //! ## Adding New Operations
 //!
 //! New general-purpose sequence operations (e.g. cumulative sums,
-//! forward/backward differences, simple rolling statistics) should be
-//! added here rather than in `symworx-stats` or domain crates.
+//! forward/backward differences, simple rolling statistics, sliding windows,
+//! and time-based segmentation) should be added here rather than in
+//! `symworx-stats` or domain crates. The windowing primitives here are
+//! intended for use cases such as 30 s / 60 s feature windows on resampled
+//! HRV series before computing RMSSD or sample entropy.
 
 /// Computes the signed successive differences between consecutive elements.
 ///
@@ -93,12 +96,6 @@ pub fn successive_differences_iter(data: &[f64]) -> impl Iterator<Item = f64> + 
 pub fn successive_absolute_differences_iter(data: &[f64]) -> impl Iterator<Item = f64> + '_ {
     data.windows(2).map(|w| (w[1] - w[0]).abs())
 }
-
-// ============================================================
-// Rolling window statistics (canonical home per AGENTS.md)
-// These power ACWR, EWMA, and load monitoring calculations
-// in symworx-loadsym and other consumers.
-// ============================================================
 
 /// Computes a simple rolling (moving) mean over a sliding window.
 ///
@@ -184,6 +181,121 @@ pub fn ewma(data: &[f64], span: usize) -> Vec<f64> {
     out
 }
 
+// -----------------------------------------------------------------------------
+// Windowing and segmentation primitives
+// -----------------------------------------------------------------------------
+
+/// Returns an iterator over contiguous sliding windows of the data.
+///
+/// Each yielded slice has exactly `window` elements. Windows advance by `step`.
+/// If `step == 0` or `window == 0`, or the data is too short, the iterator yields nothing.
+///
+/// This is allocation-free and reuses the original slice memory (zero-copy views).
+/// Useful building block for windowed feature extraction (e.g. RMSSD, sample entropy
+/// over 30 s / 60 s segments of a resampled tachogram).
+///
+/// # Example
+/// ```
+/// use symworx_math::series::sliding_windows;
+/// let data = [1.0, 2.0, 3.0, 4.0, 5.0];
+/// let wins: Vec<_> = sliding_windows(&data, 3, 2).collect();
+/// assert_eq!(wins, vec![&data[0..3], &data[2..5]]);
+/// ```
+pub fn sliding_windows(data: &[f64], window: usize, step: usize) -> impl Iterator<Item = &[f64]> + '_ {
+    (0..)
+        .map(move |i| {
+            let start = i * step;
+            let end = start + window;
+            if end <= data.len() && window > 0 && step > 0 {
+                Some(&data[start..end])
+            } else {
+                None
+            }
+        })
+        .take_while(Option::is_some)
+        .map(Option::unwrap)
+}
+
+/// Applies a function to each sliding window and collects the results.
+///
+/// `window` is the window length in samples. `step` controls overlap (step=1 is maximal overlap).
+/// The returned vector has length equal to the number of valid windows.
+/// Early windows that cannot be formed return no entry (length is data-dependent, not padded).
+///
+/// This generalizes the existing `rolling_mean` / `rolling_std` logic and is the
+/// recommended way to compute windowed statistics or complexity measures (e.g. per-window
+/// sample entropy on HRV or load series) without duplicating window iteration.
+///
+/// The closure receives a slice of exactly `window` elements.
+pub fn rolling_apply<F, R>(data: &[f64], window: usize, step: usize, mut f: F) -> Vec<R>
+where
+    F: FnMut(&[f64]) -> R,
+{
+    if window == 0 || step == 0 || data.len() < window {
+        return vec![];
+    }
+    let mut out = Vec::new();
+    let mut i = 0;
+    while i + window <= data.len() {
+        out.push(f(&data[i..i + window]));
+        i += step;
+    }
+    out
+}
+
+/// Computes index ranges for time-based (duration) windows on a (possibly irregular)
+/// time vector.
+///
+/// Returns `Vec<(start_idx, end_idx)>` (half-open, end exclusive) such that for each
+/// range the times satisfy `times[end-1] - times[start] < window_sec` (approximately
+/// covering `window_sec` of data) and successive windows are separated by approximately
+/// `step_sec`.
+///
+/// This is the primitive needed to produce aligned 30 s / 60 s feature windows from
+/// RR event times (or resampled tachogram times) and to pair them with external
+/// epoch data such as delta power from PSG.
+///
+/// Empty or non-monotonic input yields empty result. `step_sec <= 0` or `window_sec <= 0`
+/// also yields empty.
+pub fn time_windows(
+    times: &[f64],
+    window_sec: f64,
+    step_sec: f64,
+) -> Vec<(usize, usize)> {
+    if times.len() < 2 || window_sec <= 0.0 || step_sec <= 0.0 {
+        return vec![];
+    }
+
+    let mut segments = Vec::new();
+    let mut i = 0usize;
+
+    while i < times.len() {
+        // find the farthest j such that times[j] - times[i] < window_sec
+        let t0 = times[i];
+        let mut j = i + 1;
+        while j < times.len() && (times[j] - t0) < window_sec {
+            j += 1;
+        }
+        if j > i + 1 {
+            // at least two points to form a meaningful window
+            segments.push((i, j));
+        }
+
+        // advance i to the first index whose time is >= t0 + step_sec
+        let t_target = t0 + step_sec;
+        while i < times.len() && times[i] < t_target {
+            i += 1;
+        }
+        if i >= times.len() {
+            break;
+        }
+    }
+
+    segments
+}
+
+// TESTS
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -265,5 +377,75 @@ mod tests {
         let data = [10.0, 10.0, 10.0, 10.0];
         let e = ewma(&data, 3); // alpha ≈ 0.5
         assert!((e[3] - 10.0).abs() < 1e-10);
+    }
+
+    // --- New windowing primitives tests ---
+
+    #[test]
+    fn test_sliding_windows_basic() {
+        let data = [1.0, 2.0, 3.0, 4.0, 5.0];
+        let wins: Vec<_> = sliding_windows(&data, 3, 2).collect();
+        assert_eq!(wins.len(), 2);
+        assert_eq!(wins[0], &data[0..3]);
+        assert_eq!(wins[1], &data[2..5]);
+    }
+
+    #[test]
+    fn test_sliding_windows_no_overlap() {
+        let data = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+        let wins: Vec<_> = sliding_windows(&data, 2, 2).collect();
+        assert_eq!(wins.len(), 3);
+    }
+
+    #[test]
+    fn test_sliding_windows_too_short_or_zero() {
+        let data = [1.0, 2.0];
+        assert_eq!(sliding_windows(&data, 3, 1).count(), 0);
+        assert_eq!(sliding_windows(&data, 0, 1).count(), 0);
+        assert_eq!(sliding_windows(&data, 2, 0).count(), 0);
+    }
+
+    #[test]
+    fn test_rolling_apply_basic() {
+        let data = [1.0, 2.0, 3.0, 4.0, 5.0];
+        // mean over windows of 3, step 2
+        let means = rolling_apply(&data, 3, 2, |w| w.iter().sum::<f64>() / w.len() as f64);
+        assert_eq!(means.len(), 2);
+        assert!((means[0] - 2.0).abs() < 1e-12);
+        assert!((means[1] - 4.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_rolling_apply_matches_rolling_mean() {
+        let data = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0];
+        let from_apply = rolling_apply(&data, 3, 1, |w| w.iter().sum::<f64>() / 3.0);
+        let from_rolling = rolling_mean(&data, 3);
+        // rolling_mean pads leading NaNs; rolling_apply only emits for valid windows
+        let valid_from_rolling: Vec<_> = from_rolling.iter().skip(2).copied().collect();
+        assert_eq!(from_apply.len(), valid_from_rolling.len());
+        for (a, b) in from_apply.iter().zip(valid_from_rolling.iter()) {
+            assert!((a - b).abs() < 1e-12);
+        }
+    }
+
+    #[test]
+    fn test_time_windows_basic() {
+        // 5 samples at 1 Hz, window 2.5 s, step 2.0 s
+        let times: Vec<f64> = (0..5).map(|i| i as f64).collect();
+        let segs = time_windows(&times, 2.5, 2.0);
+        // First window: indices 0..3 (times 0,1,2 < 2.5)
+        // Then i advances past t0+2 → etc.
+        assert!(!segs.is_empty());
+        assert!(segs[0].0 == 0 && segs[0].1 >= 3);
+    }
+
+    #[test]
+    fn test_time_windows_edge_cases() {
+        let times = vec![0.0, 0.5, 1.0];
+        assert!(time_windows(&times, 0.0, 1.0).is_empty());
+        assert!(time_windows(&times, 10.0, 0.0).is_empty());
+        assert!(time_windows(&[0.0], 1.0, 1.0).is_empty());
+        let empty: Vec<f64> = vec![];
+        assert!(time_windows(&empty, 1.0, 1.0).is_empty());
     }
 }

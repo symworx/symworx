@@ -30,20 +30,40 @@ ndarray        = { version = "0.15", features = ["std"] }
 ndarray-linalg = { version = "0.16", features = ["openblas"] }
 openblas-build = { version = "0.10", features = ["rustls"] }
 num-complex    = { version = "0.4" }
-parquet        = { version = "51.0" }
+parquet        = { version = "52.0" }
+brotli-decompressor = { version = "4.0", features = ["std"] }
+brotli = { version = "6.0", features = ["std"] }
+alloc-no-stdlib     = { version = "3.0" }
 pyo3           = { version = "0.23", features = ["extension-module", "abi3-py312"] }
 rand           = { version = "0.9" }
 rand_distr     = { version = "0.5" }
 rustfft        = { version = "6.4.1" }
 thiserror      = { version = "2.0.17" }
 tokio          = { version = "1", features = ["full"] }
+# Polars (dataframes + parquet/csv/lazy) — currently used in symworx-tui.
+# This is a heavy dependency (brings arrow, multiple compression backends, etc.).
+# Keep usage opt-in where possible. We centralize the version here for consistency
+# in case we want/need polars in other crates later.
+polars         = { version = "0.51" }
 
 [workspace.lints.rust]
 # We use `deny` (not `forbid`) for `unsafe_code` because this workspace
-# deliberately depends on `ndarray` (and `ndarray-linalg` behind the
-# opt-in `linalg` feature) for performance-critical array operations
-# across signal processing, nonlinear dynamics (RQA), biosym generators,
-# and stats.
+# deliberately depends on `ndarray` (and `ndarray-linalg`) for
+# performance-critical array operations across signal processing
+# (symworx-signal), nonlinear dynamics (RQA), biosym generators, and stats.
+#
+# - In `symworx-stats` the heavy `ndarray-linalg` (SVD/PCA/l2-l1 regression)
+#   is gated behind an opt-in `linalg` feature (off by default in the crate;
+#   enabled by default via `symworx-core` for convenience).
+# - `symworx-signal` imports it directly/unconditionally because advanced LA
+#   (deconvolution, NNLS, etc.) is core to the crate.
+# - The workspace dependency declares `ndarray-linalg = { ..., features = ["openblas"] }`
+#   plus the matching `openblas-build` build-dep.
+#
+# `polars` (dataframes, parquet, csv, lazy) is also heavy (pulls arrow + multiple
+# compression backends). It is centralized here for version consistency (we may
+# use it beyond the TUI in the future) but should remain opt-in via features in
+# consuming crates (see `polars-parquet` feature in symworx-tui).
 #
 # `ndarray`'s internals and macros (e.g. `s![]`, `slice_mut`, views, etc.)
 # use unsafe for speed and to implement zero-copy slicing. Using `forbid`

@@ -6,7 +6,9 @@
 //! This module contains various digital filters organized by category:
 //! - Linear IIR/FIR filters
 //! - Adaptive filters
-//! - Nonlinear / state estimation filters
+//! - Nonlinear / state estimation filters (primary `KalmanFilter` is the general
+//!   multivariate state-space version with RTS smoothing; the simple 1D tracker
+//!   is available as `KalmanFilter1D`)
 //! - Time-frequency transforms
 
 /// Adaptive algorithms
@@ -36,7 +38,8 @@ pub use linear::{
 };
 // Nonlinear / estimation filters
 pub use nonlinear::{
-    KalmanFilter,
+    KalmanFilter,       // the primary general multivariate + RTS version
+    KalmanFilter1D,     // the simple legacy 1D constant-velocity tracker
     RlsFilter,
 };
 // Time-frequency analysis

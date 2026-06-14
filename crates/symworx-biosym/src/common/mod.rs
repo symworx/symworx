@@ -20,7 +20,10 @@ pub use hrv::{
     HrvMetrics,
     compute_hrv_metrics,
 };
-pub use intervals::IntervalSeries;
+pub use intervals::{
+    clean_intervals,
+    IntervalSeries,
+};
 pub use peaks::{
     PhysiologyPeak,
     detect_intervals,

@@ -4,7 +4,10 @@
 //! Signal processing utilities.
 //!
 //! Core tools for interpolation, normalization, resampling, decimation
-//! (for visualization), peak detection, and feature extraction.
+//! (for visualization), peak detection, feature extraction, robust outlier
+//! interpolation ("dynamics interpolation"), and windowing / RR-tachogram
+//! helpers (supporting 30 s / 60 s feature windows for HRV complexity + delta
+//! alignment).
 
 /// Decimation algorithms.
 pub mod decimate;
@@ -24,6 +27,12 @@ pub mod resample;
 /// Traits for signal processing
 pub mod traits;
 
+/// Outlier detection and robust interpolation (for RR/IBI cleaning etc.).
+pub mod outliers;
+
+/// Windowing helpers and RR-to-tachogram resampling (for equidistant feature windows).
+pub mod windows;
+
 pub use decimate::min_max_decimate;
 pub use interpolation::{
     interp_cubic,
@@ -35,6 +44,15 @@ pub use normalization::{
     normalize,
     zscore,
 };
+pub use outliers::{
+    FillStrategy,
+    OutlierCriterion,
+    detect_outliers,
+    interpolate_outliers,
+    robust_interpolate,
+    robust_interpolate_with_times,
+};
+pub use windows::resample_rr_to_tachogram;
 pub use peaks::{
     Peak,
     PeakFinder,

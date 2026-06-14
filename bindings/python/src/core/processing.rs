@@ -19,6 +19,10 @@ use symworx_core::signal::processing::{
         Resample,
         ResampleMethod,
     },
+    resample_rr_to_tachogram,
+    robust_interpolate,
+    FillStrategy,
+    OutlierCriterion,
 };
 
 // ==========================================================
@@ -137,6 +141,86 @@ impl PyResample {
 }
 
 // ==========================================================
+// Robust Interpolation / Outlier Correction ("dynamics interpolation")
+// ==========================================================
+
+#[pyclass(name = "OutlierCriterion")]
+#[derive(Clone)]
+pub struct PyOutlierCriterion {
+    pub inner: OutlierCriterion,
+}
+
+#[pymethods]
+impl PyOutlierCriterion {
+    #[classattr]
+    pub const fn local_mad(half_window: usize, k: f64) -> Self {
+        Self {
+            inner: OutlierCriterion::LocalMAD { half_window, k },
+        }
+    }
+
+    #[classattr]
+    pub const fn percent_change(threshold: f64) -> Self {
+        Self {
+            inner: OutlierCriterion::PercentChange(threshold),
+        }
+    }
+
+    #[classattr]
+    pub const fn absolute(threshold: f64) -> Self {
+        Self {
+            inner: OutlierCriterion::Absolute(threshold),
+        }
+    }
+}
+
+#[pyclass(name = "FillStrategy")]
+#[derive(Clone)]
+pub struct PyFillStrategy {
+    pub inner: FillStrategy,
+}
+
+#[pymethods]
+impl PyFillStrategy {
+    #[classattr]
+    pub const fn local_median(half_window: usize) -> Self {
+        Self {
+            inner: FillStrategy::LocalMedian { half_window },
+        }
+    }
+
+    #[classattr]
+    pub const fn local_mean(half_window: usize) -> Self {
+        Self {
+            inner: FillStrategy::LocalMean { half_window },
+        }
+    }
+
+    #[classattr]
+    pub const LINEAR_INTERP: Self = Self {
+        inner: FillStrategy::LinearInterp,
+    };
+}
+
+#[pyfunction(name = "robust_interpolate")]
+pub fn py_robust_interpolate(
+    data: Vec<f64>,
+    criterion: &PyOutlierCriterion,
+    strategy: &PyFillStrategy,
+) -> Vec<f64> {
+    robust_interpolate(&data, criterion.inner, strategy.inner)
+}
+
+#[pyfunction(name = "resample_rr_to_tachogram")]
+pub fn py_resample_rr_to_tachogram(
+    event_times: Vec<f64>,
+    interval_values: Vec<f64>,
+    target_fs: f64,
+) -> Vec<f64> {
+    resample_rr_to_tachogram(&event_times, &interval_values, target_fs)
+}
+
+// ==========================================================
 // PYTHON REGISTER
 // ==========================================================
 
@@ -148,8 +232,14 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_normalize, m)?)?;
     m.add_function(wrap_pyfunction!(py_zscore, m)?)?;
 
+    m.add_function(wrap_pyfunction!(py_robust_interpolate, m)?)?;
+    m.add_function(wrap_pyfunction!(py_resample_rr_to_tachogram, m)?)?;
+
     m.add_class::<PyResampleMethod>()?;
     m.add_class::<PyResample>()?;
+
+    m.add_class::<PyOutlierCriterion>()?;
+    m.add_class::<PyFillStrategy>()?;
 
     Ok(())
 }

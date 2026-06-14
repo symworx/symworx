@@ -61,4 +61,20 @@ See `crates/symworx-biosym/src/` (particularly the `gait` module and future `run
 It also contains resources centered around nutrition and energy 
 (e.g., basal metabolic rate, total daily energy expenditure, etc.)
 
+## Dependencies & Heavy/Optional Features
+
+The workspace deliberately keeps heavy native dependencies minimal and opt-in where possible:
+
+- `ndarray-linalg` (with OpenBLAS backend) is considered heavy (transitive cost: cauchy, LAPACK, native builds).
+  - Gated behind an opt-in `linalg` feature in `symworx-stats` (off by default in the crate; `symworx-core` enables it for most users).
+  - `symworx-signal` has a **direct unconditional dependency** because advanced linear algebra (deconvolution, NNLS, etc.) is core to its signal processing functionality.
+- See `AGENTS.md` ("Crate Responsibilities & Dependency Hygiene") and the comments in the root `Cargo.toml` for the full rationale and rules.
+- Workspace `Cargo.toml` pins `ndarray-linalg = { ..., features = ["openblas"] }` and the matching `openblas-build` build dependency.
+
+### I/O Principle
+- `symworx-io` is the canonical layer for all signal file I/O (Parquet, CSV, IBI, etc.).
+- No other crate (including the TUI or analysis code) should bypass it by depending directly on `parquet`, `polars/parquet`, or similar for reading/writing signal data. This avoids pulling duplicate and conflicting low-level stacks (Arrow, brotli, zstd, allocators, etc.).
+- Optional heavy analysis libraries (e.g. Polars) may be used for in-memory work, but data must first be loaded through `symworx-io`.
+- The TUI follows this rule: it depends on `symworx-io` for loading and keeps any Polars usage strictly for in-memory exploration (never for I/O).
+
 

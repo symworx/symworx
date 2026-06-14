@@ -13,8 +13,10 @@ use symworx_core::signal::filters::{
         bandpass::BandpassFilter,
         chebyshev::ChebyshevFilter,
     },
-    nonlinear::kalman::KalmanFilter,
+    nonlinear::{KalmanFilter, KalmanFilter1D},
 };
+
+use ndarray::{Array1, Array2};
 
 // ==========================================================
 // Adaptive filters
@@ -93,17 +95,19 @@ impl PyChebyshevFilter {
 // ==========================================================
 // Nonlinear Filters
 // ==========================================================
-#[pyclass(name = "KalmanFilter")]
-pub struct PyKalmanFilter {
-    inner: KalmanFilter,
+
+// Legacy/simple 1D constant-velocity Kalman filter
+#[pyclass(name = "KalmanFilter1D")]
+pub struct PyKalmanFilter1D {
+    inner: KalmanFilter1D,
 }
 
 #[pymethods]
-impl PyKalmanFilter {
+impl PyKalmanFilter1D {
     #[new]
     fn new(dt: f64, process_var: f64, meas_var: f64) -> Self {
         Self {
-            inner: KalmanFilter::new(dt, process_var, meas_var),
+            inner: KalmanFilter1D::new(dt, process_var, meas_var),
         }
     }
 
@@ -117,6 +121,105 @@ impl PyKalmanFilter {
 
     fn state(&self) -> (f64, f64) {
         self.inner.state()
+    }
+}
+
+// Primary general state-space Kalman filter (multivariate, control inputs, RTS smoothing)
+#[pyclass(name = "KalmanFilter")]
+pub struct PyKalmanFilter {
+    inner: KalmanFilter,
+}
+
+// Helper to convert Vec<Vec<f64>> -> Array2<f64>
+fn vec2_to_array2(v: Vec<Vec<f64>>) -> PyResult<Array2<f64>> {
+    if v.is_empty() {
+        return Ok(Array2::zeros((0, 0)));
+    }
+    let nrows = v.len();
+    let ncols = v[0].len();
+    let mut data = Vec::with_capacity(nrows * ncols);
+    for row in &v {
+        if row.len() != ncols {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "All rows in 2D array must have the same length",
+            ));
+        }
+        data.extend_from_slice(row);
+    }
+    Ok(Array2::from_shape_vec((nrows, ncols), data)
+        .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?)
+}
+
+// Helper to convert Vec<f64> -> Array1<f64>
+fn vec_to_array1(v: Vec<f64>) -> Array1<f64> {
+    Array1::from_vec(v)
+}
+
+#[pymethods]
+impl PyKalmanFilter {
+    /// Create a general KalmanFilter from state-space matrices.
+    ///
+    /// f: state transition (n x n)
+    /// h: measurement matrix (m x n)
+    /// q: process noise cov (n x n)
+    /// r: measurement noise cov (m x m)
+    /// x0: initial state (n,)
+    /// p0: initial covariance (n x n)
+    #[new]
+    fn new(
+        f: Vec<Vec<f64>>,
+        h: Vec<Vec<f64>>,
+        q: Vec<Vec<f64>>,
+        r: Vec<Vec<f64>>,
+        x0: Vec<f64>,
+        p0: Vec<Vec<f64>>,
+    ) -> PyResult<Self> {
+        let f = vec2_to_array2(f)?;
+        let h = vec2_to_array2(h)?;
+        let q = vec2_to_array2(q)?;
+        let r = vec2_to_array2(r)?;
+        let x0 = vec_to_array1(x0);
+        let p0 = vec2_to_array2(p0)?;
+
+        Ok(Self {
+            inner: KalmanFilter::new(f, h, q, r, x0, p0),
+        })
+    }
+
+    /// Prediction step. control is optional (length must match control dimension if provided).
+    fn predict(&mut self, control: Option<Vec<f64>>) {
+        let u = control.map(vec_to_array1);
+        self.inner.predict(u.as_ref());
+    }
+
+    /// Measurement update with observation vector z.
+    fn update(&mut self, z: Vec<f64>) {
+        let z = vec_to_array1(z);
+        self.inner.update(&z);
+    }
+
+    /// Current state estimate as list.
+    fn state(&self) -> Vec<f64> {
+        self.inner.state().to_vec()
+    }
+
+    /// Run forward filter over a sequence of observations.
+    /// Returns list of filtered state vectors (one per time step).
+    /// controls: optional list of control vectors (same length as zs).
+    fn filter(
+        &mut self,
+        zs: Vec<Vec<f64>>,
+        controls: Option<Vec<Vec<f64>>>,
+    ) -> PyResult<Vec<Vec<f64>>> {
+        let zs: Vec<Array1<f64>> = zs.into_iter().map(vec_to_array1).collect();
+        let controls = controls.map(|cs| cs.into_iter().map(vec_to_array1).collect());
+
+        let run = self.inner.run_forward(&zs, controls.as_deref());
+        Ok(run
+            .filtered_states
+            .into_iter()
+            .map(|s| s.to_vec())
+            .collect())
     }
 }
 
@@ -135,6 +238,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     m.add_class::<PyBandpassFilter>()?;
     m.add_class::<PyChebyshevFilter>()?;
+    m.add_class::<PyKalmanFilter1D>()?;
     m.add_class::<PyKalmanFilter>()?;
 
     Ok(())
