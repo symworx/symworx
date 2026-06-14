@@ -181,6 +181,7 @@ pub fn ewma(data: &[f64], span: usize) -> Vec<f64> {
     out
 }
 
+<<<<<<< HEAD
 // -----------------------------------------------------------------------------
 // Windowing and segmentation primitives
 // -----------------------------------------------------------------------------
@@ -293,6 +294,8 @@ pub fn time_windows(
 
     segments
 }
+=======
+>>>>>>> origin/develop
 
 // TESTS
 
