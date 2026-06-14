@@ -300,9 +300,86 @@ pub fn time_windows(
 mod tests {
     use super::*;
 
-    // ... (keep all your existing tests for successive_differences, rolling_mean, rolling_std, ewma, etc.)
+    #[test]
+    fn test_successive_differences_basic() {
+        let data = [0.0, 1.2, 2.5, 3.7];
+        let diffs = successive_differences(&data);
+        // Use tolerance because 1.2/2.5/3.7 are not exactly representable in f64
+        assert_eq!(diffs.len(), 3);
+        assert!((diffs[0] - 1.2).abs() < 1e-12);
+        assert!((diffs[1] - 1.3).abs() < 1e-12);
+        assert!((diffs[2] - 1.2).abs() < 1e-12);
+    }
 
-    // --- New windowing primitives tests (add these if they were lost in the linting side) ---
+    #[test]
+    fn test_successive_differences_signed() {
+        // Explicitly test that we preserve sign (not absolute)
+        let data = [10.0, 8.0, 12.0];
+        let diffs = successive_differences(&data);
+        assert_eq!(diffs, vec![-2.0, 4.0]);
+    }
+
+    #[test]
+    fn test_successive_differences_too_short() {
+        assert!(successive_differences(&[42.0]).is_empty());
+        assert!(successive_differences(&[]).is_empty());
+    }
+
+    #[test]
+    fn test_successive_absolute_differences() {
+        let data = [10.0, 8.0, 12.0];
+        let diffs = successive_absolute_differences(&data);
+        assert_eq!(diffs, vec![2.0, 4.0]);
+    }
+
+    #[test]
+    fn test_iter_versions() {
+        let data = [0.0, 1.0, 3.0];
+        let collected: Vec<_> = successive_differences_iter(&data).collect();
+        assert_eq!(collected, vec![1.0, 2.0]);
+    }
+
+    #[test]
+    fn test_rolling_mean_basic() {
+        let data = [1.0, 2.0, 3.0, 4.0, 5.0];
+        let rm = rolling_mean(&data, 3);
+        assert!(rm[0].is_nan() && rm[1].is_nan());
+        assert!((rm[2] - 2.0).abs() < 1e-12);
+        assert!((rm[3] - 3.0).abs() < 1e-12);
+        assert!((rm[4] - 4.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_rolling_mean_window_too_large() {
+        let data = [10.0, 20.0];
+        let rm = rolling_mean(&data, 5);
+        assert!(rm.iter().all(|v| v.is_nan()));
+    }
+
+    #[test]
+    fn test_rolling_std() {
+        let data = [2.0, 2.0, 2.0, 2.0];
+        let rs = rolling_std(&data, 2);
+        assert!(rs[0].is_nan());
+        assert!((rs[1] - 0.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_ewma_matches_alpha() {
+        let data = [1.0, 2.0, 3.0];
+        // span=1 => alpha=1.0 (follows exactly)
+        let e = ewma(&data, 1);
+        assert_eq!(e, vec![1.0, 2.0, 3.0]);
+    }
+
+    #[test]
+    fn test_ewma_decay() {
+        let data = [10.0, 10.0, 10.0, 10.0];
+        let e = ewma(&data, 3); // alpha ≈ 0.5
+        assert!((e[3] - 10.0).abs() < 1e-10);
+    }
+
+    // --- New windowing primitives tests ---
 
     #[test]
     fn test_sliding_windows_basic() {
