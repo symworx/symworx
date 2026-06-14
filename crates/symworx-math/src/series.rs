@@ -94,12 +94,6 @@ pub fn successive_absolute_differences_iter(data: &[f64]) -> impl Iterator<Item 
     data.windows(2).map(|w| (w[1] - w[0]).abs())
 }
 
-// ============================================================
-// Rolling window statistics (canonical home per AGENTS.md)
-// These power ACWR, EWMA, and load monitoring calculations
-// in symworx-loadsym and other consumers.
-// ============================================================
-
 /// Computes a simple rolling (moving) mean over a sliding window.
 ///
 /// Returns a Vec of the same length as `data`.
@@ -183,6 +177,9 @@ pub fn ewma(data: &[f64], span: usize) -> Vec<f64> {
     }
     out
 }
+
+
+// TESTS
 
 #[cfg(test)]
 mod tests {
