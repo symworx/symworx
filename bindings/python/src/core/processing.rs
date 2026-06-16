@@ -5,6 +5,8 @@ use pyo3::{
     wrap_pyfunction,
 };
 use symworx_core::signal::processing::{
+    FillStrategy,
+    OutlierCriterion,
     interpolation::{
         interp_cubic,
         interp_linear,
@@ -21,8 +23,6 @@ use symworx_core::signal::processing::{
     },
     resample_rr_to_tachogram,
     robust_interpolate,
-    FillStrategy,
-    OutlierCriterion,
 };
 
 // ==========================================================

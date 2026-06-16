@@ -38,8 +38,8 @@ pub use linear::{
 };
 // Nonlinear / estimation filters
 pub use nonlinear::{
-    KalmanFilter,       // the primary general multivariate + RTS version
-    KalmanFilter1D,     // the simple legacy 1D constant-velocity tracker
+    KalmanFilter,   // the primary general multivariate + RTS version
+    KalmanFilter1D, // the simple legacy 1D constant-velocity tracker
     RlsFilter,
 };
 // Time-frequency analysis

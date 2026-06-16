@@ -16,8 +16,12 @@
 //! and `LinearInterp` strategies on detected outliers (common for RR artifact
 //! correction in the HRV / nonlinear dynamics literature).
 
+use symworx_stats::basic::{
+    mad,
+    median,
+};
+
 use crate::processing::interpolation::interp_linear;
-use symworx_stats::basic::{mad, median};
 
 /// Criterion used to flag a sample as an outlier.
 ///
@@ -123,7 +127,11 @@ pub fn detect_outliers(data: &[f64], crit: OutlierCriterion) -> Vec<usize> {
 /// using the chosen fill strategy. Returns a new vector of same length as `data`.
 ///
 /// Non-outlier values are copied unchanged. Outlier indices outside range are ignored.
-pub fn interpolate_outliers(data: &[f64], outlier_indices: &[usize], strat: FillStrategy) -> Vec<f64> {
+pub fn interpolate_outliers(
+    data: &[f64],
+    outlier_indices: &[usize],
+    strat: FillStrategy,
+) -> Vec<f64> {
     if data.is_empty() {
         return vec![];
     }
@@ -133,7 +141,11 @@ pub fn interpolate_outliers(data: &[f64], outlier_indices: &[usize], strat: Fill
     }
 
     // Work on a sorted unique copy of indices for safety
-    let mut idxs: Vec<usize> = outlier_indices.iter().copied().filter(|&i| i < data.len()).collect();
+    let mut idxs: Vec<usize> = outlier_indices
+        .iter()
+        .copied()
+        .filter(|&i| i < data.len())
+        .collect();
     idxs.sort_unstable();
     idxs.dedup();
 
@@ -158,7 +170,11 @@ pub fn interpolate_outliers(data: &[f64], outlier_indices: &[usize], strat: Fill
                     median(&local)
                 } else {
                     // mean
-                    if local.is_empty() { f64::NAN } else { local.iter().sum::<f64>() / local.len() as f64 }
+                    if local.is_empty() {
+                        f64::NAN
+                    } else {
+                        local.iter().sum::<f64>() / local.len() as f64
+                    }
                 };
                 if replacement.is_finite() {
                     out[i] = replacement;
@@ -180,7 +196,11 @@ pub fn interpolate_outliers(data: &[f64], outlier_indices: &[usize], strat: Fill
                 let first_good = good_y.first().copied().unwrap_or(0.0);
                 let last_good = good_y.last().copied().unwrap_or(0.0);
                 for &i in &idxs {
-                    out[i] = if i < good_x.len() { first_good } else { last_good };
+                    out[i] = if i < good_x.len() {
+                        first_good
+                    } else {
+                        last_good
+                    };
                 }
                 return out;
             }
@@ -263,7 +283,8 @@ pub fn robust_interpolate_with_times(
             let mut out = data.to_vec();
             let idxs = bad;
             match strat {
-                FillStrategy::LocalMedian { half_window } | FillStrategy::LocalMean { half_window } => {
+                FillStrategy::LocalMedian { half_window }
+                | FillStrategy::LocalMean { half_window } => {
                     let use_median = matches!(strat, FillStrategy::LocalMedian { .. });
                     for &i in &idxs {
                         let start = i.saturating_sub(half_window);
@@ -302,7 +323,13 @@ mod tests {
         // 10 normal + one big spike
         let mut d: Vec<f64> = (0..20).map(|i| 800.0 + (i as f64) * 0.1).collect();
         d[10] = 2000.0; // obvious outlier
-        let bad = detect_outliers(&d, OutlierCriterion::LocalMAD { half_window: 3, k: 4.0 });
+        let bad = detect_outliers(
+            &d,
+            OutlierCriterion::LocalMAD {
+                half_window: 3,
+                k: 4.0,
+            },
+        );
         assert!(bad.contains(&10));
     }
 

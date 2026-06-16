@@ -21,8 +21,8 @@ pub use hrv::{
     compute_hrv_metrics,
 };
 pub use intervals::{
-    clean_intervals,
     IntervalSeries,
+    clean_intervals,
 };
 pub use peaks::{
     PhysiologyPeak,

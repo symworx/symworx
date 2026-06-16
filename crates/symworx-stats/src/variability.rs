@@ -14,7 +14,6 @@
 ///
 /// Re-exported from `symworx-math`.
 pub use series::successive_absolute_differences;
-
 /// Returns the signed differences between consecutive elements.
 ///
 /// This is the canonical "successive differences" primitive, re-exported

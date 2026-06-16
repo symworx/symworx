@@ -52,7 +52,6 @@ pub use outliers::{
     robust_interpolate,
     robust_interpolate_with_times,
 };
-pub use windows::resample_rr_to_tachogram;
 pub use peaks::{
     Peak,
     PeakFinder,
@@ -63,6 +62,7 @@ pub use resample::{
     ResampleMethod,
 };
 pub use traits::PeakDetect;
+pub use windows::resample_rr_to_tachogram;
 
 /// Interpolation functions.
 pub mod interp {

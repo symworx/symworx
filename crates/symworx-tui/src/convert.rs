@@ -12,7 +12,10 @@ use std::path::Path;
 use anyhow::Result;
 use symworx_io::{
     read_ibi,
-    traits::{SymReader, SymWriter},
+    traits::{
+        SymReader,
+        SymWriter,
+    },
     CsvWriter,
     ParquetReader,
 };

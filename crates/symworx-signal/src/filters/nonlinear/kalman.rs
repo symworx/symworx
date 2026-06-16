@@ -56,7 +56,12 @@
 //! let smoothed = rts_smooth(&run, &f);
 //! ```
 
-use ndarray::{Array1, Array2, Axis, array};
+use ndarray::{
+    Array1,
+    Array2,
+    Axis,
+    array,
+};
 use ndarray_linalg::Inverse;
 
 /// A general linear-Gaussian state-space Kalman filter.
@@ -214,7 +219,9 @@ impl KalmanFilter {
             let hx = h.dot(&x_pred);
             let y = z - &hx;
             let s = h.dot(&p_pred).dot(&h.t()) + r;
-            let k = p_pred.dot(&h.t()).dot(&s.inv().expect("S inversion failed"));
+            let k = p_pred
+                .dot(&h.t())
+                .dot(&s.inv().expect("S inversion failed"));
 
             let x_upd = &x_pred + &k.dot(&y);
             let i: Array2<f64> = Array2::eye(p_pred.nrows());
@@ -286,8 +293,9 @@ pub fn rts_smooth(run: &FilterRun, f: &Array2<f64>) -> Vec<Array1<f64>> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::Array2;
+
+    use super::*;
 
     #[test]
     fn test_general_reproduces_old_1d_cv() {
@@ -301,7 +309,10 @@ mod tests {
         let f = array![[1.0, dt], [0.0, 1.0]];
         let h = array![[1.0, 0.0]];
         let q = array![
-            [process_var * dt.powi(4) / 4.0, process_var * dt.powi(3) / 2.0],
+            [
+                process_var * dt.powi(4) / 4.0,
+                process_var * dt.powi(3) / 2.0
+            ],
             [process_var * dt.powi(3) / 2.0, process_var * dt.powi(2)]
         ];
         let r = array![[meas_var]];

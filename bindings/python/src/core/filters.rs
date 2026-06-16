@@ -1,5 +1,9 @@
 // Copyright (c) 2026 SymWorx. All rights reserved.
 
+use ndarray::{
+    Array1,
+    Array2,
+};
 use pyo3::{
     prelude::*,
     wrap_pyfunction,
@@ -13,10 +17,11 @@ use symworx_core::signal::filters::{
         bandpass::BandpassFilter,
         chebyshev::ChebyshevFilter,
     },
-    nonlinear::{KalmanFilter, KalmanFilter1D},
+    nonlinear::{
+        KalmanFilter,
+        KalmanFilter1D,
+    },
 };
-
-use ndarray::{Array1, Array2};
 
 // ==========================================================
 // Adaptive filters

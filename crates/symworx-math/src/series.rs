@@ -201,7 +201,11 @@ pub fn ewma(data: &[f64], span: usize) -> Vec<f64> {
 /// let wins: Vec<_> = sliding_windows(&data, 3, 2).collect();
 /// assert_eq!(wins, vec![&data[0..3], &data[2..5]]);
 /// ```
-pub fn sliding_windows(data: &[f64], window: usize, step: usize) -> impl Iterator<Item = &[f64]> + '_ {
+pub fn sliding_windows(
+    data: &[f64],
+    window: usize,
+    step: usize,
+) -> impl Iterator<Item = &[f64]> + '_ {
     (0..)
         .map(move |i| {
             let start = i * step;
@@ -257,11 +261,7 @@ where
 ///
 /// Empty or non-monotonic input yields empty result. `step_sec <= 0` or `window_sec <= 0`
 /// also yields empty.
-pub fn time_windows(
-    times: &[f64],
-    window_sec: f64,
-    step_sec: f64,
-) -> Vec<(usize, usize)> {
+pub fn time_windows(times: &[f64], window_sec: f64, step_sec: f64) -> Vec<(usize, usize)> {
     if times.len() < 2 || window_sec <= 0.0 || step_sec <= 0.0 {
         return vec![];
     }

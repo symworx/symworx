@@ -4,9 +4,17 @@
 //! Run with:
 //!   cargo run -p symworx-signal --example windowed_rr_features
 
-use symworx_core::math::series::{rolling_apply, time_windows};
-use symworx_core::signal::processing::{
-    robust_interpolate, resample_rr_to_tachogram, FillStrategy, OutlierCriterion,
+use symworx_core::{
+    math::series::{
+        rolling_apply,
+        time_windows,
+    },
+    signal::processing::{
+        FillStrategy,
+        OutlierCriterion,
+        resample_rr_to_tachogram,
+        robust_interpolate,
+    },
 };
 
 fn main() {
@@ -16,7 +24,10 @@ fn main() {
         .collect();
     raw_rr[47] = 2.3; // big outlier (ectopic-like)
 
-    println!("Raw RR len = {}, has obvious spike at index 47", raw_rr.len());
+    println!(
+        "Raw RR len = {}, has obvious spike at index 47",
+        raw_rr.len()
+    );
 
     // 1. Clean using "dynamics interpolation" (Local MAD + linear interp replacement)
     let crit = OutlierCriterion::LocalMAD {
@@ -46,15 +57,26 @@ fn main() {
     let means: Vec<f64> = rolling_apply(&tach, win_len, step, |w| {
         w.iter().sum::<f64>() / w.len() as f64
     });
-    println!("Per-window means (approx RR) over ~30 s non-overlapping windows: {:?}", means);
+    println!(
+        "Per-window means (approx RR) over ~30 s non-overlapping windows: {:?}",
+        means
+    );
 
     // Time-based segmentation example (using the original event times)
     let segments = time_windows(&event_times, 30.0, 30.0);
-    println!("Time-based 30 s segments (count = {}) — first few: {:?}", segments.len(), &segments[..segments.len().min(3)]);
+    println!(
+        "Time-based 30 s segments (count = {}) — first few: {:?}",
+        segments.len(),
+        &segments[..segments.len().min(3)]
+    );
 
     println!("\nNext steps in research pipeline (not in this example):");
     println!("- Compute RMSSD / sample_entropy per window (use symworx_stats + symworx_dynamics)");
     println!("- Align windows with delta power epochs from PSG");
-    println!("- Feed the multivariate window feature matrix (HR, RMSSD, SampEn, delta) into the generalized Kalman");
-    println!("- Summarize the latent slow-drifting capacity trajectory per bout and relate to exercise / cognitive outcomes");
+    println!(
+        "- Feed the multivariate window feature matrix (HR, RMSSD, SampEn, delta) into the generalized Kalman"
+    );
+    println!(
+        "- Summarize the latent slow-drifting capacity trajectory per bout and relate to exercise / cognitive outcomes"
+    );
 }
