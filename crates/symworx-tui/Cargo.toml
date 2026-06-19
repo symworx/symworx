@@ -34,6 +34,7 @@ symworx-io = { path = "../symworx-io", features = ["parquet"] }
 symworx-core = { path = "../symworx-core" }
 symworx-biosym = { path = "../symworx-biosym" }
 symworx-signal = { path = "../symworx-signal" }
+symworx-spatialsym = { path = "../symworx-spatialsym" }
 rand = { version = "0.9", features = ["std"] }
 csv = "1.3"
 

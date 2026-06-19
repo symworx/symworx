@@ -61,6 +61,10 @@ See `crates/symworx-biosym/src/` (particularly the `gait` module and future `run
 It also contains resources centered around nutrition and energy 
 (e.g., basal metabolic rate, total daily energy expenditure, etc.)
 
+### [SpatialSym](crates/symworx-spatialsym/README.md)
+
+**Overview**: The `symworx-spatialsym` crate provides sport-agnostic tools for 2D trajectory analysis and post-hoc interpretation of agent decision-making based on movement and use of space (expansion/penetration/denial/pressure). Analyses use historical and future context. Initial migration of legacy Python `spatialsystems` functionality with major fixes (no hardcoded FPS, proper vectors/atan2, typed data, etc.).
+
 ## Dependencies & Heavy/Optional Features
 
 The workspace deliberately keeps heavy native dependencies minimal and opt-in where possible:

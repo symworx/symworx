@@ -12,6 +12,7 @@ members = [
     "crates/symworx-loadsym",
     "crates/symworx-math",
     "crates/symworx-signal",
+    "crates/symworx-spatialsym",
     "crates/symworx-stats",
     "crates/symworx-tui",
     "bindings/python", 

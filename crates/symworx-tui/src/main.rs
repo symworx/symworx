@@ -52,6 +52,14 @@ use std::{
     time::Duration,
 };
 
+use symworx_spatialsym::{
+    decision::SpaceAction,
+    synthetic,
+    AgentTrajectories,
+    Point2,
+    Vec2,
+};
+
 /// Top-level tabs for the application
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Tab {
@@ -61,6 +69,8 @@ enum Tab {
     Explore,
     /// Nonlinear dynamics (RQA, recurrence plots, etc.)
     Dynamics,
+    /// Spatial trajectory analysis (synthetic, decisions, frames)
+    Spatial,
 }
 
 impl Tab {
@@ -69,6 +79,7 @@ impl Tab {
             Tab::Import => "Import",
             Tab::Explore => "Explore",
             Tab::Dynamics => "Dynamics",
+            Tab::Spatial => "Spatial",
         }
     }
 
@@ -77,6 +88,7 @@ impl Tab {
             Tab::Import => 0,
             Tab::Explore => 1,
             Tab::Dynamics => 2,
+            Tab::Spatial => 3,
         }
     }
 }
@@ -98,6 +110,13 @@ struct App {
 
     // --- Import tab specific state ---
     /// When user tries to load a multi-column file, we store the data here temporarily
+
+    // --- Spatial tab (from symworx-spatialsym) ---
+    /// Demo synthetic batch for spatial analysis
+    spatial_batch: Option<symworx_spatialsym::AgentTrajectories>,
+    spatial_focal: Option<Vec<symworx_spatialsym::Point2>>,
+    spatial_frame_idx: usize,
+    spatial_labels: Option<Vec<Vec<symworx_spatialsym::decision::SpaceAction>>>,
     /// and ask them to pick a column.
     pending_load: Option<PendingColumnLoad>,
 
@@ -233,7 +252,8 @@ impl App {
             file_list: Vec::new(),
             list_state: ListState::default(),
             manual_path: String::new(),
-            status: "Import tab — / to filter, Ctrl+1/2/3 or Ctrl+←/→ to switch tabs.".to_string(),
+            status: "Import tab — / to filter, Ctrl+1/2/3/4 or Ctrl+←/→ to switch tabs."
+                .to_string(),
             loaded_signal: None,
             pending_load: None,
             file_filter: String::new(),
@@ -242,12 +262,63 @@ impl App {
             pending_process: false,
             process_selection: 0,
             process_window: 5,
+            // Spatial demo init
+            spatial_batch: None,
+            spatial_focal: None,
+            spatial_frame_idx: 0,
+            spatial_labels: None,
         };
         app.refresh_file_list();
         if !app.file_list.is_empty() {
             app.list_state.select(Some(0));
         }
+        // Seed a synthetic spatial demo (options 1-3)
+        app.seed_spatial_demo();
         app
+    }
+
+    fn seed_spatial_demo(&mut self) {
+        // Use event-driven synthetic (option 3) with metadata
+        let init = vec![
+            Point2::new(0., 0.),
+            Point2::new(1.2, 2.5),
+            Point2::new(0.7, -0.5),
+        ];
+        let evs = vec![
+            synthetic::SpatialEvent::StartRun {
+                agent: 1,
+                target: Point2::new(6.3, 2.5),
+                speed: 4.0,
+                start_time: 0.2,
+            },
+            synthetic::SpatialEvent::Pass {
+                from: 0,
+                to: 1,
+                time: 0.6,
+            },
+            synthetic::SpatialEvent::Close {
+                agent: 2,
+                target: 1,
+                speed: 5.2,
+                start_time: 0.7,
+            },
+        ];
+        let (ev_t, ev_p, ev_f) =
+            synthetic::generate_event_driven(init, Point2::new(0.25, 0.), evs, 1.4, 0.1);
+        let groups = vec![0u32, 0, 1];
+        let att = vec![Vec2::new(1., 0.), Vec2::new(1., 0.), Vec2::new(-1., 0.)];
+        let (batch, focal) =
+            symworx_spatialsym::build_agent_trajectories(ev_t, ev_p, groups, att, ev_f.clone());
+        let n_steps = batch.num_times();
+        self.spatial_batch = Some(batch);
+        self.spatial_focal = Some(focal);
+        self.spatial_frame_idx = 0;
+        // Ground truth for this scenario (simple)
+        self.spatial_labels = Some(symworx_spatialsym::synthetic::generate_ground_truth(
+            3,
+            n_steps,
+            "pass_then_press",
+        ));
     }
 
     /// Scan for likely biosignal files.
@@ -521,6 +592,9 @@ fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool {
         KeyCode::Char('3') if modifiers.contains(KeyModifiers::CONTROL) => {
             app.current_tab = Tab::Dynamics
         }
+        KeyCode::Char('4') if modifiers.contains(KeyModifiers::CONTROL) => {
+            app.current_tab = Tab::Spatial
+        }
 
         // Tab switching via Ctrl+Left / Ctrl+Right (keep this behavior)
         KeyCode::Left if modifiers.contains(KeyModifiers::CONTROL) => {
@@ -528,13 +602,15 @@ fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool {
                 Tab::Import => Tab::Import,
                 Tab::Explore => Tab::Import,
                 Tab::Dynamics => Tab::Explore,
+                Tab::Spatial => Tab::Dynamics,
             };
         }
         KeyCode::Right if modifiers.contains(KeyModifiers::CONTROL) => {
             app.current_tab = match app.current_tab {
                 Tab::Import => Tab::Explore,
                 Tab::Explore => Tab::Dynamics,
-                Tab::Dynamics => Tab::Dynamics,
+                Tab::Dynamics => Tab::Spatial,
+                Tab::Spatial => Tab::Spatial,
             };
         }
 
@@ -558,7 +634,37 @@ fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool {
         Tab::Import => handle_import_keys(app, code, modifiers),
         Tab::Explore => handle_explore_keys(app, code, modifiers),
         Tab::Dynamics => handle_dynamics_keys(app, code),
+        Tab::Spatial => handle_spatial_keys(app, code, modifiers),
     }
+}
+
+fn handle_spatial_keys(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool {
+    if let Some(batch) = &app.spatial_batch {
+        let max_frame = batch.num_times().saturating_sub(1);
+        match code {
+            KeyCode::Left => {
+                if app.spatial_frame_idx > 0 {
+                    app.spatial_frame_idx -= 1;
+                }
+                app.status = format!("Spatial frame {} / {}", app.spatial_frame_idx, max_frame);
+            }
+            KeyCode::Right => {
+                if app.spatial_frame_idx < max_frame {
+                    app.spatial_frame_idx += 1;
+                }
+                app.status = format!("Spatial frame {} / {}", app.spatial_frame_idx, max_frame);
+            }
+            KeyCode::Char('g') | KeyCode::Char('G')
+                if modifiers.contains(KeyModifiers::CONTROL) =>
+            {
+                // regenerate demo
+                app.seed_spatial_demo();
+                app.status = "Regenerated spatial synthetic demo".to_string();
+            }
+            _ => {}
+        }
+    }
+    true
 }
 
 fn handle_import_keys(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool {
@@ -979,7 +1085,7 @@ fn ui(frame: &mut Frame, app: &App) {
     .split(frame.area());
 
     // Top tab bar
-    let tab_titles: Vec<Span> = vec!["1: Import", "2: Explore", "3: Dynamics"]
+    let tab_titles: Vec<Span> = vec!["1: Import", "2: Explore", "3: Dynamics", "4: Spatial"]
         .into_iter()
         .map(Span::from)
         .collect();
@@ -1003,6 +1109,7 @@ fn ui(frame: &mut Frame, app: &App) {
         Tab::Import => render_import_tab(frame, app, main_layout[2]),
         Tab::Explore => render_explore_tab(frame, app, main_layout[2]),
         Tab::Dynamics => render_dynamics_tab(frame, app, main_layout[2]),
+        Tab::Spatial => render_spatial_tab(frame, app, main_layout[2]),
     }
 
     // Footer / status (kept minimal now that we have a dedicated action bar)
@@ -1041,6 +1148,10 @@ fn render_action_bar(app: &App) -> Paragraph<'_> {
         ),
         Tab::Dynamics => (
             "  [Coming soon: RQA, Recurrence Plots, Nonlinear Analysis]",
+            Style::default().fg(Color::DarkGray),
+        ),
+        Tab::Spatial => (
+            "  [←→] Change frame   [g] Regenerate   [i] Infer carrier   [l] Labels",
             Style::default().fg(Color::DarkGray),
         ),
     };
@@ -1242,7 +1353,7 @@ fn render_import_tab(frame: &mut Frame, app: &App, area: Rect) {
     } else if app.pending_generate {
         "  1/2/3 : Choose preset   Esc : Cancel"
     } else {
-        "  / : Filter   Ctrl+G : Generate   c : Convert   Ctrl+R : Refresh   Enter : Load   Ctrl+1/2/3, Ctrl+←/→ : Tabs"
+        "  / : Filter   Ctrl+G : Generate   c : Convert   Ctrl+R : Refresh   Enter : Load   Ctrl+1/2/3/4, Ctrl+←/→ : Tabs"
     };
 
     let action_bar = Paragraph::new(action_text)
@@ -1451,6 +1562,86 @@ fn render_dynamics_tab(frame: &mut Frame, app: &App, area: Rect) {
     };
 
     frame.render_widget(content.block(block), area);
+}
+
+/// First ratatui sketch for Spatial (wiring SpatialFrame + ground truth + basic viz).
+fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
+    let block = Block::new()
+        .title(" Spatial (synthetic trajectories, decisions, frames) ")
+        .borders(Borders::ALL)
+        .border_style(Color::Cyan);
+
+    if let (Some(batch), Some(focal)) = (&app.spatial_batch, &app.spatial_focal) {
+        let idx = app
+            .spatial_frame_idx
+            .min(batch.num_times().saturating_sub(1));
+        if let Some(spatial_frame) = batch.frame(idx) {
+            let mut lines = vec![
+                format!(
+                    "Frame {} / {}  |  t={:.2}s",
+                    idx,
+                    batch.num_times().saturating_sub(1),
+                    spatial_frame.time
+                ),
+                format!(
+                    "Agents: {}  |  Focal: ({:.1}, {:.1})",
+                    spatial_frame.num_agents(),
+                    spatial_frame.focal_pos().map_or(0.0, |p| p.x),
+                    spatial_frame.focal_pos().map_or(0.0, |p| p.y)
+                ),
+            ];
+            if let Some(labels) = &app.spatial_labels {
+                if !labels.is_empty() && idx < labels[0].len() {
+                    let g0 = &labels[0][idx];
+                    let g1 = if labels.len() > 1 {
+                        &labels[1][idx]
+                    } else {
+                        g0
+                    };
+                    let g2 = if labels.len() > 2 {
+                        &labels[2][idx]
+                    } else {
+                        g0
+                    };
+                    lines.push(format!(
+                        "Ground truth (agent0,1,2): {:?} {:?} {:?}",
+                        g0, g1, g2
+                    ));
+                }
+            }
+            // Simple text viz of positions (ratatui sketch - could use Canvas later)
+            lines.push("Positions (x,y):".to_string());
+            for (i, p) in spatial_frame.agent_positions.iter().enumerate() {
+                let label = if let Some(labs) = &app.spatial_labels {
+                    if i < labs.len() && idx < labs[i].len() {
+                        format!("{:?}", labs[i][idx])
+                    } else {
+                        "".into()
+                    }
+                } else {
+                    "".into()
+                };
+                lines.push(format!("  Agent{}: ({:5.1},{:5.1}) {}", i, p.x, p.y, label));
+            }
+            if idx < focal.len() {
+                let fpos = focal[idx];
+                lines.push(format!("  Focal : ({:5.1},{:5.1})", fpos.x, fpos.y));
+            } else if let Some(fpos) = spatial_frame.focal_pos() {
+                lines.push(format!("  Focal : ({:5.1},{:5.1})", fpos.x, fpos.y));
+            }
+
+            let content = Paragraph::new(lines.join("\n")).block(block);
+            frame.render_widget(content, area);
+        } else {
+            let content = Paragraph::new("No frame data").block(block);
+            frame.render_widget(content, area);
+        }
+    } else {
+        let content =
+            Paragraph::new("No spatial data loaded (synthetic demo should have seeded on start)")
+                .block(block);
+        frame.render_widget(content, area);
+    }
 }
 
 // render_visualizing removed — replaced by the tab-based render_explore_content + render_import_tab etc.
