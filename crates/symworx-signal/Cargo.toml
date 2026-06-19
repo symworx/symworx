@@ -16,5 +16,8 @@ rustfft        = { workspace = true }
 
 symworx-stats  = { path = "../symworx-stats" }
 
+[dev-dependencies]
+symworx-math = { path = "../symworx-math" }
+
 [lints]
 workspace = true

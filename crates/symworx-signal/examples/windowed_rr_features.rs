@@ -4,17 +4,15 @@
 //! Run with:
 //!   cargo run -p symworx-signal --example windowed_rr_features
 
-use symworx_core::{
-    math::series::{
-        rolling_apply,
-        time_windows,
-    },
-    signal::processing::{
-        FillStrategy,
-        OutlierCriterion,
-        resample_rr_to_tachogram,
-        robust_interpolate,
-    },
+use symworx_math::series::{
+    rolling_apply,
+    time_windows,
+};
+use symworx_signal::processing::{
+    FillStrategy,
+    OutlierCriterion,
+    resample_rr_to_tachogram,
+    robust_interpolate,
 };
 
 fn main() {

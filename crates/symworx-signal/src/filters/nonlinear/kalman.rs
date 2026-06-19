@@ -56,6 +56,7 @@
 //! let smoothed = rts_smooth(&run, &f);
 //! ```
 
+
 use ndarray::{
     Array1,
     Array2,
@@ -301,7 +302,7 @@ mod tests {
     fn test_general_reproduces_old_1d_cv() {
         // Replicate the exact behavior of the original 1D constant-velocity filter
         // using the general KalmanFilter so we know the architecture is sound.
-        let dt = 1.0;
+        let dt: f64 = 1.0;
         let process_var = 1e-5;
         let meas_var = 0.1;
 
