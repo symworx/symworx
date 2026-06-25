@@ -13,6 +13,9 @@
 //!   - `Penetration` (exploit space forward / through gaps)
 //!   - `Denial`      (deny space / close lanes or channels)
 //!   - `Pressure`    (close space / immediate approach to contest or regain)
+//!   - `Creation`    (create a scoring opportunity)
+//!   - `Conversion`  (successful score / convert opportunity)
+//!   - `Prevention`  (deny an opponent's scoring opportunity)
 //! - In **comments, docs, examples and internal logic** we may use professional
 //!   sports language (especially soccer/football) for clarity:
 //!   - "on-ball player" / "ball carrier"
@@ -75,6 +78,14 @@ pub enum SpaceAction {
     Pressure,
     /// No clear dominant space action detected (or below threshold).
     Neutral,
+
+    // Higher-level outcome categories (sport-agnostic)
+    /// Action that creates a clear, high-value scoring opportunity against the target.
+    Creation,
+    /// Successful conversion of a scoring opportunity (sport-agnostic for "goal", "basket", "point", etc.).
+    Conversion,
+    /// Action that prevents an opponent from creating or converting a scoring opportunity.
+    Prevention,
 }
 
 /// Richer per-agent decision output for classifier maturity.
@@ -117,6 +128,9 @@ impl SpaceAction {
             SpaceAction::Denial => "Denial (deny space)",
             SpaceAction::Pressure => "Pressure (close space)",
             SpaceAction::Neutral => "Neutral",
+            SpaceAction::Creation => "Creation (create scoring opportunity)",
+            SpaceAction::Conversion => "Conversion (successful score)",
+            SpaceAction::Prevention => "Prevention (deny scoring opportunity)",
         }
     }
 }
@@ -150,6 +164,8 @@ pub fn classify_single_trajectory_with_params(
         look_ahead_sec,
         groups,
         attacking_directions,
+        None,
+        None,
     );
     results.into_iter().next().unwrap_or_default()
 }
@@ -174,6 +190,8 @@ pub fn classify_space_actions(
     look_ahead_sec: f64,
     groups: Option<&[u32]>,
     attacking_directions: Option<&[crate::geometry::Vec2]>,
+    playing_dimensions: Option<&crate::space::PlayingDimensions>,
+    goal_positions: Option<&[crate::geometry::Point2]>,
 ) -> Vec<Vec<AgentDecision>> {
     use crate::kinematics::{
         future_bearings,
@@ -349,6 +367,15 @@ pub fn classify_space_actions(
                 }
             });
 
+            // Distance to this agent's goal (if provided). Used for scoring-opportunity logic.
+            let dist_to_goal = goal_positions.and_then(|g| {
+                if a < g.len() {
+                    Some((g[a] - pos).norm())
+                } else {
+                    None
+                }
+            });
+
             // Nearest opponent (groups aware)
             let mut nearest_dist = f64::INFINITY;
             for &other in nearby.iter() {
@@ -402,6 +429,21 @@ pub fn classify_space_actions(
                 0.0
             };
 
+            // Simple proxy for "dangerous / scoring zone" using attacking direction.
+            // When we have attacking_directions we can estimate how much this player has advanced
+            // toward the goal (useful for gating Creation/Conversion/Prevention).
+            let goal_progress = if let Some(dirs) = attacking_directions {
+                if a < dirs.len() {
+                    let att = dirs[a];
+                    // Use the forward component itself as progress signal (higher = deeper in attacking half)
+                    forward.max(0.0)
+                } else {
+                    forward.max(0.0)
+                }
+            } else {
+                forward.max(0.0)
+            };
+
             // Wire up avg_free_space as first-class geometry feature (avg distance to others)
             let free_space = {
                 let my_pos = pos;
@@ -429,10 +471,20 @@ pub fn classify_space_actions(
             };
 
             // Core rules (speed/accel impact, possession-aware)
+            // Scoring opportunity categories (Creation / Conversion / Prevention) use stronger signals
+            // and awareness of attacking direction + goal progress + explicit goal distance when available.
             let action = if just_received_under_pressure {
                 SpaceAction::Pressure
             } else if is_on_ball {
-                if forward > 0.6 && speed > 0.5 && nearest_dist > proximity_radius * 0.5 {
+                // Use explicit dist_to_goal when provided, else fall back to goal_progress heuristic.
+                let near_goal = dist_to_goal.map_or(goal_progress > 0.55, |d| d < 12.0); // ~12m "box"
+                if forward > 0.72 && speed > 2.8 && nearest_dist > 3.5 && near_goal {
+                    if forward > 0.85 && speed > 4.0 && nearest_dist > 6.0 {
+                        SpaceAction::Conversion
+                    } else {
+                        SpaceAction::Creation
+                    }
+                } else if forward > 0.6 && speed > 0.5 && nearest_dist > proximity_radius * 0.5 {
                     SpaceAction::Penetration
                 } else if forward.abs() < 0.5 && speed > 0.25 {
                     SpaceAction::Expansion
@@ -443,16 +495,22 @@ pub fn classify_space_actions(
                 }
             } else if is_nearby {
                 if same_possession {
-                    // Attacking team off-ball: forward run = exploit space (even if "behind" the ball carrier in some views)
-                    if forward > 0.3 && speed > 0.3 {
+                    // Off-ball attacker making a dangerous run that creates a scoring chance
+                    let near_goal = dist_to_goal.map_or(goal_progress > 0.4, |d| d < 15.0);
+                    let creating_danger = near_goal && forward > 0.45 && speed > 2.2 && nearest_dist > 4.5;
+                    if creating_danger {
+                        SpaceAction::Creation
+                    } else if forward > 0.3 && speed > 0.3 {
                         SpaceAction::Penetration
                     } else {
                         SpaceAction::Expansion
                     }
                 } else {
-                    // Defending team: closing or denying
-                    if forward < -0.1 || nearest_dist < 8.0 {
-                        SpaceAction::Denial
+                    // Defender actively preventing a goal-scoring opportunity
+                    let near_goal = dist_to_goal.map_or(goal_progress > 0.3, |d| d < 15.0);
+                    let denying_danger = near_goal && (forward < -0.05 || nearest_dist < 7.5);
+                    if denying_danger {
+                        SpaceAction::Prevention
                     } else if nearest_dist < 5.0 {
                         SpaceAction::Pressure
                     } else {
@@ -519,9 +577,12 @@ pub fn classify_space_actions(
 
                 if receiver_now_pressed {
                     if let Some(dec) = results.get_mut(carrier).and_then(|v| v.get_mut(t)) {
-                        if dec.action == SpaceAction::Penetration {
-                            dec.action = SpaceAction::Neutral;
-                            // Could also attach context here for "reclassified due to immediate press"
+                        match dec.action {
+                            SpaceAction::Penetration | SpaceAction::Creation | SpaceAction::Conversion => {
+                                dec.action = SpaceAction::Neutral;
+                                // Reclassified because the receiver was under immediate pressure
+                            }
+                            _ => {}
                         }
                     }
                 }
@@ -550,6 +611,18 @@ mod tests {
         assert_eq!(
             SpaceAction::Pressure.description(),
             "Pressure (close space)"
+        );
+        assert_eq!(
+            SpaceAction::Creation.description(),
+            "Creation (create scoring opportunity)"
+        );
+        assert_eq!(
+            SpaceAction::Conversion.description(),
+            "Conversion (successful score)"
+        );
+        assert_eq!(
+            SpaceAction::Prevention.description(),
+            "Prevention (deny scoring opportunity)"
         );
     }
 }

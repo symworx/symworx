@@ -78,7 +78,7 @@ pub use load::load_trajectories_csv;
 #[cfg(feature = "async")]
 pub use load::load_trajectories_csv_async;
 pub use metrics::pairwise_distances;
-pub use space::ArenaSpec;
+pub use space::PlayingDimensions;
 pub use synthetic::{
     SpatialEvent,
     build_agent_trajectories,

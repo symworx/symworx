@@ -335,6 +335,12 @@ pub struct AgentTrajectories {
     /// Comes from metadata. Used for possession-aware semantics:
     /// same-group forward movement aligned with attacking dir = exploit/penetration (even if "behind" ball carrier).
     pub attacking_directions: Option<Vec<Vec2>>,
+    /// Optional playing area dimensions (meters). Part of the spatial metadata (alongside goals).
+    pub playing_dimensions: Option<crate::space::PlayingDimensions>,
+    /// Optional goal position (the target "goal" or scoring area) per agent.
+    /// Parallel to attacking_directions. Used for better detection of
+    /// Creation / Conversion / Prevention (scoring opportunity) actions.
+    pub goal_positions: Option<Vec<Point2>>,
 }
 
 impl AgentTrajectories {
@@ -350,6 +356,8 @@ impl AgentTrajectories {
             positions,
             groups: None,
             attacking_directions: None,
+            playing_dimensions: None,
+            goal_positions: None,
         })
     }
 
@@ -375,6 +383,24 @@ impl AgentTrajectories {
         Ok(self)
     }
 
+    /// Attach playing area dimensions (field size).
+    pub fn with_playing_dimensions(mut self, dims: crate::space::PlayingDimensions) -> Self {
+        self.playing_dimensions = Some(dims);
+        self
+    }
+
+    /// Attach explicit goal positions (one per agent, their attacking target).
+    /// Used to improve Creation/Conversion/Prevention detection.
+    pub fn with_goal_positions(mut self, goals: Vec<Point2>) -> crate::error::Result<Self> {
+        if goals.len() != self.positions.len() {
+            return Err(crate::error::SpatialError::LengthMismatch(
+                "goal_positions length must match number of agents".into(),
+            ));
+        }
+        self.goal_positions = Some(goals);
+        Ok(self)
+    }
+
     /// Build from a list of individual `Trajectory` objects (they must share the same times).
     pub fn from_trajectories(trajs: Vec<Trajectory>) -> crate::error::Result<Self> {
         if trajs.is_empty() {
@@ -383,6 +409,8 @@ impl AgentTrajectories {
                 positions: vec![],
                 groups: None,
                 attacking_directions: None,
+                playing_dimensions: None,
+                goal_positions: None,
             });
         }
 
@@ -528,6 +556,8 @@ impl AgentTrajectories {
             look_ahead_sec,
             self.groups.as_deref(),
             self.attacking_directions.as_deref(),
+            self.playing_dimensions.as_ref(),
+            self.goal_positions.as_deref(),
         )
     }
 
@@ -548,6 +578,8 @@ impl AgentTrajectories {
             look_ahead_sec,
             self.groups.as_deref(),
             self.attacking_directions.as_deref(),
+            self.playing_dimensions.as_ref(),
+            self.goal_positions.as_deref(),
         )
     }
 
@@ -570,6 +602,9 @@ impl AgentTrajectories {
         let positions = self.positions.clone();
         let times = self.times.clone();
         let groups = self.groups.clone();
+        let attacking = self.attacking_directions.clone();
+        let arena = self.arena;
+        let goals = self.goal_positions.clone();
         tokio::task::spawn_blocking(move || {
             crate::decision::classify_space_actions(
                 &positions,
@@ -579,7 +614,9 @@ impl AgentTrajectories {
                 proximity_radius,
                 look_ahead_sec,
                 groups.as_deref(),
-                self.attacking_directions.as_deref(),
+                attacking.as_deref(),
+                arena.as_ref(),
+                goals.as_deref(),
             )
         })
         .await

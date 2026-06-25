@@ -4,7 +4,9 @@
 At its core, **SymWorx** provides a **Rust kernel** with **Python bindings**, ensuring consistency, safety, and performance across platforms.
 
 **SymWorx** is an open source platform that provides an isolated environment for modeling, analysis, and simulation. 
-
+│  A0: (  0.0,  0.0)  CL:Expansion    conf=0.30  spd=0.0  fwd=+0.00  ball=N  near=1.0  free=2.7  dfoc=4.5                                                                                                       │
+│  A1: (  3.6,  2.5)  CL:Pressure     conf=0.62  spd=4.0  fwd=+1.00  ball=Y  near=3.7  free=4.0  v2f=+3.79  dfoc=0.2                                                                                            │
+│  A2: (  1.0, -0.1)  CL:Denial       conf=0.70  spd=5.2  fwd=-0.64  ball=N  near=1.0  free=2.3  v2f=+5.17  dfoc=3.8  
 ## Philosophy
 
 Our philosophy emphasizes:

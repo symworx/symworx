@@ -193,13 +193,23 @@ pub fn build_agent_trajectories(
     groups: Vec<u32>,
     attacking_directions: Vec<Vec2>,
     focal: Vec<Point2>,
+    playing_dimensions: Option<crate::space::PlayingDimensions>,
+    goal_positions: Option<Vec<Point2>>,
 ) -> (AgentTrajectories, Vec<Point2>) {
-    let batch = AgentTrajectories::new(times, positions)
+    let mut batch = AgentTrajectories::new(times, positions)
         .expect("positions must match times length")
         .with_groups(groups)
         .expect("groups length must match")
         .with_attacking_directions(attacking_directions)
         .expect("directions length must match");
+
+    if let Some(dims) = playing_dimensions {
+        batch = batch.with_playing_dimensions(dims);
+    }
+    if let Some(g) = goal_positions {
+        batch = batch.with_goal_positions(g).expect("goal_positions length must match");
+    }
+
     (batch, focal)
 }
 
@@ -233,6 +243,45 @@ pub fn generate_ground_truth(
             }
             for t in 8..n_steps.min(12) {
                 labels[1][t] = crate::decision::SpaceAction::Pressure; // receiver pressed
+            }
+        }
+        "create_chance" => {
+            // Attacker creates a scoring opportunity (e.g. gets open near target)
+            for t in 6..n_steps.min(11) {
+                labels[0][t] = crate::decision::SpaceAction::Creation;
+            }
+        }
+        "conversion" => {
+            // Successful score / conversion
+            for t in 9..n_steps.min(12) {
+                labels[0][t] = crate::decision::SpaceAction::Conversion;
+            }
+        }
+        "deny_chance" => {
+            // Defender prevents a scoring opportunity
+            for t in 5..n_steps.min(10) {
+                labels[2][t] = crate::decision::SpaceAction::Prevention;
+            }
+        }
+        "scoring_sequence" => {
+            // Longer sequence demonstrating Creation (run creates chance) + Denial (defender closes) + Conversion (finishes)
+            // Agent 0 creates by running into space near goal area
+            for t in 8..15 {
+                if t < n_steps {
+                    labels[0][t] = crate::decision::SpaceAction::Creation;
+                }
+            }
+            // Agent 1 receives and converts
+            for t in 16..20 {
+                if t < n_steps {
+                    labels[1][t] = crate::decision::SpaceAction::Conversion;
+                }
+            }
+            // Defender (agent 2) tries to deny the space
+            for t in 10..18 {
+                if t < n_steps {
+                    labels[2][t] = crate::decision::SpaceAction::Prevention;
+                }
             }
         }
         _ => {}
