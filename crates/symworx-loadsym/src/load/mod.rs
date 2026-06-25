@@ -21,7 +21,13 @@ pub use acwr::{
     compute_acwr_series,
     compute_ewma_acute_chronic,
 };
-pub use mechanical::calculate_mechanical_load;
+pub use mechanical::{
+    MovementLoadMetrics,
+    calculate_mechanical_load,
+    compute_movement_load_metrics,
+    estimate_external_load_from_normalized_pace,
+    estimate_external_load_from_pace,
+};
 pub use monotony::{
     compute_monotony,
     compute_strain,

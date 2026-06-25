@@ -1,0 +1,31 @@
+# Copyright (C) 2026 SymWorx, All rights reserved.
+
+[package]
+name = "symworx-spatialsym"
+version          = { workspace = true }
+edition          = { workspace = true }
+license          = { workspace = true }
+repository       = { workspace = true }
+description      = "Spatial trajectory analysis, kinematics, and post-hoc decision modeling (sport-agnostic)"
+
+[features]
+default = []
+## Enables async loading and async wrappers for long-running analysis.
+## Brings in a subset of tokio (runtime + fs). Heavy compute is still
+## run via spawn_blocking so it doesn't block the async runtime.
+async = ["dep:tokio"]
+
+[dependencies]
+csv             = { workspace = true }
+ndarray         = { workspace = true }
+thiserror       = { workspace = true }
+
+symworx-loadsym = { path = "../symworx-loadsym" }
+symworx-math    = { path = "../symworx-math" }
+
+# We don't inherit from workspace here because the workspace pins "full" features.
+# We intentionally use a minimal feature set for the analysis crate.
+tokio = { version = "1", optional = true, default-features = false, features = ["rt", "fs"] }
+
+[lints]
+workspace = true
