@@ -24,7 +24,7 @@ ii) integrate seamlessly with Python for education, data science, and rapid prot
 iii) serve as a stable foundation for higher‑level simulation frameworks
 
 **License:**
-This project is licensed under the [Mozilla Public License, version 2.0](https://www.mozilla.org/media/MPL/2.0/index.f75d2927d3c1.txt).
+This project is licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
 
 **Versioning Issues:**
 If you encounter Python versioning issues, you can set environment variables to specify the Python version:
