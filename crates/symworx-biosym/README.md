@@ -64,4 +64,4 @@ model = biosym.SymCpgModel()
 times, states = model.run(0.0, 10.0, 0.01)
 ```
 
-**License:** MPL-2.0
+**License:** Apache-2.0

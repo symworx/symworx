@@ -1,5 +1,5 @@
-// Copyright (c) 2026 SymWorx. All rights reserved.
-// Licensed under the Mozilla Public License, Version 2.0.
+// Copyright (c) 2026 SymWorx
+// Licensed under the Apache License, Version 2.0.
 
 /// Calculate mechanical load from force and velocity data
 pub fn calculate_mechanical_load(force_data: &[f64], velocity_data: &[f64]) -> f64 {

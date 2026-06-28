@@ -1,4 +1,4 @@
-// Copyright (c) 2026 SymWorx. All rights reserved.
+// Copyright (c) 2026 SymWorx
 
 use ndarray::Array2;
 use numpy::PyArray2;

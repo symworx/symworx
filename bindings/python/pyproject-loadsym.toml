@@ -7,7 +7,7 @@ name = "symworx-loadsym"
 version = "0.1.0"
 description = "LOADsym - Training load quantification and optimization"
 requires-python = ">=3.12"
-license = { text = "MPL-2.0" }
+license = { text = "Apache-2.0" }
 
 [tool.maturin]
 manifest-path = "../crates/symworx-loadsym/Cargo.toml"

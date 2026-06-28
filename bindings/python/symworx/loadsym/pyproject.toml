@@ -18,7 +18,7 @@ strip = true
 python-source = "src"
 module-name = "symworx.loadsym.loadsym"
 
-license = { text = "MPL 2.0" }
+license = { text = "Apache-2.0" }
 
 [project.urls]
 Homepage = "https://github.com/csymd/csymd-symworx"

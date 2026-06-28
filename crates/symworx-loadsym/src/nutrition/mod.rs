@@ -1,5 +1,5 @@
-// Copyright (c) 2026 SymWorx. All rights reserved.
-// Licensed under the Mozilla Public License, Version 2.0.
+// Copyright (c) 2026 SymWorx
+// Licensed under the Apache License, Version 2.0.
 
 //! Nutrition and body-composition modeling for SymWorx (BMR/TDEE, deficits,
 //! weight-loss simulation).
