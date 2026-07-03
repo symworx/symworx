@@ -7,6 +7,22 @@ use ratatui::{
 use crate::app::App;
 
 pub fn render_import_tab(frame: &mut Frame, app: &mut App, area: Rect) {
+    if app.help_mode {
+        let help = Paragraph::new(
+            "Import help (M-? or Esc to close)\n\n\
+             • / : enter filter mode (type to narrow file list)\n\
+             • Esc/Enter (in filter): exit filter (keeps active filter)\n\
+             • ↑ ↓ : navigate list\n\
+             • Enter : load selected (or manual path)\n\
+             • c : convert selected (parquet/ibi → csv)\n\
+             • Ctrl+G : generate BioSym demo data (PPG/Resp/Stride)\n\n\
+             Files from ./data and . (csv/txt/dat etc) are discovered.\n\
+             Multi-column CSVs prompt for signal column."
+        ).block(Block::new().borders(Borders::ALL).title(" Help — Import "));
+        frame.render_widget(help, area);
+        return;
+    }
+
     if let Some(pending) = &app.pending_load {
         let mut lines = vec![
             format!("\n\nFile: {}\n", pending.path.display()),

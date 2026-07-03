@@ -1,11 +1,10 @@
 use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect},
-    style::{Color, Modifier, Style, Stylize},
-    text::Span,
-    widgets::{Block, Borders, Paragraph, Tabs},
+    style::{Color, Style},
+    widgets::{Block, Borders, Paragraph},
 };
-use crate::app::{App, Tab};
+use crate::app::App;
 
 pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
     if app.help_mode {
@@ -30,20 +29,47 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
     }
 
     let outer = Block::new()
-        .title(" Spatial (synthetic trajectories, decisions, frames) ")
+        .title(" SpatialSym (trajectories, decisions, space use) ")
         .borders(Borders::ALL)
         .border_style(Color::Cyan);
 
     let inner = outer.inner(area);
     frame.render_widget(outer, area);
 
+    // Sub-tab / view header (equivalent of sub-tabs inside this domain)
+    let sub_header = Paragraph::new(format!(
+        "  [g] Generate/Synth   [i] Import matches/games (placeholder)   [v] Visualize   current: {:?}",
+        app.spatial_view
+    ))
+    .style(Style::default().fg(Color::Yellow));
+    // Allocate small top chunk
     let chunks = Layout::vertical([
-        Constraint::Length(2),
-        Constraint::Min(10),
+        Constraint::Length(1),
+        Constraint::Length(1),
+        Constraint::Min(8),
         Constraint::Length(5),
         Constraint::Length(6),
     ])
     .split(inner);
+
+    frame.render_widget(sub_header, chunks[0]);
+
+    // If in import/generate sub-view, render a compact menu + placeholder list
+    if app.spatial_view != crate::app::SpatialView::Visualize || app.pending_spatial_import {
+        let import_text = "Spatial Import / Generate\n\n\
+            1 : Regenerate current synthetic demo\n\
+            2 / i : Load placeholder match or game (stub — populates viz with demo data)\n\
+            Enter or numbers : act   Esc : back to viz\n\n\
+            Future: select real .csv (time,agent_id,x,y) — uses symworx-spatialsym::load_trajectories_csv\n\
+            Different sports/matches will appear here (placeholder entries below):\n\
+            • demo_match_2026.csv (synthetic)\n\
+            • import_game_soccer_01 (stub)\n\
+            • example_cross_session (placeholder)";
+        let p = Paragraph::new(import_text).block(Block::new().borders(Borders::ALL).title(" Import / Generate "));
+        frame.render_widget(p, chunks[1]);
+        // Skip normal viz chunks when showing import UI
+        return;
+    }
 
     let nav_text = if app.spatial_batch.is_some() {
         let n_ev = app.spatial_events.len();
@@ -57,11 +83,11 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
             ev_hint
         )
     } else {
-        "Spatial tab — synthetic demo. Press g to (re)generate. Then use ←→ or n/p to move frames.".to_string()
+        "Spatial tab — synthetic demo. Press g or i to enter generate/import. Then use ←→ or n/p to move frames.".to_string()
     };
     let nav = Paragraph::new(nav_text)
         .style(Style::default().fg(Color::DarkGray));
-    frame.render_widget(nav, chunks[0]);
+    frame.render_widget(nav, chunks[1]);
 
     if let (Some(batch), Some(focal)) = (&app.spatial_batch, &app.spatial_focal) {
         let n_times = batch.num_times();
@@ -184,7 +210,7 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
             }
 
             let detail = Paragraph::new(lines.join("\n"));
-            frame.render_widget(detail, chunks[1]);
+            frame.render_widget(detail, chunks[2]);
 
             let mut ev_lines = vec!["Events / markers (< > or 1-9 to jump):".to_string()];
             if app.spatial_events.is_empty() {
@@ -200,7 +226,7 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
             }
             let events_p = Paragraph::new(ev_lines.join("\n"))
                 .block(Block::new().borders(Borders::TOP).title(" Event Tags "));
-            frame.render_widget(events_p, chunks[2]);
+            frame.render_widget(events_p, chunks[3]);
 
             let summaries = app.spatial_batch.as_ref().map(|b| b.per_player_summaries(0.8, 1.0, Some(focal))).unwrap_or_default();
             let mut sum_lines = vec!["Per-agent summary (full trajectory):".to_string()];
@@ -216,26 +242,25 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
             }
             let sum_p = Paragraph::new(sum_lines.join("\n"))
                 .block(Block::new().borders(Borders::TOP).title(" Summary Data "));
-            frame.render_widget(sum_p, chunks[3]);
+            frame.render_widget(sum_p, chunks[4]);
 
         } else {
             let content = Paragraph::new("No frame data");
-            frame.render_widget(content, chunks[1]);
+            frame.render_widget(content, chunks[2]);
         }
     } else {
         let help = Paragraph::new(
             "No spatial data loaded.\n\n\
-             Press 'g' (or Ctrl+G) to regenerate the synthetic demo.\n\
+             Press 'g' or 'i' to enter generate/import sub-view.\n\
              Frame nav (Spatial):\n\
              • ← / →   : step frames\n\
              • n / p   : next / prev frame\n\
              • < / >   : prev / next event tag\n\
              • 1-9     : jump to event tag\n\
              • M-?     : this help (Alt+?)\n\
-             • g       : regenerate\n\
-             • Esc     : back\n\n\
+             • g/i/v   : sub views\n\n\
              Other tabs have their own M-? help."
         );
-        frame.render_widget(help, chunks[1]);
+        frame.render_widget(help, chunks[2]);
     }
 }

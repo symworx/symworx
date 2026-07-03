@@ -1,13 +1,16 @@
 use ratatui::{
     Frame,
-    layout::{Constraint, Layout, Rect},
+    layout::{Constraint, Layout, Alignment},
     style::{Color, Modifier, Style, Stylize},
-    text::Span,
-    widgets::{Block, Borders, Paragraph, Tabs},
+    widgets::{Block, Borders, Paragraph},
 };
 use crate::app::{App, Tab};
 
 pub mod tabs;
+
+fn is_home(app: &App) -> bool {
+    app.current_workflow == crate::app::Workflow::Home || app.current_tab == Tab::Home
+}
 
 pub fn ui(frame: &mut Frame, app: &mut App) {
     let main_layout = Layout::vertical([
@@ -18,26 +21,68 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
     ])
     .split(frame.area());
 
-    let tab_titles: Vec<Span> = crate::app::tab_titles();
+    // Unified top chrome:
+    //   Left: "SymView" (fixed)
+    //   Center: key/primary tab name (e.g. "BioSym"), *dynamically centered* in remaining space
+    //   Right: current subtab or "HOME" (right-aligned)
+    let header_area = main_layout[0];
+    let header_chunks = Layout::horizontal([
+        Constraint::Length(9),   // left: SymView
+        Constraint::Fill(1),     // center: primary name takes flexible space → dynamic centering
+        Constraint::Min(12),     // right: subtab/HOME
+    ])
+    .split(header_area);
 
-    let tabs = Tabs::new(tab_titles)
-        .block(Block::new().borders(Borders::BOTTOM))
-        .select(app.current_tab.index())
-        .highlight_style(
-            Style::default()
-                .fg(Color::Cyan)
-                .add_modifier(Modifier::BOLD),
-        );
-    frame.render_widget(tabs, main_layout[0]);
+    // Left: always SymView
+    let left = Paragraph::new("SymView")
+        .style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD));
+    frame.render_widget(left, header_chunks[0]);
+
+    // Center: primary (parent) tab name — centered within the flexible center area
+    let parent = match app.current_workflow {
+        crate::app::Workflow::Home => "",
+        crate::app::Workflow::BioSym => "BioSym",
+        crate::app::Workflow::SpatialSym => "SpatialSym",
+        crate::app::Workflow::LoadSym => "LoadSym",
+    };
+    let center = Paragraph::new(parent)
+        .alignment(Alignment::Center)
+        .style(Style::default().fg(Color::Cyan));
+    frame.render_widget(center, header_chunks[1]);
+
+    // Right: HOME or subtab name, right aligned
+    let right = if is_home(app) {
+        "HOME".to_string()
+    } else {
+        match app.current_workflow {
+            crate::app::Workflow::BioSym => app.current_tab.title().to_string(),
+            crate::app::Workflow::SpatialSym => "Spatial".to_string(),
+            crate::app::Workflow::LoadSym => "LoadSym".to_string(),
+            _ => app.current_tab.title().to_string(),
+        }
+    };
+    let right_p = Paragraph::new(right)
+        .alignment(Alignment::Right)
+        .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD));
+    frame.render_widget(right_p, header_chunks[2]);
 
     let action_bar = render_action_bar(app);
     frame.render_widget(action_bar, main_layout[1]);
 
-    match app.current_tab {
-        Tab::Import => tabs::import::render_import_tab(frame, app, main_layout[2]),
-        Tab::Explore => tabs::explore::render_explore_tab(frame, app, main_layout[2]),
-        Tab::Dynamics => tabs::dynamics::render_dynamics_tab(frame, app, main_layout[2]),
-        Tab::Spatial => tabs::spatial::render_spatial_tab(frame, app, main_layout[2]),
+    // When workflow is Home (or tab explicitly Home) render the landing full-height
+    if is_home(app) {
+        tabs::home::render_home_tab(frame, app, main_layout[2]);
+    } else if app.current_workflow == crate::app::Workflow::LoadSym || app.current_tab == Tab::LoadSym {
+        tabs::loadsym::render_loadsym_tab(frame, app, main_layout[2]);
+    } else {
+        match app.current_tab {
+            Tab::Import => tabs::import::render_import_tab(frame, app, main_layout[2]),
+            Tab::Explore => tabs::explore::render_explore_tab(frame, app, main_layout[2]),
+            Tab::Dynamics => tabs::dynamics::render_dynamics_tab(frame, app, main_layout[2]),
+            Tab::Spatial => tabs::spatial::render_spatial_tab(frame, app, main_layout[2]),
+            Tab::LoadSym => tabs::loadsym::render_loadsym_tab(frame, app, main_layout[2]),
+            Tab::Home => tabs::home::render_home_tab(frame, app, main_layout[2]),
+        }
     }
 
     let footer = Paragraph::new(format!(" {}  •  q: Quit", app.status))
@@ -48,37 +93,17 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
 }
 
 pub fn render_action_bar(app: &App) -> Paragraph<'_> {
-    let (text, style) = match app.current_tab {
-        Tab::Import => {
-            if app.pending_generate {
-                (
-                    "  [1] PPG   [2] Respiration   [3] Stride intervals   [Esc] Cancel",
-                    Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
-                )
-            } else if app.filter_mode {
-                (
-                    "  Filtering...  [Esc] or [Enter] to exit filter",
-                    Style::default().fg(Color::Cyan),
-                )
-            } else {
-                (
-                    "  [/] Filter   [Ctrl+G] Generate demo   [c] Convert   [Enter] Load   [↑↓] Navigate",
-                    Style::default().fg(Color::DarkGray),
-                )
-            }
-        }
-        Tab::Explore => (
-            "  [p] Process (MA / Median / Detrend)   [r] Reset to original   Stats + Sparkline active",
-            Style::default().fg(Color::DarkGray),
-        ),
-        Tab::Dynamics => (
-            "  [Coming soon: RQA, Recurrence Plots, Nonlinear Analysis]",
-            Style::default().fg(Color::DarkGray),
-        ),
-        Tab::Spatial => (
-            "  [←→] frame   [g] regen   [i] infer   [1-9] jump event   [l] legend   M-? help",
-            Style::default().fg(Color::DarkGray),
-        ),
-    };
-    Paragraph::new(text).style(style)
+    // Simplified: only movement related commands (arrows) + universal navigation.
+    // Detailed commands removed from chrome (see status line or inside views).
+    if app.pending_generate {
+        return Paragraph::new("  BioSym: [1] PPG   [2] Respiration   [3] Stride   [Esc] Cancel")
+            .style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD));
+    }
+    if app.filter_mode {
+        return Paragraph::new("  Filtering...  [Esc] or [Enter] to exit")
+            .style(Style::default().fg(Color::Cyan));
+    }
+
+    Paragraph::new("  ↑↓   ←→ (Ctrl+arrows)   •   Enter   •   Ctrl+H Home   •   M-? help")
+        .style(Style::default().fg(Color::DarkGray))
 }

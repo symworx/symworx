@@ -9,6 +9,9 @@ pub enum Tab {
     Explore,
     Dynamics,
     Spatial,
+    LoadSym,
+    // Home is special: when active (via workflow) we render a full landing instead of the bar+content
+    Home,
 }
 
 impl Tab {
@@ -18,6 +21,8 @@ impl Tab {
             Tab::Explore => "Explore",
             Tab::Dynamics => "Dynamics",
             Tab::Spatial => "Spatial",
+            Tab::LoadSym => "LoadSym",
+            Tab::Home => "Home",
         }
     }
 
@@ -27,6 +32,8 @@ impl Tab {
             Tab::Explore => 1,
             Tab::Dynamics => 2,
             Tab::Spatial => 3,
+            Tab::LoadSym => 4,
+            Tab::Home => 0, // not used in main 4-tab bar
         }
     }
 }
@@ -36,6 +43,40 @@ pub fn tab_titles() -> Vec<ratatui::text::Span<'static>> {
         .into_iter()
         .map(ratatui::text::Span::from)
         .collect()
+}
+
+/// High-level analysis workflow / path. Drives landing + context for sub-modes and tab adaptation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Workflow {
+    #[default]
+    Home,
+    BioSym,
+    SpatialSym,
+    LoadSym,
+}
+
+/// Spatial sub-view (equivalent of sub-tabs inside the Spatial tab)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum SpatialView {
+    #[default]
+    Visualize,
+    Generate,
+    ImportData,
+}
+
+/// Lightweight holder for RQA parameters (editable in Dynamics)
+#[derive(Debug, Clone, Copy)]
+pub struct RqaParams {
+    pub m: usize,
+    pub tau: usize,
+    pub radius: f64,
+    pub theiler: usize,
+}
+
+impl Default for RqaParams {
+    fn default() -> Self {
+        Self { m: 3, tau: 1, radius: 0.5, theiler: 1 }
+    }
 }
 
 pub struct PendingColumnLoad {
@@ -140,16 +181,26 @@ pub struct App {
     pub process_selection: usize,
     pub process_window: usize,
     pub help_mode: bool,
+    // New workflow / path support
+    pub current_workflow: Workflow,
+    pub spatial_view: SpatialView,
+    pub rqa_params: RqaParams,
+    pub pending_rqa: bool,
+    pub last_rqa: Option<symworx_dynamics::RqaResult>,
+    pub home_selection: usize,
+    // Spatial import state (parallel to BioSym pending_load / filter)
+    pub pending_spatial_import: bool,
+    pub spatial_file_filter: String,
 }
 
 impl App {
     pub fn new() -> Self {
         let mut app = Self {
-            current_tab: Tab::Import,
+            current_tab: Tab::Home,
             file_list: Vec::new(),
             list_state: ListState::default(),
             manual_path: String::new(),
-            status: "Import — / filter, Ctrl+1/2/3/4 or Ctrl+←/→ tabs, Ctrl+G generate, q quit".to_string(),
+            status: "Home — Select path: 1=BioSym  2=LoadSym  3=SpatialSym  • Ctrl+H home".to_string(),
             loaded_signal: None,
             pending_load: None,
             file_filter: String::new(),
@@ -165,13 +216,35 @@ impl App {
             spatial_decisions: None,
             spatial_events: vec![],
             help_mode: false,
+            // workflow defaults
+            current_workflow: Workflow::Home,
+            spatial_view: SpatialView::Visualize,
+            rqa_params: RqaParams::default(),
+            pending_rqa: false,
+            last_rqa: None,
+            home_selection: 0,
+            pending_spatial_import: false,
+            spatial_file_filter: String::new(),
         };
         app.refresh_file_list();
         if !app.file_list.is_empty() {
             app.list_state.select(Some(0));
         }
+        // Seed spatial demo data but only "activate" when workflow enters SpatialSym
         app.seed_spatial_demo();
         app
+    }
+
+    pub fn clear_submodes(&mut self) {
+        self.help_mode = false;
+        self.pending_generate = false;
+        self.filter_mode = false;
+        self.pending_process = false;
+        self.pending_rqa = false;
+        self.pending_spatial_import = false;
+        self.manual_path.clear();
+        self.file_filter.clear();
+        self.spatial_file_filter.clear();
     }
 
     pub fn refresh_file_list(&mut self) {
@@ -314,20 +387,6 @@ impl App {
         self.file_list.get(orig)
     }
 
-    pub fn ensure_status_for_current_tab(&mut self) {
-        if self.current_tab != Tab::Spatial && self.status.starts_with("Spatial") {
-            self.status = match self.current_tab {
-                Tab::Import => "Import — / filter, ↑↓ select, Enter load, c convert, Ctrl+G generate".to_string(),
-                Tab::Explore => "Explore — stats + sparkline (p to process)".to_string(),
-                Tab::Dynamics => "Dynamics".to_string(),
-                Tab::Spatial => "Spatial".to_string(),
-            };
-        } else if self.current_tab == Tab::Spatial && !self.status.starts_with("Spatial") {
-            let maxf = self.spatial_batch.as_ref().map(|b| b.num_times().saturating_sub(1)).unwrap_or(0);
-            self.status = format!("Spatial: frame {}/{}", self.spatial_frame_idx, maxf);
-        }
-    }
-
     pub fn load_selected_or_manual(&mut self) -> anyhow::Result<()> {
         if let Some(path) = self.selected_path().cloned() {
             self.load_file(&path)
@@ -353,6 +412,7 @@ impl App {
         if let Ok(signal) = self.try_load_parquet(path) {
             self.loaded_signal = Some(signal);
             self.current_tab = Tab::Explore;
+            self.current_workflow = Workflow::BioSym;
             self.status = format!("Loaded {} (switched to Explore)", path.display());
             self.ensure_status_for_current_tab();
             return Ok(());
@@ -376,14 +436,29 @@ impl App {
             let line = line?;
             let trimmed = line.trim();
             if trimmed.is_empty() { continue; }
+
             if !has_header {
-                if trimmed.parse::<f64>().is_err() { has_header = true; continue; }
+                if trimmed.contains(',') || trimmed.parse::<f64>().is_err() {
+                    has_header = true;
+                    continue;
+                }
             }
-            if let Ok(v) = trimmed.parse::<f64>() { series.push(v); }
+
+            // Take last column as signal value (supports "time,signal" generated files + headers)
+            let parts: Vec<&str> = trimmed
+                .split(|c: char| c == ',' || c.is_whitespace())
+                .filter(|s| !s.is_empty())
+                .collect();
+            if let Some(last) = parts.last() {
+                if let Ok(v) = last.parse::<f64>() {
+                    series.push(v);
+                }
+            }
         }
         if series.is_empty() { anyhow::bail!("no data"); }
         self.loaded_signal = Some(LoadedSignal::new(series, path.display().to_string()));
         self.current_tab = Tab::Explore;
+        self.current_workflow = Workflow::BioSym;
         self.status = format!("Loaded {} ({} samples) — switched to Explore", path.display(), self.loaded_signal.as_ref().map(|s|s.n_samples).unwrap_or(0));
         self.ensure_status_for_current_tab();
         Ok(())
@@ -405,6 +480,7 @@ impl App {
         let n = series.len();
         self.loaded_signal = Some(LoadedSignal::new(series, path.display().to_string()));
         self.current_tab = Tab::Explore;
+        self.current_workflow = Workflow::BioSym;
         self.status = format!("Loaded IBI {} samples — switched to Explore", n);
         self.ensure_status_for_current_tab();
         Ok(())
@@ -437,5 +513,125 @@ impl App {
 
     pub fn reset_loaded(&mut self) {
         if let Some(s) = &mut self.loaded_signal { s.reset(); }
+    }
+
+    /// Switch workflow and set a sensible entry tab + status.
+    pub fn switch_workflow(&mut self, wf: Workflow) {
+        self.current_workflow = wf;
+        match wf {
+            Workflow::Home => {
+                self.current_tab = Tab::Home;
+                self.status = "Home — 1/Enter=BioSym  2=LoadSym  3=SpatialSym  • Ctrl+H here".to_string();
+            }
+            Workflow::BioSym => {
+                self.current_tab = if self.loaded_signal.is_some() { Tab::Explore } else { Tab::Import };
+                self.status = "BioSym — Import / Explore / Dynamics (filtering + RQA)".to_string();
+            }
+            Workflow::SpatialSym => {
+                self.current_tab = Tab::Spatial;
+                self.spatial_view = SpatialView::Visualize;
+                self.status = "SpatialSym — g:regen  i:import/generate  arrows:nav  (sub-views inside Spatial tab)".to_string();
+            }
+            Workflow::LoadSym => {
+                self.current_tab = Tab::LoadSym;
+                self.status = "LoadSym — training load, ACWR, nutrition (template)".to_string();
+            }
+        }
+        self.ensure_status_for_current_tab();
+    }
+
+    /// Generalized status setter (extend as workflows grow).
+    pub fn ensure_status_for_current_tab(&mut self) {
+        if self.current_workflow == Workflow::Home {
+            if !self.status.starts_with("Home") {
+                self.status = "Home — Select analysis path (1=BioSym, 2=LoadSym, 3=SpatialSym)".to_string();
+            }
+            return;
+        }
+        if self.current_tab != Tab::Spatial && self.status.starts_with("Spatial") {
+            self.status = match self.current_tab {
+                Tab::Import => "Import — / filter, ↑↓ select, Enter load, c convert, Ctrl+G generate".to_string(),
+                Tab::Explore => "Explore — stats + sparkline (p to process)".to_string(),
+                Tab::Dynamics => "Dynamics (RQA ready)".to_string(),
+                _ => "Symview".to_string(),
+            };
+        } else if self.current_tab == Tab::Spatial && !self.status.starts_with("Spatial") {
+            let maxf = self.spatial_batch.as_ref().map(|b| b.num_times().saturating_sub(1)).unwrap_or(0);
+            self.status = format!("Spatial: frame {}/{}", self.spatial_frame_idx, maxf);
+        } else if self.current_tab == Tab::LoadSym {
+            // keep or set on switch
+        }
+    }
+
+    /// Basic spatial CSV load using spatialsym loader + re-apply decision pipeline similar to seed.
+    /// For real data we synthesize a minimal batch + decisions for viz reuse.
+    pub fn load_spatial_csv(&mut self, path: &PathBuf) -> anyhow::Result<()> {
+        use symworx_spatialsym::{Point2, build_agent_trajectories, PlayingDimensions};
+        let path_str = path.to_string_lossy().to_string();
+        let (times, trajs) = symworx_spatialsym::load_trajectories_csv(&path_str)
+            .map_err(|e| anyhow::anyhow!("spatial load: {}", e))?;
+
+        if trajs.is_empty() {
+            anyhow::bail!("no trajectories in spatial csv");
+        }
+
+        // Build minimal synthetic-like structures so existing viz + summaries work.
+        let n_agents = trajs.len();
+        let n_steps = times.len().min(trajs[0].len());
+
+        // Trim trajs to common length
+        let trimmed: Vec<Vec<Point2>> = trajs.into_iter().map(|mut v| { v.truncate(n_steps); v }).collect();
+
+        // Fake groups / att directions / goal for compatibility
+        let groups: Vec<u32> = (0..n_agents as u32).collect();
+        let att = vec![symworx_spatialsym::Vec2::new(1., 0.); n_agents];
+        let dims = Some(PlayingDimensions::new(105.0, 68.0));
+        let goal_pos = vec![Point2::new(52.5, 0.0); n_agents];
+
+        let ev_t = times.into_iter().take(n_steps).collect();
+        let mut ev_f: Vec<Point2> = Vec::new();
+        for t in 0..n_steps {
+            let fx = trimmed.first().and_then(|v| v.get(t)).map(|p| p.x).unwrap_or(0.0);
+            ev_f.push(Point2::new(fx + 2.0, 1.0));
+        }
+        let (batch, focal) = build_agent_trajectories(
+            ev_t,
+            trimmed,
+            groups,
+            att,
+            ev_f,
+            dims,
+            Some(goal_pos),
+        );
+        self.spatial_batch = Some(batch);
+        self.spatial_focal = Some(focal);
+        self.spatial_frame_idx = 0;
+
+        // Rebuild decisions + labels for viz features
+        if let (Some(b), Some(foc)) = (&self.spatial_batch, &self.spatial_focal) {
+            let n_t = b.num_times();
+            self.spatial_labels = Some(symworx_spatialsym::synthetic::generate_ground_truth(
+                n_agents,
+                n_t,
+                "pass_then_press",
+            ));
+            let decs = b.classify_with_focal_and_params(foc, 0.5, 10.0, 0.8);
+            self.spatial_decisions = Some(decs);
+        }
+        self.spatial_events = vec![
+            (0, "start".to_string()),
+            (n_steps / 2, "mid".to_string()),
+        ];
+        self.current_tab = Tab::Spatial;
+        self.spatial_view = SpatialView::Visualize;
+        self.current_workflow = Workflow::SpatialSym;
+        self.status = format!("Spatial loaded: {} ({} agents, {} steps)", path.display(), n_agents, n_steps);
+        self.ensure_status_for_current_tab();
+        Ok(())
+    }
+
+    pub fn refresh_spatial_list(&mut self) {
+        // For now reuse main list + filter awareness; dedicated spatial filter separate.
+        // Future: dedicated discovery.
     }
 }

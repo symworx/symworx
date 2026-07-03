@@ -2,8 +2,8 @@
 // Licensed under the Apache License, Version 2.0.
 
 use anyhow::Result;
-use crossterm::event::{self, KeyCode, KeyEventKind, KeyModifiers};
-use ratatui::{DefaultTerminal, Frame};
+use crossterm::event::{self, KeyEventKind};
+use ratatui::DefaultTerminal;
 use std::time::Duration;
 
 mod app;
@@ -13,7 +13,7 @@ mod convert;
 mod generate;
 mod processing;
 
-use app::{App, Tab};
+use app::App;
 
 fn main() -> Result<()> {
     color_eyre::install().expect("Failed to install color_eyre");

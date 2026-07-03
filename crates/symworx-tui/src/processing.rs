@@ -35,6 +35,9 @@ pub fn detrend_mean(data: &[f64]) -> Vec<f64> {
 pub fn generate_demo_and_load(app: &mut App, preset: generate::DemoPreset) -> anyhow::Result<()> {
     let data_dir = std::path::Path::new("data");
     let path = generate::generate_and_save(preset, data_dir)?;
+
+    // Properly load generated BioSym files: skip header, take the signal column (last col, usually index 1 not time).
+    // Generated files have headers and two columns: time,<signal>
     use std::fs::File;
     use std::io::{BufRead, BufReader};
     let file = File::open(&path)?;
@@ -45,23 +48,36 @@ pub fn generate_demo_and_load(app: &mut App, preset: generate::DemoPreset) -> an
         let line = line?;
         let trimmed = line.trim();
         if trimmed.is_empty() { continue; }
+
         if !has_header {
-            if trimmed.parse::<f64>().is_err() {
+            // Header line typically contains non-numeric (or comma)
+            if trimmed.contains(',') || trimmed.parse::<f64>().is_err() {
                 has_header = true;
                 continue;
             }
         }
-        if let Ok(v) = trimmed.parse::<f64>() {
-            series.push(v);
+
+        // Split on comma or whitespace; take the last token as the signal value (skip time col 0)
+        let parts: Vec<&str> = trimmed
+            .split(|c: char| c == ',' || c.is_whitespace())
+            .filter(|s| !s.is_empty())
+            .collect();
+        if let Some(last) = parts.last() {
+            if let Ok(v) = last.parse::<f64>() {
+                series.push(v);
+            }
         }
     }
+
     if series.is_empty() {
         anyhow::bail!("no numeric data in generated file");
     }
+
     app.loaded_signal = Some(crate::app::LoadedSignal::new(series, path.display().to_string()));
     app.current_tab = Tab::Explore;
+    app.current_workflow = crate::app::Workflow::BioSym;
     app.status = format!(
-        "Generated {} → loaded {} samples. Switched to Explore tab. (Press Ctrl+1 to return to Import)",
+        "Generated {} → loaded {} samples (BioSym signal col). Switched to Explore. (Ctrl+1=Import)",
         path.display(),
         app.loaded_signal.as_ref().map(|s| s.n_samples).unwrap_or(0)
     );

@@ -7,6 +7,18 @@ use ratatui::{
 use crate::app::App;
 
 pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
+    if app.help_mode {
+        let help = Paragraph::new(
+            "Explore help (M-? or Esc to close)\n\n\
+             • Stats + sparkline for loaded BioSym signal\n\
+             • p : open process menu (MA / Median / Detrend)\n\
+             • r : reset to original signal\n\n\
+             After generate/load: use p to try filters, then Dynamics (Ctrl+3) for RQA."
+        ).block(Block::new().borders(Borders::ALL).title(" Help — Explore "));
+        frame.render_widget(help, area);
+        return;
+    }
+
     if app.pending_process {
         let names = ["Moving Average", "Median Filter", "Detrend (mean)"];
         let mut lines = vec!["\n\nSignal Processing\n\n".to_string(), "Choose operation:\n\n".to_string()];
@@ -52,7 +64,7 @@ pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
         frame.render_widget(content, chunks[0]);
         frame.render_widget(spark, chunks[1]);
     } else {
-        let content = Paragraph::new("Load a signal in Import tab first.").block(block);
+        let content = Paragraph::new("Load a signal in Import tab first.\n\n(Expanded filters available via symworx-signal in future updates; current: p for MA/Median/Detrend)").block(block);
         frame.render_widget(content, area);
     }
 }

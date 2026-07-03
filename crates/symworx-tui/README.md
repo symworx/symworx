@@ -110,8 +110,14 @@ You can then load them directly in `symview`. This is the best way to quickly ge
 
 - Put generated files in a `data/` directory — they will be discovered automatically.
 - Multi-column CSVs are supported with header awareness: the column picker will show actual names (e.g. "time", "ppg") when a header row is present.
-- **To exit the TUI**: Press `q` at any time. `Esc` will cancel sub-modes (e.g. column selection) or quit if nothing is active.
-- **Tab switching**: `Ctrl+1` / `Ctrl+2` / `Ctrl+3` or `Ctrl+Left` / `Ctrl+Right` (bare numbers no longer switch tabs to avoid conflicts while typing)
+- **To exit the TUI**: Press `q` at any time. `Esc` will cancel sub-modes (e.g. column selection, RQA params, spatial import) or stay if on Home.
+- **Path selection (new)**: Starts on **Home** landing page. Choose:
+  - 1 / Enter (on first): BioSym path (Import → Explore → Dynamics with real RQA)
+  - 2: LoadSym path (training load / ACWR / nutrition template)
+  - 3: SpatialSym path (synthetic + import of match/game trajectory data inside Spatial tab)
+- **Home always**: `Ctrl+H` or `0` returns to landing. Sub-views inside Spatial (g/i/v).
+- **Tab switching**: `Ctrl+1` / `Ctrl+2` / `Ctrl+3` / `Ctrl+4` or arrows (context-aware; Home overrides).
+- **RQA (Dynamics)**: With signal loaded, `c` opens param editor (m/tau/radius), Enter computes via symworx-dynamics.
 - In the **Import** tab:
   - `Ctrl+G` → open the generate demo data menu (PPG / Respiration / Stride intervals)
   - `/` → enter filter mode
