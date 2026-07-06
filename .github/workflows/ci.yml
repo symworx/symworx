@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, main, "nb/*", "joss*"]
+  pull_request:
+    branches: [develop, main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Cargo check (full workspace)
+        run: cargo check --workspace
+
+      - name: Test (lighter core crates, no heavy linalg by default where possible)
+        run: |
+          cargo test -p symworx-core -p symworx-math -p symworx-dynamics -p symworx-stats -- --quiet
+
+      - name: Clippy (warnings as errors on key crates)
+        run: cargo clippy -p symworx-core -p symworx-dynamics -p symworx-math -p symworx-io -p symworx-tui -- -D warnings
+
+      - name: Format check
+        run: cargo fmt --all -- --check
+
+  tui-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check TUI
+        run: cargo check -p symworx-tui
+
+      - name: Check TUI with polars feature (in-memory only)
+        run: cargo check -p symworx-tui --features polars
+
+  python-bindings:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install maturin and pytest
+        run: pip install "maturin>=1.5,<2.0" pytest
+
+      - name: Build Python bindings in development mode
+        # Uses the main pyproject.toml which builds the unified symworx module
+        run: maturin develop --manifest-path bindings/python/Cargo.toml
+
+      - name: Run Python tests
+        run: pytest bindings/python/tests/ -q --tb=line
+
+  # Note: Full builds involving ndarray-linalg + OpenBLAS (via symworx-signal and linalg feature)
+  # are intentionally not run on every push in this starter because they are very slow and
+  # require native compilation. Run them manually or on a separate "heavy" workflow / release job.
+  #
+  # Example for occasional heavy validation:
+  #   cargo test -p symworx-signal --features linalg  (or however signal exposes it)
+  #   cargo test -p symworx-stats --features linalg
