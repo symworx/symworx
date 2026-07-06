@@ -7,6 +7,8 @@ edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
 description      = "Spatial trajectory analysis, kinematics, and post-hoc decision modeling (sport-agnostic)"
+keywords = ["spatial", "trajectory", "kinematics", "decision-modeling", "sportscience"]
+categories = ["science", "simulation"]
 
 [features]
 default = []

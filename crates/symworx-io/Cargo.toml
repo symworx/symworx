@@ -6,7 +6,9 @@ version          = { workspace = true }
 edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
-description      = "I/O utilities -- part of the symworx-core crate"
+description      = "I/O utilities for biosignals and activity data (CSV, Parquet, FIT, and email ingestion)"
+keywords = ["io", "csv", "parquet", "fit", "biosignals"]
+categories = ["science"]
 
 [dependencies]
 csv          = { workspace = true }

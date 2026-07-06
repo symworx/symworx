@@ -6,7 +6,9 @@ version          = { workspace = true }
 edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
-description      = "Embedded algorithms and utilities"
+description      = "Embedded algorithms and example utilities for SymWorx"
+keywords = ["embedded", "examples", "utilities"]
+categories = ["development-tools"]
 
 [dependencies]
 ndarray         = { version = "0.15", features = ["std"] }

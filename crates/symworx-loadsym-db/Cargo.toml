@@ -5,7 +5,9 @@ name = "symworx-loadsym-db"
 version = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
-description = "Reusable SQL schema and helpers for initializing a personal loadsym database (Postgres/SQLite). Used by separate projects + symload CLI."
+description = "Reusable SQL schema and helpers for initializing training load databases (Postgres/SQLite)"
+keywords = ["database", "schema", "periodization", "training-load"]
+categories = ["science"]
 
 [lib]
 path = "src/lib.rs"

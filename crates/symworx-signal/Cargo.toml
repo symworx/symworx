@@ -6,7 +6,9 @@ version          = { workspace = true }
 edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
-description      = "Signal-related tools and resources -- part of the symworx-core crate"
+description      = "Signal processing tools and resources (filters, peak detection, interpolation, resampling, and features)"
+keywords = ["signal-processing", "filters", "peaks", "time-series", "biosignals"]
+categories = ["science"]
 
 [dependencies]
 ndarray        = { workspace = true }

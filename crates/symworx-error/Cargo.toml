@@ -6,6 +6,9 @@ version          = { workspace = true }
 edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
+description      = "Error types for the SymWorx ecosystem"
+keywords = ["error", "utilities"]
+categories = ["development-tools"]
 
 [dependencies]
 csv         = { workspace = true }

@@ -6,7 +6,9 @@ version          = { workspace = true }
 edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
-description      = "Nonlinear Dynamics tools and resources -- part of the symworx-core crate"
+description      = "Nonlinear dynamics tools and resources (RQA, embedding, entropy, and phase space analysis)"
+keywords = ["rqa", "recurrence", "nonlinear-dynamics", "entropy", "embedding"]
+categories = ["science", "mathematics"]
 
 [dependencies]
 ndarray       = { workspace = true }

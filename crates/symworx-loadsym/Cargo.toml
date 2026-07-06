@@ -6,7 +6,9 @@ version          = { workspace = true }
 edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
-description      = "Load and periodization modeling"
+description      = "Training load quantification, periodization, ACWR, TSS, monotony, strain, and nutrition modeling"
+keywords = ["periodization", "training-load", "acwr", "tss", "load-management", "nutrition"]
+categories = ["science"]
 
 [[bin]]
 name = "symload"

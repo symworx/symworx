@@ -6,7 +6,9 @@ version          = { workspace = true }
 edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
-description      = "Biological (phys, mech, cpg) modeling tools and resources"
+description      = "Biological and biomechanical modeling tools: physiological signals (PPG, respiration), gait analysis, and central pattern generators (CPG)"
+keywords = ["biosignals", "gait", "physiology", "biomechanics", "cpg", "modeling"]
+categories = ["science", "simulation"]
 
 [lib]
 name = "symworx_biosym"

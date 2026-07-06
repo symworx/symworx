@@ -6,7 +6,9 @@ version          = { workspace = true }
 edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
-description      = "Core dependencies bunded togther for convenience"
+description      = "Core re-exports and foundational utilities for the SymWorx ecosystem (math, signal, stats, dynamics, I/O)"
+keywords = ["core", "utilities", "reexports"]
+categories = ["science"]
 
 [dependencies]
 symworx-backend  = { path = "../symworx-backend" }

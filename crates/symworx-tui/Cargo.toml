@@ -4,6 +4,9 @@
 name = "symworx-tui"
 version = "0.1.0"
 edition = "2021"
+description = "Terminal UI (symview) for biosignal exploration, RQA/dynamics, and training load analysis"
+keywords = ["tui", "biosignals", "rqa", "training-load", "visualization"]
+categories = ["command-line-utilities", "science"]
 
 [[bin]]
 name = "symview"

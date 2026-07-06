@@ -6,7 +6,9 @@ version          = { workspace = true }
 edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
-description      = "Mathematical tools and resources -- part of the symworx-core crate"
+description      = "Mathematical tools and resources for the SymWorx ecosystem (series operations, distributions, integration, and oscillators)"
+keywords = ["mathematics", "series", "distributions", "integration", "oscillators"]
+categories = ["science", "mathematics"]
 
 [dependencies]
 ndarray  = { workspace = true }
