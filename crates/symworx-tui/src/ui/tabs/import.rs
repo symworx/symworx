@@ -1,9 +1,10 @@
 use ratatui::{
-    Frame,
     layout::{Constraint, Layout, Rect},
     style::{Color, Modifier, Style},
     widgets::{Block, Borders, List, ListItem, Paragraph},
+    Frame,
 };
+
 use crate::app::App;
 
 pub fn render_import_tab(frame: &mut Frame, app: &mut App, area: Rect) {
@@ -17,8 +18,9 @@ pub fn render_import_tab(frame: &mut Frame, app: &mut App, area: Rect) {
              • c : convert selected (parquet/ibi → csv)\n\
              • Ctrl+G : generate BioSym demo data (PPG/Resp/Stride)\n\n\
              Files from ./data and . (csv/txt/dat etc) are discovered.\n\
-             Multi-column CSVs prompt for signal column."
-        ).block(Block::new().borders(Borders::ALL).title(" Help — Import "));
+             Multi-column CSVs prompt for signal column.",
+        )
+        .block(Block::new().borders(Borders::ALL).title(" Help — Import "));
         frame.render_widget(help, area);
         return;
     }
@@ -27,7 +29,8 @@ pub fn render_import_tab(frame: &mut Frame, app: &mut App, area: Rect) {
         let mut lines = vec![
             format!("\n\nFile: {}\n", pending.path.display()),
             format!("This file contains {} columns.\n\n", pending.columns),
-            "Press the number key for the column you want to load as the main series:\n\n".to_string(),
+            "Press the number key for the column you want to load as the main series:\n\n"
+                .to_string(),
         ];
 
         if let Some(headers) = &pending.headers {
@@ -40,7 +43,8 @@ pub fn render_import_tab(frame: &mut Frame, app: &mut App, area: Rect) {
             }
         }
 
-        let content = Paragraph::new(lines.join("")).block(Block::new().borders(Borders::ALL).title(" Column Picker "));
+        let content = Paragraph::new(lines.join(""))
+            .block(Block::new().borders(Borders::ALL).title(" Column Picker "));
         frame.render_widget(content, area);
         return;
     }
@@ -68,7 +72,12 @@ pub fn render_import_tab(frame: &mut Frame, app: &mut App, area: Rect) {
 
     let vis = app.visible_indices();
     let title = if !app.file_filter.is_empty() {
-        format!(" Import ({} / {} matching '{}') ", vis.len(), app.file_list.len(), app.file_filter)
+        format!(
+            " Import ({} / {} matching '{}') ",
+            vis.len(),
+            app.file_list.len(),
+            app.file_filter
+        )
     } else {
         " Import (file discovery) ".to_string()
     };

@@ -3,21 +3,10 @@
 
 use symworx_core::PeakFinderBuilder;
 
-use super::{
-    PPGSignalQuality,
-    PPGTimeSeries,
-    processing::ppg_processing_for_quality,
-};
+use super::{PPGSignalQuality, PPGTimeSeries, processing::ppg_processing_for_quality};
 use crate::common::{
-    HrvMetrics,
-    IntervalSeries,
-    PhysiologyProcessingParams,
-    PhysiologySignal,
-    PhysiologySummary,
-    apply_peak_overrides,
-    compute_hrv_metrics,
-    detect_intervals,
-    preprocess_signal,
+    HrvMetrics, IntervalSeries, PhysiologyProcessingParams, PhysiologySignal, PhysiologySummary,
+    apply_peak_overrides, compute_hrv_metrics, detect_intervals, preprocess_signal,
     summarize_signal,
 };
 
@@ -116,11 +105,7 @@ pub fn analyze_ppg_with_quality(ts: &PPGTimeSeries, quality: PPGSignalQuality) -
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        PPGNoiseConfig,
-        generate_ppg_timeseries,
-        *,
-    };
+    use super::{PPGNoiseConfig, generate_ppg_timeseries, *};
 
     fn synthetic_sine_ppg(fs: f64, duration_sec: f64) -> PPGTimeSeries {
         let n = (duration_sec * fs).round() as usize;

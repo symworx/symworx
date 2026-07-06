@@ -7,30 +7,13 @@ pub mod peaks;
 pub mod quality;
 
 pub use analysis::{
-    RespAnalysis,
-    analyze_respiration,
-    analyze_respiration_with,
-    analyze_respiration_with_quality,
-    detect_respiration_peaks,
-    detect_respiration_peaks_with,
-    resp_peak_finder,
-    resp_signal,
+    RespAnalysis, analyze_respiration, analyze_respiration_with, analyze_respiration_with_quality,
+    detect_respiration_peaks, detect_respiration_peaks_with, resp_peak_finder, resp_signal,
     summarize_respiration,
 };
-pub use generation::{
-    RespSimulationParams,
-    RespTimeSeries,
-    generate_respiration_timeseries,
-};
-pub use peaks::{
-    RespPhasePeaks,
-    phase_peak_indices,
-};
+pub use generation::{RespSimulationParams, RespTimeSeries, generate_respiration_timeseries};
+pub use peaks::{RespPhasePeaks, phase_peak_indices};
 pub use quality::{
-    RespSignalQuality,
-    resp_default_bandpass,
-    resp_processing_for_quality,
-    resp_processing_moderate,
-    resp_processing_poor,
-    resp_processing_reference,
+    RespSignalQuality, resp_default_bandpass, resp_processing_for_quality,
+    resp_processing_moderate, resp_processing_poor, resp_processing_reference,
 };

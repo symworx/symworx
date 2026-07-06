@@ -1,11 +1,9 @@
 // Copyright (c) 2026 SymWorx
 
-use pyo3::{
-    prelude::*,
-    wrap_pyfunction,
-};
+use pyo3::{prelude::*, wrap_pyfunction};
 use symworx_loadsym::load::{
     AcwrSnapshot,
+    RideMetrics,
     RiskLevel,
     calculate_mechanical_load,
     calculate_physiological_load,
@@ -15,7 +13,9 @@ use symworx_loadsym::load::{
     compute_acwr_series,
     compute_ewma_acute_chronic,
     compute_monotony,
+    compute_ride_metrics,
     compute_strain,
+    highest_rolling,
     optimize_load,
 };
 
@@ -118,6 +118,76 @@ pub fn py_compute_strain(daily_loads: Vec<f64>) -> PyResult<f64> {
 }
 
 // ==========================================================
+// Ride / Power metrics (critical for .fit / SRM / LoadSym workout analysis)
+// ==========================================================
+
+#[pyclass(name = "RideMetrics")]
+#[derive(Clone)]
+pub struct PyRideMetrics {
+    #[pyo3(get)]
+    pub duration_s: f64,
+    #[pyo3(get)]
+    pub total_work_kj: f64,
+    #[pyo3(get)]
+    pub avg_power: f64,
+    #[pyo3(get)]
+    pub max_power: f64,
+    #[pyo3(get)]
+    pub np: f64,
+    #[pyo3(get)]
+    pub if_: f64,
+    #[pyo3(get)]
+    pub tss: f64,
+}
+
+#[pymethods]
+impl PyRideMetrics {
+    fn __repr__(&self) -> String {
+        format!(
+            "RideMetrics(duration={:.1}s, NP={:.0}W, TSS={:.1})",
+            self.duration_s, self.np, self.tss
+        )
+    }
+
+    fn to_dict(&self, py: Python<'_>) -> PyResult<PyObject> {
+        let dict = pyo3::types::PyDict::new(py);
+        dict.set_item("duration_s", self.duration_s)?;
+        dict.set_item("total_work_kj", self.total_work_kj)?;
+        dict.set_item("avg_power", self.avg_power)?;
+        dict.set_item("max_power", self.max_power)?;
+        dict.set_item("np", self.np)?;
+        dict.set_item("if", self.if_)?;
+        dict.set_item("tss", self.tss)?;
+        Ok(dict.into())
+    }
+}
+
+impl From<RideMetrics> for PyRideMetrics {
+    fn from(m: RideMetrics) -> Self {
+        Self {
+            duration_s: m.duration_s,
+            total_work_kj: m.total_work_kj,
+            avg_power: m.avg_power,
+            max_power: m.max_power,
+            np: m.np,
+            if_: m.if_,
+            tss: m.tss,
+        }
+    }
+}
+
+#[pyfunction(name = "compute_ride_metrics")]
+pub fn py_compute_ride_metrics(times_s: Vec<f64>, power: Vec<f64>, ftp_w: f64) -> PyRideMetrics {
+    let m = compute_ride_metrics(&times_s, &power, ftp_w);
+    PyRideMetrics::from(m)
+}
+
+#[pyfunction(name = "highest_rolling")]
+pub fn py_highest_rolling(series: Vec<f64>, window: usize) -> f64 {
+    highest_rolling(&series, window)
+}
+
+// ==========================================================
 // PYTHON REGISTER
 // ==========================================================
 
@@ -131,6 +201,10 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_classify_acwr, m)?)?;
     m.add_function(wrap_pyfunction!(py_compute_monotony, m)?)?;
     m.add_function(wrap_pyfunction!(py_compute_strain, m)?)?;
+
+    m.add_function(wrap_pyfunction!(py_compute_ride_metrics, m)?)?;
+    m.add_function(wrap_pyfunction!(py_highest_rolling, m)?)?;
+    m.add_class::<PyRideMetrics>()?;
 
     Ok(())
 }

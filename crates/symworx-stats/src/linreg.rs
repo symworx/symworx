@@ -5,12 +5,7 @@
 //!
 //! Includes Ordinary Least Squares (L2) and Lasso (L1) regression via coordinate descent.
 
-use ndarray::{
-    Array1,
-    Array2,
-    Axis,
-    s,
-};
+use ndarray::{Array1, Array2, Axis, s};
 #[cfg(feature = "linalg")]
 use ndarray_linalg::Inverse;
 

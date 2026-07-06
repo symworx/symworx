@@ -2,19 +2,9 @@
 
 use pyo3::prelude::*;
 use symworx_loadsym::nutrition::{
-    ActivityLevel,
-    BmrConfig,
-    DeficitLevel,
-    DeficitStrategy,
-    Gender,
-    WeightlossModel,
-    calculate_bmi,
-    calculate_bmr,
-    calculate_calorie_targets,
-    calculate_deficit,
-    calculate_deficit_from_active,
-    calculate_tdee,
-    calculate_weightloss,
+    ActivityLevel, BmrConfig, DeficitLevel, DeficitStrategy, Gender, WeightlossModel,
+    calculate_bmi, calculate_bmr, calculate_calorie_targets, calculate_deficit,
+    calculate_deficit_from_active, calculate_tdee, calculate_weightloss,
 };
 
 // ==========================================================

@@ -7,10 +7,7 @@
 //! Re-exported at crate root for convenience and under `common::processing`
 //! (the canonical path for future code).
 
-use symworx_core::{
-    PeakFinderBuilder,
-    signal::BandpassFilter,
-};
+use symworx_core::{PeakFinderBuilder, signal::BandpassFilter};
 
 use super::signal::PhysiologySignal;
 

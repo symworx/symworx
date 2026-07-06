@@ -5,10 +5,7 @@
 //!
 //! Local implementations of distance metrics on top of our Point2 / Vec2 types for ergonomics.
 
-use crate::geometry::{
-    Point2,
-    distance as geom_distance,
-};
+use crate::geometry::{Point2, distance as geom_distance};
 
 /// Compute all pairwise Euclidean distances between agents at a single frame.
 /// Returns a square matrix (n x n). Diagonal is 0.

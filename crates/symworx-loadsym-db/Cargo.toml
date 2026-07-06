@@ -1,0 +1,17 @@
+# Copyright (C) 2026 SymWorx
+
+[package]
+name = "symworx-loadsym-db"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+description = "Reusable SQL schema and helpers for initializing a personal loadsym database (Postgres/SQLite). Used by separate projects + symload CLI."
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+# Intentionally zero runtime dependencies. Pure resources + helpers.
+
+[lints]
+workspace = true

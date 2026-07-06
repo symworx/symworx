@@ -1,14 +1,8 @@
 // Copyright (c) 2026 SymWorx
 
-use ndarray::{
-    Array1,
-    Array2,
-};
+use ndarray::{Array1, Array2};
 use numpy::PyArray2;
-use pyo3::{
-    prelude::*,
-    wrap_pyfunction,
-};
+use pyo3::{prelude::*, wrap_pyfunction};
 use symworx_core::stats::{
     // autocorrelation
     acf,

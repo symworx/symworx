@@ -24,8 +24,4 @@ pub mod run_performance;
 
 // Re-export the primary CPG types at the biosystems level for ergonomics
 // (matching previous top-level exposure).
-pub use cpg::{
-    CpgConfig,
-    SymCpgModel,
-    instantaneous_freq,
-};
+pub use cpg::{CpgConfig, SymCpgModel, instantaneous_freq};

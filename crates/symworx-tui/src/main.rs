@@ -1,17 +1,18 @@
 // Copyright (c) 2026 SymWorx
 // Licensed under the Apache License, Version 2.0.
 
+use std::time::Duration;
+
 use anyhow::Result;
 use crossterm::event::{self, KeyEventKind};
 use ratatui::DefaultTerminal;
-use std::time::Duration;
 
 mod app;
-mod input;
-mod ui;
 mod convert;
 mod generate;
+mod input;
 mod processing;
+mod ui;
 
 use app::App;
 
@@ -30,7 +31,9 @@ fn app(terminal: &mut DefaultTerminal) -> std::io::Result<()> {
 
         if event::poll(tick_rate)? {
             if let event::Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press && input::handle_key(&mut app, key.code, key.modifiers) {
+                if key.kind == KeyEventKind::Press
+                    && input::handle_key(&mut app, key.code, key.modifiers)
+                {
                     return Ok(());
                 }
             }

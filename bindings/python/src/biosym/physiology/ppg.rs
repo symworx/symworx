@@ -1,19 +1,9 @@
 // Copyright (c) 2026 SymWorx
 
-use pyo3::{
-    prelude::*,
-    wrap_pyfunction,
-};
+use pyo3::{prelude::*, wrap_pyfunction};
 use symworx_biosym::physiology::{
-    PPGNoiseConfig,
-    PPGSignalQuality,
-    PPGSimulationParams,
-    PPGTimeSeries,
-    PpgAnalysis,
-    analyze_ppg,
-    analyze_ppg_with_quality,
-    generate_ppg_timeseries,
-    generate_ppg_waveform,
+    PPGNoiseConfig, PPGSignalQuality, PPGSimulationParams, PPGTimeSeries, PpgAnalysis, analyze_ppg,
+    analyze_ppg_with_quality, generate_ppg_timeseries, generate_ppg_waveform,
 };
 
 // ==========================================================

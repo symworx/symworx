@@ -20,6 +20,12 @@ ndarray      = { workspace = true }
 parquet = { workspace = true, optional = true }
 brotli-decompressor = { workspace = true, optional = true }
 alloc-no-stdlib = { workspace = true, optional = true }
+fitparser = { workspace = true, optional = true }
+
+# Email fetching (IMAP + MIME parsing for .fit attachments from email sources like SRM PC8)
+imap = { version = "3.0.0-alpha.15", optional = true }
+native-tls = { version = "0.2", optional = true }
+mailparse = { version = "0.15", optional = true }
 
 symworx-error = { path = "../symworx-error" }
 
@@ -27,6 +33,8 @@ symworx-error = { path = "../symworx-error" }
 default = []
 parquet = ["dep:parquet", "symworx-error/parquet"]
 brotli = ["parquet", "parquet/brotli", "dep:brotli-decompressor", "dep:alloc-no-stdlib"]
+fit = ["dep:fitparser"]
+email = ["dep:imap", "dep:native-tls", "dep:mailparse"]
 
 [lints]
 workspace = true

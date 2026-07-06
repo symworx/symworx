@@ -4,16 +4,8 @@
 //!   cargo run -p symworx-loadsym --example nutrition_demo
 
 use symworx_loadsym::nutrition::{
-    ActivityLevel,
-    BmrConfig,
-    DeficitLevel,
-    DeficitStrategy,
-    Gender,
-    calculate_bmi,
-    calculate_bmr,
-    calculate_calorie_targets,
-    calculate_tdee,
-    calculate_weightloss,
+    ActivityLevel, BmrConfig, DeficitLevel, DeficitStrategy, Gender, calculate_bmi, calculate_bmr,
+    calculate_calorie_targets, calculate_tdee, calculate_weightloss,
 };
 
 fn main() {

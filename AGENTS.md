@@ -1,6 +1,8 @@
 # AGENTS.md — SymWorx Development Guidelines
 
-This file contains instructions for AI coding agents (Grok, Claude, etc.) working in this repository.
+This file contains instructions and guidelines for agentic development tools working in this repository.
+
+All changes must be owned by the human contributor, who is responsible for reviewing, explaining, and maintaining the code.
 
 ## Project Overview
 

@@ -1,11 +1,7 @@
 // Copyright (c) 2026 SymWorx
 // Licensed under the Apache License, Version 2.0.
 
-use rand::{
-    Rng,
-    SeedableRng,
-    rngs::StdRng,
-};
+use rand::{Rng, SeedableRng, rngs::StdRng};
 
 /// Represents a respiration time-series signal.
 #[derive(Debug, Clone)]

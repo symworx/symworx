@@ -8,9 +8,7 @@ use ndarray::Array2;
 use crate::rqa::{
     plot::RecurrencePlot,
     utils::{
-        count_recurrences,
-        find_diagonal_line_lengths,
-        find_vertical_line_lengths,
+        count_recurrences, find_diagonal_line_lengths, find_vertical_line_lengths,
         line_length_entropy,
     },
 };

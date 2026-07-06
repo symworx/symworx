@@ -113,7 +113,7 @@ You can then load them directly in `symview`. This is the best way to quickly ge
 - **To exit the TUI**: Press `q` at any time. `Esc` will cancel sub-modes (e.g. column selection, RQA params, spatial import) or stay if on Home.
 - **Path selection (new)**: Starts on **Home** landing page. Choose:
   - 1 / Enter (on first): BioSym path (Import → Explore → Dynamics with real RQA)
-  - 2: LoadSym path (training load / ACWR / nutrition template)
+  - 2: LoadSym path (training load / ACWR / NP/TSS/IF for .fit rides + nutrition)
   - 3: SpatialSym path (synthetic + import of match/game trajectory data inside Spatial tab)
 - **Home always**: `Ctrl+H` or `0` returns to landing. Sub-views inside Spatial (g/i/v).
 - **Tab switching**: `Ctrl+1` / `Ctrl+2` / `Ctrl+3` / `Ctrl+4` or arrows (context-aware; Home overrides).

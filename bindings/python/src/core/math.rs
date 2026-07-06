@@ -1,26 +1,22 @@
 // Copyright (c) 2026 SymWorx
 // Licensed under the Apache License, Version 2.0.
 
-use pyo3::{
-    exceptions::PyValueError,
-    prelude::*,
-    wrap_pyfunction,
-};
-use rand::{
-    Rng,
-    rng,
-};
+use pyo3::{exceptions::PyValueError, prelude::*, wrap_pyfunction};
+use rand::{Rng, rng};
 use symworx_core::math::{
     // Distributions
     beta_kernel,
     beta_pdf,
     // Integration
     cumtrapz,
+    // Series / sequence operations (new from math migration)
+    ewma,
     gamma_kernel,
     gamma_pdf,
     // Random
     random::sample,
-    // Series / sequence operations (new from math migration)
+    rolling_mean,
+    rolling_std,
     successive_absolute_differences,
     successive_differences,
     trapz,
@@ -116,6 +112,21 @@ pub fn py_successive_absolute_differences(data: Vec<f64>) -> Vec<f64> {
     successive_absolute_differences(&data)
 }
 
+#[pyfunction(name = "ewma")]
+pub fn py_ewma(data: Vec<f64>, span: usize) -> Vec<f64> {
+    ewma(&data, span)
+}
+
+#[pyfunction(name = "rolling_mean")]
+pub fn py_rolling_mean(data: Vec<f64>, window: usize) -> Vec<f64> {
+    rolling_mean(&data, window)
+}
+
+#[pyfunction(name = "rolling_std")]
+pub fn py_rolling_std(data: Vec<f64>, window: usize) -> Vec<f64> {
+    rolling_std(&data, window)
+}
+
 // ==========================================================
 // Python Registration
 // ==========================================================
@@ -139,6 +150,9 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Series / Differences (new from symworx-math)
     m.add_function(wrap_pyfunction!(py_successive_differences, m)?)?;
     m.add_function(wrap_pyfunction!(py_successive_absolute_differences, m)?)?;
+    m.add_function(wrap_pyfunction!(py_ewma, m)?)?;
+    m.add_function(wrap_pyfunction!(py_rolling_mean, m)?)?;
+    m.add_function(wrap_pyfunction!(py_rolling_std, m)?)?;
 
     Ok(())
 }

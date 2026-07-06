@@ -1,10 +1,7 @@
 // Copyright (c) 2026 SymWorx
 // Licensed under the Apache License, Version 2.0.
 
-use symworx_core::{
-    mean,
-    std_dev,
-};
+use symworx_core::{mean, std_dev};
 
 use super::signal::PhysiologySignal;
 

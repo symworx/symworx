@@ -8,11 +8,33 @@ license          = { workspace = true }
 repository       = { workspace = true }
 description      = "Load and periodization modeling"
 
+[[bin]]
+name = "symload"
+path = "src/bin/symload.rs"
+# The binary is always available, but email support requires the feature
+# on the symworx-io dependency.
+
 [dependencies]
 ndarray         = { version = "0.15", features = ["std"] }
 thiserror       = { workspace = true }
 
 symworx-core    = { path = "../symworx-core" }
+
+# Optional I/O support, including FIT loading and (with "email" feature) email fetching.
+# The symload binary uses this.
+# symworx-io is used by the `symload` binary (and can be used by library consumers
+# for loading activity data before feeding into loadsym calculations).
+symworx-io = { path = "../symworx-io" }
+
+# Schema resources for DB initialization (used by `symload db print-schema`).
+symworx-loadsym-db = { path = "../symworx-loadsym-db", optional = true }
+
+[features]
+default = []
+# Enable email fetching support in the symload binary.
+email = ["symworx-io/email"]
+# Enable db schema helpers (used by CLI).
+db = ["dep:symworx-loadsym-db"]
 
 [lints]
 workspace = true

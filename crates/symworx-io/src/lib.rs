@@ -25,22 +25,26 @@ pub mod ibi;
 /// Parquet module and related utilities.
 pub mod parquet;
 
+/// Exercise / activity file support (FIT + other formats; sport-agnostic).
+/// Enabled via `fit` feature (and future `gpx` etc).
+pub mod activity;
+
+/// Email input support (IMAP fetching of .fit files, e.g. from SRM PC8 emails).
+/// Enabled via the `email` feature.
+#[cfg(feature = "email")]
+pub mod email;
+
+#[cfg(feature = "email")]
+pub use email::fetch_srm_fit_attachments;
+
 /// Additional traits used in io.
 pub mod traits;
 
 // Re-exports
-pub use csv::{
-    CsvReader,
-    CsvWriter,
-};
-pub use gbd::{
-    GbdReader,
-    GbdTable,
-};
-pub use ibi::{
-    IbiRecord,
-    read_ibi,
-};
+pub use activity::{ActivityData, load_activity, load_activity_power_series};
+pub use csv::{CsvReader, CsvWriter};
+pub use gbd::{GbdReader, GbdTable};
+pub use ibi::{IbiRecord, read_ibi};
 #[cfg(feature = "parquet")]
 pub use parquet::ParquetReader;
 use symworx_error::SymError;

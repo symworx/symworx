@@ -11,10 +11,7 @@
 //! attacking directions for possession-aware classification.
 
 use crate::{
-    geometry::{
-        Point2,
-        Vec2,
-    },
+    geometry::{Point2, Vec2},
     trajectory::AgentTrajectories,
 };
 
@@ -207,7 +204,9 @@ pub fn build_agent_trajectories(
         batch = batch.with_playing_dimensions(dims);
     }
     if let Some(g) = goal_positions {
-        batch = batch.with_goal_positions(g).expect("goal_positions length must match");
+        batch = batch
+            .with_goal_positions(g)
+            .expect("goal_positions length must match");
     }
 
     (batch, focal)

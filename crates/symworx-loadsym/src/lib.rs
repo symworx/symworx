@@ -25,10 +25,7 @@ pub mod load;
 pub mod nutrition;
 
 // Re-exports
-pub use error::{
-    LoadSymError,
-    Result,
-};
+pub use error::{LoadSymError, Result};
 pub use load::*;
 pub use nutrition::*;
 

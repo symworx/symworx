@@ -1,17 +1,9 @@
 // Copyright (c) 2026 SymWorx
 
-use pyo3::{
-    prelude::*,
-    wrap_pyfunction,
-};
+use pyo3::{prelude::*, wrap_pyfunction};
 use symworx_biosym::physiology::{
-    RespAnalysis,
-    RespSignalQuality,
-    RespSimulationParams,
-    RespTimeSeries,
-    analyze_respiration,
-    analyze_respiration_with_quality,
-    generate_respiration_timeseries,
+    RespAnalysis, RespSignalQuality, RespSimulationParams, RespTimeSeries, analyze_respiration,
+    analyze_respiration_with_quality, generate_respiration_timeseries,
 };
 
 #[pyclass(name = "RespTimeSeries")]

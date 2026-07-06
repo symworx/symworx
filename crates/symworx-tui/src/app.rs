@@ -1,6 +1,10 @@
-use ratatui::widgets::ListState;
-use symworx_spatialsym::{decision::{AgentDecision, SpaceAction}, synthetic, AgentTrajectories, Point2, Vec2, PlayingDimensions};
 use std::path::PathBuf;
+
+use ratatui::widgets::ListState;
+use symworx_spatialsym::{
+    decision::{AgentDecision, SpaceAction},
+    synthetic, AgentTrajectories, PlayingDimensions, Point2, Vec2,
+};
 
 /// Top-level tabs for the application
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -64,6 +68,16 @@ pub enum SpatialView {
     ImportData,
 }
 
+/// LoadSym internal views (selector "home" inside the LoadSym workflow)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum LoadSymView {
+    #[default]
+    List,
+    Workout,
+    Calendar,
+    Optimization,
+}
+
 /// Lightweight holder for RQA parameters (editable in Dynamics)
 #[derive(Debug, Clone, Copy)]
 pub struct RqaParams {
@@ -75,7 +89,12 @@ pub struct RqaParams {
 
 impl Default for RqaParams {
     fn default() -> Self {
-        Self { m: 3, tau: 1, radius: 0.5, theiler: 1 }
+        Self {
+            m: 3,
+            tau: 1,
+            radius: 0.5,
+            theiler: 1,
+        }
     }
 }
 
@@ -157,7 +176,13 @@ pub fn compute_basic_stats(data: &[f64]) -> BasicStats {
     } else {
         (sorted[sorted.len() / 2 - 1] + sorted[sorted.len() / 2]) / 2.0
     };
-    BasicStats { mean, std, min, max, median }
+    BasicStats {
+        mean,
+        std,
+        min,
+        max,
+        median,
+    }
 }
 
 pub struct App {
@@ -191,6 +216,27 @@ pub struct App {
     // Spatial import state (parallel to BioSym pending_load / filter)
     pub pending_spatial_import: bool,
     pub spatial_file_filter: String,
+
+    // LoadSym state (TUI interface per approved plan + user priority)
+    pub loadsym_view: LoadSymView,
+    pub loadsym_selection: usize,
+    pub daily_loads: Vec<f64>, // daily training load (arbitrary units or TSS etc)
+    pub loadsym_scroll: usize, // for long sessions / calendar scrolling
+
+    // Loaded activity (from .fit or activity CSV) — used by LoadSym Workout
+    pub loaded_activity: Option<symworx_io::ActivityData>,
+    pub activity_scroll: usize,
+    pub activity_series: usize, // 0=power, 1=hr, 2=speed (fallback if not present)
+    // Scrolling for BioSym Explore tab (long signals)
+    pub explore_scroll: usize,
+    // User exploration for LoadSym Workout: custom threshold + min duration (samples)
+    pub workout_user_thresh: f64,
+    pub workout_user_min_dur: usize,
+
+    // LoadSym cycling power: FTP for TSS/NP/IF calculations (W)
+    pub ftp: f64,
+    // Directories to scan for .fit / activity files (in addition to ./data)
+    pub loadsym_archive_dirs: Vec<PathBuf>,
 }
 
 impl App {
@@ -200,7 +246,8 @@ impl App {
             file_list: Vec::new(),
             list_state: ListState::default(),
             manual_path: String::new(),
-            status: "Home — Select path: 1=BioSym  2=LoadSym  3=SpatialSym  • Ctrl+H home".to_string(),
+            status: "Home — Select path: 1=BioSym  2=LoadSym  3=SpatialSym  • Ctrl+H home"
+                .to_string(),
             loaded_signal: None,
             pending_load: None,
             file_filter: String::new(),
@@ -225,13 +272,31 @@ impl App {
             home_selection: 0,
             pending_spatial_import: false,
             spatial_file_filter: String::new(),
+            // LoadSym defaults
+            loadsym_view: LoadSymView::List,
+            loadsym_selection: 0,
+            daily_loads: vec![], // start empty; use 'g' to generate synthetic demo loads or import real activity data
+            loadsym_scroll: 0,
+            loaded_activity: None,
+            activity_scroll: 0,
+            activity_series: 0,
+            explore_scroll: 0,
+            workout_user_thresh: 0.0,
+            workout_user_min_dur: 3,
+            ftp: 300.0,
+            loadsym_archive_dirs: vec![
+                PathBuf::from("data"),
+                PathBuf::from("rides"),
+                PathBuf::from("training"),
+            ],
         };
         app.refresh_file_list();
         if !app.file_list.is_empty() {
             app.list_state.select(Some(0));
         }
-        // Seed spatial demo data but only "activate" when workflow enters SpatialSym
-        app.seed_spatial_demo();
+        // Note: synthetic data is NOT loaded by default for any workflow.
+        // BioSym, LoadSym, and SpatialSym each provide explicit Generate and Import options.
+        // See seed_spatial_demo(), generate_demo_and_load(), and 'g'/'i' handlers.
         app
     }
 
@@ -245,6 +310,14 @@ impl App {
         self.manual_path.clear();
         self.file_filter.clear();
         self.spatial_file_filter.clear();
+        // keep loadsym data but reset to list view for clean nav
+        self.loadsym_view = LoadSymView::List;
+        self.loaded_activity = None;
+        self.activity_scroll = 0;
+        self.activity_series = 0;
+        self.explore_scroll = 0;
+        self.workout_user_thresh = 0.0;
+        self.workout_user_min_dur = 3;
     }
 
     pub fn refresh_file_list(&mut self) {
@@ -257,7 +330,10 @@ impl App {
                     let path = entry.path();
                     if path.is_file() {
                         if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
-                            if matches!(ext.to_lowercase().as_str(), "csv" | "txt" | "dat" | "bin" | "biosym") {
+                            if matches!(
+                                ext.to_lowercase().as_str(),
+                                "csv" | "txt" | "dat" | "bin" | "biosym"
+                            ) {
                                 self.file_list.push(path);
                             }
                         }
@@ -308,8 +384,15 @@ impl App {
             Point2::new(52.5, 0.0),
             Point2::new(-52.5, 0.0),
         ];
-        let (batch, focal) =
-            symworx_spatialsym::build_agent_trajectories(ev_t.clone(), ev_p, groups, att, ev_f.clone(), dims, Some(goal_pos));
+        let (batch, focal) = symworx_spatialsym::build_agent_trajectories(
+            ev_t.clone(),
+            ev_p,
+            groups,
+            att,
+            ev_f.clone(),
+            dims,
+            Some(goal_pos),
+        );
         let n_steps = batch.num_times();
         self.spatial_batch = Some(batch);
         self.spatial_focal = Some(focal);
@@ -364,18 +447,26 @@ impl App {
 
     pub fn select_next(&mut self) {
         let vis = self.visible_indices();
-        if vis.is_empty() { return; }
+        if vis.is_empty() {
+            return;
+        }
         let mut i = self.list_state.selected().unwrap_or(0);
-        if i >= vis.len() { i = 0; }
+        if i >= vis.len() {
+            i = 0;
+        }
         i = (i + 1) % vis.len();
         self.list_state.select(Some(i));
     }
 
     pub fn select_prev(&mut self) {
         let vis = self.visible_indices();
-        if vis.is_empty() { return; }
+        if vis.is_empty() {
+            return;
+        }
         let mut i = self.list_state.selected().unwrap_or(0);
-        if i >= vis.len() { i = 0; }
+        if i >= vis.len() {
+            i = 0;
+        }
         i = if i == 0 { vis.len() - 1 } else { i - 1 };
         self.list_state.select(Some(i));
     }
@@ -402,7 +493,11 @@ impl App {
         if !path.exists() {
             anyhow::bail!("file does not exist: {}", path.display());
         }
-        let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("").to_lowercase();
+        let ext = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("")
+            .to_lowercase();
         if ext == "csv" || ext == "txt" || ext == "dat" {
             return self.load_csv(path);
         }
@@ -420,14 +515,16 @@ impl App {
         anyhow::bail!("unsupported or failed: {}", path.display())
     }
 
-    pub fn try_load_parquet(&self, path: &PathBuf) -> anyhow::Result<LoadedSignal> {
+    pub fn try_load_parquet(&self, _path: &PathBuf) -> anyhow::Result<LoadedSignal> {
         // stub, use simple or assume
         Err(anyhow::anyhow!("parquet not fully wired here"))
     }
 
     pub fn load_csv(&mut self, path: &PathBuf) -> anyhow::Result<()> {
-        use std::fs::File;
-        use std::io::{BufRead, BufReader};
+        use std::{
+            fs::File,
+            io::{BufRead, BufReader},
+        };
         let file = File::open(path)?;
         let reader = BufReader::new(file);
         let mut series = Vec::new();
@@ -435,7 +532,9 @@ impl App {
         for line in reader.lines() {
             let line = line?;
             let trimmed = line.trim();
-            if trimmed.is_empty() { continue; }
+            if trimmed.is_empty() {
+                continue;
+            }
 
             if !has_header {
                 if trimmed.contains(',') || trimmed.parse::<f64>().is_err() {
@@ -455,28 +554,43 @@ impl App {
                 }
             }
         }
-        if series.is_empty() { anyhow::bail!("no data"); }
+        if series.is_empty() {
+            anyhow::bail!("no data");
+        }
         self.loaded_signal = Some(LoadedSignal::new(series, path.display().to_string()));
         self.current_tab = Tab::Explore;
         self.current_workflow = Workflow::BioSym;
-        self.status = format!("Loaded {} ({} samples) — switched to Explore", path.display(), self.loaded_signal.as_ref().map(|s|s.n_samples).unwrap_or(0));
+        self.status = format!(
+            "Loaded {} ({} samples) — switched to Explore",
+            path.display(),
+            self.loaded_signal
+                .as_ref()
+                .map(|s| s.n_samples)
+                .unwrap_or(0)
+        );
         self.ensure_status_for_current_tab();
         Ok(())
     }
 
     pub fn load_ibi(&mut self, path: &PathBuf) -> anyhow::Result<()> {
-        use std::fs::File;
-        use std::io::{BufRead, BufReader};
+        use std::{
+            fs::File,
+            io::{BufRead, BufReader},
+        };
         let file = File::open(path)?;
         let reader = BufReader::new(file);
         let mut series = Vec::new();
         for line in reader.lines() {
             let line = line?;
             for tok in line.split_whitespace() {
-                if let Ok(v) = tok.parse::<f64>() { series.push(v); }
+                if let Ok(v) = tok.parse::<f64>() {
+                    series.push(v);
+                }
             }
         }
-        if series.is_empty() { anyhow::bail!("no data"); }
+        if series.is_empty() {
+            anyhow::bail!("no data");
+        }
         let n = series.len();
         self.loaded_signal = Some(LoadedSignal::new(series, path.display().to_string()));
         self.current_tab = Tab::Explore;
@@ -487,8 +601,10 @@ impl App {
     }
 
     pub fn inspect_csv_columns(&self, path: &PathBuf) -> anyhow::Result<usize> {
-        use std::fs::File;
-        use std::io::{BufRead, BufReader};
+        use std::{
+            fs::File,
+            io::{BufRead, BufReader},
+        };
         let file = File::open(path)?;
         let mut reader = BufReader::new(file);
         let mut first = String::new();
@@ -498,21 +614,36 @@ impl App {
 
     pub fn try_load_multicolumn(&mut self, path: &PathBuf) -> anyhow::Result<()> {
         let n = self.inspect_csv_columns(path)?;
-        if n <= 1 { return self.load_csv(path); }
+        if n <= 1 {
+            return self.load_csv(path);
+        }
         // simple load first col
         self.load_csv(path)?;
         self.status = format!("Multi col ({}), loaded col 0. (full picker later)", n);
         Ok(())
     }
 
-    pub fn enter_column_picker(&mut self, path: PathBuf, data: Vec<Vec<f64>>, num_columns: usize, headers: Option<Vec<String>>) -> anyhow::Result<()> {
-        self.pending_load = Some(PendingColumnLoad { path, data, columns: num_columns, headers });
+    pub fn enter_column_picker(
+        &mut self,
+        path: PathBuf,
+        data: Vec<Vec<f64>>,
+        num_columns: usize,
+        headers: Option<Vec<String>>,
+    ) -> anyhow::Result<()> {
+        self.pending_load = Some(PendingColumnLoad {
+            path,
+            data,
+            columns: num_columns,
+            headers,
+        });
         self.status = format!("File has {} cols. Press 1-{} ", num_columns, num_columns);
         Ok(())
     }
 
     pub fn reset_loaded(&mut self) {
-        if let Some(s) = &mut self.loaded_signal { s.reset(); }
+        if let Some(s) = &mut self.loaded_signal {
+            s.reset();
+        }
     }
 
     /// Switch workflow and set a sensible entry tab + status.
@@ -521,10 +652,15 @@ impl App {
         match wf {
             Workflow::Home => {
                 self.current_tab = Tab::Home;
-                self.status = "Home — 1/Enter=BioSym  2=LoadSym  3=SpatialSym  • Ctrl+H here".to_string();
+                self.status =
+                    "Home — 1/Enter=BioSym  2=LoadSym  3=SpatialSym  • Ctrl+H here".to_string();
             }
             Workflow::BioSym => {
-                self.current_tab = if self.loaded_signal.is_some() { Tab::Explore } else { Tab::Import };
+                self.current_tab = if self.loaded_signal.is_some() {
+                    Tab::Explore
+                } else {
+                    Tab::Import
+                };
                 self.status = "BioSym — Import / Explore / Dynamics (filtering + RQA)".to_string();
             }
             Workflow::SpatialSym => {
@@ -534,7 +670,11 @@ impl App {
             }
             Workflow::LoadSym => {
                 self.current_tab = Tab::LoadSym;
-                self.status = "LoadSym — training load, ACWR, nutrition (template)".to_string();
+                self.loadsym_view = LoadSymView::List;
+                self.loadsym_selection = 0;
+                self.status =
+                    "LoadSym — 1 Workout  2 Calendar  3 Optimization   ↑↓ Enter   Ctrl+H home"
+                        .to_string();
             }
         }
         self.ensure_status_for_current_tab();
@@ -544,29 +684,41 @@ impl App {
     pub fn ensure_status_for_current_tab(&mut self) {
         if self.current_workflow == Workflow::Home {
             if !self.status.starts_with("Home") {
-                self.status = "Home — Select analysis path (1=BioSym, 2=LoadSym, 3=SpatialSym)".to_string();
+                self.status =
+                    "Home — Select analysis path (1=BioSym, 2=LoadSym, 3=SpatialSym)".to_string();
             }
             return;
         }
         if self.current_tab != Tab::Spatial && self.status.starts_with("Spatial") {
             self.status = match self.current_tab {
-                Tab::Import => "Import — / filter, ↑↓ select, Enter load, c convert, Ctrl+G generate".to_string(),
+                Tab::Import => {
+                    "Import — / filter, ↑↓ select, Enter load, c convert, Ctrl+G generate"
+                        .to_string()
+                }
                 Tab::Explore => "Explore — stats + sparkline (p to process)".to_string(),
                 Tab::Dynamics => "Dynamics (RQA ready)".to_string(),
                 _ => "Symview".to_string(),
             };
         } else if self.current_tab == Tab::Spatial && !self.status.starts_with("Spatial") {
-            let maxf = self.spatial_batch.as_ref().map(|b| b.num_times().saturating_sub(1)).unwrap_or(0);
+            let maxf = self
+                .spatial_batch
+                .as_ref()
+                .map(|b| b.num_times().saturating_sub(1))
+                .unwrap_or(0);
             self.status = format!("Spatial: frame {}/{}", self.spatial_frame_idx, maxf);
         } else if self.current_tab == Tab::LoadSym {
-            // keep or set on switch
+            if self.loadsym_view == LoadSymView::List {
+                self.status =
+                    "LoadSym — ↑↓ 1/2/3 select view (Workout / Calendar / Optimization) • Esc back"
+                        .to_string();
+            }
         }
     }
 
     /// Basic spatial CSV load using spatialsym loader + re-apply decision pipeline similar to seed.
     /// For real data we synthesize a minimal batch + decisions for viz reuse.
     pub fn load_spatial_csv(&mut self, path: &PathBuf) -> anyhow::Result<()> {
-        use symworx_spatialsym::{Point2, build_agent_trajectories, PlayingDimensions};
+        use symworx_spatialsym::{build_agent_trajectories, PlayingDimensions, Point2};
         let path_str = path.to_string_lossy().to_string();
         let (times, trajs) = symworx_spatialsym::load_trajectories_csv(&path_str)
             .map_err(|e| anyhow::anyhow!("spatial load: {}", e))?;
@@ -580,7 +732,13 @@ impl App {
         let n_steps = times.len().min(trajs[0].len());
 
         // Trim trajs to common length
-        let trimmed: Vec<Vec<Point2>> = trajs.into_iter().map(|mut v| { v.truncate(n_steps); v }).collect();
+        let trimmed: Vec<Vec<Point2>> = trajs
+            .into_iter()
+            .map(|mut v| {
+                v.truncate(n_steps);
+                v
+            })
+            .collect();
 
         // Fake groups / att directions / goal for compatibility
         let groups: Vec<u32> = (0..n_agents as u32).collect();
@@ -591,18 +749,15 @@ impl App {
         let ev_t = times.into_iter().take(n_steps).collect();
         let mut ev_f: Vec<Point2> = Vec::new();
         for t in 0..n_steps {
-            let fx = trimmed.first().and_then(|v| v.get(t)).map(|p| p.x).unwrap_or(0.0);
+            let fx = trimmed
+                .first()
+                .and_then(|v| v.get(t))
+                .map(|p| p.x)
+                .unwrap_or(0.0);
             ev_f.push(Point2::new(fx + 2.0, 1.0));
         }
-        let (batch, focal) = build_agent_trajectories(
-            ev_t,
-            trimmed,
-            groups,
-            att,
-            ev_f,
-            dims,
-            Some(goal_pos),
-        );
+        let (batch, focal) =
+            build_agent_trajectories(ev_t, trimmed, groups, att, ev_f, dims, Some(goal_pos));
         self.spatial_batch = Some(batch);
         self.spatial_focal = Some(focal);
         self.spatial_frame_idx = 0;
@@ -618,14 +773,16 @@ impl App {
             let decs = b.classify_with_focal_and_params(foc, 0.5, 10.0, 0.8);
             self.spatial_decisions = Some(decs);
         }
-        self.spatial_events = vec![
-            (0, "start".to_string()),
-            (n_steps / 2, "mid".to_string()),
-        ];
+        self.spatial_events = vec![(0, "start".to_string()), (n_steps / 2, "mid".to_string())];
         self.current_tab = Tab::Spatial;
         self.spatial_view = SpatialView::Visualize;
         self.current_workflow = Workflow::SpatialSym;
-        self.status = format!("Spatial loaded: {} ({} agents, {} steps)", path.display(), n_agents, n_steps);
+        self.status = format!(
+            "Spatial loaded: {} ({} agents, {} steps)",
+            path.display(),
+            n_agents,
+            n_steps
+        );
         self.ensure_status_for_current_tab();
         Ok(())
     }

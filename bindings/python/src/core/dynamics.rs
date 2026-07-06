@@ -2,19 +2,9 @@
 
 use ndarray::Array2;
 use numpy::PyArray2;
-use pyo3::{
-    prelude::*,
-    wrap_pyfunction,
-};
+use pyo3::{prelude::*, wrap_pyfunction};
 use symworx_core::dynamics::{
-    DEFAULT_LMIN,
-    DEFAULT_VMIN,
-    RecurrencePlot,
-    RqaResult,
-    edim,
-    fnn,
-    rqa,
-    rqa_from_trajectory,
+    DEFAULT_LMIN, DEFAULT_VMIN, RecurrencePlot, RqaResult, edim, fnn, rqa, rqa_from_trajectory,
     sample_entropy,
 };
 

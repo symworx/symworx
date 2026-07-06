@@ -3,16 +3,10 @@
 
 use std::fs::File;
 
-use csv::{
-    ReaderBuilder,
-    WriterBuilder,
-};
+use csv::{ReaderBuilder, WriterBuilder};
 use symworx_error::SymError;
 
-use crate::traits::{
-    SymReader,
-    SymWriter,
-};
+use crate::traits::{SymReader, SymWriter};
 
 /// CSV Reader implementation for `symworx-io`.
 ///

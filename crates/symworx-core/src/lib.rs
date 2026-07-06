@@ -50,28 +50,15 @@ pub use symworx_io::traits::*;
 pub use symworx_math as math;
 // Convenience re-exports for common series/sequence operations
 pub use symworx_math::series::{
-    ewma,
-    rolling_apply,
-    rolling_mean,
-    rolling_std,
-    sliding_windows,
-    successive_absolute_differences,
-    successive_differences,
-    time_windows,
+    ewma, rolling_apply, rolling_mean, rolling_std, sliding_windows,
+    successive_absolute_differences, successive_differences, time_windows,
 };
 pub use symworx_signal as signal;
 pub use symworx_signal::{
     filters,
     processing::{
-        FillStrategy,
-        OutlierCriterion,
-        Peak,
-        PeakDetect,
-        PeakFinderBuilder,
-        detect_outliers,
-        interpolate_outliers,
-        resample_rr_to_tachogram,
-        robust_interpolate,
+        FillStrategy, OutlierCriterion, Peak, PeakDetect, PeakFinderBuilder, detect_outliers,
+        interpolate_outliers, resample_rr_to_tachogram, robust_interpolate,
         robust_interpolate_with_times,
     },
 };

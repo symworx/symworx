@@ -1,22 +1,11 @@
 // Copyright (c) 2026 SymWorx
 
-use pyo3::{
-    exceptions::PyIOError,
-    prelude::*,
-    wrap_pyfunction,
-};
+use pyo3::{exceptions::PyIOError, prelude::*, wrap_pyfunction};
 use symworx_core::io::{
-    csv::{
-        CsvReader,
-        CsvWriter,
-    },
+    csv::{CsvReader, CsvWriter},
     gbd::GbdReader,
-    load_any,
-    read_ibi,
-    traits::{
-        SymReader,
-        SymWriter,
-    },
+    load_any, read_ibi,
+    traits::{SymReader, SymWriter},
 };
 
 // ===========================================================
@@ -148,18 +137,117 @@ pub fn py_read_ibi(path: &str) -> PyResult<Vec<PyIbiRecord>> {
 pub struct PyParquetReader;
 
 // ===========================================================
+// Activity / FIT (for LoadSym rides: SRM/Garmin/Polar)
+// Lightweight exposure so external tools / hybrid projects can call
+// symworx for parsing without duplicating parsers.
+// ===========================================================
+
+#[pyclass(name = "ActivityData")]
+pub struct PyActivityData {
+    #[pyo3(get)]
+    pub source: String,
+    #[pyo3(get)]
+    pub manufacturer: Option<String>,
+    #[pyo3(get)]
+    pub sport: Option<String>,
+    #[pyo3(get)]
+    pub n_samples: usize,
+    #[pyo3(get)]
+    pub duration_s: f64,
+    #[pyo3(get)]
+    pub has_power: bool,
+    // Note: full series available via methods or as dict for simplicity
+}
+
+#[pymethods]
+impl PyActivityData {
+    fn __repr__(&self) -> String {
+        format!(
+            "ActivityData(source={}, samples={}, duration={:.1}s, has_power={})",
+            self.source, self.n_samples, self.duration_s, self.has_power
+        )
+    }
+
+    fn to_dict(&self, py: Python<'_>) -> PyResult<PyObject> {
+        // For full data, re-load or extend later. This is lightweight.
+        let dict = pyo3::types::PyDict::new(py);
+        dict.set_item("source", &self.source)?;
+        dict.set_item("manufacturer", &self.manufacturer)?;
+        dict.set_item("sport", &self.sport)?;
+        dict.set_item("n_samples", self.n_samples)?;
+        dict.set_item("duration_s", self.duration_s)?;
+        dict.set_item("has_power", self.has_power)?;
+        Ok(dict.into())
+    }
+}
+
+#[pyfunction(name = "load_activity")]
+pub fn py_load_activity(path: &str) -> PyResult<PyObject> {
+    use pyo3::{Python, types::PyDict};
+    // symworx-io is declared as symworx-io in Cargo → identifier symworx_io
+    match symworx_io::load_activity(path) {
+        Ok(act) => Python::with_gil(|py| {
+            // Return a simple dict for backward compat + rich info
+            let d = PyDict::new(py);
+            let _ = d.set_item("source", &act.source);
+            let _ = d.set_item("manufacturer", &act.manufacturer);
+            let _ = d.set_item("sport", &act.sport);
+            let _ = d.set_item("n_samples", act.times_s.len());
+            let _ = d.set_item("duration_s", act.duration_s());
+            let p: Vec<Option<f64>> = act.power_w.clone();
+            let _ = d.set_item("power_w", p);
+            let _ = d.set_item("has_power", act.has_power());
+            Ok(d.into())
+        }),
+        Err(e) => Err(PyErr::new::<PyIOError, _>(format!("load_activity: {}", e))),
+    }
+}
+
+// ===========================================================
+// Email / IMAP fetching (new, for SRM PC8 email .fit ingestion etc.)
+// Gated behind feature in the underlying crate.
+// ===========================================================
+
+#[pyfunction(name = "fetch_srm_fit_attachments")]
+pub fn py_fetch_srm_fit_attachments(
+    user: &str,
+    app_password: &str,
+    target_dir: &str,
+) -> PyResult<Vec<String>> {
+    // Note: requires the python bindings to be built with symworx-io "email" feature
+    // (and native-tls, mailparse etc.).
+    match symworx_io::fetch_srm_fit_attachments(
+        user,
+        app_password,
+        std::path::Path::new(target_dir),
+    ) {
+        Ok(paths) => Ok(paths
+            .into_iter()
+            .map(|p| p.to_string_lossy().to_string())
+            .collect()),
+        Err(e) => Err(PyErr::new::<PyIOError, _>(format!(
+            "fetch_srm_fit_attachments: {}",
+            e
+        ))),
+    }
+}
+
+// ===========================================================
 // PYTHON REGISTER
 // ===========================================================
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_read_gbd, m)?)?;
     m.add_function(wrap_pyfunction!(py_read_ibi, m)?)?;
+    m.add_function(wrap_pyfunction!(py_load_activity, m)?)?;
+    m.add_function(wrap_pyfunction!(py_fetch_srm_fit_attachments, m)?)?;
 
     m.add_class::<PyCsvReader>()?;
     m.add_class::<PyCsvWriter>()?;
     m.add_class::<PyGbdTable>()?;
     m.add_class::<PyIbiRecord>()?;
     m.add_class::<PyParquetReader>()?;
+    m.add_class::<PyActivityData>()?;
 
     Ok(())
 }

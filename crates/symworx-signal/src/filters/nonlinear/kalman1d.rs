@@ -7,12 +7,7 @@
 //! For general multivariate state estimation, control inputs, and RTS smoothing,
 //! use the primary `KalmanFilter` from the `state_space` module.
 
-use ndarray::{
-    Array1,
-    Array2,
-    Axis,
-    array,
-};
+use ndarray::{Array1, Array2, Axis, array};
 use ndarray_linalg::Inverse;
 
 /// Simple 1D Kalman Filter (position + velocity state).

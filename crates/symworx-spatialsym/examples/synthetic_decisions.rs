@@ -1,16 +1,13 @@
-use symworx_spatialsym::{
-    AgentTrajectories,
-    PlayingDimensions,
-    Point2,
-    Vec2,
-};
+use symworx_spatialsym::{AgentTrajectories, PlayingDimensions, Point2, Vec2};
 
 fn main() {
     println!("symworx-spatialsym synthetic demo\n");
-    println!("Demonstrates longer sequences with Creation / Conversion / Prevention (goal-scoring opportunity actions).\n");
+    println!(
+        "Demonstrates longer sequences with Creation / Conversion / Prevention (goal-scoring opportunity actions).\n"
+    );
 
     let dt = 0.1;
-    let duration = 3.5;  // longer for more interesting sequences including creation/denial/conversion
+    let duration = 3.5; // longer for more interesting sequences including creation/denial/conversion
 
     // 1+2: parametric + noisy (math)
     let _t: Vec<f64> = (0..=((duration / dt) as usize))
@@ -97,12 +94,19 @@ fn main() {
     let dims = Some(symworx_spatialsym::PlayingDimensions::new(105.0, 68.0)); // standard field size
     // Goal positions per agent (their attacking goal). Team 0 attacks right goal, team 1 left.
     let goal_pos = vec![
-        Point2::new(52.5, 0.0),   // right goal for attacking team (group 0)
+        Point2::new(52.5, 0.0), // right goal for attacking team (group 0)
         Point2::new(52.5, 0.0),
-        Point2::new(-52.5, 0.0),  // left goal for defending team (group 1)
+        Point2::new(-52.5, 0.0), // left goal for defending team (group 1)
     ];
-    let (batch, focal) =
-        symworx_spatialsym::build_agent_trajectories(ev_t, ev_p, groups, att, ev_f, dims, Some(goal_pos));
+    let (batch, focal) = symworx_spatialsym::build_agent_trajectories(
+        ev_t,
+        ev_p,
+        groups,
+        att,
+        ev_f,
+        dims,
+        Some(goal_pos),
+    );
 
     println!(
         "\nBatch (3): {} agents, {} times (longer example with explicit goal-scoring creation + denial)",
@@ -122,7 +126,10 @@ fn main() {
         "\nAgent1 decisions (t={}..{}): {:?}",
         start,
         end,
-        decs[1][start..end].iter().map(|d| d.action).collect::<Vec<_>>()
+        decs[1][start..end]
+            .iter()
+            .map(|d| d.action)
+            .collect::<Vec<_>>()
     );
 
     // Also show defender decisions (agent 2) to see Prevention/Denial
@@ -130,7 +137,10 @@ fn main() {
         "Agent2 (defender) decisions (t={}..{}): {:?}",
         start,
         end,
-        decs[2][start..end].iter().map(|d| d.action).collect::<Vec<_>>()
+        decs[2][start..end]
+            .iter()
+            .map(|d| d.action)
+            .collect::<Vec<_>>()
     );
 
     let sums = batch.per_player_summaries(2.0, 4.5, Some(&focal));
@@ -151,32 +161,53 @@ fn main() {
     let key_end = n_steps.min(26);
     println!(
         "Classifier (agent0 creator) t={}-{}: {:?}",
-        key_start, key_end,
-        decs[0][key_start..key_end].iter().map(|d| d.action).collect::<Vec<_>>()
+        key_start,
+        key_end,
+        decs[0][key_start..key_end]
+            .iter()
+            .map(|d| d.action)
+            .collect::<Vec<_>>()
     );
     println!(
         "Classifier (agent1) t={}-{}: {:?}",
-        key_start, key_end,
-        decs[1][key_start..key_end].iter().map(|d| d.action).collect::<Vec<_>>()
+        key_start,
+        key_end,
+        decs[1][key_start..key_end]
+            .iter()
+            .map(|d| d.action)
+            .collect::<Vec<_>>()
     );
     println!(
         "Classifier (agent2 denier) t={}-{}: {:?}",
-        key_start, key_end,
-        decs[2][key_start..key_end].iter().map(|d| d.action).collect::<Vec<_>>()
+        key_start,
+        key_end,
+        decs[2][key_start..key_end]
+            .iter()
+            .map(|d| d.action)
+            .collect::<Vec<_>>()
     );
 
     println!("\nGround truth labels for scoring_sequence:");
     println!(
         "Agent 0 (creator / Creation phase): {:?}",
-        seq_labels[0][key_start..key_end].iter().map(|a| format!("{:?}", a)).collect::<Vec<_>>()
+        seq_labels[0][key_start..key_end]
+            .iter()
+            .map(|a| format!("{:?}", a))
+            .collect::<Vec<_>>()
     );
     println!(
         "Agent 1 (Conversion / finishing):   {:?}",
-        seq_labels[1][key_start..key_end].iter().map(|a| format!("{:?}", a)).collect::<Vec<_>>()
+        seq_labels[1][key_start..key_end]
+            .iter()
+            .map(|a| format!("{:?}", a))
+            .collect::<Vec<_>>()
     );
     println!(
         "Agent 2 (Prevention / Denial):      {:?}",
-        seq_labels[2][key_start..key_end].iter().map(|a| format!("{:?}", a)).collect::<Vec<_>>()
+        seq_labels[2][key_start..key_end]
+            .iter()
+            .map(|a| format!("{:?}", a))
+            .collect::<Vec<_>>()
     );
 
     println!("\nSynthetic (1-3) generated + analyzed. Ready for testing/visualization.");

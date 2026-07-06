@@ -193,10 +193,7 @@ pub fn classify_space_actions(
     playing_dimensions: Option<&crate::space::PlayingDimensions>,
     goal_positions: Option<&[crate::geometry::Point2]>,
 ) -> Vec<Vec<AgentDecision>> {
-    use crate::kinematics::{
-        future_bearings,
-        past_bearings,
-    };
+    use crate::kinematics::{future_bearings, past_bearings};
 
     let n_agents = agent_trajectories.len();
     if n_agents == 0 || times.is_empty() {
@@ -497,7 +494,8 @@ pub fn classify_space_actions(
                 if same_possession {
                     // Off-ball attacker making a dangerous run that creates a scoring chance
                     let near_goal = dist_to_goal.map_or(goal_progress > 0.4, |d| d < 15.0);
-                    let creating_danger = near_goal && forward > 0.45 && speed > 2.2 && nearest_dist > 4.5;
+                    let creating_danger =
+                        near_goal && forward > 0.45 && speed > 2.2 && nearest_dist > 4.5;
                     if creating_danger {
                         SpaceAction::Creation
                     } else if forward > 0.3 && speed > 0.3 {
@@ -578,7 +576,9 @@ pub fn classify_space_actions(
                 if receiver_now_pressed {
                     if let Some(dec) = results.get_mut(carrier).and_then(|v| v.get_mut(t)) {
                         match dec.action {
-                            SpaceAction::Penetration | SpaceAction::Creation | SpaceAction::Conversion => {
+                            SpaceAction::Penetration
+                            | SpaceAction::Creation
+                            | SpaceAction::Conversion => {
                                 dec.action = SpaceAction::Neutral;
                                 // Reclassified because the receiver was under immediate pressure
                             }

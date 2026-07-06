@@ -32,11 +32,13 @@ pub fn scale_to_percent(data: &[f64]) -> Vec<f64> {
     let min = data.iter().cloned().fold(f64::INFINITY, f64::min);
     let max = data.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
 
-    if max ==min {
+    if max == min {
         // all values are the same
         vec![0.0; data.len()]
     } else {
-        data.iter().map(|x| 100.0 * (x - min) / (max - min)).collect()
+        data.iter()
+            .map(|x| 100.0 * (x - min) / (max - min))
+            .collect()
     }
 }
 

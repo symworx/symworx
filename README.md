@@ -59,9 +59,33 @@ See `crates/symworx-biosym/src/` (particularly the `gait` module and future `run
 
 ### [LoadSym](crates/symworx-loadsym/README.md)
 
-**Overview**: The `symworx-loadsym` crate contains resources for quantifying and optimizing (exercise programming) training load (physiological and mechanical).
-It also contains resources centered around nutrition and energy 
-(e.g., basal metabolic rate, total daily energy expenditure, etc.)
+**Overview**: The `symworx-loadsym` crate contains resources for quantifying and optimizing (exercise programming) training load (physiological and mechanical). Includes ACWR, monotony/strain, NP/TSS/IF for power meter rides (.fit from SRM PC8, Garmin, Polar), plus nutrition (BMR/TDEE/weightloss).
+
+TUI (symview) has a first-class **LoadSym** workflow (Home → 2) with Workout analysis, Calendar trends, and Optimization recommendations. Drop .fit files in `data/` (or `rides/`) and press `i` (or `a`) inside LoadSym.
+
+See `crates/symworx-loadsym-db/docs/loadsym-personal-starter.md` for the companion ingestion + Postgres + rclone archive project (intended to live in a **separate repo**).
+
+### symload (headless ingest)
+
+The `symload` CLI is now shipped as a binary by the `symworx-loadsym` crate:
+
+- `cargo run -p symworx-loadsym --features "email,db" -- stats <file.fit> --ftp 280`
+- Or after `cargo install symworx-loadsym --features "email,db"`, just `symload stats ...`
+
+Features:
+- `stats` on .fit files (NP, IF, TSS, etc.)
+- `db print-schema`
+- `email fetch` (IMAP for SRM etc., behind `email` feature; the IMAP/mailparse deps live in `symworx-io` to keep I/O concerns together)
+
+See the updated `crates/symworx-loadsym-db/docs/loadsym-personal-starter.md` and `crates/symworx-loadsym/README.md`.
+
+### symworx-loadsym-db
+
+Lightweight crate that provides SQL schema constants. It is still available separately but is also consumable via the `db` feature on `symworx-loadsym`.
+
+### Email / SRM ingestion
+
+Not yet implemented. Current guidance (in docs): manually (or via simple script) save SRM email attachments to an `inbox/` directory, then run `symload` on them. Full Gmail IMAP fetching (searching for SRM emails and auto-downloading .fit) can be added next.
 
 ### [SpatialSym](crates/symworx-spatialsym/README.md)
 

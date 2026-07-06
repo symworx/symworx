@@ -5,12 +5,7 @@
 //!
 //! Uses SVD internally for maximum numerical stability.
 
-use ndarray::{
-    Array1,
-    Array2,
-    Axis,
-    s,
-};
+use ndarray::{Array1, Array2, Axis, s};
 
 use crate::svd::Svd;
 

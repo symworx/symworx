@@ -15,6 +15,7 @@ members = [
     "crates/symworx-spatialsym",
     "crates/symworx-stats",
     "crates/symworx-tui",
+    "crates/symworx-loadsym-db",
     "bindings/python", 
 ]
 
@@ -23,7 +24,7 @@ version    = "0.1.0"
 edition    = "2024"
 license    = "Apache-2.0"
 repository = "https://github.com/symworx/symworx"
-authors    = ["ntberry nate-berry@outlook.com"]
+authors    = ["nate berry <nate-berry@outlook.com>"]
 
 [workspace.dependencies]
 csv            = { version = "1.3" }
@@ -46,6 +47,7 @@ tokio          = { version = "1", features = ["full"] }
 # Keep usage opt-in where possible. We centralize the version here for consistency
 # in case we want/need polars in other crates later.
 polars         = { version = "0.51" }
+fitparser      = { version = "0.11" }
 
 [workspace.lints.rust]
 # We use `deny` (not `forbid`) for `unsafe_code` because this workspace

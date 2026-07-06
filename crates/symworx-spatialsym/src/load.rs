@@ -12,10 +12,7 @@ use csv::ReaderBuilder;
 use tokio::fs;
 
 use crate::{
-    error::{
-        Result,
-        SpatialError,
-    },
+    error::{Result, SpatialError},
     geometry::Point2,
 };
 

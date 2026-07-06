@@ -2,11 +2,7 @@
 // Licensed under the Apache License, Version 2.0.
 
 use super::PPGSignalQuality;
-use crate::common::{
-    BandpassParams,
-    PeakDetectionParams,
-    PhysiologyProcessingParams,
-};
+use crate::common::{BandpassParams, PeakDetectionParams, PhysiologyProcessingParams};
 
 /// Legacy PPG bandpass: 0.5–5.0 Hz (4th-order equivalent via 2 cascaded 2nd-order sections).
 pub fn ppg_default_bandpass() -> BandpassParams {

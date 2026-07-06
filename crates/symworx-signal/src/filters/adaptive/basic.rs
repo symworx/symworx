@@ -5,11 +5,7 @@
 //!
 //! Adaptive filtering methods for removing/replacing outliers in signals.
 
-use symworx_stats::{
-    mad,
-    mean,
-    median,
-};
+use symworx_stats::{mad, mean, median};
 
 /// Adaptive mean-based outlier replacement.
 ///

@@ -1,9 +1,10 @@
 use ratatui::{
-    Frame,
-    layout::{Constraint, Layout, Alignment},
+    layout::{Alignment, Constraint, Layout},
     style::{Color, Modifier, Style, Stylize},
     widgets::{Block, Borders, Paragraph},
+    Frame,
 };
+
 use crate::app::{App, Tab};
 
 pub mod tabs;
@@ -27,15 +28,18 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
     //   Right: current subtab or "HOME" (right-aligned)
     let header_area = main_layout[0];
     let header_chunks = Layout::horizontal([
-        Constraint::Length(9),   // left: SymView
-        Constraint::Fill(1),     // center: primary name takes flexible space → dynamic centering
-        Constraint::Min(12),     // right: subtab/HOME
+        Constraint::Length(9), // left: SymView
+        Constraint::Fill(1),   // center: primary name takes flexible space → dynamic centering
+        Constraint::Min(12),   // right: subtab/HOME
     ])
     .split(header_area);
 
     // Left: always SymView
-    let left = Paragraph::new("SymView")
-        .style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD));
+    let left = Paragraph::new("SymView").style(
+        Style::default()
+            .fg(Color::White)
+            .add_modifier(Modifier::BOLD),
+    );
     frame.render_widget(left, header_chunks[0]);
 
     // Center: primary (parent) tab name — centered within the flexible center area
@@ -61,9 +65,11 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
             _ => app.current_tab.title().to_string(),
         }
     };
-    let right_p = Paragraph::new(right)
-        .alignment(Alignment::Right)
-        .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD));
+    let right_p = Paragraph::new(right).alignment(Alignment::Right).style(
+        Style::default()
+            .fg(Color::Cyan)
+            .add_modifier(Modifier::BOLD),
+    );
     frame.render_widget(right_p, header_chunks[2]);
 
     let action_bar = render_action_bar(app);
@@ -72,7 +78,9 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
     // When workflow is Home (or tab explicitly Home) render the landing full-height
     if is_home(app) {
         tabs::home::render_home_tab(frame, app, main_layout[2]);
-    } else if app.current_workflow == crate::app::Workflow::LoadSym || app.current_tab == Tab::LoadSym {
+    } else if app.current_workflow == crate::app::Workflow::LoadSym
+        || app.current_tab == Tab::LoadSym
+    {
         tabs::loadsym::render_loadsym_tab(frame, app, main_layout[2]);
     } else {
         match app.current_tab {
@@ -85,25 +93,99 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
         }
     }
 
-    let footer = Paragraph::new(format!(" {}  •  q: Quit", app.status))
-        .centered()
-        .dim()
-        .block(Block::new().borders(Borders::TOP));
-    frame.render_widget(footer, main_layout[3]);
+    // Lower legend / footer bar:
+    // - Left: status + [Esc] when relevant (for subdir/analysis pages / sub-modes)
+    // - Right: q: Quit (right-aligned)
+    // No tab name here (shown in top-right chrome)
+    let footer_area = main_layout[3];
+    let footer_chunks = Layout::horizontal([
+        Constraint::Fill(1),
+        Constraint::Min(10), // room for "q: Quit"
+    ])
+    .split(footer_area);
+
+    // Append [Esc] hint when entering sub-pages / analysis modes where Escape is relevant
+    let esc_hint = if app.pending_process
+        || app.pending_rqa
+        || app.pending_spatial_import
+        || app.filter_mode
+    {
+        "  [Esc] cancel"
+    } else if app.current_workflow == crate::app::Workflow::LoadSym
+        && app.loadsym_view != crate::app::LoadSymView::List
+    {
+        "  [Esc] back"
+    } else if app.current_workflow == crate::app::Workflow::SpatialSym && app.pending_spatial_import
+    {
+        "  [Esc] back"
+    } else if app.pending_generate {
+        "  [Esc] cancel"
+    } else {
+        ""
+    };
+
+    let left_text = if esc_hint.is_empty() {
+        format!(" {}", app.status)
+    } else {
+        format!(" {}{}", app.status, esc_hint)
+    };
+
+    let left_legend = Paragraph::new(left_text).dim();
+
+    let right_quit = Paragraph::new("q: Quit").alignment(Alignment::Right).dim();
+
+    // Single top border across the whole bottom area
+    let border_block = Block::new().borders(Borders::TOP);
+    frame.render_widget(border_block, footer_area);
+
+    frame.render_widget(left_legend, footer_chunks[0]);
+    frame.render_widget(right_quit, footer_chunks[1]);
 }
 
 pub fn render_action_bar(app: &App) -> Paragraph<'_> {
-    // Simplified: only movement related commands (arrows) + universal navigation.
-    // Detailed commands removed from chrome (see status line or inside views).
+    // Lower legend / action bar.
+    // Show [Esc] when relevant for sub-modes / analysis pages (back/cancel).
+    // q: Quit is right-aligned in the footer below.
+
     if app.pending_generate {
         return Paragraph::new("  BioSym: [1] PPG   [2] Respiration   [3] Stride   [Esc] Cancel")
-            .style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD));
+            .style(
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            );
     }
     if app.filter_mode {
         return Paragraph::new("  Filtering...  [Esc] or [Enter] to exit")
             .style(Style::default().fg(Color::Cyan));
     }
 
-    Paragraph::new("  ↑↓   ←→ (Ctrl+arrows)   •   Enter   •   Ctrl+H Home   •   M-? help")
-        .style(Style::default().fg(Color::DarkGray))
+    // Determine if we are in a "subdir/analysis page" where Esc is relevant
+    let esc = if app.pending_process {
+        "  [Esc] cancel process"
+    } else if app.pending_rqa {
+        "  [Esc] cancel RQA"
+    } else if app.pending_spatial_import {
+        "  [Esc] cancel import"
+    } else if app.current_workflow == crate::app::Workflow::LoadSym {
+        match app.loadsym_view {
+            crate::app::LoadSymView::List => "",
+            _ => "  [Esc] back to list",
+        }
+    } else if app.current_workflow == crate::app::Workflow::SpatialSym && app.pending_spatial_import
+    {
+        "  [Esc] back"
+    } else {
+        ""
+    };
+
+    let base = "  ↑↓   ←→ (Ctrl+arrows)   •   Enter   •   Ctrl+H Home   •   M-? help";
+
+    let text = if esc.is_empty() {
+        base.to_string()
+    } else {
+        format!("{}{}", esc, base)
+    };
+
+    Paragraph::new(text).style(Style::default().fg(Color::DarkGray))
 }

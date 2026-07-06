@@ -1,9 +1,10 @@
 use ratatui::{
-    Frame,
     layout::{Constraint, Layout, Rect},
     style::{Color, Style},
     widgets::{Block, Borders, Paragraph},
+    Frame,
 };
+
 use crate::app::App;
 
 pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
@@ -22,8 +23,9 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
              The sections below always show:\n\
              - current frame details (GT vs classified + features)\n\
              - list of event tags (with current marker)\n\
-             - summary stats from per_player_summaries"
-        ).block(Block::new().borders(Borders::ALL).title(" Help — Spatial "));
+             - summary stats from per_player_summaries",
+        )
+        .block(Block::new().borders(Borders::ALL).title(" Help — Spatial "));
         frame.render_widget(help, area);
         return;
     }
@@ -38,7 +40,7 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
 
     // Sub-tab / view header (equivalent of sub-tabs inside this domain)
     let sub_header = Paragraph::new(format!(
-        "  [g] Generate/Synth   [i] Import matches/games (placeholder)   [v] Visualize   current: {:?}",
+        "  [g] Generate   [i] Import file/dir (./data + metadata)   [v] Visualize   {:?}",
         app.spatial_view
     ))
     .style(Style::default().fg(Color::Yellow));
@@ -54,18 +56,71 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
 
     frame.render_widget(sub_header, chunks[0]);
 
-    // If in import/generate sub-view, render a compact menu + placeholder list
+    // If in import/generate sub-view, render interactive-ish file viewer + options
     if app.spatial_view != crate::app::SpatialView::Visualize || app.pending_spatial_import {
-        let import_text = "Spatial Import / Generate\n\n\
-            1 : Regenerate current synthetic demo\n\
-            2 / i : Load placeholder match or game (stub — populates viz with demo data)\n\
+        // Dynamic file list for more interactive viewer (scan data/ for csv)
+        let mut files: Vec<String> = vec![];
+        if let Ok(entries) = std::fs::read_dir("data") {
+            for e in entries.flatten() {
+                let p = e.path();
+                if p.is_file() {
+                    if let Some(ext) = p.extension().and_then(|x| x.to_str()) {
+                        if ext.eq_ignore_ascii_case("csv") {
+                            files.push(
+                                p.file_name()
+                                    .unwrap_or_default()
+                                    .to_string_lossy()
+                                    .to_string(),
+                            );
+                        }
+                    }
+                } else if p.is_dir() {
+                    // per match dir
+                    if let Ok(sub) = std::fs::read_dir(&p) {
+                        for se in sub.flatten() {
+                            if let Some(e2) = se.path().extension().and_then(|x| x.to_str()) {
+                                if e2.eq_ignore_ascii_case("csv") {
+                                    files.push(format!(
+                                        "{}/{}",
+                                        p.file_name().unwrap_or_default().to_string_lossy(),
+                                        se.file_name().to_string_lossy()
+                                    ));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        let file_list = if files.is_empty() {
+            "  (no .csv found in ./data/ or subdirs)".to_string()
+        } else {
+            files
+                .iter()
+                .take(5)
+                .enumerate()
+                .map(|(i, f)| format!("  {}: {}", i + 1, f))
+                .collect::<Vec<_>>()
+                .join("\n")
+        };
+
+        let import_text = format!(
+            "Spatial Import / Generate  (template page - more interactive file viewer)\n\n\
+            1 / g : Generate synthetic demo data\n\
+            2 / i : Load file/dir (auto first suitable .csv or subdir csv)\n\
+                    Supports per-match + metadata sidecars/headers (TBD)\n\
             Enter or numbers : act   Esc : back to viz\n\n\
-            Future: select real .csv (time,agent_id,x,y) — uses symworx-spatialsym::load_trajectories_csv\n\
-            Different sports/matches will appear here (placeholder entries below):\n\
-            • demo_match_2026.csv (synthetic)\n\
-            • import_game_soccer_01 (stub)\n\
-            • example_cross_session (placeholder)";
-        let p = Paragraph::new(import_text).block(Block::new().borders(Borders::ALL).title(" Import / Generate "));
+            Discovered in ./data/:\n{}\n\n\
+            File structure: time,agent_id,x,y .csv  |  subdirs for matches\n\
+            Real loads: load_trajectories_csv + build + classify\n\
+            Exports: e produces .csv + .json + _meta.json for LLM",
+            file_list
+        );
+        let p = Paragraph::new(import_text).block(
+            Block::new()
+                .borders(Borders::ALL)
+                .title(" Import / Generate "),
+        );
         frame.render_widget(p, chunks[1]);
         // Skip normal viz chunks when showing import UI
         return;
@@ -85,8 +140,7 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
     } else {
         "Spatial tab — synthetic demo. Press g or i to enter generate/import. Then use ←→ or n/p to move frames.".to_string()
     };
-    let nav = Paragraph::new(nav_text)
-        .style(Style::default().fg(Color::DarkGray));
+    let nav = Paragraph::new(nav_text).style(Style::default().fg(Color::DarkGray));
     frame.render_widget(nav, chunks[1]);
 
     if let (Some(batch), Some(focal)) = (&app.spatial_batch, &app.spatial_focal) {
@@ -139,14 +193,26 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
                             let d2 = decisions.get(2).and_then(|r| r.get(idx)).unwrap_or(d0);
                             lines.push(format!(
                                 "Classified   : {:<11}({:.2})   {:<11}({:.2})   {:<11}({:.2})",
-                                format!("{:?}", d0.action), d0.confidence.unwrap_or(0.0),
-                                format!("{:?}", d1.action), d1.confidence.unwrap_or(0.0),
-                                format!("{:?}", d2.action), d2.confidence.unwrap_or(0.0),
+                                format!("{:?}", d0.action),
+                                d0.confidence.unwrap_or(0.0),
+                                format!("{:?}", d1.action),
+                                d1.confidence.unwrap_or(0.0),
+                                format!("{:?}", d2.action),
+                                d2.confidence.unwrap_or(0.0),
                             ));
 
-                            current_carriers = decisions.iter().enumerate()
-                                .filter_map(|(ai, row)| row.get(idx).and_then(|d|
-                                    if d.features.is_ball_carrier { Some(ai) } else { None }))
+                            current_carriers = decisions
+                                .iter()
+                                .enumerate()
+                                .filter_map(|(ai, row)| {
+                                    row.get(idx).and_then(|d| {
+                                        if d.features.is_ball_carrier {
+                                            Some(ai)
+                                        } else {
+                                            None
+                                        }
+                                    })
+                                })
                                 .collect();
                             if !current_carriers.is_empty() {
                                 lines.push(format!("On-ball (classifier): {:?}", current_carriers));
@@ -160,21 +226,26 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
 
             lines.push("Positions + features:".to_string());
             for (i, p) in spatial_frame.agent_positions.iter().enumerate() {
-                let gt = app.spatial_labels.as_ref().and_then(|labs|
-                    labs.get(i).and_then(|row| row.get(idx)).map(|a| format!("{:?}", a)));
+                let gt = app.spatial_labels.as_ref().and_then(|labs| {
+                    labs.get(i)
+                        .and_then(|row| row.get(idx))
+                        .map(|a| format!("{:?}", a))
+                });
 
                 let line = if let Some(decs) = &app.spatial_decisions {
                     if let Some(d) = decs.get(i).and_then(|row| row.get(idx)) {
                         let f = &d.features;
-                        let mut parts: Vec<String> = vec![
-                            format!("CL:{:<11}", format!("{:?}", d.action)),
-                        ];
+                        let mut parts: Vec<String> =
+                            vec![format!("CL:{:<11}", format!("{:?}", d.action))];
                         if let Some(c) = d.confidence {
                             parts.push(format!("conf={:.2}", c));
                         }
                         parts.push(format!("spd={:.1}", f.speed));
                         parts.push(format!("fwd={:+.2}", f.forward_component));
-                        parts.push(format!("ball={}", if f.is_ball_carrier { "Y" } else { "N" }));
+                        parts.push(format!(
+                            "ball={}",
+                            if f.is_ball_carrier { "Y" } else { "N" }
+                        ));
                         if let Some(v) = f.nearest_opponent_dist {
                             parts.push(format!("near={:.1}", v));
                         }
@@ -228,22 +299,32 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
                 .block(Block::new().borders(Borders::TOP).title(" Event Tags "));
             frame.render_widget(events_p, chunks[3]);
 
-            let summaries = app.spatial_batch.as_ref().map(|b| b.per_player_summaries(0.8, 1.0, Some(focal))).unwrap_or_default();
+            let summaries = app
+                .spatial_batch
+                .as_ref()
+                .map(|b| b.per_player_summaries(0.8, 1.0, Some(focal)))
+                .unwrap_or_default();
             let mut sum_lines = vec!["Per-agent summary (full trajectory):".to_string()];
             for s in &summaries {
-                let focal_str = s.avg_dist_to_focal
+                let focal_str = s
+                    .avg_dist_to_focal
                     .map(|d| format!("  dfoc_avg={:.2}", d))
                     .unwrap_or_default();
                 sum_lines.push(format!(
                     "  A{}: dist={:.1}  spd={:.2}  max={:.1}  acc={}  dec={}  load={:.2}{}",
-                    s.player_idx, s.total_distance, s.avg_speed, s.max_speed,
-                    s.accel_count, s.decel_count, s.estimated_load, focal_str
+                    s.player_idx,
+                    s.total_distance,
+                    s.avg_speed,
+                    s.max_speed,
+                    s.accel_count,
+                    s.decel_count,
+                    s.estimated_load,
+                    focal_str
                 ));
             }
             let sum_p = Paragraph::new(sum_lines.join("\n"))
                 .block(Block::new().borders(Borders::TOP).title(" Summary Data "));
             frame.render_widget(sum_p, chunks[4]);
-
         } else {
             let content = Paragraph::new("No frame data");
             frame.render_widget(content, chunks[2]);
@@ -259,7 +340,7 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
              • 1-9     : jump to event tag\n\
              • M-?     : this help (Alt+?)\n\
              • g/i/v   : sub views\n\n\
-             Other tabs have their own M-? help."
+             Other tabs have their own M-? help.",
         );
         frame.render_widget(help, chunks[2]);
     }

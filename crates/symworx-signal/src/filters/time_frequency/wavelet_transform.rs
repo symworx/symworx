@@ -8,10 +8,7 @@
 
 use std::f64::consts::PI;
 
-use ndarray::{
-    Array1,
-    Array2,
-};
+use ndarray::{Array1, Array2};
 
 /// Common mother wavelets for CWT.
 #[derive(Debug, Clone, Copy)]

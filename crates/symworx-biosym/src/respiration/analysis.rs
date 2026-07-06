@@ -5,25 +5,12 @@ use symworx_core::PeakFinderBuilder;
 
 use super::{
     RespTimeSeries,
-    peaks::{
-        RespPhasePeaks,
-        phase_peak_indices,
-        phase_peak_intervals_sec,
-    },
-    quality::{
-        RespSignalQuality,
-        resp_processing_for_quality,
-    },
+    peaks::{RespPhasePeaks, phase_peak_indices, phase_peak_intervals_sec},
+    quality::{RespSignalQuality, resp_processing_for_quality},
 };
 use crate::common::{
-    IntervalSeries,
-    PhysiologyProcessingParams,
-    PhysiologySignal,
-    PhysiologySummary,
-    apply_peak_overrides,
-    detect_intervals,
-    preprocess_signal,
-    summarize_signal,
+    IntervalSeries, PhysiologyProcessingParams, PhysiologySignal, PhysiologySummary,
+    apply_peak_overrides, detect_intervals, preprocess_signal, summarize_signal,
 };
 
 const RESP_BASE_MIN_INTERVAL_SEC: f64 = 2.0;
@@ -145,10 +132,7 @@ pub fn analyze_respiration_with_quality(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        RespSimulationParams,
-        generate_respiration_timeseries,
-    };
+    use crate::{RespSimulationParams, generate_respiration_timeseries};
 
     fn synthetic_resp_flow(fs: f64, brpm: f64, duration_sec: f64) -> RespTimeSeries {
         let n = (duration_sec * fs).round() as usize;

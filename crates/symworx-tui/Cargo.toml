@@ -20,7 +20,7 @@ polars = { workspace = true, optional = true, features = ["csv", "lazy"] }
 # This is the required path per the I/O Layer rule in AGENTS.md and README.
 # Polars (when the "polars" feature below is enabled) is *only* for optional
 # in-memory DataFrame exploration *after* data is loaded via symworx-io.
-symworx-io = { path = "../symworx-io", features = ["parquet"] }
+symworx-io = { path = "../symworx-io", features = ["parquet", "fit"] }
 
 # IMPORTANT ARCHITECTURE RULE (see AGENTS.md "I/O Layer"):
 # The TUI (and all other crates) must load Parquet, CSV, IBI, etc. exclusively
@@ -36,6 +36,7 @@ symworx-biosym = { path = "../symworx-biosym" }
 symworx-signal = { path = "../symworx-signal" }
 symworx-spatialsym = { path = "../symworx-spatialsym" }
 symworx-dynamics = { path = "../symworx-dynamics" }
+symworx-loadsym = { path = "../symworx-loadsym" }
 rand = { version = "0.9", features = ["std"] }
 csv = "1.3"
 
