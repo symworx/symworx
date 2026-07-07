@@ -23,15 +23,25 @@ jobs:
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Cargo check (full workspace)
-        run: cargo check --workspace
-
-      - name: Test (lighter core crates, no heavy linalg by default where possible)
+      - name: Cargo check (key crates)
+        # Note: Checking the full workspace (or TUI) will pull ndarray-linalg + OpenBLAS.
+        # We check the scientifically important crates here for faster feedback.
         run: |
-          cargo test -p symworx-core -p symworx-math -p symworx-dynamics -p symworx-stats -- --quiet
+          cargo check -p symworx-core -p symworx-math -p symworx-dynamics \
+                      -p symworx-biosym -p symworx-io -p symworx-loadsym -p symworx-spatialsym
+
+      - name: Test (core scientific + supporting crates)
+        # These crates contain the majority of the library tests (RQA, CPG, gait, loadsym, spatial, io, math).
+        run: |
+          cargo test -p symworx-core -p symworx-math -p symworx-dynamics \
+                     -p symworx-biosym -p symworx-io -p symworx-loadsym -p symworx-spatialsym \
+                     -- --quiet
 
       - name: Clippy (warnings as errors on key crates)
-        run: cargo clippy -p symworx-core -p symworx-dynamics -p symworx-math -p symworx-io -p symworx-tui -- -D warnings
+        run: |
+          cargo clippy -p symworx-core -p symworx-dynamics -p symworx-math \
+                       -p symworx-biosym -p symworx-io -p symworx-loadsym -p symworx-spatialsym \
+                       -- -D warnings
 
       - name: Format check
         run: cargo fmt --all -- --check
@@ -53,6 +63,9 @@ jobs:
       - name: Check TUI with polars feature (in-memory only)
         run: cargo check -p symworx-tui --features polars
 
+      - name: Build symview binary (smoke)
+        run: cargo build -p symworx-tui --bin symview --quiet
+
   python-bindings:
     runs-on: ubuntu-latest
     steps:
@@ -73,10 +86,15 @@ jobs:
       - name: Run Python tests
         run: pytest bindings/python/tests/ -q --tb=line
 
-  # Note: Full builds involving ndarray-linalg + OpenBLAS (via symworx-signal and linalg feature)
-  # are intentionally not run on every push in this starter because they are very slow and
-  # require native compilation. Run them manually or on a separate "heavy" workflow / release job.
+  # Note on heavy dependencies:
+  # symworx-signal has an *unconditional* dependency on ndarray-linalg (OpenBLAS).
+  # symworx-core re-exports it, and symworx-tui depends on signal.
+  # Therefore any job that checks/builds the TUI or does full workspace work will compile
+  # the native OpenBLAS stack (can take 5-15+ minutes on cold cache).
   #
-  # Example for occasional heavy validation:
-  #   cargo test -p symworx-signal --features linalg  (or however signal exposes it)
-  #   cargo test -p symworx-stats --features linalg
+  # The strategy here is:
+  # - Fast/important library tests on biosym, dynamics (RQA), math, loadsym, spatialsym, io.
+  # - Separate TUI job that pays the cost + builds the `symview` binary.
+  # - Python bindings job (which transitively pulls core → signal).
+  #
+  # For full signal/stats linalg validation, run manually or add a scheduled "heavy" job later.
