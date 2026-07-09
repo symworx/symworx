@@ -212,6 +212,12 @@ pub struct App {
     pub rqa_params: RqaParams,
     pub pending_rqa: bool,
     pub last_rqa: Option<symworx_dynamics::RqaResult>,
+    /// Last computed auto-recurrence plot (for improved viz + export).
+    pub last_rp: Option<symworx_dynamics::RecurrencePlot>,
+    /// Optional reference series for cross-recurrence (cRQA). Set via 'p' (pin) in Explore/Dynamics.
+    pub reference_series: Option<(String, Vec<f64>)>,
+    /// Last cRQA result (if computed).
+    pub last_crqa: Option<symworx_dynamics::RqaResult>,
     pub home_selection: usize,
     // Spatial import state (parallel to BioSym pending_load / filter)
     pub pending_spatial_import: bool,
@@ -269,6 +275,9 @@ impl App {
             rqa_params: RqaParams::default(),
             pending_rqa: false,
             last_rqa: None,
+            last_rp: None,
+            reference_series: None,
+            last_crqa: None,
             home_selection: 0,
             pending_spatial_import: false,
             spatial_file_filter: String::new(),
@@ -307,6 +316,9 @@ impl App {
         self.pending_process = false;
         self.pending_rqa = false;
         self.pending_spatial_import = false;
+        self.last_rp = None;
+        self.last_crqa = None;
+        // keep reference_series unless we decide to clear; for now keep across simple cancels
         self.manual_path.clear();
         self.file_filter.clear();
         self.spatial_file_filter.clear();
@@ -661,7 +673,7 @@ impl App {
                 } else {
                     Tab::Import
                 };
-                self.status = "BioSym — Import / Explore / Dynamics (filtering + RQA)".to_string();
+                self.status = "BioSym — Import / Explore / Dynamics (RQA + cRQA + multiscale entropy)".to_string();
             }
             Workflow::SpatialSym => {
                 self.current_tab = Tab::Spatial;
@@ -696,7 +708,7 @@ impl App {
                         .to_string()
                 }
                 Tab::Explore => "Explore — stats + sparkline (p to process)".to_string(),
-                Tab::Dynamics => "Dynamics (RQA ready)".to_string(),
+                Tab::Dynamics => "Dynamics (RQA/cRQA + MSE)".to_string(),
                 _ => "Symview".to_string(),
             };
         } else if self.current_tab == Tab::Spatial && !self.status.starts_with("Spatial") {

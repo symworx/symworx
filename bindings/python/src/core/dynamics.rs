@@ -4,8 +4,8 @@ use ndarray::Array2;
 use numpy::PyArray2;
 use pyo3::{prelude::*, wrap_pyfunction};
 use symworx_core::dynamics::{
-    DEFAULT_LMIN, DEFAULT_VMIN, RecurrencePlot, RqaResult, edim, fnn, rqa, rqa_from_trajectory,
-    sample_entropy,
+    crqa, multiscale_entropy, DEFAULT_LMIN, DEFAULT_VMIN, RecurrencePlot, RqaResult, edim, fnn, rqa,
+    rqa_from_trajectory, sample_entropy,
 };
 
 // ================================================
@@ -240,6 +240,24 @@ pub fn py_rqa_from_trajectory(
     Ok(PyRqaResult::from(res))
 }
 
+#[pyfunction(name = "crqa")]
+pub fn py_crqa(
+    x: Vec<f64>,
+    y: Vec<f64>,
+    m: usize,
+    tau: usize,
+    radius: f64,
+    theiler: usize,
+) -> PyRqaResult {
+    let res = crqa(&x, &y, m, tau, radius, theiler);
+    PyRqaResult::from(res)
+}
+
+#[pyfunction(name = "multiscale_entropy")]
+pub fn py_multiscale_entropy(data: Vec<f64>, max_scale: usize, m: usize, r: f64) -> Vec<f64> {
+    multiscale_entropy(&data, max_scale, m, r)
+}
+
 // ================================================
 // Python register
 // ================================================
@@ -249,9 +267,11 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_fnn, m)?)?;
     m.add_function(wrap_pyfunction!(py_sample_entropy, m)?)?;
 
-    // RQA (new in this release)
+    // RQA + cRQA + MSE
     m.add_function(wrap_pyfunction!(py_rqa, m)?)?;
     m.add_function(wrap_pyfunction!(py_rqa_from_trajectory, m)?)?;
+    m.add_function(wrap_pyfunction!(py_crqa, m)?)?;
+    m.add_function(wrap_pyfunction!(py_multiscale_entropy, m)?)?;
     m.add_class::<PyRqaResult>()?;
 
     // RecurrencePlot (full object with matrix)

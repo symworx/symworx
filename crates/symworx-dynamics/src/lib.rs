@@ -11,8 +11,8 @@
 //! ## Modules
 //!
 //! - [`embedding`] — Phase space reconstruction (`edim`, false nearest neighbors)
-//! - [`entropy`] — Sample entropy and related complexity measures
-//! - [`rqa`] — Recurrence Quantification Analysis (RQA)
+//! - [`entropy`] — Sample entropy and multiscale entropy
+//! - [`rqa`] — Recurrence Quantification Analysis (RQA) and cross-recurrence (cRQA)
 //!
 //! These tools are especially useful for gait, heart rate, respiration, and
 //! other quasi-periodic biological signals.
@@ -23,15 +23,18 @@
 // Modules
 /// Embedding dimension calculations (e.g., edim, fnn).
 pub mod embedding;
-/// Entropy measures (e.g., sample entropy, others tbd).
+/// Entropy measures (e.g., sample entropy, multiscale entropy).
 pub mod entropy;
 /// Recurrence and cross-recurrence calculations.
 pub mod rqa;
 
 // Re-exports
 pub use embedding::{edim, fnn};
-pub use entropy::sample_entropy;
-pub use rqa::{DEFAULT_LMIN, DEFAULT_VMIN, RecurrencePlot, RqaResult, rqa, rqa_from_trajectory};
+pub use entropy::{multiscale_entropy, sample_entropy};
+pub use rqa::{
+    crqa, CrossRecurrencePlot, DEFAULT_LMIN, DEFAULT_VMIN, RecurrencePlot, RqaResult, rqa,
+    rqa_from_trajectory,
+};
 
 // Version info
 /// Current version of the `symworx-dynamics` crate.

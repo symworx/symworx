@@ -686,11 +686,11 @@ fn handle_dynamics_keys(app: &mut App, code: KeyCode) -> bool {
                 if app.rqa_params.radius > 0.05 {
                     app.rqa_params.radius -= 0.05;
                 }
-                app.status = format!("RQA radius: {:.2}", app.rqa_params.radius);
+                app.status = format!("RQA/cRQA radius: {:.2}", app.rqa_params.radius);
             }
             KeyCode::Right | KeyCode::Char('+') | KeyCode::Char('=') => {
                 app.rqa_params.radius += 0.05;
-                app.status = format!("RQA radius: {:.2}", app.rqa_params.radius);
+                app.status = format!("RQA/cRQA radius: {:.2}", app.rqa_params.radius);
             }
             KeyCode::Char('m') | KeyCode::Char('M') => {
                 app.rqa_params.m = (app.rqa_params.m % 8) + 1;
@@ -709,9 +709,19 @@ fn handle_dynamics_keys(app: &mut App, code: KeyCode) -> bool {
                         app.rqa_params.radius,
                         app.rqa_params.theiler,
                     );
+                    // also store RP for updated viz
+                    let rp = symworx_dynamics::RecurrencePlot::from_series(
+                        &sig.current,
+                        app.rqa_params.m,
+                        app.rqa_params.tau,
+                        app.rqa_params.radius,
+                        app.rqa_params.theiler,
+                    );
                     app.last_rqa = Some(res);
+                    app.last_rp = Some(rp);
+                    app.last_crqa = None;
                     app.status =
-                        "RQA computed. See Dynamics tab for DET, RR, etc + plot.".to_string();
+                        "RQA computed. See Dynamics tab (improved RP preview + MSE).".to_string();
                 } else {
                     app.status = "Load signal first (Import/Explore).".to_string();
                 }
@@ -729,29 +739,68 @@ fn handle_dynamics_keys(app: &mut App, code: KeyCode) -> bool {
     match code {
         KeyCode::Char('c') | KeyCode::Char('C') => {
             app.pending_rqa = true;
-            app.status = format!("RQA params: m={} tau={} rad={:.2}  ←→ rad  m/t dim/delay  Enter=compute  Esc=cancel", app.rqa_params.m, app.rqa_params.tau, app.rqa_params.radius);
+            app.status = format!("RQA params: m={} tau={} rad={:.2}  ←→/± rad  m/t  Enter=compute (RQA)  Esc", app.rqa_params.m, app.rqa_params.tau, app.rqa_params.radius);
+            return false;
+        }
+        KeyCode::Char('x') | KeyCode::Char('X') => {
+            // cRQA: prefer reference vs current; fallback to current vs time-reversed for demo
+            if let Some(sig) = &app.loaded_signal {
+                let (name_a, series_a, series_b) = if let Some((ref_name, ref_data)) = &app.reference_series {
+                    (ref_name.clone(), ref_data.clone(), sig.current.clone())
+                } else {
+                    // fallback demo: signal vs its reverse (shows asymmetry/structure differences)
+                    let rev: Vec<f64> = sig.current.iter().rev().copied().collect();
+                    ("current".to_string(), sig.current.clone(), rev)
+                };
+                let res = symworx_dynamics::crqa(
+                    &series_a,
+                    &series_b,
+                    app.rqa_params.m,
+                    app.rqa_params.tau,
+                    app.rqa_params.radius,
+                    app.rqa_params.theiler,
+                );
+                app.last_crqa = Some(res);
+                app.last_rqa = None; // focus display on the cross result
+                app.status = format!("cRQA computed ({} vs other). See Dynamics tab.", name_a);
+            } else {
+                app.status = "Load signal first for cRQA.".to_string();
+            }
+            return false;
+        }
+        KeyCode::Char('p') | KeyCode::Char('P') => {
+            // Pin current as reference series for subsequent cRQA
+            if let Some(sig) = &app.loaded_signal {
+                app.reference_series = Some((sig.name.clone(), sig.current.clone()));
+                app.status = format!("Pinned '{}' as cRQA reference. Press x to cross with current (or after processing).", sig.name);
+            } else {
+                app.status = "No signal to pin.".to_string();
+            }
             return false;
         }
         KeyCode::Char('r') | KeyCode::Char('R') => {
             app.rqa_params = crate::app::RqaParams::default();
             app.last_rqa = None;
-            app.status = "RQA params reset to defaults".to_string();
+            app.last_rp = None;
+            app.last_crqa = None;
+            // leave reference_series (user can 'p' again or we could clear with another key)
+            app.status = "RQA params + results reset (ref kept; 'p' to change)".to_string();
             return false;
         }
         KeyCode::Char('e') | KeyCode::Char('E') => {
-            if let Some(r) = &app.last_rqa {
+            if let Some(r) = app.last_crqa.as_ref().or(app.last_rqa.as_ref()) {
                 let ts = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .map(|d| d.as_secs())
                     .unwrap_or(0);
-                let path = format!("data/rqa_export_{}.csv", ts);
+                let path = format!("data/crqa_export_{}.csv", ts); // works for both
                 if let Err(e) = export_rqa_csv(&path, r, &app.rqa_params) {
-                    app.status = format!("RQA export failed: {}", e);
+                    app.status = format!("Export failed: {}", e);
                 } else {
-                    app.status = format!("RQA exported to {} (use for LLM/high-res viz)", path);
+                    app.status = format!("Exported metrics → {} (RQA or cRQA)", path);
                 }
             } else {
-                app.status = "Compute RQA first (c) before export.".to_string();
+                app.status = "Compute RQA (c) or cRQA (x) first.".to_string();
             }
             return false;
         }

@@ -1,6 +1,7 @@
 use ratatui::{
     layout::Rect,
-    style::Color,
+    style::{Color, Style},
+    text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
@@ -11,11 +12,13 @@ pub fn render_dynamics_tab(frame: &mut Frame, app: &App, area: Rect) {
     if app.help_mode {
         let help = Paragraph::new(
             "Dynamics help (M-? or Esc to close)\n\n\
-             • c : open RQA param editor (m/tau/radius)\n\
+             • c : open RQA/cRQA param editor (m/tau/radius)\n\
              • r : reset RQA params\n\
-             • (in editor) ←→ m t Enter Esc\n\n\
-             Requires loaded signal from BioSym (Import/Explore).\n\
-             Uses symworx-dynamics::rqa for recurrence quantification.",
+             • x : compute cRQA (needs reference or uses current vs reversed)\n\
+             • p : pin current signal as reference for cRQA\n\
+             • e : export last RQA/cRQA metrics\n\
+             • (editor) ←→ radius   m/t cycle   Enter=compute   Esc=cancel\n\n\
+             MSE shown automatically. Uses symworx-dynamics (RQA + cRQA + multiscale entropy).",
         )
         .block(
             Block::new()
@@ -33,12 +36,13 @@ pub fn render_dynamics_tab(frame: &mut Frame, app: &App, area: Rect) {
 
     if app.pending_rqa {
         let txt = format!(
-            "\n\nRQA Parameter Editor\n\n\
+            "\n\nRQA/cRQA Parameter Editor (shared params)\n\n\
              m (embedding dim): {}     (press m to cycle)\n\
              tau (delay): {}           (press t to cycle)\n\
              radius: {:.2}             (← → adjust)\n\
              theiler: {}\n\n\
-             Enter = compute using symworx-dynamics::rqa\n\
+             Enter = compute RQA (auto-recurrence)\n\
+             (outside: x = cRQA using ref or fallback)\n\
              Esc = cancel",
             app.rqa_params.m, app.rqa_params.tau, app.rqa_params.radius, app.rqa_params.theiler
         );
@@ -47,112 +51,123 @@ pub fn render_dynamics_tab(frame: &mut Frame, app: &App, area: Rect) {
     }
 
     if let Some(sig) = &app.loaded_signal {
-        let mut lines: Vec<String> = vec![
-            format!("Signal: {} ({} samples)", sig.name, sig.n_samples),
-            format!(
+        let mut content_lines: Vec<Line> = vec![
+            Line::from(format!("Signal: {} ({} samples)", sig.name, sig.n_samples)),
+            Line::from(format!(
                 "Params: m={}  tau={}  radius={:.2}  theiler={}",
                 app.rqa_params.m, app.rqa_params.tau, app.rqa_params.radius, app.rqa_params.theiler
-            ),
-            "".into(),
+            )),
+            Line::from(""),
         ];
 
-        if let Some(r) = &app.last_rqa {
-            lines.push(format!("RR (recurrence rate): {:.3}", r.recurrence_rate));
-            lines.push(format!("DET (determinism)   : {:.3}", r.determinism));
-            lines.push(format!("LAM (laminarity)    : {:.3}", r.laminarity));
-            lines.push(format!("Lmax / Vmax         : {} / {}", r.lmax, r.vmax));
-            lines.push(format!(
+        // Show RQA or cRQA results
+        if let Some(r) = &app.last_crqa {
+            content_lines.push(Line::from("cRQA result (cross-recurrence):"));
+            content_lines.push(Line::from(format!("RR: {:.3}  DET: {:.3}  LAM: {:.3}", r.recurrence_rate, r.determinism, r.laminarity)));
+            content_lines.push(Line::from(format!("Lmax/Vmax: {}/{}   Lentr/TT: {:.2}/{:.2}", r.lmax, r.vmax, r.lentr, r.trapping_time)));
+            content_lines.push(Line::from(""));
+        } else if let Some(r) = &app.last_rqa {
+            content_lines.push(Line::from(format!("RR (recurrence rate): {:.3}", r.recurrence_rate)));
+            content_lines.push(Line::from(format!("DET (determinism)   : {:.3}", r.determinism)));
+            content_lines.push(Line::from(format!("LAM (laminarity)    : {:.3}", r.laminarity)));
+            content_lines.push(Line::from(format!("Lmax / Vmax         : {} / {}", r.lmax, r.vmax)));
+            content_lines.push(Line::from(format!(
                 "Lentr / TT          : {:.2} / {:.2}",
                 r.lentr, r.trapping_time
-            ));
-            lines.push("".into());
+            )));
+            content_lines.push(Line::from(""));
         } else {
-            lines.push("No RQA result yet. Press 'c' to edit params & compute.".into());
+            content_lines.push(Line::from("No RQA result yet. Press 'c' to edit params & compute."));
         }
 
-        // Sample entropy (additional measure) — computed on demand from current signal
-        if let Some(sig) = &app.loaded_signal {
-            let se = symworx_dynamics::sample_entropy(
+        // Reference for cRQA
+        if let Some((ref_name, _)) = &app.reference_series {
+            content_lines.push(Line::from(format!("Reference for cRQA: {}", ref_name)));
+        }
+
+        // Entropy measures (SampEn + MSE at several scales)
+        let stats = crate::app::compute_basic_stats(&sig.current);
+        let r_se = 0.2 * stats.std.max(0.01);
+        let se = symworx_dynamics::sample_entropy(&sig.current, 2, r_se);
+        content_lines.push(Line::from(format!("Sample Entropy (m=2, r=0.2σ): {:.4}", se)));
+
+        let mse = symworx_dynamics::multiscale_entropy(&sig.current, 6, 2, r_se);
+        let mse_str: Vec<String> = mse.iter().enumerate().map(|(i, v)| format!("s{}:{:.3}", i+1, v)).collect();
+        content_lines.push(Line::from(format!("Multiscale Entropy (scales 1-6): {}", mse_str.join("  "))));
+        content_lines.push(Line::from(""));
+
+        // Improved recurrence plot preview (colored unicode)
+        if app.last_rqa.is_some() || app.last_crqa.is_some() {
+            content_lines.push(Line::from(Span::raw("Recurrence Plot preview (█ recurrent, · elsewhere; downsampled):")));
+            let rp_lines = render_styled_rp_preview(
                 &sig.current,
-                2,
-                0.2 * crate::app::compute_basic_stats(&sig.current).std.max(0.01),
+                app.rqa_params.m,
+                app.rqa_params.tau,
+                app.rqa_params.radius,
+                app.rqa_params.theiler,
             );
-            lines.push(format!("Sample Entropy (m=2, r=0.2σ): {:.4}", se));
-        }
-
-        // Unicode block recurrence plot preview (downsampled)
-        if let Some(sig) = &app.loaded_signal {
-            if app.last_rqa.is_some() {
-                let preview = render_simple_unicode_rp(
-                    &sig.current,
-                    app.rqa_params.m,
-                    app.rqa_params.tau,
-                    app.rqa_params.radius,
-                    app.rqa_params.theiler,
-                );
-                lines.push(
-                    "Recurrence Plot (downsampled unicode blocks — dense = recurrent):".into(),
-                );
-                lines.push(preview);
-                lines.push(
-                    "Full resolution: use 'e' to export CSV of recurrence matrix or metrics."
-                        .into(),
-                );
-            }
+            content_lines.extend(rp_lines);
+            content_lines.push(Line::from(""));
+            content_lines.push(Line::from("Keys: c=edit/compute RQA  x=cRQA  p=pin ref  e=export  r=reset"));
         } else {
-            lines.push("Compute to see recurrence structure preview.".into());
+            content_lines.push(Line::from("Compute (c) to see recurrence structure preview + MSE."));
         }
 
-        let content = Paragraph::new(lines.join("\n")).block(block);
+        let content = Paragraph::new(content_lines).block(block);
         frame.render_widget(content, area);
     } else {
         let content = Paragraph::new(
             "\n\nLoad a signal via BioSym path / Import (or Ctrl+G) first.\n\
-             Then use this tab for RQA: c = set params & compute (m/tau/radius)\n\
-             Results include RR, DET, LAM, line lengths per symworx-dynamics.",
+             Then use this tab for RQA/cRQA + entropy: c = params & compute\n\
+             Results: RR/DET/LAM + multiscale entropy from symworx-dynamics.",
         )
         .centered();
         frame.render_widget(content.block(block), area);
     }
 }
 
-/// Downsample + render a tiny unicode RP preview using blocks.
-/// Uses symworx-dynamics under the hood for the matrix (recomputes small).
-fn render_simple_unicode_rp(
+/// Downsampled styled RP preview. Returns Lines using colored Spans for better visibility.
+/// Recurrent points in bright green; non-recurrent dim or spaces. Uses symworx-dynamics.
+fn render_styled_rp_preview(
     series: &[f64],
     m: usize,
     tau: usize,
     radius: f64,
     theiler: usize,
-) -> String {
+) -> Vec<Line<'static>> {
     use symworx_dynamics::RecurrencePlot;
-    // Limit for UI perf + readability
-    let max_pts = 36usize;
+
+    let max_pts = 42usize; // a bit denser than before
     let n = series.len();
     if n < (m + 1) * tau + 2 {
-        return "(series too short for preview)".to_string();
+        return vec![Line::from("(series too short for RP preview)")];
     }
 
-    // Subsample the series for the preview (take evenly)
     let step = (n / max_pts).max(1);
     let sub: Vec<f64> = series.iter().step_by(step).take(max_pts).copied().collect();
     if sub.len() < m {
-        return "(subsample too small)".to_string();
+        return vec![Line::from("(subsample too small)")];
     }
 
     let rp = RecurrencePlot::from_series(&sub, m, tau, radius, theiler);
     let mat = &rp.matrix;
-    let side = mat.nrows().min(32);
+    let side = mat.nrows().min(40);
 
-    let mut out = String::new();
+    let mut out = Vec::with_capacity(side);
+    let rec_style = Style::default().fg(Color::Green).add_modifier(ratatui::style::Modifier::BOLD);
+    let non_style = Style::default().fg(Color::DarkGray);
+
     for i in 0..side {
+        let mut spans = Vec::new();
         for j in 0..side {
             let cell = mat[[i, j]];
-            // Unicode blocks
-            let ch = if cell { "██" } else { "  " };
-            out.push_str(ch);
+            if cell {
+                spans.push(Span::styled("██", rec_style));
+            } else {
+                spans.push(Span::styled("· ", non_style));
+            }
         }
-        out.push('\n');
+        out.push(Line::from(spans));
     }
     out
 }

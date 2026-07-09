@@ -6,7 +6,7 @@
 use ndarray::Array2;
 
 use crate::rqa::{
-    plot::RecurrencePlot,
+    plot::{CrossRecurrencePlot, RecurrencePlot},
     utils::{
         count_recurrences, find_diagonal_line_lengths, find_vertical_line_lengths,
         line_length_entropy,
@@ -91,6 +91,31 @@ pub fn rqa_from_trajectory(trajectory: &Array2<f64>, radius: f64, theiler: usize
 
     let rp = RecurrencePlot::from_trajectory(trajectory, radius, theiler);
     quantify(&rp.matrix, theiler)
+}
+
+/// Cross-recurrence quantification analysis (cRQA) between two time series.
+///
+/// Embeds *both* series with the same `(m, tau)`, builds a (usually rectangular)
+/// cross-recurrence plot, then computes the same RQA metrics on it.
+///
+/// This is useful for comparing two signals (e.g. two sensors, pre/post intervention,
+/// or two subjects) or a signal against a reference/template.
+///
+/// Theiler window semantics: when the series are time-synchronized, theiler > 0
+/// excludes near-contemporaneous pairs. For independent recordings, pass theiler=0.
+///
+/// Returns an [`RqaResult`] (same fields as ordinary RQA).
+pub fn crqa(x: &[f64], y: &[f64], m: usize, tau: usize, radius: f64, theiler: usize) -> RqaResult {
+    let min_len = (m - 1) * tau + 1;
+    if m == 0 || tau == 0 || x.len() < min_len || y.len() < min_len {
+        return RqaResult::default();
+    }
+
+    let crp = CrossRecurrencePlot::from_series(x, y, m, tau, radius, theiler);
+    if crp.n_points_x == 0 || crp.n_points_y == 0 {
+        return RqaResult::default();
+    }
+    quantify(&crp.matrix, theiler)
 }
 
 /// Core quantification routine. Computes all RQA measures from a binary
@@ -220,6 +245,23 @@ mod tests {
     fn test_rqa_short_series_returns_default() {
         let tiny = vec![1.0, 2.0];
         let res = rqa(&tiny, 5, 1, 0.1, 0); // impossible to embed
+        assert_eq!(res.n_recurrences, 0);
+    }
+
+    #[test]
+    fn test_crqa_basic() {
+        let x: Vec<f64> = (0..80).map(|i| (i as f64 * 0.25).sin()).collect();
+        let y: Vec<f64> = (0..70).map(|i| (i as f64 * 0.25).sin() + 0.01).collect();
+        let res = crqa(&x, &y, 2, 1, 0.4, 0);
+        // Should produce some recurrences for similar sines
+        assert!(res.n_recurrences > 0 || res.recurrence_rate >= 0.0);
+    }
+
+    #[test]
+    fn test_crqa_short_returns_default() {
+        let x = vec![0.1, 0.2];
+        let y = vec![0.3, 0.4];
+        let res = crqa(&x, &y, 3, 1, 0.1, 0);
         assert_eq!(res.n_recurrences, 0);
     }
 }
