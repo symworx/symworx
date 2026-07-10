@@ -89,6 +89,7 @@ pub fn generate_demo_and_load(app: &mut App, preset: generate::DemoPreset) -> an
         series,
         path.display().to_string(),
     ));
+    app.explore_scroll = 0;
     app.current_tab = Tab::Explore;
     app.current_workflow = crate::app::Workflow::BioSym;
     app.status = format!(

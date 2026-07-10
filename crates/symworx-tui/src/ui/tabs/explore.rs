@@ -1,6 +1,7 @@
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Color, Style},
+    text::Line,
     Frame,
     symbols,
     widgets::{Axis, Block, Borders, Chart, Dataset, GraphType, Paragraph},
@@ -8,15 +9,19 @@ use ratatui::{
 
 use crate::app::App;
 
+/// Visible sample window width for the Explore chart (x-axis pan step uses the same value).
+pub const EXPLORE_VIEW_LEN: usize = 300;
+
 pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
     if app.help_mode {
         let help = Paragraph::new(
             "Explore help (M-? or Esc to close)\n\n\
              • Stats + Chart for loaded BioSym signal (PPG / respiration / stride)\n\
              • Multiple waveforms: use MultiWaveformDemo preset (generates v1,v2.. variants)\n\
-             • p : open process menu (MA / Median / Detrend) — y-axis carries over fixed range\n\
+             • p : open process menu (MA / Median / Detrend)\n\
              • r : reset to original signal\n\
-             • For long series: rolling x viewport (recent window); full panning planned\n\
+             • ← → / h l : pan x-axis viewport (window of ~300 samples)\n\
+             • Esc : back to Import tab\n\
              After generate/load: use p to try filters, then Dynamics (Ctrl+3) for RQA.",
         )
         .block(Block::new().borders(Borders::ALL).title(" Help — Explore (BioSym) "));
@@ -41,46 +46,43 @@ pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
             "\n↑↓ select   ←→/-+ adjust window   Enter apply   Esc cancel\n".to_string(),
         );
         let content = Paragraph::new(lines.join(""))
-            .block(Block::new().borders(Borders::ALL).title(" Process (y fixed after apply) "));
+            .block(Block::new().borders(Borders::ALL).title(" Process "));
         frame.render_widget(content, area);
         return;
     }
 
     let block = Block::new()
-        .title(" Explore — BioSym Waveforms (x/y axes + fixed y + rolling x) ")
+        .title(" Explore — BioSym Waveforms ")
         .borders(Borders::ALL)
         .border_style(Color::Magenta);
 
     if let Some(signal) = &app.loaded_signal {
         let stats = crate::app::compute_basic_stats(&signal.current);
 
-        // Rolling x viewport for longer time series (show recent window, 'rolls' to end)
-        let view_len: usize = 300; // visible samples; adjust for perf/detail
+        // Pannable x viewport: app.explore_scroll is the start sample index.
+        let view_len = EXPLORE_VIEW_LEN;
         let n = signal.current.len();
-        let scroll = 0usize; // TODO: wire to app.explore_scroll + input handling for panning
-        let start = if n > view_len {
-            n.saturating_sub(view_len) // rolling to recent end
-        } else {
+        let max_start = n.saturating_sub(view_len);
+        let start = app.explore_scroll.min(max_start);
+        let end = if n == 0 {
             0
+        } else {
+            (start + view_len).min(n)
         };
-        let end = n;
-        let visible: Vec<f64> = if n > 0 {
+        let visible: Vec<f64> = if n > 0 && start < end {
             signal.current[start..end].to_vec()
         } else {
             vec![]
         };
 
-        // Fixed y axis carry-over: use current stats min/max (stable across processing until reset/load new)
-        // For true original-range lock, store y_bounds in LoadedSignal at import time.
         let y_min = stats.min;
         let y_max = stats.max;
-        let y_range = if y_max > y_min { y_max - y_min } else { 1.0 };
 
         // Build points for Chart (x = sample index in viewport, y = value)
         let data: Vec<(f64, f64)> = visible
             .iter()
             .enumerate()
-            .map(|(i, &v)| ( (start + i) as f64 , v ))
+            .map(|(i, &v)| ((start + i) as f64, v))
             .collect();
 
         let datasets = vec![Dataset::default()
@@ -90,26 +92,25 @@ pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
             .style(Style::default().fg(Color::LightCyan))
             .data(&data)];
 
-        // X axis: sample index (rolling window)
+        // X axis: sample index (pannable window)
         let x_axis = Axis::default()
-            .title("Sample index (rolling window)")
+            .title("Sample index (←→ pan)")
             .style(Style::default().fg(Color::Gray))
             .bounds([start as f64, end as f64])
             .labels(vec![
-                format!("{}", start).into(),
-                format!("{}", (start + end) / 2).into(),
-                format!("{}", end).into(),
+                Line::from(format!("{}", start)),
+                Line::from(format!("{}", (start + end) / 2)),
+                Line::from(format!("{}", end)),
             ]);
 
-        // Y axis: amplitude, fixed carry-over
         let y_axis = Axis::default()
-            .title("Amplitude (fixed y)")
+            .title("Amplitude")
             .style(Style::default().fg(Color::Gray))
             .bounds([y_min, y_max])
             .labels(vec![
-                format!("{:.2}", y_min).into(),
-                format!("{:.2}", (y_min + y_max) / 2.0).into(),
-                format!("{:.2}", y_max).into(),
+                Line::from(format!("{:.2}", y_min)),
+                Line::from(format!("{:.2}", (y_min + y_max) / 2.0)),
+                Line::from(format!("{:.2}", y_max)),
             ]);
 
         let chart = Chart::new(datasets)
@@ -117,13 +118,18 @@ pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
             .x_axis(x_axis)
             .y_axis(y_axis);
 
+        let pan_hint = if n > view_len {
+            format!("  ←→ pan  window {}/{}", start, max_start)
+        } else {
+            String::new()
+        };
         let lines = vec![
             format!(
-                "File: {}  |  view {}..{} / {} samples (rolling x)  |  variants via MultiWaveformDemo",
-                signal.name, start, end, n
+                "File: {}  |  view {}..{} / {} samples{}",
+                signal.name, start, end, n, pan_hint
             ),
             format!(
-                "Mean: {:.2}  Std: {:.2}  Min: {:.2}  Max: {:.2}  Median: {:.2} (y fixed)",
+                "Mean: {:.2}  Std: {:.2}  Min: {:.2}  Max: {:.2}  Median: {:.2}",
                 stats.mean, stats.std, stats.min, stats.max, stats.median
             ),
         ];
@@ -135,8 +141,8 @@ pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
     } else {
         let content = Paragraph::new(
             "Load or Generate BioSym signal (Import or generate presets)\n\n\
-             Presets now support multiple waveform variants (PPG v1/v2, respiration, stride).\n\
-             Use Chart viz with x/y axes, fixed y after processing, rolling x for long traces.\n\n(Expanded via symworx-signal + full multi-overlay planned)",
+             Presets support multiple waveform variants (PPG v1/v2, respiration, stride).\n\
+             Chart: x/y axes; ←→ pan long traces.\n\n(Expanded via symworx-signal + full multi-overlay planned)",
         )
         .block(block);
         frame.render_widget(content, area);

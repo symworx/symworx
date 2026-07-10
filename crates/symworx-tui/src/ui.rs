@@ -120,6 +120,10 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
         "  [Esc] back"
     } else if app.pending_generate {
         "  [Esc] cancel"
+    } else if app.current_workflow == crate::app::Workflow::BioSym
+        && app.current_tab == crate::app::Tab::Explore
+    {
+        "  [Esc] Import"
     } else {
         ""
     };
@@ -175,6 +179,10 @@ pub fn render_action_bar(app: &App) -> Paragraph<'_> {
     } else if app.current_workflow == crate::app::Workflow::SpatialSym && app.pending_spatial_import
     {
         "  [Esc] back"
+    } else if app.current_workflow == crate::app::Workflow::BioSym
+        && app.current_tab == crate::app::Tab::Explore
+    {
+        "  [Esc] Import"
     } else {
         ""
     };

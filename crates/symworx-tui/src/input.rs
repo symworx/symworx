@@ -166,64 +166,56 @@ pub fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool
 }
 
 fn handle_spatial_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -> bool {
-    // Sub-view switching and import/generate menu (sub-tab equivalent) before viz nav
-    if app.pending_spatial_import {
+    // Import menu (full-screen) — must run before viz nav
+    if app.pending_spatial_import || app.spatial_view == crate::app::SpatialView::ImportData {
         match code {
-            KeyCode::Char('1') => {
-                // synthetic regen as option 1
+            KeyCode::Char('1') | KeyCode::Char('g') | KeyCode::Char('G') => {
                 app.seed_spatial_demo();
                 app.pending_spatial_import = false;
                 app.spatial_view = crate::app::SpatialView::Visualize;
-                app.status = "Spatial: generated synthetic (preset)".to_string();
+                app.status = "Spatial: generated synthetic demo".to_string();
                 return false;
             }
-            KeyCode::Char('2') | KeyCode::Char('i') | KeyCode::Char('I') => {
-                // Real load attempt (per-match .csv with time/agent_id/x/y)
+            KeyCode::Char('2') | KeyCode::Enter => {
                 if try_load_first_spatial_csv(app) {
-                    app.pending_spatial_import = false;
-                    return false;
-                } else {
-                    app.status =
-                        "Spatial: no suitable .csv in ./data/ — using synthetic demo.".to_string();
-                    app.seed_spatial_demo();
                     app.pending_spatial_import = false;
                     app.spatial_view = crate::app::SpatialView::Visualize;
                     return false;
                 }
+                app.status =
+                    "Spatial: no suitable .csv in ./data/ — press 1/g for synthetic.".to_string();
+                return false;
             }
-            KeyCode::Esc => {
+            KeyCode::Char('v') | KeyCode::Char('V') | KeyCode::Esc => {
                 app.pending_spatial_import = false;
-                app.status = "Spatial import/generate cancelled".to_string();
+                app.spatial_view = crate::app::SpatialView::Visualize;
+                app.status = "Spatial: back to visualize".to_string();
                 return false;
             }
-            _ => {
-                return false;
-            }
+            _ => return false, // swallow keys while menu is open
         }
     }
 
-    // Quick toggle sub views (G/I/V)
+    // Visualize mode — top-level actions
     match code {
+        // Generate synthetic immediately (single keypress)
         KeyCode::Char('g') | KeyCode::Char('G') => {
-            if app.spatial_view != crate::app::SpatialView::Generate {
-                app.spatial_view = crate::app::SpatialView::Generate;
-            } else {
-                app.seed_spatial_demo();
-                app.spatial_view = crate::app::SpatialView::Visualize;
-                app.status = "Spatial: regenerated synthetic demo".to_string();
-            }
+            app.seed_spatial_demo();
+            app.spatial_view = crate::app::SpatialView::Visualize;
+            app.pending_spatial_import = false;
+            app.status = "Spatial: generated synthetic demo".to_string();
             return false;
         }
         KeyCode::Char('i') | KeyCode::Char('I') => {
             app.spatial_view = crate::app::SpatialView::ImportData;
             app.pending_spatial_import = true;
-            app.status = "Spatial import: 1=gen  2/i=load (first csv)  arrows/numbers  Esc=cancel   (interactive viewer)".to_string();
+            app.status = "Spatial import: 1/g=generate  2/Enter=load csv  Esc/v=back".to_string();
             return false;
         }
         KeyCode::Char('v') | KeyCode::Char('V') => {
             app.spatial_view = crate::app::SpatialView::Visualize;
             app.pending_spatial_import = false;
-            app.status = "Spatial: visualize mode (arrows n/p < > 1-9)".to_string();
+            app.status = "Spatial: visualize (←→ n/p < > 1-9  g=gen  b=ball  i=import)".to_string();
             return false;
         }
         _ => {}
@@ -277,11 +269,8 @@ fn handle_spatial_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                     app.status = format!("Spatial: next event → frame {}", app.spatial_frame_idx);
                 }
             }
-            KeyCode::Char('g') | KeyCode::Char('G') => {
-                app.seed_spatial_demo();
-                app.status = "Spatial: Regenerated synthetic demo".to_string();
-            }
-            KeyCode::Char('i') | KeyCode::Char('I') => {
+            // Ball-carrier infer (g/i are reserved for generate/import at top level)
+            KeyCode::Char('b') | KeyCode::Char('B') => {
                 if let (Some(batch), Some(focal_vec)) = (&app.spatial_batch, &app.spatial_focal) {
                     let maxf = batch.num_times().saturating_sub(1);
                     let idx = app.spatial_frame_idx.min(maxf);
@@ -644,6 +633,15 @@ fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
     }
 
     match code {
+        KeyCode::Esc => {
+            // Back to Import (BioSym file list / generate)
+            app.pending_process = false;
+            app.current_tab = Tab::Import;
+            app.current_workflow = crate::app::Workflow::BioSym;
+            app.status = "Import — file list / Ctrl+G generate".to_string();
+            app.ensure_status_for_current_tab();
+            return false;
+        }
         KeyCode::Char('p') | KeyCode::Char('P') => {
             app.pending_process = true;
             app.status =
@@ -658,19 +656,25 @@ fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
             }
             return false;
         }
-        // Scrolling for long BioSym signals (viewport on sparkline)
+        // Pan x-axis viewport for long BioSym signals
         KeyCode::Left | KeyCode::Char('h') | KeyCode::Char('H') => {
-            if app.loaded_signal.is_some() && app.explore_scroll > 0 {
-                app.explore_scroll = app.explore_scroll.saturating_sub(30);
+            if app.loaded_signal.is_some() {
+                let step = 30usize;
+                app.explore_scroll = app.explore_scroll.saturating_sub(step);
+                app.status = format!("Explore: pan x → start={}", app.explore_scroll);
             }
             return false;
         }
         KeyCode::Right | KeyCode::Char('l') | KeyCode::Char('L') => {
             if let Some(sig) = &app.loaded_signal {
-                let maxs = sig.current.len().saturating_sub(30);
-                if app.explore_scroll < maxs {
-                    app.explore_scroll += 30;
-                }
+                let view_len = crate::ui::tabs::explore::EXPLORE_VIEW_LEN;
+                let max_start = sig.current.len().saturating_sub(view_len);
+                let step = 30usize;
+                app.explore_scroll = (app.explore_scroll + step).min(max_start);
+                app.status = format!(
+                    "Explore: pan x → start={} (max {})",
+                    app.explore_scroll, max_start
+                );
             }
             return false;
         }

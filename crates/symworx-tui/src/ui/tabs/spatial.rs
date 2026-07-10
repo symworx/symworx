@@ -11,19 +11,20 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
     if app.help_mode {
         let help = Paragraph::new(
             "Spatial tab help (M-? or Esc to close)\n\n\
-             Frame navigation (minimal set):\n\
+             Generate / Import:\n\
+             • g     : generate synthetic demo (immediate)\n\
+             • i     : open import menu (load CSV from ./data)\n\
+             • v     : back to visualize\n\n\
+             Frame navigation:\n\
              • ← →   : step frames\n\
              • n / p : next / previous frame\n\
              • < / > : jump to previous / next event tag\n\
              • 1-9   : direct jump to event N\n\n\
-             Actions:\n\
-             • g     : regenerate the demo\n\
-             • i     : infer ball carrier using current frame\n\
+             Actions (with data loaded):\n\
+             • b     : infer ball carrier at current frame\n\
+             • e     : export CSV + JSON\n\
              • l     : refresh status/legend\n\n\
-             The sections below always show:\n\
-             - current frame details (GT vs classified + features)\n\
-             - list of event tags (with current marker)\n\
-             - summary stats from per_player_summaries",
+             Sections: frame details, event tags, per-player summaries.",
         )
         .block(Block::new().borders(Borders::ALL).title(" Help — Spatial "));
         frame.render_widget(help, area);
@@ -38,13 +39,19 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
     let inner = outer.inner(area);
     frame.render_widget(outer, area);
 
-    // Sub-tab / view header (equivalent of sub-tabs inside this domain)
+    // Import / generate menu uses the full inner area (was Length(1) — looked broken)
+    if app.pending_spatial_import || app.spatial_view == crate::app::SpatialView::ImportData {
+        render_spatial_import_menu(frame, app, inner);
+        return;
+    }
+
+    // Sub-tab header
     let sub_header = Paragraph::new(format!(
-        "  [g] Generate   [i] Import file/dir (./data + metadata)   [v] Visualize   {:?}",
+        "  [g] Generate   [i] Import   [v] Visualize   {:?}",
         app.spatial_view
     ))
     .style(Style::default().fg(Color::Yellow));
-    // Allocate small top chunk
+
     let chunks = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(1),
@@ -56,76 +63,6 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
 
     frame.render_widget(sub_header, chunks[0]);
 
-    // If in import/generate sub-view, render interactive-ish file viewer + options
-    if app.spatial_view != crate::app::SpatialView::Visualize || app.pending_spatial_import {
-        // Dynamic file list for more interactive viewer (scan data/ for csv)
-        let mut files: Vec<String> = vec![];
-        if let Ok(entries) = std::fs::read_dir("data") {
-            for e in entries.flatten() {
-                let p = e.path();
-                if p.is_file() {
-                    if let Some(ext) = p.extension().and_then(|x| x.to_str()) {
-                        if ext.eq_ignore_ascii_case("csv") {
-                            files.push(
-                                p.file_name()
-                                    .unwrap_or_default()
-                                    .to_string_lossy()
-                                    .to_string(),
-                            );
-                        }
-                    }
-                } else if p.is_dir() {
-                    // per match dir
-                    if let Ok(sub) = std::fs::read_dir(&p) {
-                        for se in sub.flatten() {
-                            if let Some(e2) = se.path().extension().and_then(|x| x.to_str()) {
-                                if e2.eq_ignore_ascii_case("csv") {
-                                    files.push(format!(
-                                        "{}/{}",
-                                        p.file_name().unwrap_or_default().to_string_lossy(),
-                                        se.file_name().to_string_lossy()
-                                    ));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        let file_list = if files.is_empty() {
-            "  (no .csv found in ./data/ or subdirs)".to_string()
-        } else {
-            files
-                .iter()
-                .take(5)
-                .enumerate()
-                .map(|(i, f)| format!("  {}: {}", i + 1, f))
-                .collect::<Vec<_>>()
-                .join("\n")
-        };
-
-        let import_text = format!(
-            "Spatial Import / Generate  (template page - more interactive file viewer)\n\n\
-            1 / g : Generate synthetic demo data\n\
-            2 / i : Load file/dir (auto first suitable .csv or subdir csv)\n\
-                    Supports per-match + metadata sidecars/headers (TBD)\n\
-            Enter or numbers : act   Esc : back to viz\n\n\
-            Discovered in ./data/:\n{}\n\n\
-            File structure: time,agent_id,x,y .csv  |  subdirs for matches\n\
-            Real loads: load_trajectories_csv + build + classify\n\
-            Exports: e produces .csv + .json + _meta.json for LLM",
-            file_list
-        );
-        let p = Paragraph::new(import_text).block(
-            Block::new()
-                .borders(Borders::ALL)
-                .title(" Import / Generate "),
-        );
-        frame.render_widget(p, chunks[1]);
-        // Skip normal viz chunks when showing import UI
-        return;
-    }
-
     let nav_text = if app.spatial_batch.is_some() {
         let n_ev = app.spatial_events.len();
         let ev_hint = if n_ev > 0 {
@@ -134,11 +71,11 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
             "".into()
         };
         format!(
-            "Frame nav: ←→  n/p    g:regen{}   | Legend: conf spd fwd ball near free dfoc v2f + Creation/Conversion/Prevention (M-? for details)",
+            "Frame: ←→ n/p    g:regen  i:import  b:ball{}   | conf spd fwd ball near free dfoc v2f",
             ev_hint
         )
     } else {
-        "Spatial tab — synthetic demo. Press g or i to enter generate/import. Then use ←→ or n/p to move frames.".to_string()
+        "No data — press g to generate synthetic demo, or i to import CSV from ./data/.".to_string()
     };
     let nav = Paragraph::new(nav_text).style(Style::default().fg(Color::DarkGray));
     frame.render_widget(nav, chunks[1]);
@@ -332,16 +269,84 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
     } else {
         let help = Paragraph::new(
             "No spatial data loaded.\n\n\
-             Press 'g' or 'i' to enter generate/import sub-view.\n\
-             Frame nav (Spatial):\n\
-             • ← / →   : step frames\n\
-             • n / p   : next / prev frame\n\
-             • < / >   : prev / next event tag\n\
-             • 1-9     : jump to event tag\n\
-             • M-?     : this help (Alt+?)\n\
-             • g/i/v   : sub views\n\n\
-             Other tabs have their own M-? help.",
+             • g  — generate synthetic demo (pass / press sequence)\n\
+             • i  — import CSV from ./data/ (time,agent_id,x,y)\n\
+             • M-? — full help\n\n\
+             After data loads: ←→ n/p frames, < > events, b ball carrier, e export.",
         );
         frame.render_widget(help, chunks[2]);
     }
+}
+
+fn render_spatial_import_menu(frame: &mut Frame, app: &App, area: Rect) {
+    let header = Paragraph::new(format!(
+        "  [g] Generate   [i] Import   [v] Visualize   {:?}  (import menu)",
+        app.spatial_view
+    ))
+    .style(Style::default().fg(Color::Yellow));
+
+    let chunks = Layout::vertical([Constraint::Length(1), Constraint::Min(1)]).split(area);
+    frame.render_widget(header, chunks[0]);
+
+    let mut files: Vec<String> = vec![];
+    if let Ok(entries) = std::fs::read_dir("data") {
+        for e in entries.flatten() {
+            let p = e.path();
+            if p.is_file() {
+                if let Some(ext) = p.extension().and_then(|x| x.to_str()) {
+                    if ext.eq_ignore_ascii_case("csv") {
+                        files.push(
+                            p.file_name()
+                                .unwrap_or_default()
+                                .to_string_lossy()
+                                .to_string(),
+                        );
+                    }
+                }
+            } else if p.is_dir() {
+                if let Ok(sub) = std::fs::read_dir(&p) {
+                    for se in sub.flatten() {
+                        if let Some(e2) = se.path().extension().and_then(|x| x.to_str()) {
+                            if e2.eq_ignore_ascii_case("csv") {
+                                files.push(format!(
+                                    "{}/{}",
+                                    p.file_name().unwrap_or_default().to_string_lossy(),
+                                    se.file_name().to_string_lossy()
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    let file_list = if files.is_empty() {
+        "  (no .csv found in ./data/ or subdirs)".to_string()
+    } else {
+        files
+            .iter()
+            .take(12)
+            .enumerate()
+            .map(|(i, f)| format!("  {}: {}", i + 1, f))
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+
+    let import_text = format!(
+        "Spatial Import / Generate\n\n\
+         Keys:\n\
+           1 / g     Generate synthetic demo (pass → press sequence)\n\
+           2 / Enter Load first suitable .csv from ./data/\n\
+           Esc / v   Back to visualize\n\n\
+         Discovered in ./data/:\n{}\n\n\
+         CSV layout: time,agent_id,x,y  |  optional match subdirs\n\
+         After load/gen: ←→ frames, b=ball carrier, e=export",
+        file_list
+    );
+    let p = Paragraph::new(import_text).block(
+        Block::new()
+            .borders(Borders::ALL)
+            .title(" Import / Generate "),
+    );
+    frame.render_widget(p, chunks[1]);
 }

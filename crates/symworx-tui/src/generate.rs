@@ -45,31 +45,33 @@ pub fn generate_and_save(preset: DemoPreset, data_dir: &Path) -> Result<std::pat
 }
 
 fn generate_ppg_variants(data_dir: &Path, count: usize) -> Result<std::path::PathBuf> {
+    // Beat-to-beat shape/height variation is applied inside biosym via noise_config.
+    // Seeds are left None so each Generate run is different.
     let base_params = PPGSimulationParams {
         fs: 250.0,
         duration: 30.0,
         beat_params: (1.0, 0.18, 0.025, 0.32, 0.42, 0.055),
         noise_config: PPGNoiseConfig {
-            amp_drift_std: 0.03,
-            mu_drift_std: 0.008,
-            sigma_drift_std: 0.006,
-            onset_jitter_std: 0.004,
-            global_noise_std: 0.02,
-            smoothing_kernel: 5,
+            amp_drift_std: 0.06,     // systolic/diastolic height walk
+            mu_drift_std: 0.01,      // peak timing walk (s)
+            sigma_drift_std: 0.008,  // width walk (s)
+            onset_jitter_std: 0.006,
+            global_noise_std: 0.015,
+            smoothing_kernel: 5, // soften joins
         },
-        seed: Some(42),
+        seed: None,
     };
 
     let mut last_path = PathBuf::new();
     for i in 0..count.max(1) {
-        let mut params = base_params.clone();
-        params.seed = Some(42 + (i as u64) * 17);
-        // Slightly variable RR intervals (~70 bpm + RSA)
-        let mut rr: Vec<f64> = (0..40)
+        let params = base_params.clone();
+        // Slightly variable RR intervals (~70 bpm + RSA) — longer series for pan demo
+        let n_beats = 80 + i * 10;
+        let mut rr: Vec<f64> = (0..n_beats)
             .map(|j| 0.85 + 0.04 * (j as f64 * 0.3).sin())
             .collect();
         for r in &mut rr {
-            *r += 0.015 * rand::random::<f64>() - 0.0075;
+            *r += 0.02 * rand::random::<f64>() - 0.01;
         }
 
         let ts = generate_ppg_timeseries(
@@ -90,23 +92,27 @@ fn generate_ppg_variants(data_dir: &Path, count: usize) -> Result<std::path::Pat
 }
 
 fn generate_respiration_variants(data_dir: &Path, count: usize) -> Result<std::path::PathBuf> {
+    // Closed inhale→exhale cycles in biosym (stationary tidal volume; no AC drift).
+    // noise_level is relative to tidal (zero-mean on volume, not integrated flow).
     let base_params = RespSimulationParams {
         brpm: 14.0,
         dur_min: 1.0,
         fs: 50.0,
         tidal_volume: 0.5,
-        insp_exp_ratio: 1.0 / 2.0,
+        insp_exp_ratio: 1.0 / 2.0, // I:E ≈ 1:2
         kappa_insp: 3.2,
         tau_exp: 1.6,
         amplitude: 1.0,
-        noise_level: 0.05,
-        seed: Some(123),
+        noise_level: 0.03,
+        seed: None,
     };
 
     let mut last_path = PathBuf::new();
     for i in 0..count.max(1) {
         let mut params = base_params.clone();
-        params.seed = Some(123 + (i as u64) * 31);
+        // Mild variant spread (rate / amplitude) without locking seed
+        params.brpm = 13.0 + i as f64;
+        params.amplitude = 1.0 + 0.05 * i as f64;
         let ts = generate_respiration_timeseries(&params);
         let path = data_dir.join(format!("demo_respiration_v{}.csv", i + 1));
         save_two_column(&path, &ts.times, &ts.volume, "time,volume")?;
