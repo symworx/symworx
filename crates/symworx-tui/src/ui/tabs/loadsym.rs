@@ -21,10 +21,11 @@ pub fn render_loadsym_tab(frame: &mut Frame, app: &App, area: Rect) {
              • ↑↓ or 1/2/3 : select sub-view from List\n\
              • In sub-views: arrows/letters for nav/scroll (sparkline), Esc to List\n\
              • Uses real ACWR / monotony / strain + NP/TSS from symworx-loadsym\n\n\
-             1) Workout — i/a to load .fit/CSV. NP/TSS (set FTP with f/F). Thresh regions (t/T d/D).\n\
-                Best efforts + exceedance bars.\n\
+             1) Workout — i/a to load newest .fit/CSV from ~/velofit (raw|inbox) or ./data.\n\
+                NP/TSS (set FTP with f/F). Thresh regions (t/T d/D). Best efforts + exceedance bars.\n\
              2) Calendar View — rolling loads + ACWR trend + scroll\n\
              3) Programming Optimization — recs based on current risk/monotony\n\n\
+             Archive: ~/velofit (syncd velofit ↔ s3:bitterbeta-useast1-velofit).\n\
              Real SRM/Garmin/Polar .fit supported (power preferred for TSS)."
         ).block(Block::new().borders(Borders::ALL).title(" Help — LoadSym "));
         frame.render_widget(help, area);
@@ -317,7 +318,7 @@ fn render_workout_view(frame: &mut Frame, app: &App, area: Rect) {
     frame.render_widget(info, chunks[1]);
     frame.render_widget(spark, chunks[2]);
 
-    let footer = Paragraph::new("i/a: load .fit   r:reset   ←→ scroll   1/2/3 series   t/T thresh   d/D dur   f/F: FTP+/-   Esc:list   (NP/TSS use FTP)")
+    let footer = Paragraph::new("i/a: load newest .fit (~/velofit)   r:reset   ←→ scroll   1/2/3 series   t/T thresh   d/D dur   f/F: FTP+/-   Esc:list")
         .style(Style::default().fg(Color::DarkGray));
     frame.render_widget(footer, chunks[3]);
 }

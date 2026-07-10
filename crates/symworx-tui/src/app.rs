@@ -293,11 +293,8 @@ impl App {
             workout_user_thresh: 0.0,
             workout_user_min_dur: 3,
             ftp: 300.0,
-            loadsym_archive_dirs: vec![
-                PathBuf::from("data"),
-                PathBuf::from("rides"),
-                PathBuf::from("training"),
-            ],
+            // Prefer personal velofit archive, then project-relative folders.
+            loadsym_archive_dirs: symworx_io::default_activity_search_dirs(),
         };
         app.refresh_file_list();
         if !app.file_list.is_empty() {

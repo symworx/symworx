@@ -61,23 +61,24 @@ See `crates/symworx-biosym/src/` (particularly the `gait` module and future `run
 
 **Overview**: The `symworx-loadsym` crate contains resources for quantifying and optimizing (exercise programming) training load (physiological and mechanical). Includes ACWR, monotony/strain, NP/TSS/IF for power meter rides (.fit from SRM PC8, Garmin, Polar), plus nutrition (BMR/TDEE/weightloss).
 
-TUI (symview) has a first-class **LoadSym** workflow (Home → 2) with Workout analysis, Calendar trends, and Optimization recommendations. Drop .fit files in `data/` (or `rides/`) and press `i` (or `a`) inside LoadSym.
+TUI (symview) has a first-class **LoadSym** workflow (Home → 2) with Workout analysis, Calendar trends, and Optimization recommendations. Press `i`/`a` to load the newest `.fit` from `~/velofit` (or `./data`).
 
-See `crates/symworx-loadsym-db/docs/loadsym-personal-starter.md` for the companion ingestion + Postgres + rclone archive project (intended to live in a **separate repo**).
+See `crates/symworx-loadsym-db/docs/loadsym-personal-starter.md` for the `~/velofit` archive + `syncd velofit` + future DB plan.
 
 ### symload (headless ingest)
 
 The `symload` CLI is now shipped as a binary by the `symworx-loadsym` crate:
 
-- `cargo run -p symworx-loadsym --features "email,db" -- stats <file.fit> --ftp 280`
-- Or after `cargo install symworx-loadsym --features "email,db"`, just `symload stats ...`
+- `cargo run -p symworx-loadsym --features "fit,email,db" -- stats ~/velofit/raw/ride.fit --ftp 280`
+- Or after `cargo install symworx-loadsym --features "fit,email,db"`, just `symload stats ...`
 
 Features:
-- `stats` on .fit files (NP, IF, TSS, etc.)
-- `db print-schema`
-- `email fetch` (IMAP for SRM etc., behind `email` feature; the IMAP/mailparse deps live in `symworx-io` to keep I/O concerns together)
+- `fit` — `.fit` loading for `stats`
+- `email` — IMAP fetch of SRM `.fit` attachments (implies `fit`; deps in `symworx-io`)
+- `db` — `db print-schema` via `symworx-loadsym-db`
+- `inbox promote` — move unique inbox FITs into `~/velofit/raw`
 
-See the updated `crates/symworx-loadsym-db/docs/loadsym-personal-starter.md` and `crates/symworx-loadsym/README.md`.
+See `crates/symworx-loadsym-db/docs/loadsym-personal-starter.md` and `crates/symworx-loadsym/README.md`.
 
 ### symworx-loadsym-db
 
@@ -85,7 +86,7 @@ Lightweight crate that provides SQL schema constants. It is still available sepa
 
 ### Email / SRM ingestion
 
-Not yet implemented. Current guidance (in docs): manually (or via simple script) save SRM email attachments to an `inbox/` directory, then run `symload` on them. Full Gmail IMAP fetching (searching for SRM emails and auto-downloading .fit) can be added next.
+Implemented behind the `email` feature (`symworx-io` MIME extraction + `symload email fetch`). Default drop zone is `~/velofit/inbox`; promote with `symload inbox promote` then `syncd velofit` to sync `s3:bitterbeta-useast1-velofit`.
 
 ### [SpatialSym](crates/symworx-spatialsym/README.md)
 

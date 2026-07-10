@@ -20,8 +20,9 @@ use symworx_error::SymError;
 pub struct ActivityData {
     /// Source filename or device label
     pub source: String,
-    /// Optional device metadata (manufacturer, product, sport)
+    /// Device manufacturer from FIT file_id (e.g. "garmin", "srm").
     pub manufacturer: Option<String>,
+    /// Device product name/id from FIT file_id.
     pub product: Option<String>,
     /// Sport type string (e.g. "cycling", "running")
     pub sport: Option<String>,
@@ -106,10 +107,10 @@ pub fn load_fit_activity(path: &str) -> Result<ActivityData, SymError> {
             for f in rec.fields() {
                 match f.name() {
                     "manufacturer" => {
-                        manufacturer = Some(format!("{:?}", f.value()));
+                        manufacturer = Some(fit_value_display(f.value()));
                     }
                     "product" => {
-                        product = Some(format!("{:?}", f.value()));
+                        product = Some(fit_value_display(f.value()));
                     }
                     _ => {}
                 }
@@ -120,7 +121,7 @@ pub fn load_fit_activity(path: &str) -> Result<ActivityData, SymError> {
         if kind == fitparser::profile::MesgNum::Sport {
             for f in rec.fields() {
                 if f.name() == "sport" {
-                    sport = Some(format!("{:?}", f.value()));
+                    sport = Some(fit_value_display(f.value()));
                 }
             }
         }
@@ -259,6 +260,29 @@ pub fn read_power_csv_series(path: &str) -> Result<(Vec<f64>, Vec<f64>), SymErro
             .map_err(|_| SymError::UnsupportedFormat("no usable power data in csv".into()));
     }
     Ok((times, powers))
+}
+
+/// Human-readable string for a fitparser field value (avoids `String("garmin")` Debug form).
+#[cfg(feature = "fit")]
+fn fit_value_display(v: &fitparser::Value) -> String {
+    use fitparser::Value;
+    match v {
+        Value::String(s) => s.clone(),
+        other => {
+            let s = format!("{:?}", other);
+            // Strip common Debug wrappers: String("x") / "x"
+            if let Some(inner) = s
+                .strip_prefix("String(\"")
+                .and_then(|t| t.strip_suffix("\")"))
+            {
+                inner.to_string()
+            } else if s.starts_with('"') && s.ends_with('"') && s.len() >= 2 {
+                s[1..s.len() - 1].to_string()
+            } else {
+                s
+            }
+        }
+    }
 }
 
 /// Load a full ActivityData (recommended for new code).

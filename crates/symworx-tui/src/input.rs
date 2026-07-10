@@ -963,16 +963,21 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                 return false;
             }
             KeyCode::Char('i') | KeyCode::Char('I') => {
-                if let Some(act) = try_load_first_activity() {
-                    app.loaded_activity = Some(act.clone());
+                if let Some(act) = crate::processing::find_newest_loadsym_activity(app) {
+                    let n = act.times_s.len();
+                    let src = act.source.clone();
+                    app.loaded_activity = Some(act);
                     app.activity_scroll = 0;
                     app.activity_series = 0;
                     app.workout_user_thresh = 0.0;
                     app.workout_user_min_dur = 3;
                     app.loadsym_view = crate::app::LoadSymView::Workout;
-                    app.status = format!("Loaded activity into Workout: {}", act.source);
+                    app.status = format!(
+                        "Loaded {} ({} samples). Roots: ~/velofit + ./data",
+                        src, n
+                    );
                 } else {
-                    app.status = "No activity file in ./data/. Put .fit or headered .csv there and press i again.".to_string();
+                    app.status = "No .fit/.csv in ~/velofit/raw|inbox or ./data/. Drop a file and press i.".to_string();
                 }
                 return false;
             }
@@ -1007,25 +1012,22 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                     };
                     *scroll += 10;
                 }
-                KeyCode::Char('i') | KeyCode::Char('I') => {
-                    // Try to load a .fit or activity file from ./data
-                    if let Some(act) = try_load_first_activity() {
+                KeyCode::Char('i') | KeyCode::Char('I') | KeyCode::Char('a') | KeyCode::Char('A') => {
+                    // Newest .fit under ~/velofit (raw/inbox) and project data dirs
+                    if let Some(act) = crate::processing::find_newest_loadsym_activity(app) {
                         let n = act.times_s.len();
-                        let name = act
-                            .source
-                            .split('/')
-                            .last()
-                            .unwrap_or(&act.source)
-                            .to_string();
+                        let src = act.source.clone();
                         app.loaded_activity = Some(act);
                         app.activity_scroll = 0;
                         app.activity_series = 0;
                         app.workout_user_thresh = 0.0;
                         app.workout_user_min_dur = 3;
-                        app.status =
-                            format!("Loaded {} — {} samples. 1/2/3=series  ←→ scroll", name, n);
+                        app.status = format!(
+                            "Loaded {} — {} samples. 1/2/3=series  ←→ scroll  f/F=FTP",
+                            src, n
+                        );
                     } else {
-                        app.status = "No .fit/.csv in ./data/. Drop Garmin/Polar/SRM file (or CSV with headers).".to_string();
+                        app.status = "No .fit/.csv in ~/velofit/raw|inbox or ./data|rides. Import via symload email fetch.".to_string();
                     }
                 }
                 KeyCode::Char('r') | KeyCode::Char('R') => {
@@ -1141,37 +1143,6 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
         _ => {}
     }
     false
-}
-
-/// Best-effort loader: finds first *.fit / *.csv in several likely locations
-/// (data/, rides/, training/, and loadsym_archive awareness).
-fn try_load_first_activity() -> Option<symworx_io::ActivityData> {
-    let candidates = ["data", "rides", "training", "archive", "."];
-    for base in &candidates {
-        let dir = std::path::Path::new(base);
-        if !dir.exists() {
-            continue;
-        }
-        if let Ok(entries) = std::fs::read_dir(dir) {
-            for entry in entries.flatten() {
-                let p = entry.path();
-                if p.is_dir() {
-                    continue;
-                } // simple, no recurse for now
-                if let Some(ext) = p.extension().and_then(|e| e.to_str()) {
-                    let extl = ext.to_lowercase();
-                    if matches!(extl.as_str(), "fit" | "csv" | "txt") {
-                        if let Ok(act) = symworx_io::load_activity(&p.to_string_lossy()) {
-                            if !act.times_s.is_empty() {
-                                return Some(act);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    None
 }
 
 /// Try to load a real spatial trajectories CSV from ./data/
