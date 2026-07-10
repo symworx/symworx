@@ -24,6 +24,11 @@ pub mod error;
 pub mod load;
 pub mod nutrition;
 
+/// Personal SQLite catalog (init / ingest). Enabled with the `sqlite` feature.
+/// Data files must live outside this repository (e.g. under `$VELOFIT_HOME/db/`).
+#[cfg(feature = "sqlite")]
+pub mod catalog;
+
 // Re-exports
 pub use error::{
     LoadSymError,

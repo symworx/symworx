@@ -233,8 +233,19 @@ pub struct App {
     // LoadSym state (TUI interface per approved plan + user priority)
     pub loadsym_view: LoadSymView,
     pub loadsym_selection: usize,
-    pub daily_loads: Vec<f64>, // daily training load (arbitrary units or TSS etc)
+    /// Daily TSS (or demo loads), oldest → newest.
+    pub daily_loads: Vec<f64>,
+    /// Parallel dates (`YYYY-MM-DD`) when loaded from catalog; empty for synthetic demo.
+    pub daily_load_dates: Vec<String>,
+    /// Optional ACWR per day from `load_metrics` (same length as `daily_loads` when present).
+    pub daily_acwr: Vec<Option<f64>>,
+    pub daily_risk: Vec<Option<String>>,
+    pub daily_ride_counts: Vec<i64>,
     pub loadsym_scroll: usize, // for long sessions / calendar scrolling
+    /// Path of catalog last loaded into calendar (status only; may be None).
+    pub loadsym_catalog_path: Option<PathBuf>,
+    /// True when daily_loads came from SQLite catalog (not synthetic `g`).
+    pub loadsym_from_catalog: bool,
 
     // Loaded activity (from .fit or activity CSV) — used by LoadSym Workout
     pub loaded_activity: Option<symworx_io::ActivityData>,
@@ -291,8 +302,14 @@ impl App {
             // LoadSym defaults
             loadsym_view: LoadSymView::List,
             loadsym_selection: 0,
-            daily_loads: vec![], /* start empty; use 'g' to generate synthetic demo loads or import real activity data */
+            daily_loads: vec![],
+            daily_load_dates: vec![],
+            daily_acwr: vec![],
+            daily_risk: vec![],
+            daily_ride_counts: vec![],
             loadsym_scroll: 0,
+            loadsym_catalog_path: None,
+            loadsym_from_catalog: false,
             loaded_activity: None,
             activity_scroll: 0,
             activity_series: 0,
@@ -307,6 +324,8 @@ impl App {
         if !app.file_list.is_empty() {
             app.list_state.select(Some(0));
         }
+        // Best-effort: load personal catalog for LoadSym calendar if present.
+        let _ = crate::processing::try_load_loadsym_catalog(&mut app);
         // Note: synthetic data is NOT loaded by default for any workflow.
         // BioSym, LoadSym, and SpatialSym each provide explicit Generate and Import options.
         // See seed_spatial_demo(), generate_demo_and_load(), and 'g'/'i' handlers.
@@ -699,9 +718,20 @@ impl App {
                 self.current_tab = Tab::LoadSym;
                 self.loadsym_view = LoadSymView::List;
                 self.loadsym_selection = 0;
-                self.status =
-                    "LoadSym — 1 Workout  2 Calendar  3 Optimization   ↑↓ Enter   Ctrl+H home"
-                        .to_string();
+                // Refresh catalog if empty (or always try when entering workflow)
+                let _ = crate::processing::try_load_loadsym_catalog(self);
+                let cat = if self.loadsym_from_catalog {
+                    format!(
+                        "catalog {} days",
+                        self.daily_loads.len()
+                    )
+                } else {
+                    "no catalog (g=demo, or symload ingest)".to_string()
+                };
+                self.status = format!(
+                    "LoadSym — 1 Workout  2 Calendar  3 Optimization  • {}  • Ctrl+H home",
+                    cat
+                );
             }
         }
         self.ensure_status_for_current_tab();

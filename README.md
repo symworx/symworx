@@ -61,32 +61,27 @@ See `crates/symworx-biosym/src/` (particularly the `gait` module and future `run
 
 **Overview**: The `symworx-loadsym` crate contains resources for quantifying and optimizing (exercise programming) training load (physiological and mechanical). Includes ACWR, monotony/strain, NP/TSS/IF for power meter rides (.fit from SRM PC8, Garmin, Polar), plus nutrition (BMR/TDEE/weightloss).
 
-TUI (symview) has a first-class **LoadSym** workflow (Home → 2) with Workout analysis, Calendar trends, and Optimization recommendations. Press `i`/`a` to load the newest `.fit` from `~/velofit` (or `./data`).
+TUI (symview) has a first-class **LoadSym** workflow (Home → 2) with Workout analysis, Calendar trends, and Optimization recommendations. Press `i`/`a` to load the newest `.fit` from `$VELOFIT_HOME` (default `~/velofit`) or `./data`.
 
-See `crates/symworx-loadsym-db/docs/loadsym-personal-starter.md` for the `~/velofit` archive + `syncd velofit` + future DB plan.
+See `crates/symworx-loadsym-db/docs/loadsym-personal-starter.md` for personal archive + SQLite catalog layout (data stays outside this repo).
 
-### symload (headless ingest)
+### symload (headless)
 
-The `symload` CLI is now shipped as a binary by the `symworx-loadsym` crate:
+```bash
+cargo run -p symworx-loadsym --features "fit,email,sqlite" -- stats ride.fit --ftp 280
+cargo run -p symworx-loadsym --features sqlite -- db init
+cargo run -p symworx-loadsym --features sqlite -- ingest --ftp 280
+```
 
-- `cargo run -p symworx-loadsym --features "fit,email,db" -- stats ~/velofit/raw/ride.fit --ftp 280`
-- Or after `cargo install symworx-loadsym --features "fit,email,db"`, just `symload stats ...`
-
-Features:
-- `fit` — `.fit` loading for `stats`
-- `email` — IMAP fetch of SRM `.fit` attachments (implies `fit`; deps in `symworx-io`)
-- `db` — `db print-schema` via `symworx-loadsym-db`
-- `inbox promote` — move unique inbox FITs into `~/velofit/raw`
-
-See `crates/symworx-loadsym-db/docs/loadsym-personal-starter.md` and `crates/symworx-loadsym/README.md`.
+Features: `fit`, `email`, `db` (print-schema), `sqlite` (init + ingest). Personal DB default: `$VELOFIT_HOME/db/loadsym.sqlite`.
 
 ### symworx-loadsym-db
 
-Lightweight crate that provides SQL schema constants. It is still available separately but is also consumable via the `db` feature on `symworx-loadsym`.
+Zero-dep SQL schema (Postgres + SQLite). No sample data. Consumable via the `db` / `sqlite` features of `symworx-loadsym`.
 
 ### Email / SRM ingestion
 
-Implemented behind the `email` feature (`symworx-io` MIME extraction + `symload email fetch`). Default drop zone is `~/velofit/inbox`; promote with `symload inbox promote` then `syncd velofit` to sync `s3:bitterbeta-useast1-velofit`.
+IMAP MIME extraction behind `email`. Credentials only via `SYMLOAD_USER` / `SYMLOAD_APP_PASSWORD`. Default drop zone: `$VELOFIT_HOME/inbox`.
 
 ### [SpatialSym](crates/symworx-spatialsym/README.md)
 

@@ -8,7 +8,7 @@
 --   * General (TRIMP, sRPE, ACWR from symworx-loadsym)
 --
 -- This file lives inside the `symworx-loadsym-db` crate so it can be embedded via `include_str!`.
--- The actual production DB should live in your separate repo (see crates/symworx-loadsym-db/docs/loadsym-personal-starter.md).
+-- Apply against a personal database outside this repository (e.g. $VELOFIT_HOME/db/ for SQLite — see schema.sqlite.sql).
 
 -- Schema version for migrations
 CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -36,7 +36,8 @@ CREATE TABLE activities (
     np_w            DOUBLE PRECISION,               -- Normalized Power (GoldenCheetah/TP)
     tss             DOUBLE PRECISION,               -- Training Stress Score (core metric)
     intensity_factor DOUBLE PRECISION,
-    ftp_used_w      DOUBLE PRECISION,
+    ftp_used_w      DOUBLE PRECISION,             -- FTP applied when scoring this ride
+    ftp_history_id  BIGINT,                       -- FK → ftp_history.id when resolved from history
 
     total_work_kj   DOUBLE PRECISION,
 
@@ -119,11 +120,34 @@ CREATE TABLE zones (
     UNIQUE (effective_from, sport, zone_type, zone_number)
 );
 
--- Historical thresholds (FTP, etc.) so old rides can be re-scored
-CREATE TABLE ftp_history (
-    effective_from  DATE PRIMARY KEY,
-    ftp_w           DOUBLE PRECISION NOT NULL
+-- FTP / threshold history: time-varying values used when scoring (and re-scoring) rides.
+-- Validity: for a sport, row is active from effective_from (inclusive) until the next
+-- later effective_from (exclusive). Optional effective_to is an explicit exclusive end.
+--
+-- Lookup (ride_date D, sport S):
+--   SELECT * FROM ftp_history
+--   WHERE sport = S AND effective_from <= D
+--     AND (effective_to IS NULL OR effective_to > D)
+--   ORDER BY effective_from DESC LIMIT 1;
+CREATE TABLE IF NOT EXISTS ftp_history (
+    id              BIGSERIAL PRIMARY KEY,
+    effective_from  DATE NOT NULL,
+    effective_to    DATE,
+    ftp_w           DOUBLE PRECISION NOT NULL CHECK (ftp_w > 0),
+    sport           TEXT NOT NULL DEFAULT 'cycling',
+    source          TEXT,                         -- ramp_test | 20min_test | map_test | estimate | manual | device
+    notes           TEXT,
+    created_at      TIMESTAMPTZ DEFAULT now(),
+    UNIQUE (sport, effective_from)
 );
+
+CREATE INDEX IF NOT EXISTS idx_ftp_history_lookup ON ftp_history (sport, effective_from);
+
+ALTER TABLE activities
+    DROP CONSTRAINT IF EXISTS activities_ftp_history_id_fkey;
+ALTER TABLE activities
+    ADD CONSTRAINT activities_ftp_history_id_fkey
+    FOREIGN KEY (ftp_history_id) REFERENCES ftp_history(id) ON DELETE SET NULL;
 
 -- Athlete profile / settings (single user for personal use)
 CREATE TABLE athlete (

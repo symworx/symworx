@@ -146,3 +146,44 @@ pub fn derive_load_from_current_activity(app: &App) -> Option<f64> {
         m.tss.max(1.0) // at least a token load
     })
 }
+
+/// Load daily TSS / ACWR from the personal SQLite catalog (`$VELOFIT_HOME/db/…`).
+///
+/// Returns `Ok(true)` if rows were loaded, `Ok(false)` if no DB file, `Err` on I/O/SQL errors.
+pub fn try_load_loadsym_catalog(app: &mut App) -> Result<bool, String> {
+    match symworx_loadsym::catalog::try_load_default_calendar()? {
+        None => {
+            // Leave existing series alone if catalog missing
+            Ok(false)
+        }
+        Some((path, rows)) => {
+            if rows.is_empty() {
+                app.loadsym_catalog_path = Some(path);
+                app.loadsym_from_catalog = false;
+                return Ok(false);
+            }
+            app.daily_loads = rows.iter().map(|r| r.total_tss).collect();
+            app.daily_load_dates = rows.iter().map(|r| r.ride_date.clone()).collect();
+            app.daily_acwr = rows.iter().map(|r| r.acwr).collect();
+            app.daily_risk = rows.iter().map(|r| r.risk_level.clone()).collect();
+            app.daily_ride_counts = rows.iter().map(|r| r.ride_count).collect();
+            app.loadsym_catalog_path = Some(path);
+            app.loadsym_from_catalog = true;
+            // Focus on most recent day
+            app.loadsym_scroll = app.daily_loads.len().saturating_sub(1);
+            Ok(true)
+        }
+    }
+}
+
+/// Apply synthetic demo loads (clears catalog-backed date metadata).
+pub fn apply_demo_daily_loads(app: &mut App, days: usize) {
+    app.daily_loads = symworx_loadsym::load::generate_demo_daily_loads(days, 400.0, 100.0);
+    app.daily_load_dates.clear();
+    app.daily_acwr.clear();
+    app.daily_risk.clear();
+    app.daily_ride_counts.clear();
+    app.loadsym_from_catalog = false;
+    app.loadsym_catalog_path = None;
+    app.loadsym_scroll = app.daily_loads.len().saturating_sub(1);
+}

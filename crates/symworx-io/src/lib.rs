@@ -70,6 +70,7 @@ pub use paths::{
     ActivityFileEntry,
     VELOFIT_HOME_ENV,
     default_activity_search_dirs,
+    default_velofit_db,
     default_velofit_inbox,
     default_velofit_raw,
     default_velofit_root,

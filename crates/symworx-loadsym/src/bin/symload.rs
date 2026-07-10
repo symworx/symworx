@@ -1,30 +1,17 @@
-// symload — headless CLI for activity ingestion and symworx-loadsym tooling.
+// symload — headless CLI for activity stats, email fetch, and personal SQLite catalog.
 //
-// This binary is provided by the symworx-loadsym crate.
-//
-// Usage examples:
-//   symload stats ride.fit --ftp 280
-//   symload stats ~/velofit/raw
-//   symload db print-schema
-//   cargo build -p symworx-loadsym --features "fit,email,db"
-//   symload email fetch ~/velofit/inbox
-//   symload inbox promote
+// Personal data (DB, FIT archive, credentials) lives under $VELOFIT_HOME (default ~/velofit).
+// This binary never embeds personal emails, bucket names, or sample athlete rows.
 
 use std::{
-    env,
-    fs,
-    path::{
-        Path,
-        PathBuf,
-    },
+    env, fs,
+    path::{Path, PathBuf},
 };
 
 #[cfg(feature = "email")]
 use symworx_io::email;
 use symworx_io::{
-    default_velofit_inbox,
-    default_velofit_raw,
-    discover_activity_files,
+    default_velofit_inbox, default_velofit_raw, default_velofit_root, discover_activity_files,
     load_activity,
 };
 use symworx_loadsym::load::compute_ride_metrics;
@@ -41,7 +28,40 @@ fn main() {
     let cmd = &args[1];
     match cmd.as_str() {
         "db" | "schema" => {
-            handle_db_command(&args);
+            if let Err(e) = handle_db_command(&args) {
+                eprintln!("db error: {}", e);
+                std::process::exit(7);
+            }
+        }
+        "ingest" | "reprocess" => {
+            #[cfg(feature = "sqlite")]
+            {
+                let force = cmd == "reprocess"
+                    || args.iter().any(|a| a == "--force" || a == "-F");
+                if let Err(e) = handle_ingest(&args, force) {
+                    eprintln!("ingest error: {}", e);
+                    std::process::exit(8);
+                }
+            }
+            #[cfg(not(feature = "sqlite"))]
+            {
+                eprintln!("ingest requires --features sqlite (includes fit + db)");
+                std::process::exit(5);
+            }
+        }
+        "ftp" => {
+            #[cfg(feature = "sqlite")]
+            {
+                if let Err(e) = handle_ftp(&args) {
+                    eprintln!("ftp error: {}", e);
+                    std::process::exit(9);
+                }
+            }
+            #[cfg(not(feature = "sqlite"))]
+            {
+                eprintln!("ftp commands require --features sqlite");
+                std::process::exit(5);
+            }
         }
         "email" | "fetch" => {
             #[cfg(feature = "email")]
@@ -103,31 +123,270 @@ fn main() {
     }
 }
 
-fn handle_db_command(args: &[String]) {
-    #[cfg(feature = "db")]
-    {
-        if args.len() > 2 && (args[2] == "print-schema" || args[2] == "schema") {
-            let dialect = if args.iter().any(|a| a == "--sqlite" || a == "sqlite") {
-                "sqlite"
-            } else {
-                "postgres"
-            };
-            println!("{}", symworx_loadsym_db::get_schema(dialect));
-        } else {
-            eprintln!("symload db print-schema [--dialect postgres|sqlite]");
+fn handle_db_command(args: &[String]) -> Result<(), String> {
+    let sub = args.get(2).map(|s| s.as_str()).unwrap_or("help");
+    match sub {
+        "print-schema" | "schema" => {
+            #[cfg(feature = "db")]
+            {
+                let dialect = if args.iter().any(|a| a == "--postgres" || a == "postgres") {
+                    "postgres"
+                } else if args.iter().any(|a| a == "--sqlite" || a == "sqlite") {
+                    "sqlite"
+                } else {
+                    "sqlite"
+                };
+                print!("{}", symworx_loadsym_db::get_schema(dialect));
+                Ok(())
+            }
+            #[cfg(not(feature = "db"))]
+            {
+                Err("print-schema requires --features db".into())
+            }
+        }
+        "init" => {
+            #[cfg(feature = "sqlite")]
+            {
+                let db = parse_db_path(args);
+                symworx_loadsym::catalog::init_catalog(&db)?;
+                println!("Initialized SQLite catalog at {}", db.display());
+                println!("(personal data — keep this file outside the source tree / git)");
+                Ok(())
+            }
+            #[cfg(not(feature = "sqlite"))]
+            {
+                let _ = args;
+                Err("db init requires --features sqlite".into())
+            }
+        }
+        "status" => {
+            #[cfg(feature = "sqlite")]
+            {
+                let db = parse_db_path(args);
+                let conn = symworx_loadsym::catalog::open_catalog(&db)?;
+                let n = symworx_loadsym::catalog::count_activities(&conn)?;
+                let ftp_n: i64 = conn
+                    .query_row("SELECT COUNT(*) FROM ftp_history", [], |r| r.get(0))
+                    .unwrap_or(0);
+                println!("db: {}", db.display());
+                println!("activities: {}", n);
+                println!("ftp_history rows: {}", ftp_n);
+                Ok(())
+            }
+            #[cfg(not(feature = "sqlite"))]
+            {
+                let _ = args;
+                Err("db status requires --features sqlite".into())
+            }
+        }
+        _ => {
+            eprintln!("symload db <print-schema|init|status> [--db PATH]");
+            Err("unknown db subcommand".into())
         }
     }
-    #[cfg(not(feature = "db"))]
+}
+
+#[cfg(feature = "sqlite")]
+fn handle_ftp(args: &[String]) -> Result<(), String> {
+    use symworx_loadsym::catalog::{list_ftp_history, open_catalog, set_ftp_history};
+
+    let sub = args.get(2).map(|s| s.as_str()).unwrap_or("list");
+    let db = parse_db_path(args);
+    if !db.exists() {
+        symworx_loadsym::catalog::init_catalog(&db)?;
+    }
+    let conn = open_catalog(&db)?;
+
+    match sub {
+        "list" | "ls" => {
+            let rows = list_ftp_history(&conn)?;
+            if rows.is_empty() {
+                println!("(no ftp_history rows — use: symload ftp set --date YYYY-MM-DD --ftp N)");
+            }
+            for (id, from, to, ftp, sport, source) in rows {
+                println!(
+                    "id={}  {} → {}  ftp={:.0}W  sport={}  source={}",
+                    id,
+                    from,
+                    to.as_deref().unwrap_or("…"),
+                    ftp,
+                    sport,
+                    source.as_deref().unwrap_or("-")
+                );
+            }
+            Ok(())
+        }
+        "set" => {
+            let date = parse_flag_value(args, "--date")
+                .or_else(|| parse_flag_value(args, "--from"))
+                .ok_or_else(|| "ftp set requires --date YYYY-MM-DD".to_string())?;
+            let ftp: f64 = parse_flag_value(args, "--ftp")
+                .or_else(|| parse_flag_value(args, "-f"))
+                .ok_or_else(|| "ftp set requires --ftp WATTS".to_string())?
+                .parse()
+                .map_err(|_| "invalid --ftp".to_string())?;
+            let sport = parse_flag_value(args, "--sport").unwrap_or_else(|| "cycling".into());
+            let source = parse_flag_value(args, "--source");
+            let notes = parse_flag_value(args, "--notes");
+            let until = parse_flag_value(args, "--until");
+            let id = set_ftp_history(
+                &conn,
+                &date,
+                ftp,
+                &sport,
+                source.as_deref(),
+                notes.as_deref(),
+                until.as_deref(),
+            )?;
+            println!(
+                "ftp_history id={}  effective_from={}  ftp={:.0}W  sport={}",
+                id, date, ftp, sport
+            );
+            println!("Re-score rides: symload reprocess --ftp {:.0}", ftp);
+            Ok(())
+        }
+        _ => Err("Usage: symload ftp list | ftp set --date YYYY-MM-DD --ftp N [--sport cycling] [--source manual] [--until YYYY-MM-DD]".into()),
+    }
+}
+
+fn parse_flag_value(args: &[String], flag: &str) -> Option<String> {
+    for (i, a) in args.iter().enumerate() {
+        if a == flag && i + 1 < args.len() {
+            return Some(args[i + 1].clone());
+        }
+    }
+    None
+}
+
+/// First positional path after the command (skips known flags/values).
+fn parse_ingest_target(args: &[String]) -> PathBuf {
+    let mut i = 2usize;
+    while i < args.len() {
+        let a = &args[i];
+        if a == "--force" || a == "-F" {
+            i += 1;
+            continue;
+        }
+        if matches!(
+            a.as_str(),
+            "--ftp"
+                | "-f"
+                | "--db"
+                | "-d"
+                | "--date"
+                | "--from"
+                | "--sport"
+                | "--source"
+                | "--notes"
+                | "--until"
+        ) {
+            i += 2;
+            continue;
+        }
+        if a.starts_with('-') {
+            i += 1;
+            continue;
+        }
+        return PathBuf::from(a);
+    }
+    default_velofit_raw()
+}
+
+#[cfg(feature = "sqlite")]
+fn handle_ingest(args: &[String], force: bool) -> Result<(), String> {
+    use symworx_loadsym::catalog::{
+        ingest_one, open_catalog, recompute_load_metrics, IngestOutcome,
+    };
+
+    let db = parse_db_path(args);
+    let ftp = parse_ftp(args);
+    let target = parse_ingest_target(args);
+
+    if !db.exists() {
+        symworx_loadsym::catalog::init_catalog(&db)?;
+        println!("Created catalog at {}", db.display());
+    }
+    let conn = open_catalog(&db)?;
+    let archive_root = default_velofit_root();
+
+    let paths = if target.is_dir() {
+        find_fit_files(target.to_str().unwrap_or("."))
+    } else {
+        vec![target]
+    };
+
+    if paths.is_empty() {
+        return Err("No .fit files found for ingest/reprocess".into());
+    }
+
+    if force {
+        println!("reprocess mode: re-scoring with ftp_history (fallback FTP={:.0})", ftp);
+    }
+
+    let mut inserted = 0usize;
+    let mut skipped = 0usize;
+    let mut failed = 0usize;
+
+    for p in &paths {
+        match ingest_one(&conn, p, ftp, Some(&archive_root), force) {
+            IngestOutcome::Inserted {
+                source_key,
+                tss,
+                ftp_w,
+                ftp_origin,
+            } => {
+                inserted += 1;
+                println!(
+                    "+ {}  TSS={:.1}  FTP={:.0}W ({})",
+                    source_key, tss, ftp_w, ftp_origin
+                );
+            }
+            IngestOutcome::Skipped { source_key, reason } => {
+                skipped += 1;
+                if force || env::var("SYMLOAD_INGEST_VERBOSE").is_ok() {
+                    println!("= {}  ({})", source_key, reason);
+                }
+            }
+            IngestOutcome::Failed { path, error } => {
+                failed += 1;
+                eprintln!("! {}: {}", path, error);
+            }
+        }
+    }
+
+    let metrics_n = recompute_load_metrics(&conn)?;
+    println!(
+        "ingest done: inserted/updated={} skipped={} failed={}  load_metrics_rows={}",
+        inserted, skipped, failed, metrics_n
+    );
+    println!("db: {}", db.display());
+    Ok(())
+}
+
+fn parse_db_path(args: &[String]) -> PathBuf {
+    for (i, a) in args.iter().enumerate() {
+        if (a == "--db" || a == "-d") && i + 1 < args.len() {
+            return PathBuf::from(&args[i + 1]);
+        }
+    }
+    #[cfg(feature = "sqlite")]
     {
-        let _ = args;
-        eprintln!("DB schema support requires the 'db' feature");
+        return symworx_loadsym::catalog::default_catalog_path();
+    }
+    #[cfg(not(feature = "sqlite"))]
+    {
+        default_velofit_root().join("db").join("loadsym.sqlite")
     }
 }
 
 #[cfg(feature = "email")]
 fn handle_email_fetch(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
-    let user = env::var("SYMLOAD_USER")?;
-    let pass = env::var("SYMLOAD_APP_PASSWORD")?;
+    let user = env::var("SYMLOAD_USER").map_err(|_| {
+        "set SYMLOAD_USER to your IMAP username (do not commit credentials)".to_string()
+    })?;
+    let pass = env::var("SYMLOAD_APP_PASSWORD").map_err(|_| {
+        "set SYMLOAD_APP_PASSWORD (app password; do not commit)".to_string()
+    })?;
 
     let target = if let Some(d) = args.get(2) {
         if d.starts_with('-') {
@@ -155,7 +414,6 @@ fn handle_email_fetch(args: &[String]) -> Result<(), Box<dyn std::error::Error>>
     Ok(())
 }
 
-/// Move unique .fit files from inbox → raw (skip if destination exists with same size).
 fn handle_inbox_promote(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
     let mut from = default_velofit_inbox();
     let mut to = default_velofit_raw();
@@ -204,7 +462,6 @@ fn handle_inbox_promote(args: &[String]) -> Result<(), Box<dyn std::error::Error
             let src_len = fs::metadata(p).map(|m| m.len()).unwrap_or(0);
             let dst_len = fs::metadata(&dest).map(|m| m.len()).unwrap_or(0);
             if src_len == dst_len {
-                // Already archived; remove inbox copy to avoid reprocessing
                 let _ = fs::remove_file(p);
                 skipped += 1;
                 continue;
@@ -217,10 +474,7 @@ fn handle_inbox_promote(args: &[String]) -> Result<(), Box<dyn std::error::Error
             skipped += 1;
             continue;
         }
-        fs::rename(p, &dest).or_else(|_| {
-            // Cross-device: copy then remove
-            fs::copy(p, &dest).and_then(|_| fs::remove_file(p))
-        })?;
+        fs::rename(p, &dest).or_else(|_| fs::copy(p, &dest).and_then(|_| fs::remove_file(p)))?;
         println!("promoted {}", dest.display());
         moved += 1;
     }
@@ -232,9 +486,6 @@ fn handle_inbox_promote(args: &[String]) -> Result<(), Box<dyn std::error::Error
         from.display(),
         to.display()
     );
-    if moved > 0 {
-        println!("Next: syncd velofit   # push ~/velofit to S3");
-    }
     Ok(())
 }
 
@@ -316,25 +567,29 @@ fn process_one(path: &Path, ftp: f64, json_only: bool) -> Result<(), Box<dyn std
 
 fn print_usage() {
     eprintln!(
-        r#"symload — headless activity ingest / stats (symworx-loadsym)
+        r#"symload — activity stats + personal catalog (symworx-loadsym)
 
 Commands:
   symload stats <file.fit | dir> [--ftp 280] [--json]
-  symload db print-schema [--dialect postgres|sqlite]
-  symload email fetch [target_dir]     (default: ~/velofit/inbox; needs --features email)
+  symload db print-schema [--sqlite|--postgres]
+  symload db init [--db PATH]          (needs --features sqlite)
+  symload db status [--db PATH]
+  symload ingest [path|dir] [--db PATH] [--ftp 280] [--force]
+      FTP for each ride comes from ftp_history when set; --ftp is fallback only.
+  symload reprocess [path|dir] [--ftp 280]   same as ingest --force (re-score loads)
+  symload ftp list
+  symload ftp set --date YYYY-MM-DD --ftp N [--sport cycling] [--source manual] [--until DATE]
+  symload email fetch [target_dir]     (default: $VELOFIT_HOME/inbox)
   symload inbox promote [--from DIR] [--to DIR]
-      Move unique .fit from inbox → raw (defaults: ~/velofit/inbox → ~/velofit/raw)
 
-Personal archive layout:
-  ~/velofit/inbox   email / manual drop
-  ~/velofit/raw     S3-mirrored archive (s3:bitterbeta-useast1-velofit)
-  Override root with VELOFIT_HOME.
+Environment (never commit secrets):
+  VELOFIT_HOME          archive root (default: ~/velofit)
+  SYMLOAD_DB            SQLite path override
+  SYMLOAD_USER          IMAP username for email fetch
+  SYMLOAD_APP_PASSWORD  IMAP app password
+  SYMLOAD_INGEST_VERBOSE  set to log skipped files
 
-Env (email):
-  SYMLOAD_USER              Gmail address (e.g. nberry.fitdata@gmail.com)
-  SYMLOAD_APP_PASSWORD      Gmail App Password
-
-After promote:  syncd velofit
+Privacy: the catalog and FIT archive live under VELOFIT_HOME only — not in the SymWorx repo.
 "#
     );
 }

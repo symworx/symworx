@@ -39,7 +39,8 @@ symworx-biosym = { path = "../symworx-biosym" }
 symworx-signal = { path = "../symworx-signal" }
 symworx-spatialsym = { path = "../symworx-spatialsym" }
 symworx-dynamics = { path = "../symworx-dynamics" }
-symworx-loadsym = { path = "../symworx-loadsym" }
+# sqlite: LoadSym Calendar reads personal catalog under $VELOFIT_HOME/db/ (never ships data).
+symworx-loadsym = { path = "../symworx-loadsym", features = ["sqlite"] }
 rand = { version = "0.9", features = ["std"] }
 csv = "1.3"
 
