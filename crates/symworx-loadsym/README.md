@@ -1,11 +1,11 @@
 # SymWorx-LoadSym
 
-**SymWorx-LoadSym** provides the tools and resources for load and monitoring based calculations and estimations.
+**SymWorx-LoadSym** provides tools for training-load quantification and nutrition modeling.
 
 ## Quick Start (Rust)
 
 ```rust
-use symworx_loadsym::load::{compute_acute_chronic, classify_acwr, compute_monotony, RiskLevel};
+use symworx_loadsym::load::{compute_acute_chronic, classify_acwr, compute_monotony};
 
 let daily_loads: Vec<f64> = (0..30).map(|i| 400.0 + (i as f64 % 7.0) * 30.0).collect();
 
@@ -16,71 +16,53 @@ let mono = compute_monotony(&daily_loads[23..]).unwrap();
 println!("Recent monotony: {:.2}", mono);
 ```
 
-## Python (via maturin)
+## CLI (`symload`)
 
 ```bash
-cd bindings/python
-maturin develop --manifest-path ../crates/symworx-loadsym/Cargo.toml -m pyproject-loadsym.toml
-```
+# Stats on a FIT file
+cargo run -p symworx-loadsym --features fit -- stats path/to/ride.fit --ftp 280
 
-```python
-import symworx_loadsym as loadsym
+# Personal SQLite catalog (file lives under $VELOFIT_HOME — not in this repo)
+export VELOFIT_HOME="$HOME/velofit"   # optional default
+cargo run -p symworx-loadsym --features sqlite -- db init
+cargo run -p symworx-loadsym --features sqlite -- ingest --ftp 280
+cargo run -p symworx-loadsym --features sqlite -- db status
 
-loads = [400.0 + (i % 7) * 30 for i in range(30)]
-acute, chronic, acwr, risk = loadsym.load.compute_acute_chronic(loads, 7, 28)
-print(acwr, risk)
+# Schema only (no driver)
+cargo run -p symworx-loadsym --features db -- db print-schema --sqlite
 
-print(loadsym.load.classify_acwr(1.6))  # "High"
-```
-
-See `src/load/acwr.rs` and `src/load/monotony.rs` for the full API and sports-science rationale.
-The rolling/EWMA primitives live in `symworx-math` (re-exported via `symworx-core`).
-
-## CLI (symload)
-
-The `symworx-loadsym` crate ships a binary called `symload` for headless use:
-
-```bash
-# Stats + metrics (needs fit feature)
-cargo run -p symworx-loadsym --features "fit,email,db" -- stats ~/velofit/raw/ride.fit --ftp 280 --json
-
-# DB schema
-cargo run -p symworx-loadsym --features db -- db print-schema
-
-# Email fetch (SRM etc. → ~/velofit/inbox)
-export SYMLOAD_USER="nberry.fitdata@gmail.com"
+# Email fetch (credentials via env only — never commit)
+export SYMLOAD_USER="you@example.com"
 export SYMLOAD_APP_PASSWORD="your-app-password"
 cargo run -p symworx-loadsym --features "fit,email" -- email fetch
-
-# Promote inbox → raw archive, then sync to S3
 cargo run -p symworx-loadsym --features fit -- inbox promote
-syncd velofit
 ```
 
-Features:
-- `fit` — load `.fit` via `symworx-io` (required for `stats` on FIT)
-- `email` — IMAP fetch (implies `fit`)
-- `db` — print schema from `symworx-loadsym-db`
+### Features
 
-### Personal archive (`~/velofit`)
+| Feature | Purpose |
+|---------|---------|
+| `fit` | Load `.fit` for `stats` |
+| `email` | IMAP fetch of `.fit` attachments (implies `fit`) |
+| `db` | `db print-schema` from `symworx-loadsym-db` |
+| `sqlite` | Personal catalog init + ingest (`rusqlite` + `fit` + `db`) |
 
-```text
-~/velofit/
-  inbox/     # email / manual drop
-  raw/       # S3-mirrored archive (s3:bitterbeta-useast1-velofit)
-  .tmp/      # excluded from bisync
-```
+### Environment
 
-Override root with `VELOFIT_HOME`. See `crates/symworx-loadsym-db/docs/loadsym-personal-starter.md`.
+| Variable | Role |
+|----------|------|
+| `VELOFIT_HOME` | Archive root (default `~/velofit`) |
+| `SYMLOAD_DB` | SQLite path override |
+| `SYMLOAD_USER` / `SYMLOAD_APP_PASSWORD` | IMAP only |
 
-The email fetching logic lives in `symworx-io` (under the `email` feature) because it is an I/O source.
+**Privacy:** catalog + FIT files stay under `$VELOFIT_HOME`. Do not commit `*.sqlite`, `.env`, or ride archives into SymWorx.
 
-## Power Ride Metrics
+See `crates/symworx-loadsym-db/docs/loadsym-personal-starter.md`.
+
+## Power ride metrics
 
 ```rust
 use symworx_loadsym::load::compute_ride_metrics;
 let m = compute_ride_metrics(&times_s, &power_w, 300.0);
 println!("NP={} TSS={:.1}", m.np, m.tss);
 ```
-
-Useful for SRM PC8 / Garmin / Polar `.fit` files imported via `symworx-io`. TUI LoadSym uses these for Workout summaries.

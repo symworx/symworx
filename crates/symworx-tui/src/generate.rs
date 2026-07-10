@@ -33,23 +33,25 @@ pub enum DemoPreset {
 impl DemoPreset {
     pub fn name(self) -> &'static str {
         match self {
-            DemoPreset::RestingPPG => "Resting PPG (variants)",
-            DemoPreset::LightRespiration => "Light activity respiration (variants)",
-            DemoPreset::SimpleStride => "Simple stride intervals (variants)",
+            DemoPreset::RestingPPG => "Resting PPG",
+            DemoPreset::LightRespiration => "Light activity respiration",
+            DemoPreset::SimpleStride => "Simple stride intervals",
             DemoPreset::MultiWaveformDemo => "Multi-waveform demo (PPG x3 + resp x2 + stride x2)",
         }
     }
 }
 
 /// Generate and save demo file(s) for the given preset.
-/// For multi presets, generates several variant CSVs. Returns path to a representative file.
+/// Single presets write one CSV. MultiWaveformDemo writes several variants.
+/// Returns path to a representative file to load into Explore.
 pub fn generate_and_save(preset: DemoPreset, data_dir: &Path) -> Result<std::path::PathBuf> {
     std::fs::create_dir_all(data_dir)?;
 
     match preset {
-        DemoPreset::RestingPPG => generate_ppg_variants(data_dir, 2),
-        DemoPreset::LightRespiration => generate_respiration_variants(data_dir, 2),
-        DemoPreset::SimpleStride => generate_stride_variants(data_dir, 2),
+        // One file each (historical behavior). MultiWaveformDemo is the multi-file option.
+        DemoPreset::RestingPPG => generate_ppg_variants(data_dir, 1),
+        DemoPreset::LightRespiration => generate_respiration_variants(data_dir, 1),
+        DemoPreset::SimpleStride => generate_stride_variants(data_dir, 1),
         DemoPreset::MultiWaveformDemo => generate_multi_waveform_demo(data_dir),
     }
 }

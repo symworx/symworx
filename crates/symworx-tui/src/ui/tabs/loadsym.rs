@@ -50,11 +50,12 @@ pub fn render_loadsym_tab(frame: &mut Frame, app: &App, area: Rect) {
              • ↑↓ or 1/2/3 : select sub-view from List\n\
              • In sub-views: arrows/letters for nav/scroll (sparkline), Esc to List\n\
              • Uses real ACWR / monotony / strain + NP/TSS from symworx-loadsym\n\n\
-             1) Workout — i/a to load newest .fit/CSV from ~/velofit (raw|inbox) or ./data.\n\
+             1) Workout — i/a to load newest .fit/CSV from $VELOFIT_HOME (raw|inbox) or ./data.\n\
                 NP/TSS (set FTP with f/F). Thresh regions (t/T d/D). Best efforts + exceedance bars.\n\
-             2) Calendar View — rolling loads + ACWR trend + scroll\n\
+             2) Calendar — daily TSS from personal SQLite catalog ($VELOFIT_HOME/db).\n\
+                ↑↓/←→ scroll  Home/End  r:reload catalog  g:demo\n\
              3) Programming Optimization — recs based on current risk/monotony\n\n\
-             Archive: ~/velofit (syncd velofit ↔ s3:bitterbeta-useast1-velofit).\n\
+             Archive: $VELOFIT_HOME (default ~/velofit). Catalog is personal (not in git).\n\
              Real SRM/Garmin/Polar .fit supported (power preferred for TSS)."
         ).block(Block::new().borders(Borders::ALL).title(" Help — LoadSym "));
         frame.render_widget(help, area);
@@ -108,7 +109,14 @@ fn render_loadsym_list(frame: &mut Frame, app: &App, area: Rect) {
             if sel == 1 { "▶ " } else { "  " }
         )),
         Line::from(Span::styled(
-            "   Multi-day load + ACWR / monotony / strain. Scroll for history.",
+            if app.loadsym_from_catalog {
+                format!(
+                    "   {} days from catalog  • multi-day TSS + ACWR",
+                    app.daily_loads.len()
+                )
+            } else {
+                "   Multi-day load + ACWR (r: reload catalog, g: demo)".to_string()
+            },
             Style::default().fg(Color::DarkGray),
         )),
         Line::from(""),
@@ -122,7 +130,7 @@ fn render_loadsym_list(frame: &mut Frame, app: &App, area: Rect) {
         )),
         Line::from(""),
         Line::from(Span::styled(
-            "i: load activity in Workout   g: generate demo loads   Esc or Ctrl+H: back",
+            "i: load activity   r: reload catalog   g: demo loads   Esc/Ctrl+H: back",
             Style::default().fg(Color::DarkGray),
         )),
     ];
@@ -354,35 +362,87 @@ fn render_workout_view(frame: &mut Frame, app: &App, area: Rect) {
 
 fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
     let loads = &app.daily_loads;
+    if loads.is_empty() {
+        let empty = Paragraph::new(
+            "No daily loads loaded.\n\n\
+             • Press r to reload $VELOFIT_HOME/db/loadsym.sqlite\n\
+             • Or g for synthetic demo series\n\
+             • Or run: symload ingest  (then r here)",
+        )
+        .block(
+            Block::new()
+                .borders(Borders::ALL)
+                .title(" 2. Calendar View — empty "),
+        );
+        frame.render_widget(empty, area);
+        return;
+    }
+
     let scroll = app.loadsym_scroll.min(loads.len().saturating_sub(1));
 
-    // Compute ACWR on the series (latest)
+    // Prefer precomputed catalog metrics for latest day when available
     let acwr_snap = compute_acute_chronic(loads, 7, 28).ok();
     let mono = compute_monotony(loads).unwrap_or(1.0);
     let strain = compute_strain(loads).unwrap_or(0.0);
 
-    let risk_str = acwr_snap
-        .as_ref()
-        .map(|s| format!("{:?}", classify_acwr(s.acwr)))
-        .unwrap_or("N/A".to_string());
+    let latest_acwr = app
+        .daily_acwr
+        .get(scroll)
+        .and_then(|a| *a)
+        .or_else(|| acwr_snap.as_ref().map(|s| s.acwr))
+        .unwrap_or(0.0);
+    let risk_str = app
+        .daily_risk
+        .get(scroll)
+        .and_then(|r| r.clone())
+        .unwrap_or_else(|| {
+            acwr_snap
+                .as_ref()
+                .map(|s| classify_acwr(s.acwr).as_str().to_string())
+                .unwrap_or_else(|| "N/A".to_string())
+        });
+
+    let source = if app.loadsym_from_catalog {
+        app.loadsym_catalog_path
+            .as_ref()
+            .map(|p| format!("catalog: {}", p.display()))
+            .unwrap_or_else(|| "catalog".to_string())
+    } else {
+        "synthetic demo (g)".to_string()
+    };
+
+    let focus_date = app
+        .daily_load_dates
+        .get(scroll)
+        .cloned()
+        .unwrap_or_else(|| format!("day {}", scroll));
+
+    let rides = app
+        .daily_ride_counts
+        .get(scroll)
+        .copied()
+        .unwrap_or(0);
 
     let mut lines: Vec<Line> = vec![
         Line::from(format!(
-            "Calendar / Trend View — scroll offset {} / {}",
-            scroll,
-            loads.len()
+            "Calendar — {}  ({}/{})  • {}",
+            focus_date,
+            scroll + 1,
+            loads.len(),
+            source
         )),
         Line::from(format!(
-            "Latest ACWR: {:.2}  Risk: {}   Monotony: {:.2}   Strain: {:.1}",
-            acwr_snap.as_ref().map(|s| s.acwr).unwrap_or(0.0),
-            risk_str,
-            mono,
-            strain
+            "Focus TSS: {:.0}  rides: {}   ACWR: {:.2}  Risk: {}   Mono: {:.2}  Strain: {:.1}",
+            loads[scroll], rides, latest_acwr, risk_str, mono, strain
+        )),
+        Line::from(Span::styled(
+            "↑↓/←→ scroll   r: reload catalog   g: demo   Esc: list",
+            Style::default().fg(Color::DarkGray),
         )),
         Line::from(""),
     ];
 
-    // Show windowed view of daily loads around scroll
+    // Windowed view around scroll
     let win = 14usize;
     let start = scroll
         .saturating_sub(win / 2)
@@ -391,22 +451,47 @@ fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
     for (i, &ld) in loads[start..end].iter().enumerate() {
         let idx = start + i;
         let marker = if idx == scroll { "▶" } else { " " };
-        let ac = if let Ok(s) = compute_acute_chronic(&loads[..=idx.min(loads.len() - 1)], 7, 28) {
-            s.acwr
-        } else {
-            0.0
-        };
+        let label = app
+            .daily_load_dates
+            .get(idx)
+            .cloned()
+            .unwrap_or_else(|| format!("day {:>3}", idx));
+        let ac = app
+            .daily_acwr
+            .get(idx)
+            .and_then(|a| *a)
+            .or_else(|| {
+                compute_acute_chronic(&loads[..=idx.min(loads.len() - 1)], 7, 28)
+                    .ok()
+                    .map(|s| s.acwr)
+            })
+            .unwrap_or(0.0);
+        let n_rides = app.daily_ride_counts.get(idx).copied().unwrap_or(0);
+        let risk = app
+            .daily_risk
+            .get(idx)
+            .and_then(|r| r.as_deref())
+            .unwrap_or("-");
         lines.push(Line::from(format!(
-            "{} Day {}: load={:5.0}   ACWR~{:.2}",
-            marker, idx, ld, ac
+            "{} {}  TSS={:6.0}  rides={}  ACWR={:.2}  {}",
+            marker, label, ld, n_rides, ac, risk
         )));
     }
 
-    let spark_data: Vec<u64> = loads.iter().map(|&v| (v / 5.0) as u64).collect(); // rough scale
+    // Sparkline: scale by max TSS so sparse low-load series still show shape
+    let max_tss = loads.iter().cloned().fold(1.0_f64, f64::max);
+    let spark_data: Vec<u64> = loads
+        .iter()
+        .map(|&v| ((v / max_tss) * 100.0).round() as u64)
+        .collect();
     let spark = Sparkline::default()
         .data(&spark_data)
-        .style(Style::default().fg(Color::LightYellow))
-        .max(150);
+        .style(Style::default().fg(if app.loadsym_from_catalog {
+            Color::LightGreen
+        } else {
+            Color::LightYellow
+        }))
+        .max(100);
 
     let chunks = Layout::vertical([Constraint::Min(10), Constraint::Length(3)]).split(area);
     let p = Paragraph::new(lines).block(

@@ -31,14 +31,20 @@ symworx-io = { path = "../symworx-io" }
 # Schema resources for DB initialization (used by `symload db print-schema`).
 symworx-loadsym-db = { path = "../symworx-loadsym-db", optional = true }
 
+# Optional personal SQLite catalog (file lives under $VELOFIT_HOME — never in-repo).
+rusqlite = { version = "0.32", optional = true, features = ["bundled"] }
+sha2 = { version = "0.10", optional = true }
+
 [features]
 default = []
 # Enable .fit loading via symworx-io (required for `symload stats` on FIT files).
 fit = ["symworx-io/fit"]
 # Enable email fetching support in the symload binary (implies fit for follow-on stats).
 email = ["symworx-io/email", "fit"]
-# Enable db schema helpers (used by CLI).
+# Enable db schema helpers (print-schema).
 db = ["dep:symworx-loadsym-db"]
+# Personal SQLite catalog: init + ingest (implies fit + db).
+sqlite = ["db", "fit", "dep:rusqlite", "dep:sha2"]
 
 [lints]
 workspace = true

@@ -922,6 +922,34 @@ fn handle_home_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -> b
     false
 }
 
+fn calendar_status(app: &App) -> String {
+    if app.daily_loads.is_empty() {
+        return "Calendar empty — r: reload catalog  g: demo".to_string();
+    }
+    let idx = app
+        .loadsym_scroll
+        .min(app.daily_loads.len().saturating_sub(1));
+    let date = app
+        .daily_load_dates
+        .get(idx)
+        .cloned()
+        .unwrap_or_else(|| format!("day {}", idx));
+    let tss = app.daily_loads.get(idx).copied().unwrap_or(0.0);
+    let src = if app.loadsym_from_catalog {
+        "catalog"
+    } else {
+        "demo"
+    };
+    format!(
+        "Calendar [{}] {}  TSS={:.0}  ({}/{})  ↑↓ scroll  r:reload  Esc:list",
+        src,
+        date,
+        tss,
+        idx + 1,
+        app.daily_loads.len()
+    )
+}
+
 fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -> bool {
     // In list view: arrow/digit selection of sub view
     if app.loadsym_view == crate::app::LoadSymView::List {
@@ -947,8 +975,11 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
             }
             KeyCode::Char('2') => {
                 app.loadsym_view = crate::app::LoadSymView::Calendar;
-                app.loadsym_scroll = 0;
-                app.status = "LoadSym: Calendar — ↑↓/←→ scroll days  • Esc: list".to_string();
+                let _ = crate::processing::try_load_loadsym_catalog(app);
+                if app.daily_loads.is_empty() {
+                    app.loadsym_scroll = 0;
+                }
+                app.status = calendar_status(app);
                 return false;
             }
             KeyCode::Char('3') => {
@@ -961,7 +992,8 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                     0 => app.loadsym_view = crate::app::LoadSymView::Workout,
                     1 => {
                         app.loadsym_view = crate::app::LoadSymView::Calendar;
-                        app.loadsym_scroll = 0;
+                        let _ = crate::processing::try_load_loadsym_catalog(app);
+                        app.status = calendar_status(app);
                     }
                     2 => app.loadsym_view = crate::app::LoadSymView::Optimization,
                     _ => {}
@@ -969,10 +1001,25 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                 return false;
             }
             KeyCode::Char('g') | KeyCode::Char('G') => {
-                // explicit synthetic demo generation (not default)
-                app.daily_loads =
-                    symworx_loadsym::load::generate_demo_daily_loads(14, 400.0, 100.0);
-                app.status = "LoadSym: generated synthetic demo daily loads (use 'i' to import real activity data)".to_string();
+                crate::processing::apply_demo_daily_loads(app, 14);
+                app.status =
+                    "LoadSym: synthetic demo daily loads (r: reload real catalog)".to_string();
+                return false;
+            }
+            KeyCode::Char('r') | KeyCode::Char('R') => {
+                match crate::processing::try_load_loadsym_catalog(app) {
+                    Ok(true) => {
+                        app.status = calendar_status(app);
+                    }
+                    Ok(false) => {
+                        app.status =
+                            "No catalog at $VELOFIT_HOME/db — run: symload db init && ingest"
+                                .to_string();
+                    }
+                    Err(e) => {
+                        app.status = format!("Catalog load error: {}", e);
+                    }
+                }
                 return false;
             }
             KeyCode::Char('i') | KeyCode::Char('I') => {
@@ -985,11 +1032,13 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                     app.workout_user_thresh = 0.0;
                     app.workout_user_min_dur = 3;
                     app.loadsym_view = crate::app::LoadSymView::Workout;
-                    app.status =
-                        format!("Loaded {} ({} samples). Roots: ~/velofit + ./data", src, n);
+                    app.status = format!(
+                        "Loaded {} ({} samples). Roots: $VELOFIT_HOME + ./data",
+                        src, n
+                    );
                 } else {
                     app.status =
-                        "No .fit/.csv in ~/velofit/raw|inbox or ./data/. Drop a file and press i."
+                        "No .fit/.csv in $VELOFIT_HOME/raw|inbox or ./data/. Drop a file and press i."
                             .to_string();
                 }
                 return false;
@@ -1120,35 +1169,44 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
         }
         crate::app::LoadSymView::Calendar => {
             match code {
-                KeyCode::Left | KeyCode::Char('h') => {
+                KeyCode::Left | KeyCode::Char('h') | KeyCode::Up => {
                     if app.loadsym_scroll > 0 {
                         app.loadsym_scroll -= 1;
                     }
                 }
-                KeyCode::Right | KeyCode::Char('l') => {
+                KeyCode::Right | KeyCode::Char('l') | KeyCode::Down => {
                     app.loadsym_scroll =
                         (app.loadsym_scroll + 1).min(app.daily_loads.len().saturating_sub(1));
                 }
-                KeyCode::Up => {
-                    if app.loadsym_scroll > 0 {
-                        app.loadsym_scroll -= 1;
+                KeyCode::Home => {
+                    app.loadsym_scroll = 0;
+                }
+                KeyCode::End => {
+                    app.loadsym_scroll = app.daily_loads.len().saturating_sub(1);
+                }
+                KeyCode::Char('r') | KeyCode::Char('R') => {
+                    match crate::processing::try_load_loadsym_catalog(app) {
+                        Ok(true) => app.status = calendar_status(app),
+                        Ok(false) => {
+                            app.status = "No catalog DB found — run symload ingest first".into()
+                        }
+                        Err(e) => app.status = format!("Catalog error: {}", e),
                     }
+                    return false;
                 }
-                KeyCode::Down => {
-                    app.loadsym_scroll =
-                        (app.loadsym_scroll + 1).min(app.daily_loads.len().saturating_sub(1));
+                KeyCode::Char('g') | KeyCode::Char('G') => {
+                    crate::processing::apply_demo_daily_loads(app, 14);
+                    app.status = "Calendar: synthetic demo (r reloads catalog)".into();
+                    return false;
                 }
                 KeyCode::Esc => {
                     app.loadsym_view = crate::app::LoadSymView::List;
                     app.status = "LoadSym — back to list".to_string();
+                    return false;
                 }
                 _ => {}
             }
-            app.status = format!(
-                "Calendar: day {} / {}",
-                app.loadsym_scroll,
-                app.daily_loads.len()
-            );
+            app.status = calendar_status(app);
         }
         crate::app::LoadSymView::Optimization => {
             if code == KeyCode::Esc {

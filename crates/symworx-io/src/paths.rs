@@ -39,6 +39,18 @@ pub fn default_velofit_raw() -> PathBuf {
     default_velofit_root().join("raw")
 }
 
+/// Default SQLite catalog path: `$VELOFIT_HOME/db/loadsym.sqlite`.
+///
+/// Override with `SYMLOAD_DB` when set. The data file is personal — never commit it.
+pub fn default_velofit_db() -> PathBuf {
+    if let Ok(p) = std::env::var("SYMLOAD_DB") {
+        if !p.is_empty() {
+            return PathBuf::from(p);
+        }
+    }
+    default_velofit_root().join("db").join("loadsym.sqlite")
+}
+
 /// Candidate directories for LoadSym / activity discovery (in priority order).
 ///
 /// Includes velofit inbox/raw when they exist or always as preferred roots,
