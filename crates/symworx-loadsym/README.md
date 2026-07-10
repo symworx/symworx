@@ -41,29 +41,46 @@ The rolling/EWMA primitives live in `symworx-math` (re-exported via `symworx-cor
 The `symworx-loadsym` crate ships a binary called `symload` for headless use:
 
 ```bash
-# Stats + metrics
-cargo run -p symworx-loadsym --features "email,db" -- stats /path/to/ride.fit --ftp 280 --json
+# Stats + metrics (needs fit feature)
+cargo run -p symworx-loadsym --features "fit,email,db" -- stats ~/velofit/raw/ride.fit --ftp 280 --json
 
 # DB schema
 cargo run -p symworx-loadsym --features db -- db print-schema
 
-# Email fetch (SRM etc.)
-cargo run -p symworx-loadsym --features email -- email fetch ~/symload/inbox
+# Email fetch (SRM etc. → ~/velofit/inbox)
+export SYMLOAD_USER="nberry.fitdata@gmail.com"
+export SYMLOAD_APP_PASSWORD="your-app-password"
+cargo run -p symworx-loadsym --features "fit,email" -- email fetch
+
+# Promote inbox → raw archive, then sync to S3
+cargo run -p symworx-loadsym --features fit -- inbox promote
+syncd velofit
 ```
 
-After `cargo install symworx-loadsym --features "email,db"` the `symload` command is available globally.
+Features:
+- `fit` — load `.fit` via `symworx-io` (required for `stats` on FIT)
+- `email` — IMAP fetch (implies `fit`)
+- `db` — print schema from `symworx-loadsym-db`
 
-See `crates/symworx-loadsym-db/docs/loadsym-personal-starter.md` for recommended layout (`~/symload/inbox`, etc.) and integration with a separate DB project.
+### Personal archive (`~/velofit`)
+
+```text
+~/velofit/
+  inbox/     # email / manual drop
+  raw/       # S3-mirrored archive (s3:bitterbeta-useast1-velofit)
+  .tmp/      # excluded from bisync
+```
+
+Override root with `VELOFIT_HOME`. See `crates/symworx-loadsym-db/docs/loadsym-personal-starter.md`.
 
 The email fetching logic lives in `symworx-io` (under the `email` feature) because it is an I/O source.
 
-## Power Ride Metrics (new)
+## Power Ride Metrics
 
 ```rust
 use symworx_loadsym::load::compute_ride_metrics;
-let m = compute_ride_metrics(&times_s, &power_w, ftp_w = 300.0);
+let m = compute_ride_metrics(&times_s, &power_w, 300.0);
 println!("NP={} TSS={:.1}", m.np, m.tss);
 ```
 
-Useful for SRM PC8 / Garmin / Polar .fit files imported via `symworx-io`. TUI LoadSym uses these for Workout summaries.
-
+Useful for SRM PC8 / Garmin / Polar `.fit` files imported via `symworx-io`. TUI LoadSym uses these for Workout summaries.

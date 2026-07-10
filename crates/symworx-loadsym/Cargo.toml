@@ -33,8 +33,10 @@ symworx-loadsym-db = { path = "../symworx-loadsym-db", optional = true }
 
 [features]
 default = []
-# Enable email fetching support in the symload binary.
-email = ["symworx-io/email"]
+# Enable .fit loading via symworx-io (required for `symload stats` on FIT files).
+fit = ["symworx-io/fit"]
+# Enable email fetching support in the symload binary (implies fit for follow-on stats).
+email = ["symworx-io/email", "fit"]
 # Enable db schema helpers (used by CLI).
 db = ["dep:symworx-loadsym-db"]
 

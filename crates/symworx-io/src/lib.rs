@@ -35,13 +35,20 @@ pub mod activity;
 pub mod email;
 
 #[cfg(feature = "email")]
-pub use email::fetch_srm_fit_attachments;
+pub use email::{fetch_fit_attachments, fetch_srm_fit_attachments};
+
+/// Personal archive path helpers (`~/velofit`) and activity file discovery.
+pub mod paths;
 
 /// Additional traits used in io.
 pub mod traits;
 
 // Re-exports
 pub use activity::{ActivityData, load_activity, load_activity_power_series};
+pub use paths::{
+    default_activity_search_dirs, default_velofit_inbox, default_velofit_raw, default_velofit_root,
+    discover_activity_files, find_newest_activity_path, ActivityFileEntry, VELOFIT_HOME_ENV,
+};
 pub use csv::{CsvReader, CsvWriter};
 pub use gbd::{GbdReader, GbdTable};
 pub use ibi::{IbiRecord, read_ibi};

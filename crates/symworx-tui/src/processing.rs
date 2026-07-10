@@ -107,34 +107,28 @@ pub fn generate_demo_and_load(app: &mut App, preset: generate::DemoPreset) -> an
 
 use symworx_loadsym::load::compute_ride_metrics_from_activity;
 
-/// Scan candidate dirs (data + app archive dirs) for first usable activity.
-/// (Extended version of the one in input for reuse.)
-pub fn find_first_loadsym_activity(app: &App) -> Option<symworx_io::ActivityData> {
-    let mut dirs: Vec<std::path::PathBuf> = vec!["data".into(), "rides".into(), "training".into()];
-    dirs.extend(app.loadsym_archive_dirs.iter().cloned());
-    for d in dirs {
-        if !d.exists() {
-            continue;
-        }
-        if let Ok(rd) = std::fs::read_dir(&d) {
-            for e in rd.flatten() {
-                let p = e.path();
-                if p.is_file() {
-                    if let Some(ext) = p.extension().and_then(|e| e.to_str()) {
-                        let el = ext.to_lowercase();
-                        if matches!(el.as_str(), "fit" | "csv" | "txt") {
-                            if let Ok(act) = symworx_io::load_activity(&p.to_string_lossy()) {
-                                if !act.times_s.is_empty() {
-                                    return Some(act);
-                                }
-                            }
-                        }
-                    }
-                }
+/// Count discoverable activity files under the app's archive dirs (paths only; no FIT parse).
+pub fn count_loadsym_activity_files(app: &App) -> usize {
+    symworx_io::discover_activity_files(&app.loadsym_archive_dirs, false).len()
+}
+
+/// Scan archive dirs for the newest usable activity (by mtime).
+/// Prefers `~/velofit/inbox` + `~/velofit/raw` when present (see `loadsym_archive_dirs`).
+pub fn find_newest_loadsym_activity(app: &App) -> Option<symworx_io::ActivityData> {
+    let entries = symworx_io::discover_activity_files(&app.loadsym_archive_dirs, false);
+    for e in entries {
+        if let Ok(act) = symworx_io::load_activity(&e.path.to_string_lossy()) {
+            if !act.times_s.is_empty() {
+                return Some(act);
             }
         }
     }
     None
+}
+
+/// Backward-compatible alias used by older call sites.
+pub fn find_first_loadsym_activity(app: &App) -> Option<symworx_io::ActivityData> {
+    find_newest_loadsym_activity(app)
 }
 
 /// Derive a daily load value (TSS preferred) for a loaded activity using current FTP.

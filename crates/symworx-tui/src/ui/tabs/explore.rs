@@ -1,6 +1,7 @@
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Color, Style},
+    text::Line,
     Frame,
     symbols,
     widgets::{Axis, Block, Borders, Chart, Dataset, GraphType, Paragraph},
@@ -96,9 +97,9 @@ pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
             .style(Style::default().fg(Color::Gray))
             .bounds([start as f64, end as f64])
             .labels(vec![
-                format!("{}", start).into(),
-                format!("{}", (start + end) / 2).into(),
-                format!("{}", end).into(),
+                Line::from(format!("{}", start)),
+                Line::from(format!("{}", (start + end) / 2)),
+                Line::from(format!("{}", end)),
             ]);
 
         // Y axis: amplitude, fixed carry-over
@@ -107,9 +108,9 @@ pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
             .style(Style::default().fg(Color::Gray))
             .bounds([y_min, y_max])
             .labels(vec![
-                format!("{:.2}", y_min).into(),
-                format!("{:.2}", (y_min + y_max) / 2.0).into(),
-                format!("{:.2}", y_max).into(),
+                Line::from(format!("{:.2}", y_min)),
+                Line::from(format!("{:.2}", (y_min + y_max) / 2.0)),
+                Line::from(format!("{:.2}", y_max)),
             ]);
 
         let chart = Chart::new(datasets)

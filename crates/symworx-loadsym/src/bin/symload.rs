@@ -4,19 +4,22 @@
 //
 // Usage examples:
 //   symload stats ride.fit --ftp 280
-//   symload stats ./inbox/
+//   symload stats ~/velofit/raw
 //   symload db print-schema
-//   cargo build -p symworx-loadsym --features email
-//   symload email fetch ~/symload/inbox
+//   cargo build -p symworx-loadsym --features "fit,email,db"
+//   symload email fetch ~/velofit/inbox
+//   symload inbox promote
 
 use std::{
-    env,
+    env, fs,
     path::{Path, PathBuf},
 };
 
 #[cfg(feature = "email")]
 use symworx_io::email;
-use symworx_io::load_activity;
+use symworx_io::{
+    default_velofit_inbox, default_velofit_raw, discover_activity_files, load_activity,
+};
 use symworx_loadsym::load::compute_ride_metrics;
 #[cfg(feature = "db")]
 use symworx_loadsym_db;
@@ -45,6 +48,17 @@ fn main() {
             {
                 eprintln!("Email support requires building with --features email");
                 std::process::exit(5);
+            }
+        }
+        "inbox" => {
+            if args.get(2).map(|s| s.as_str()) == Some("promote") {
+                if let Err(e) = handle_inbox_promote(&args) {
+                    eprintln!("inbox promote error: {}", e);
+                    std::process::exit(6);
+                }
+            } else {
+                eprintln!("Usage: symload inbox promote [--from DIR] [--to DIR]");
+                std::process::exit(2);
             }
         }
         "stats" | "stat" => {
@@ -98,7 +112,8 @@ fn handle_db_command(args: &[String]) {
     }
     #[cfg(not(feature = "db"))]
     {
-        eprintln!("DB schema support requires the 'db' feature (or build without feature gating)");
+        let _ = args;
+        eprintln!("DB schema support requires the 'db' feature");
     }
 }
 
@@ -108,15 +123,107 @@ fn handle_email_fetch(args: &[String]) -> Result<(), Box<dyn std::error::Error>>
     let pass = env::var("SYMLOAD_APP_PASSWORD")?;
 
     let target = if let Some(d) = args.get(2) {
-        PathBuf::from(d)
+        if d.starts_with('-') {
+            default_velofit_inbox()
+        } else {
+            PathBuf::from(d)
+        }
     } else {
-        let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());
-        PathBuf::from(home).join("symload").join("inbox")
+        default_velofit_inbox()
     };
 
     let saved = email::fetch_srm_fit_attachments(&user, &pass, &target)?;
 
-    println!("Fetched {} files to {}", saved.len(), target.display());
+    println!("Fetched {} new .fit file(s) to {}", saved.len(), target.display());
+    for p in &saved {
+        println!("  {}", p.display());
+    }
+    if saved.is_empty() {
+        println!("(none new — already present or no matching attachments)");
+    }
+    Ok(())
+}
+
+/// Move unique .fit files from inbox → raw (skip if destination exists with same size).
+fn handle_inbox_promote(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
+    let mut from = default_velofit_inbox();
+    let mut to = default_velofit_raw();
+
+    let mut i = 3;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--from" if i + 1 < args.len() => {
+                from = PathBuf::from(&args[i + 1]);
+                i += 2;
+            }
+            "--to" if i + 1 < args.len() => {
+                to = PathBuf::from(&args[i + 1]);
+                i += 2;
+            }
+            other => {
+                eprintln!("Unknown arg for inbox promote: {}", other);
+                std::process::exit(2);
+            }
+        }
+    }
+
+    fs::create_dir_all(&to)?;
+    if !from.exists() {
+        eprintln!("inbox dir does not exist: {}", from.display());
+        std::process::exit(3);
+    }
+
+    let entries = discover_activity_files(&[from.clone()], false);
+    let mut moved = 0usize;
+    let mut skipped = 0usize;
+
+    for e in entries {
+        let p = &e.path;
+        let Some(ext) = p.extension().and_then(|x| x.to_str()) else {
+            continue;
+        };
+        if !ext.eq_ignore_ascii_case("fit") {
+            continue;
+        }
+        let Some(name) = p.file_name() else {
+            continue;
+        };
+        let dest = to.join(name);
+        if dest.exists() {
+            let src_len = fs::metadata(p).map(|m| m.len()).unwrap_or(0);
+            let dst_len = fs::metadata(&dest).map(|m| m.len()).unwrap_or(0);
+            if src_len == dst_len {
+                // Already archived; remove inbox copy to avoid reprocessing
+                let _ = fs::remove_file(p);
+                skipped += 1;
+                continue;
+            }
+            eprintln!(
+                "skip (dest exists, different size): {} vs {}",
+                p.display(),
+                dest.display()
+            );
+            skipped += 1;
+            continue;
+        }
+        fs::rename(p, &dest).or_else(|_| {
+            // Cross-device: copy then remove
+            fs::copy(p, &dest).and_then(|_| fs::remove_file(p))
+        })?;
+        println!("promoted {}", dest.display());
+        moved += 1;
+    }
+
+    println!(
+        "inbox promote: moved={} skipped={}  (from={} → to={})",
+        moved,
+        skipped,
+        from.display(),
+        to.display()
+    );
+    if moved > 0 {
+        println!("Next: syncd velofit   # push ~/velofit to S3");
+    }
     Ok(())
 }
 
@@ -132,21 +239,16 @@ fn parse_ftp(args: &[String]) -> f64 {
 }
 
 fn find_fit_files(dir: &str) -> Vec<PathBuf> {
-    let mut out = vec![];
-    if let Ok(rd) = std::fs::read_dir(dir) {
-        for e in rd.flatten() {
-            let p = e.path();
-            if p.is_file() {
-                if let Some(ext) = p.extension().and_then(|e| e.to_str()) {
-                    if ext.eq_ignore_ascii_case("fit") {
-                        out.push(p);
-                    }
-                }
-            }
-        }
-    }
-    out.sort();
-    out
+    discover_activity_files(&[PathBuf::from(dir)], false)
+        .into_iter()
+        .map(|e| e.path)
+        .filter(|p| {
+            p.extension()
+                .and_then(|e| e.to_str())
+                .map(|e| e.eq_ignore_ascii_case("fit"))
+                .unwrap_or(false)
+        })
+        .collect()
 }
 
 fn process_one(path: &Path, ftp: f64, json_only: bool) -> Result<(), Box<dyn std::error::Error>> {
@@ -198,18 +300,6 @@ fn process_one(path: &Path, ftp: f64, json_only: bool) -> Result<(), Box<dyn std
         ftp, m.np, m.if_, m.tss, m.total_work_kj
     );
 
-    println!(
-        "JSON: {{\"file\":\"{}\",\"duration_s\":{:.1},\"avg_w\":{:.1},\"max_w\":{:.0},\"np\":{:.0},\"if\":{:.2},\"tss\":{:.1},\"ftp\":{:.0}}}",
-        path.display(),
-        dur,
-        avg,
-        maxp,
-        m.np,
-        m.if_,
-        m.tss,
-        ftp
-    );
-
     Ok(())
 }
 
@@ -218,12 +308,22 @@ fn print_usage() {
         r#"symload — headless activity ingest / stats (symworx-loadsym)
 
 Commands:
-  symload stats <file.fit> [--ftp 280] [--json]
-  symload stats <directory>
+  symload stats <file.fit | dir> [--ftp 280] [--json]
   symload db print-schema [--dialect postgres|sqlite]
-  symload email fetch [target_dir]   (requires --features email on symworx-loadsym)
+  symload email fetch [target_dir]     (default: ~/velofit/inbox; needs --features email)
+  symload inbox promote [--from DIR] [--to DIR]
+      Move unique .fit from inbox → raw (defaults: ~/velofit/inbox → ~/velofit/raw)
 
-The recommended location for your data is ~/symload/inbox and your DB project at ~/symload.
+Personal archive layout:
+  ~/velofit/inbox   email / manual drop
+  ~/velofit/raw     S3-mirrored archive (s3:bitterbeta-useast1-velofit)
+  Override root with VELOFIT_HOME.
+
+Env (email):
+  SYMLOAD_USER              Gmail address (e.g. nberry.fitdata@gmail.com)
+  SYMLOAD_APP_PASSWORD      Gmail App Password
+
+After promote:  syncd velofit
 "#
     );
 }
