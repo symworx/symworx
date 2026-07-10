@@ -37,14 +37,33 @@ pub mod special;
 pub mod series;
 
 // Re-exports
-pub use distributions::{beta_kernel, beta_pdf, gamma_kernel, gamma_pdf};
-pub use integration::{cumtrapz, rk4_integrate, rk4_step, trapz};
+pub use distributions::{
+    beta_kernel,
+    beta_pdf,
+    gamma_kernel,
+    gamma_pdf,
+};
+pub use integration::{
+    cumtrapz,
+    rk4_integrate,
+    rk4_step,
+    trapz,
+};
 pub use oscillators::VanDerPol;
 pub use random::*;
 pub use series::{
-    ewma, rolling_mean, rolling_std, successive_absolute_differences, successive_differences,
+    ewma,
+    rolling_mean,
+    rolling_std,
+    successive_absolute_differences,
+    successive_differences,
 };
-pub use special::{beta, gamma, ln_beta, ln_gamma};
+pub use special::{
+    beta,
+    gamma,
+    ln_beta,
+    ln_gamma,
+};
 
 // Namespaced re-exports (for convenience)
 /// Probability distributions: kernels, PDFs, sampling.

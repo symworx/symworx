@@ -1,5 +1,8 @@
 use crate::{
-    app::{App, Tab},
+    app::{
+        App,
+        Tab,
+    },
     generate,
 };
 
@@ -48,7 +51,10 @@ pub fn generate_demo_and_load(app: &mut App, preset: generate::DemoPreset) -> an
     // Generated files have headers and two columns: time,<signal>
     use std::{
         fs::File,
-        io::{BufRead, BufReader},
+        io::{
+            BufRead,
+            BufReader,
+        },
     };
     let file = File::open(&path)?;
     let reader = BufReader::new(file);

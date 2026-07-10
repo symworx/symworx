@@ -1,17 +1,46 @@
 use ratatui::{
-    layout::{Constraint, Layout, Rect},
-    style::{Color, Modifier, Style},
-    text::{Line, Span},
-    widgets::{Block, Borders, Cell, Paragraph, Row, Sparkline, Table},
+    layout::{
+        Constraint,
+        Layout,
+        Rect,
+    },
+    style::{
+        Color,
+        Modifier,
+        Style,
+    },
+    text::{
+        Line,
+        Span,
+    },
+    widgets::{
+        Block,
+        Borders,
+        Cell,
+        Paragraph,
+        Row,
+        Sparkline,
+        Table,
+    },
     Frame,
 };
 use symworx_loadsym::load::{
-    classify_acwr, compute_acute_chronic, compute_monotony, compute_ride_metrics, compute_strain,
-    exceedance_marker_string, find_exceedance_regions, highest_rolling, ride_load_from_metrics,
+    classify_acwr,
+    compute_acute_chronic,
+    compute_monotony,
+    compute_ride_metrics,
+    compute_strain,
+    exceedance_marker_string,
+    find_exceedance_regions,
+    highest_rolling,
+    ride_load_from_metrics,
     RiskLevel,
 };
 
-use crate::app::{App, LoadSymView};
+use crate::app::{
+    App,
+    LoadSymView,
+};
 
 /// Render the LoadSym tab (now a proper selector + sub-views per plan).
 pub fn render_loadsym_tab(frame: &mut Frame, app: &App, area: Rect) {

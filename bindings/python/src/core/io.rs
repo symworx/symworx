@@ -1,11 +1,22 @@
 // Copyright (c) 2026 SymWorx
 
-use pyo3::{exceptions::PyIOError, prelude::*, wrap_pyfunction};
+use pyo3::{
+    exceptions::PyIOError,
+    prelude::*,
+    wrap_pyfunction,
+};
 use symworx_core::io::{
-    csv::{CsvReader, CsvWriter},
+    csv::{
+        CsvReader,
+        CsvWriter,
+    },
     gbd::GbdReader,
-    load_any, read_ibi,
-    traits::{SymReader, SymWriter},
+    load_any,
+    read_ibi,
+    traits::{
+        SymReader,
+        SymWriter,
+    },
 };
 
 // ===========================================================
@@ -183,7 +194,10 @@ impl PyActivityData {
 
 #[pyfunction(name = "load_activity")]
 pub fn py_load_activity(path: &str) -> PyResult<PyObject> {
-    use pyo3::{Python, types::PyDict};
+    use pyo3::{
+        Python,
+        types::PyDict,
+    };
     // symworx-io is declared as symworx-io in Cargo → identifier symworx_io
     match symworx_io::load_activity(path) {
         Ok(act) => Python::with_gil(|py| {

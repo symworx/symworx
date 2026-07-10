@@ -4,7 +4,10 @@
 use std::time::Duration;
 
 use anyhow::Result;
-use crossterm::event::{self, KeyEventKind};
+use crossterm::event::{
+    self,
+    KeyEventKind,
+};
 use ratatui::DefaultTerminal;
 
 mod app;

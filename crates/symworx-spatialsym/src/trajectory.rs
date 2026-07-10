@@ -5,7 +5,10 @@
 //!
 //! Simple owned vectors per agent. Efficient for typical team sizes; batched support can be added later using pure Rust if needed.
 
-use crate::geometry::{Point2, Vec2};
+use crate::geometry::{
+    Point2,
+    Vec2,
+};
 
 /// A simple time-stamped trajectory for a single agent/entity.
 #[derive(Clone, Debug, PartialEq)]

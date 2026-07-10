@@ -11,14 +11,21 @@
 //   symload inbox promote
 
 use std::{
-    env, fs,
-    path::{Path, PathBuf},
+    env,
+    fs,
+    path::{
+        Path,
+        PathBuf,
+    },
 };
 
 #[cfg(feature = "email")]
 use symworx_io::email;
 use symworx_io::{
-    default_velofit_inbox, default_velofit_raw, discover_activity_files, load_activity,
+    default_velofit_inbox,
+    default_velofit_raw,
+    discover_activity_files,
+    load_activity,
 };
 use symworx_loadsym::load::compute_ride_metrics;
 #[cfg(feature = "db")]
@@ -134,7 +141,11 @@ fn handle_email_fetch(args: &[String]) -> Result<(), Box<dyn std::error::Error>>
 
     let saved = email::fetch_srm_fit_attachments(&user, &pass, &target)?;
 
-    println!("Fetched {} new .fit file(s) to {}", saved.len(), target.display());
+    println!(
+        "Fetched {} new .fit file(s) to {}",
+        saved.len(),
+        target.display()
+    );
     for p in &saved {
         println!("  {}", p.display());
     }

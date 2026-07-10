@@ -6,7 +6,10 @@
 //! Uses RK4 integrator from symworx-math.
 
 use ndarray::Array1;
-use symworx_core::math::{VanDerPol, rk4_integrate};
+use symworx_core::math::{
+    VanDerPol,
+    rk4_integrate,
+};
 
 /// Configuration for the coupled CPG model (frequencies, couplings, tau dynamics).
 #[derive(Debug, Clone)]

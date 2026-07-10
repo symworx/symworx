@@ -68,14 +68,41 @@ pub mod variability;
 
 // Re-exports
 pub use autocorrelation::acf;
-pub use basic::{cv, mad, mean, median, percentile, std_dev, std_dev_sample};
-pub use correlation::{correlation_matrix, correlation_matrix_from_vec, pearson_correlation};
-pub use distance::{chebyshev, cosine_distance, euclidean, manhattan};
-pub use error_metrics::{mae, mse, rmse};
+pub use basic::{
+    cv,
+    mad,
+    mean,
+    median,
+    percentile,
+    std_dev,
+    std_dev_sample,
+};
+pub use correlation::{
+    correlation_matrix,
+    correlation_matrix_from_vec,
+    pearson_correlation,
+};
+pub use distance::{
+    chebyshev,
+    cosine_distance,
+    euclidean,
+    manhattan,
+};
+pub use error_metrics::{
+    mae,
+    mse,
+    rmse,
+};
 #[cfg(feature = "linalg")]
-pub use linreg::{l1, l2};
+pub use linreg::{
+    l1,
+    l2,
+};
 pub use variability::{
-    mean_successive_differences, rmssd, sd_successive_differences, successive_differences,
+    mean_successive_differences,
+    rmssd,
+    sd_successive_differences,
+    successive_differences,
 };
 
 // Version info

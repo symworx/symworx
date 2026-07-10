@@ -9,7 +9,10 @@
 
 use symworx_math::series::successive_differences;
 
-use crate::geometry::{Point2, Vec2};
+use crate::geometry::{
+    Point2,
+    Vec2,
+};
 
 /// Derive velocities assuming constant dt.
 /// Returns n-1 velocities.

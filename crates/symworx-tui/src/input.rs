@@ -1,6 +1,12 @@
-use crossterm::event::{KeyCode, KeyModifiers};
+use crossterm::event::{
+    KeyCode,
+    KeyModifiers,
+};
 
-use crate::app::{App, Tab};
+use crate::app::{
+    App,
+    Tab,
+};
 
 pub fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool {
     if code == KeyCode::Char('q') {
@@ -743,19 +749,23 @@ fn handle_dynamics_keys(app: &mut App, code: KeyCode) -> bool {
     match code {
         KeyCode::Char('c') | KeyCode::Char('C') => {
             app.pending_rqa = true;
-            app.status = format!("RQA params: m={} tau={} rad={:.2}  ←→/± rad  m/t  Enter=compute (RQA)  Esc", app.rqa_params.m, app.rqa_params.tau, app.rqa_params.radius);
+            app.status = format!(
+                "RQA params: m={} tau={} rad={:.2}  ←→/± rad  m/t  Enter=compute (RQA)  Esc",
+                app.rqa_params.m, app.rqa_params.tau, app.rqa_params.radius
+            );
             return false;
         }
         KeyCode::Char('x') | KeyCode::Char('X') => {
             // cRQA: prefer reference vs current; fallback to current vs time-reversed for demo
             if let Some(sig) = &app.loaded_signal {
-                let (name_a, series_a, series_b) = if let Some((ref_name, ref_data)) = &app.reference_series {
-                    (ref_name.clone(), ref_data.clone(), sig.current.clone())
-                } else {
-                    // fallback demo: signal vs its reverse (shows asymmetry/structure differences)
-                    let rev: Vec<f64> = sig.current.iter().rev().copied().collect();
-                    ("current".to_string(), sig.current.clone(), rev)
-                };
+                let (name_a, series_a, series_b) =
+                    if let Some((ref_name, ref_data)) = &app.reference_series {
+                        (ref_name.clone(), ref_data.clone(), sig.current.clone())
+                    } else {
+                        // fallback demo: signal vs its reverse (shows asymmetry/structure differences)
+                        let rev: Vec<f64> = sig.current.iter().rev().copied().collect();
+                        ("current".to_string(), sig.current.clone(), rev)
+                    };
                 let res = symworx_dynamics::crqa(
                     &series_a,
                     &series_b,
@@ -818,7 +828,10 @@ fn export_rqa_csv(
     r: &symworx_dynamics::RqaResult,
     params: &crate::app::RqaParams,
 ) -> anyhow::Result<()> {
-    use std::{fs::File, io::Write};
+    use std::{
+        fs::File,
+        io::Write,
+    };
     let mut f = File::create(path)?;
     writeln!(f, "m,tau,radius,theiler")?;
     writeln!(
@@ -972,12 +985,12 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                     app.workout_user_thresh = 0.0;
                     app.workout_user_min_dur = 3;
                     app.loadsym_view = crate::app::LoadSymView::Workout;
-                    app.status = format!(
-                        "Loaded {} ({} samples). Roots: ~/velofit + ./data",
-                        src, n
-                    );
+                    app.status =
+                        format!("Loaded {} ({} samples). Roots: ~/velofit + ./data", src, n);
                 } else {
-                    app.status = "No .fit/.csv in ~/velofit/raw|inbox or ./data/. Drop a file and press i.".to_string();
+                    app.status =
+                        "No .fit/.csv in ~/velofit/raw|inbox or ./data/. Drop a file and press i."
+                            .to_string();
                 }
                 return false;
             }
@@ -1012,7 +1025,10 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                     };
                     *scroll += 10;
                 }
-                KeyCode::Char('i') | KeyCode::Char('I') | KeyCode::Char('a') | KeyCode::Char('A') => {
+                KeyCode::Char('i')
+                | KeyCode::Char('I')
+                | KeyCode::Char('a')
+                | KeyCode::Char('A') => {
                     // Newest .fit under ~/velofit (raw/inbox) and project data dirs
                     if let Some(act) = crate::processing::find_newest_loadsym_activity(app) {
                         let n = act.times_s.len();

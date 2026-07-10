@@ -2,8 +2,15 @@ use std::path::PathBuf;
 
 use ratatui::widgets::ListState;
 use symworx_spatialsym::{
-    decision::{AgentDecision, SpaceAction},
-    synthetic, AgentTrajectories, PlayingDimensions, Point2, Vec2,
+    decision::{
+        AgentDecision,
+        SpaceAction,
+    },
+    synthetic,
+    AgentTrajectories,
+    PlayingDimensions,
+    Point2,
+    Vec2,
 };
 
 /// Top-level tabs for the application
@@ -284,7 +291,7 @@ impl App {
             // LoadSym defaults
             loadsym_view: LoadSymView::List,
             loadsym_selection: 0,
-            daily_loads: vec![], // start empty; use 'g' to generate synthetic demo loads or import real activity data
+            daily_loads: vec![], /* start empty; use 'g' to generate synthetic demo loads or import real activity data */
             loadsym_scroll: 0,
             loaded_activity: None,
             activity_scroll: 0,
@@ -532,7 +539,10 @@ impl App {
     pub fn load_csv(&mut self, path: &PathBuf) -> anyhow::Result<()> {
         use std::{
             fs::File,
-            io::{BufRead, BufReader},
+            io::{
+                BufRead,
+                BufReader,
+            },
         };
         let file = File::open(path)?;
         let reader = BufReader::new(file);
@@ -584,7 +594,10 @@ impl App {
     pub fn load_ibi(&mut self, path: &PathBuf) -> anyhow::Result<()> {
         use std::{
             fs::File,
-            io::{BufRead, BufReader},
+            io::{
+                BufRead,
+                BufReader,
+            },
         };
         let file = File::open(path)?;
         let reader = BufReader::new(file);
@@ -612,7 +625,10 @@ impl App {
     pub fn inspect_csv_columns(&self, path: &PathBuf) -> anyhow::Result<usize> {
         use std::{
             fs::File,
-            io::{BufRead, BufReader},
+            io::{
+                BufRead,
+                BufReader,
+            },
         };
         let file = File::open(path)?;
         let mut reader = BufReader::new(file);
@@ -670,7 +686,9 @@ impl App {
                 } else {
                     Tab::Import
                 };
-                self.status = "BioSym — Import / Explore / Dynamics (RQA + cRQA + multiscale entropy)".to_string();
+                self.status =
+                    "BioSym — Import / Explore / Dynamics (RQA + cRQA + multiscale entropy)"
+                        .to_string();
             }
             Workflow::SpatialSym => {
                 self.current_tab = Tab::Spatial;
@@ -727,7 +745,11 @@ impl App {
     /// Basic spatial CSV load using spatialsym loader + re-apply decision pipeline similar to seed.
     /// For real data we synthesize a minimal batch + decisions for viz reuse.
     pub fn load_spatial_csv(&mut self, path: &PathBuf) -> anyhow::Result<()> {
-        use symworx_spatialsym::{build_agent_trajectories, PlayingDimensions, Point2};
+        use symworx_spatialsym::{
+            build_agent_trajectories,
+            PlayingDimensions,
+            Point2,
+        };
         let path_str = path.to_string_lossy().to_string();
         let (times, trajs) = symworx_spatialsym::load_trajectories_csv(&path_str)
             .map_err(|e| anyhow::anyhow!("spatial load: {}", e))?;

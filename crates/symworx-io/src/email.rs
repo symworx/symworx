@@ -6,7 +6,10 @@
 //!
 //! Enabled via the `email` feature.
 
-use std::path::{Path, PathBuf};
+use std::path::{
+    Path,
+    PathBuf,
+};
 
 use symworx_error::SymError;
 
@@ -43,7 +46,10 @@ pub fn fetch_fit_attachments(
     target_dir: &Path,
     search_query: &str,
 ) -> Result<Vec<PathBuf>, SymError> {
-    use std::{fs::File, io::Write};
+    use std::{
+        fs::File,
+        io::Write,
+    };
 
     use imap::Session;
     use mailparse::parse_mail;

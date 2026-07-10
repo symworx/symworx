@@ -63,7 +63,13 @@ pub mod respiration;
 /// at the crate root.
 pub mod physiology {
     // Re-exports so `physiology::PPGTimeSeries`, `physiology::analyze_ppg`, etc. continue to work.
-    pub use crate::{common, ppg, ppg::*, respiration, respiration::*};
+    pub use crate::{
+        common,
+        ppg,
+        ppg::*,
+        respiration,
+        respiration::*,
+    };
 }
 
 /// Grouped access to biomechanical modeling tools.
@@ -98,7 +104,10 @@ pub use biosystems::*;
 pub use common::{
     IntervalSeries,
     processing::{
-        BandpassParams, PeakDetectionParams, PhysiologyProcessingParams, apply_bandpass,
+        BandpassParams,
+        PeakDetectionParams,
+        PhysiologyProcessingParams,
+        apply_bandpass,
         apply_peak_overrides,
     },
 };

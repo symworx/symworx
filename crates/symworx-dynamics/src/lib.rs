@@ -29,10 +29,22 @@ pub mod entropy;
 pub mod rqa;
 
 // Re-exports
-pub use embedding::{edim, fnn};
-pub use entropy::{multiscale_entropy, sample_entropy};
+pub use embedding::{
+    edim,
+    fnn,
+};
+pub use entropy::{
+    multiscale_entropy,
+    sample_entropy,
+};
 pub use rqa::{
-    crqa, CrossRecurrencePlot, DEFAULT_LMIN, DEFAULT_VMIN, RecurrencePlot, RqaResult, rqa,
+    CrossRecurrencePlot,
+    DEFAULT_LMIN,
+    DEFAULT_VMIN,
+    RecurrencePlot,
+    RqaResult,
+    crqa,
+    rqa,
     rqa_from_trajectory,
 };
 

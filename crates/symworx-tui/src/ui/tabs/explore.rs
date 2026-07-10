@@ -1,10 +1,25 @@
 use ratatui::{
-    layout::{Constraint, Layout, Rect},
-    style::{Color, Style},
-    text::Line,
-    Frame,
+    layout::{
+        Constraint,
+        Layout,
+        Rect,
+    },
+    style::{
+        Color,
+        Style,
+    },
     symbols,
-    widgets::{Axis, Block, Borders, Chart, Dataset, GraphType, Paragraph},
+    text::Line,
+    widgets::{
+        Axis,
+        Block,
+        Borders,
+        Chart,
+        Dataset,
+        GraphType,
+        Paragraph,
+    },
+    Frame,
 };
 
 use crate::app::App;
@@ -24,7 +39,11 @@ pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
              • Esc : back to Import tab\n\
              After generate/load: use p to try filters, then Dynamics (Ctrl+3) for RQA.",
         )
-        .block(Block::new().borders(Borders::ALL).title(" Help — Explore (BioSym) "));
+        .block(
+            Block::new()
+                .borders(Borders::ALL)
+                .title(" Help — Explore (BioSym) "),
+        );
         frame.render_widget(help, area);
         return;
     }
@@ -42,9 +61,7 @@ pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
                 sel, name, app.process_window
             ));
         }
-        lines.push(
-            "\n↑↓ select   ←→/-+ adjust window   Enter apply   Esc cancel\n".to_string(),
-        );
+        lines.push("\n↑↓ select   ←→/-+ adjust window   Enter apply   Esc cancel\n".to_string());
         let content = Paragraph::new(lines.join(""))
             .block(Block::new().borders(Borders::ALL).title(" Process "));
         frame.render_widget(content, area);
@@ -64,11 +81,7 @@ pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
         let n = signal.current.len();
         let max_start = n.saturating_sub(view_len);
         let start = app.explore_scroll.min(max_start);
-        let end = if n == 0 {
-            0
-        } else {
-            (start + view_len).min(n)
-        };
+        let end = if n == 0 { 0 } else { (start + view_len).min(n) };
         let visible: Vec<f64> = if n > 0 && start < end {
             signal.current[start..end].to_vec()
         } else {

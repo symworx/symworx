@@ -3,7 +3,10 @@
 
 use std::{
     fs::File,
-    io::{BufReader, Read},
+    io::{
+        BufReader,
+        Read,
+    },
 };
 
 use symworx_error::SymError;

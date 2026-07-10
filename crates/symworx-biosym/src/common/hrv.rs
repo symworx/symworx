@@ -1,7 +1,10 @@
 // Copyright (c) 2026 SymWorx
 // Licensed under the Apache License, Version 2.0.
 
-use symworx_core::stats::{self, variability};
+use symworx_core::stats::{
+    self,
+    variability,
+};
 
 /// Heart rate variability metrics derived from RR intervals (seconds).
 #[derive(Debug, Clone, Default, PartialEq)]

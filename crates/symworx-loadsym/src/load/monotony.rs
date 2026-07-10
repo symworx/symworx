@@ -6,9 +6,15 @@
 //! Monotony = mean(daily_load) / sd(daily_load) over a week (or window).
 //! Strain   = weekly (or window) total load × monotony.
 
-use symworx_core::stats::{mean, std_dev};
+use symworx_core::stats::{
+    mean,
+    std_dev,
+};
 
-use crate::error::{LoadSymError, Result};
+use crate::error::{
+    LoadSymError,
+    Result,
+};
 
 /// Compute monotony over a window of daily loads.
 ///

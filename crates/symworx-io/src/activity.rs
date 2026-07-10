@@ -80,7 +80,10 @@ impl ActivityData {
 pub fn load_fit_activity(path: &str) -> Result<ActivityData, SymError> {
     use std::io::BufReader;
 
-    use fitparser::{FitDataRecord, Value};
+    use fitparser::{
+        FitDataRecord,
+        Value,
+    };
 
     let file = File::open(path).map_err(SymError::Io)?;
     let mut reader = BufReader::new(file);

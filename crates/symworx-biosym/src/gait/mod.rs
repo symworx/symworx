@@ -39,16 +39,29 @@ mod processing;
 mod quality;
 
 pub use analysis::{
-    GaitAnalysis, analyze_gait, analyze_gait_from_times, analyze_gait_signal,
-    analyze_gait_signal_with_quality, detect_gait_strides, detect_gait_strides_with,
-    detect_gait_strides_with_quality, gait_peak_finder,
+    GaitAnalysis,
+    analyze_gait,
+    analyze_gait_from_times,
+    analyze_gait_signal,
+    analyze_gait_signal_with_quality,
+    detect_gait_strides,
+    detect_gait_strides_with,
+    detect_gait_strides_with_quality,
+    gait_peak_finder,
 };
 pub use data::GaitData;
-pub use metrics::{GaitStats, compute_gait_stats};
+pub use metrics::{
+    GaitStats,
+    compute_gait_stats,
+};
 pub use params::GaitParams;
 pub use processing::{
-    gait_default_bandpass, gait_processing_for_quality, gait_processing_high,
-    gait_processing_moderate, gait_processing_poor, gait_processing_reference,
+    gait_default_bandpass,
+    gait_processing_for_quality,
+    gait_processing_high,
+    gait_processing_moderate,
+    gait_processing_poor,
+    gait_processing_reference,
 };
 pub use quality::GaitSignalQuality;
 

@@ -4,7 +4,10 @@
 use std::fs::File;
 
 use parquet::{
-    file::reader::{FileReader, SerializedFileReader},
+    file::reader::{
+        FileReader,
+        SerializedFileReader,
+    },
     record::Field,
 };
 use symworx_error::SymError;

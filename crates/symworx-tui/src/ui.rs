@@ -1,11 +1,27 @@
 use ratatui::{
-    layout::{Alignment, Constraint, Layout},
-    style::{Color, Modifier, Style, Stylize},
-    widgets::{Block, Borders, Paragraph},
+    layout::{
+        Alignment,
+        Constraint,
+        Layout,
+    },
+    style::{
+        Color,
+        Modifier,
+        Style,
+        Stylize,
+    },
+    widgets::{
+        Block,
+        Borders,
+        Paragraph,
+    },
     Frame,
 };
 
-use crate::app::{App, Tab};
+use crate::app::{
+    App,
+    Tab,
+};
 
 pub mod tabs;
 

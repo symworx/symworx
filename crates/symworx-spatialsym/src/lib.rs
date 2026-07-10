@@ -47,14 +47,31 @@ pub mod trajectory;
 
 // Re-exports for convenience (mirrors symworx-core / biosym style)
 pub use decision::{
-    AgentDecision, DecisionFeatures, SpaceAction, classify_single_trajectory,
-    classify_single_trajectory_with_params, classify_space_actions,
+    AgentDecision,
+    DecisionFeatures,
+    SpaceAction,
+    classify_single_trajectory,
+    classify_single_trajectory_with_params,
+    classify_space_actions,
 };
-pub use error::{Result, SpatialError};
-pub use geometry::{Point2, Vec2, bearing_between};
+pub use error::{
+    Result,
+    SpatialError,
+};
+pub use geometry::{
+    Point2,
+    Vec2,
+    bearing_between,
+};
 pub use kinematics::{
-    bearing_to_cardinal, count_accelerations_decelerations, derive_speeds, derive_velocities,
-    derive_velocities_from_times, future_bearings, heading_to_bearing, normalize_to_peak_pace,
+    bearing_to_cardinal,
+    count_accelerations_decelerations,
+    derive_speeds,
+    derive_velocities,
+    derive_velocities_from_times,
+    future_bearings,
+    heading_to_bearing,
+    normalize_to_peak_pace,
     past_bearings,
 };
 pub use load::load_trajectories_csv;
@@ -63,11 +80,21 @@ pub use load::load_trajectories_csv_async;
 pub use metrics::pairwise_distances;
 pub use space::PlayingDimensions;
 pub use synthetic::{
-    SpatialEvent, build_agent_trajectories, generate_curved_trajectory, generate_event_driven,
-    generate_ground_truth, generate_linear_trajectory, generate_noisy_trajectory,
+    SpatialEvent,
+    build_agent_trajectories,
+    generate_curved_trajectory,
+    generate_event_driven,
+    generate_ground_truth,
+    generate_linear_trajectory,
+    generate_noisy_trajectory,
 };
 pub use trajectory::{
-    AgentTrajectories, GroupSummary, PlayerSummary, SpatialContext, SpatialFrame, Trajectory,
+    AgentTrajectories,
+    GroupSummary,
+    PlayerSummary,
+    SpatialContext,
+    SpatialFrame,
+    Trajectory,
 };
 
 // Version info

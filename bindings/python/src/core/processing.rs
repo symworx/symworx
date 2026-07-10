@@ -1,12 +1,28 @@
 // Copyright (c) 2026 SymWorx
 
-use pyo3::{prelude::*, wrap_pyfunction};
+use pyo3::{
+    prelude::*,
+    wrap_pyfunction,
+};
 use symworx_core::signal::processing::{
-    FillStrategy, OutlierCriterion,
-    interpolation::{interp_cubic, interp_linear, interp_spline, interp1},
-    normalization::{normalize, zscore},
-    resample::{Resample, ResampleMethod},
-    resample_rr_to_tachogram, robust_interpolate,
+    FillStrategy,
+    OutlierCriterion,
+    interpolation::{
+        interp_cubic,
+        interp_linear,
+        interp_spline,
+        interp1,
+    },
+    normalization::{
+        normalize,
+        zscore,
+    },
+    resample::{
+        Resample,
+        ResampleMethod,
+    },
+    resample_rr_to_tachogram,
+    robust_interpolate,
 };
 
 // ==========================================================

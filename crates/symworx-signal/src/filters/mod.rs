@@ -25,7 +25,12 @@ pub mod time_frequency;
 
 // Linear filters
 // Adaptive filters
-pub use adaptive::{LmsFilter, NlmsFilter, adaptive_mean_filter, adaptive_median_filter};
+pub use adaptive::{
+    LmsFilter,
+    NlmsFilter,
+    adaptive_mean_filter,
+    adaptive_median_filter,
+};
 pub use linear::{
     BandpassFilter,
     ChebyshevFilter,

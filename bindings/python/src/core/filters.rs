@@ -1,11 +1,26 @@
 // Copyright (c) 2026 SymWorx
 
-use ndarray::{Array1, Array2};
-use pyo3::{prelude::*, wrap_pyfunction};
+use ndarray::{
+    Array1,
+    Array2,
+};
+use pyo3::{
+    prelude::*,
+    wrap_pyfunction,
+};
 use symworx_core::signal::filters::{
-    adaptive::basic::{adaptive_mean_filter, adaptive_median_filter},
-    linear::{bandpass::BandpassFilter, chebyshev::ChebyshevFilter},
-    nonlinear::{KalmanFilter, KalmanFilter1D},
+    adaptive::basic::{
+        adaptive_mean_filter,
+        adaptive_median_filter,
+    },
+    linear::{
+        bandpass::BandpassFilter,
+        chebyshev::ChebyshevFilter,
+    },
+    nonlinear::{
+        KalmanFilter,
+        KalmanFilter1D,
+    },
 };
 
 // ==========================================================

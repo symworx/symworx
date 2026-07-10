@@ -34,14 +34,33 @@ pub mod outliers;
 pub mod windows;
 
 pub use decimate::min_max_decimate;
-pub use interpolation::{interp_cubic, interp_linear, interp_spline, interp1};
-pub use normalization::{normalize, zscore};
+pub use interpolation::{
+    interp_cubic,
+    interp_linear,
+    interp_spline,
+    interp1,
+};
+pub use normalization::{
+    normalize,
+    zscore,
+};
 pub use outliers::{
-    FillStrategy, OutlierCriterion, detect_outliers, interpolate_outliers, robust_interpolate,
+    FillStrategy,
+    OutlierCriterion,
+    detect_outliers,
+    interpolate_outliers,
+    robust_interpolate,
     robust_interpolate_with_times,
 };
-pub use peaks::{Peak, PeakFinder, PeakFinderBuilder};
-pub use resample::{Resample, ResampleMethod};
+pub use peaks::{
+    Peak,
+    PeakFinder,
+    PeakFinderBuilder,
+};
+pub use resample::{
+    Resample,
+    ResampleMethod,
+};
 pub use traits::PeakDetect;
 pub use windows::resample_rr_to_tachogram;
 

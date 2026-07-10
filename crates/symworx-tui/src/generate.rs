@@ -3,12 +3,22 @@
 //! This module provides very simple preset-based generation for the TUI.
 //! The goal is convenience for demos and testing, not full modeling control.
 
-use std::path::{Path, PathBuf};
+use std::path::{
+    Path,
+    PathBuf,
+};
 
 use anyhow::Result;
 use symworx_biosym::physiology::{
-    ppg::{generate_ppg_timeseries, PPGNoiseConfig, PPGSimulationParams},
-    respiration::{generate_respiration_timeseries, RespSimulationParams},
+    ppg::{
+        generate_ppg_timeseries,
+        PPGNoiseConfig,
+        PPGSimulationParams,
+    },
+    respiration::{
+        generate_respiration_timeseries,
+        RespSimulationParams,
+    },
 };
 
 /// Available demo presets (keep this small and opinionated).
@@ -52,9 +62,9 @@ fn generate_ppg_variants(data_dir: &Path, count: usize) -> Result<std::path::Pat
         duration: 30.0,
         beat_params: (1.0, 0.18, 0.025, 0.32, 0.42, 0.055),
         noise_config: PPGNoiseConfig {
-            amp_drift_std: 0.06,     // systolic/diastolic height walk
-            mu_drift_std: 0.01,      // peak timing walk (s)
-            sigma_drift_std: 0.008,  // width walk (s)
+            amp_drift_std: 0.06,    // systolic/diastolic height walk
+            mu_drift_std: 0.01,     // peak timing walk (s)
+            sigma_drift_std: 0.008, // width walk (s)
             onset_jitter_std: 0.006,
             global_noise_std: 0.015,
             smoothing_kernel: 5, // soften joins

@@ -4,10 +4,18 @@
 use ndarray::Array1;
 use symworx_core::PeakFinderBuilder;
 
-use super::{GaitData, GaitSignalQuality, GaitStats, processing::gait_processing_for_quality};
+use super::{
+    GaitData,
+    GaitSignalQuality,
+    GaitStats,
+    processing::gait_processing_for_quality,
+};
 use crate::{
     common::IntervalSeries,
-    processing::{PhysiologyProcessingParams, apply_bandpass},
+    processing::{
+        PhysiologyProcessingParams,
+        apply_bandpass,
+    },
 };
 
 const GAIT_BASE_MIN_INTERVAL_SEC: f64 = 0.5;

@@ -3,7 +3,10 @@
 
 use ndarray::Array1;
 
-use super::metrics::{self, GaitStats};
+use super::metrics::{
+    self,
+    GaitStats,
+};
 
 /// Simple container for gait event times and derived metrics.
 /// Focus on core calculations first.

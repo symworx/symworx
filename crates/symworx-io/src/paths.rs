@@ -6,8 +6,13 @@
 //! These are thin filesystem utilities used by `symload` and the TUI.
 //! They intentionally have no network or DB dependencies.
 
-use std::path::{Path, PathBuf};
-use std::time::SystemTime;
+use std::{
+    path::{
+        Path,
+        PathBuf,
+    },
+    time::SystemTime,
+};
 
 /// Environment variable that overrides the default `~/velofit` root.
 pub const VELOFIT_HOME_ENV: &str = "VELOFIT_HOME";
@@ -109,10 +114,7 @@ fn scan_one_dir(dir: &Path, out: &mut Vec<ActivityFileEntry>) {
             continue;
         }
         let modified = e.metadata().ok().and_then(|m| m.modified().ok());
-        out.push(ActivityFileEntry {
-            path: p,
-            modified,
-        });
+        out.push(ActivityFileEntry { path: p, modified });
     }
 }
 
@@ -147,16 +149,16 @@ fn is_activity_ext(path: &Path) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use std::{
+        fs,
+        io::Write,
+    };
+
     use super::*;
-    use std::fs;
-    use std::io::Write;
 
     #[test]
     fn discover_newest_fit() {
-        let tmp = std::env::temp_dir().join(format!(
-            "symworx_io_paths_{}",
-            std::process::id()
-        ));
+        let tmp = std::env::temp_dir().join(format!("symworx_io_paths_{}", std::process::id()));
         let _ = fs::remove_dir_all(&tmp);
         fs::create_dir_all(&tmp).unwrap();
         let older = tmp.join("older.fit");

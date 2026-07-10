@@ -1,8 +1,15 @@
 // Copyright (c) 2026 SymWorx
 // Licensed under the Apache License, Version 2.0.
 
-use pyo3::{exceptions::PyValueError, prelude::*, wrap_pyfunction};
-use rand::{Rng, rng};
+use pyo3::{
+    exceptions::PyValueError,
+    prelude::*,
+    wrap_pyfunction,
+};
+use rand::{
+    Rng,
+    rng,
+};
 use symworx_core::math::{
     // Distributions
     beta_kernel,

@@ -2,7 +2,12 @@
 // Licensed under the Apache License, Version 2.0.
 
 use rand::Rng;
-use rand_distr::{Beta, Distribution, Gamma, Normal};
+use rand_distr::{
+    Beta,
+    Distribution,
+    Gamma,
+    Normal,
+};
 
 /// Sampling utilities for various probability distributions.
 pub mod sample {

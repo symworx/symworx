@@ -6,7 +6,14 @@
 //! All units are meters (positions) and meters/second (velocities) unless documented otherwise.
 //! These types are deliberately small, `Copy`, and allocation-free.
 
-use std::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
+use std::ops::{
+    Add,
+    AddAssign,
+    Mul,
+    Neg,
+    Sub,
+    SubAssign,
+};
 
 /// A 2D point (position in meters).
 #[derive(Clone, Copy, Debug, PartialEq, Default)]

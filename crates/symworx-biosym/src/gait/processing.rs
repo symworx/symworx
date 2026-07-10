@@ -1,7 +1,11 @@
 // Copyright (c) 2026 SymWorx
 // Licensed under the Apache License, Version 2.0.
 
-use crate::common::processing::{BandpassParams, PeakDetectionParams, PhysiologyProcessingParams};
+use crate::common::processing::{
+    BandpassParams,
+    PeakDetectionParams,
+    PhysiologyProcessingParams,
+};
 
 /// Default bandpass for gait marker/angle signals (e.g. pelvis vertical or joint angles).
 /// Broad enough to pass step frequencies (~0.5-3 Hz) while attenuating DC and high-freq noise.

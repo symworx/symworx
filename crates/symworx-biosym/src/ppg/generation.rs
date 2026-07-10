@@ -101,10 +101,7 @@ fn drift_beat_params(
         sigma_d += sample::normal(rng, 0.0, noise_cfg.sigma_drift_std * 1.1);
     }
 
-    clamp_beat_params(
-        (amp_s, mu_s, sigma_s, amp_d, mu_d, sigma_d),
-        beat_duration,
-    )
+    clamp_beat_params((amp_s, mu_s, sigma_s, amp_d, mu_d, sigma_d), beat_duration)
 }
 
 fn moving_average(data: &[f64], kernel: usize) -> Vec<f64> {

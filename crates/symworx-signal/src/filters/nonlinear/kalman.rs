@@ -56,7 +56,12 @@
 //! let smoothed = rts_smooth(&run, &f);
 //! ```
 
-use ndarray::{Array1, Array2, Axis, array};
+use ndarray::{
+    Array1,
+    Array2,
+    Axis,
+    array,
+};
 use ndarray_linalg::Inverse;
 
 /// A general linear-Gaussian state-space Kalman filter.

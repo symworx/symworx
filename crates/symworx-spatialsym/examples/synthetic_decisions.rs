@@ -1,4 +1,9 @@
-use symworx_spatialsym::{AgentTrajectories, PlayingDimensions, Point2, Vec2};
+use symworx_spatialsym::{
+    AgentTrajectories,
+    PlayingDimensions,
+    Point2,
+    Vec2,
+};
 
 fn main() {
     println!("symworx-spatialsym synthetic demo\n");

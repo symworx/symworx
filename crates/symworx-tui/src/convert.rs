@@ -12,8 +12,12 @@ use std::path::Path;
 use anyhow::Result;
 use symworx_io::{
     read_ibi,
-    traits::{SymReader, SymWriter},
-    CsvWriter, ParquetReader,
+    traits::{
+        SymReader,
+        SymWriter,
+    },
+    CsvWriter,
+    ParquetReader,
 };
 
 pub fn parquet_to_csv(input: &Path, output: &Path) -> Result<()> {

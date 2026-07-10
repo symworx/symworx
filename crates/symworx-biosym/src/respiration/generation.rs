@@ -1,7 +1,11 @@
 // Copyright (c) 2026 SymWorx
 // Licensed under the Apache License, Version 2.0.
 
-use rand::{Rng, SeedableRng, rngs::StdRng};
+use rand::{
+    Rng,
+    SeedableRng,
+    rngs::StdRng,
+};
 
 /// Represents a respiration time-series signal.
 #[derive(Debug, Clone)]
@@ -118,8 +122,7 @@ pub fn generate_respiration_timeseries(params: &RespSimulationParams) -> RespTim
     let cycle_time = 60.0 / params.brpm.max(1.0);
     // I:E = insp_exp_ratio means insp = ratio * exp, so
     // f_insp = insp / cycle = ratio / (1 + ratio)
-    let f_insp =
-        (params.insp_exp_ratio / (1.0 + params.insp_exp_ratio.max(1e-6))).clamp(0.15, 0.7);
+    let f_insp = (params.insp_exp_ratio / (1.0 + params.insp_exp_ratio.max(1e-6))).clamp(0.15, 0.7);
     let tidal = (params.tidal_volume * params.amplitude).max(1e-9);
 
     let mut rng = match params.seed {
@@ -134,13 +137,7 @@ pub fn generate_respiration_timeseries(params: &RespSimulationParams) -> RespTim
         let t = i as f64 * dt;
         times.push(t);
         let phase = (t / cycle_time).rem_euclid(1.0);
-        let mut v = breath_volume_at_phase(
-            phase,
-            f_insp,
-            params.kappa_insp,
-            params.tau_exp,
-            tidal,
-        );
+        let mut v = breath_volume_at_phase(phase, f_insp, params.kappa_insp, params.tau_exp, tidal);
         // Small zero-mean noise on volume (not on flow — avoids random-walk baseline)
         if params.noise_level > 0.0 {
             v += (rng.random::<f64>() * 2.0 - 1.0) * params.noise_level * tidal;
@@ -163,15 +160,11 @@ pub fn generate_respiration_timeseries(params: &RespSimulationParams) -> RespTim
     let mut exhalation_peaks = Vec::new();
     if n_samples >= 3 {
         for i in 1..n_samples - 1 {
-            if volume[i] >= volume[i - 1] && volume[i] > volume[i + 1] && volume[i] > 0.2 * tidal
-            {
+            if volume[i] >= volume[i - 1] && volume[i] > volume[i + 1] && volume[i] > 0.2 * tidal {
                 inhalation_peaks.push(i);
             }
             // local minimum near baseline at end-exp
-            if volume[i] <= volume[i - 1]
-                && volume[i] < volume[i + 1]
-                && volume[i] < 0.25 * tidal
-            {
+            if volume[i] <= volume[i - 1] && volume[i] < volume[i + 1] && volume[i] < 0.25 * tidal {
                 exhalation_peaks.push(i);
             }
         }

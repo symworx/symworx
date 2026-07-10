@@ -1,7 +1,11 @@
 // Copyright (c) 2026 SymWorx
 // Licensed under the Apache License, Version 2.0.
 
-use crate::common::{BandpassParams, PeakDetectionParams, PhysiologyProcessingParams};
+use crate::common::{
+    BandpassParams,
+    PeakDetectionParams,
+    PhysiologyProcessingParams,
+};
 
 /// Respiration signal quality presets for analysis tuning.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

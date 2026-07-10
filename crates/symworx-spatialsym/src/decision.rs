@@ -193,7 +193,10 @@ pub fn classify_space_actions(
     playing_dimensions: Option<&crate::space::PlayingDimensions>,
     goal_positions: Option<&[crate::geometry::Point2]>,
 ) -> Vec<Vec<AgentDecision>> {
-    use crate::kinematics::{future_bearings, past_bearings};
+    use crate::kinematics::{
+        future_bearings,
+        past_bearings,
+    };
 
     let n_agents = agent_trajectories.len();
     if n_agents == 0 || times.is_empty() {

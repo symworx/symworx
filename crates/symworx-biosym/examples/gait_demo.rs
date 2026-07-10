@@ -4,7 +4,11 @@
 //!   cargo run -p symworx-biosym --example gait_demo
 
 use ndarray::array;
-use symworx_biosym::biomechanics::gait::{GaitData, GaitParams, analyze_gait_signal};
+use symworx_biosym::biomechanics::gait::{
+    GaitData,
+    GaitParams,
+    analyze_gait_signal,
+};
 
 fn main() {
     println!("=== BioSym Gait Demo ===\n");

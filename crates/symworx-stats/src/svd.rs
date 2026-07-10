@@ -5,7 +5,10 @@
 //!
 //! Wrapper around `ndarray_linalg` (LAPACK).
 
-use ndarray::{Array1, Array2};
+use ndarray::{
+    Array1,
+    Array2,
+};
 use ndarray_linalg::SVD;
 
 /// Result of Singular Value Decomposition: A = U Σ Vᵀ

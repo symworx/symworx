@@ -1,7 +1,11 @@
 // Copyright (c) 2026 SymWorx
 // Licensed under the Apache License, Version 2.0.
 
-use ndarray::{Array2, ArrayView1, Axis};
+use ndarray::{
+    Array2,
+    ArrayView1,
+    Axis,
+};
 
 /// Computes Pearson correlation coefficient between two columns.
 /// # Arguments

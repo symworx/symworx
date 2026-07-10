@@ -1,8 +1,16 @@
 // Copyright (c) 2026 SymWorx
 
 use ndarray::Array1;
-use pyo3::{prelude::*, wrap_pyfunction};
-use symworx_biosym::biomechanics::{GaitAnalysis, GaitData, GaitParams, GaitStats};
+use pyo3::{
+    prelude::*,
+    wrap_pyfunction,
+};
+use symworx_biosym::biomechanics::{
+    GaitAnalysis,
+    GaitData,
+    GaitParams,
+    GaitStats,
+};
 
 #[pyclass(name = "GaitParams")]
 #[derive(Clone)]

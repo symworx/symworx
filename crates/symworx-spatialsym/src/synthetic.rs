@@ -11,7 +11,10 @@
 //! attacking directions for possession-aware classification.
 
 use crate::{
-    geometry::{Point2, Vec2},
+    geometry::{
+        Point2,
+        Vec2,
+    },
     trajectory::AgentTrajectories,
 };
 

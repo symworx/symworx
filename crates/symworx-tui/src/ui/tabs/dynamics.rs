@@ -1,8 +1,18 @@
 use ratatui::{
     layout::Rect,
-    style::{Color, Style},
-    text::{Line, Span},
-    widgets::{Block, Borders, Paragraph},
+    style::{
+        Color,
+        Style,
+    },
+    text::{
+        Line,
+        Span,
+    },
+    widgets::{
+        Block,
+        Borders,
+        Paragraph,
+    },
     Frame,
 };
 
@@ -63,21 +73,41 @@ pub fn render_dynamics_tab(frame: &mut Frame, app: &App, area: Rect) {
         // Show RQA or cRQA results
         if let Some(r) = &app.last_crqa {
             content_lines.push(Line::from("cRQA result (cross-recurrence):"));
-            content_lines.push(Line::from(format!("RR: {:.3}  DET: {:.3}  LAM: {:.3}", r.recurrence_rate, r.determinism, r.laminarity)));
-            content_lines.push(Line::from(format!("Lmax/Vmax: {}/{}   Lentr/TT: {:.2}/{:.2}", r.lmax, r.vmax, r.lentr, r.trapping_time)));
+            content_lines.push(Line::from(format!(
+                "RR: {:.3}  DET: {:.3}  LAM: {:.3}",
+                r.recurrence_rate, r.determinism, r.laminarity
+            )));
+            content_lines.push(Line::from(format!(
+                "Lmax/Vmax: {}/{}   Lentr/TT: {:.2}/{:.2}",
+                r.lmax, r.vmax, r.lentr, r.trapping_time
+            )));
             content_lines.push(Line::from(""));
         } else if let Some(r) = &app.last_rqa {
-            content_lines.push(Line::from(format!("RR (recurrence rate): {:.3}", r.recurrence_rate)));
-            content_lines.push(Line::from(format!("DET (determinism)   : {:.3}", r.determinism)));
-            content_lines.push(Line::from(format!("LAM (laminarity)    : {:.3}", r.laminarity)));
-            content_lines.push(Line::from(format!("Lmax / Vmax         : {} / {}", r.lmax, r.vmax)));
+            content_lines.push(Line::from(format!(
+                "RR (recurrence rate): {:.3}",
+                r.recurrence_rate
+            )));
+            content_lines.push(Line::from(format!(
+                "DET (determinism)   : {:.3}",
+                r.determinism
+            )));
+            content_lines.push(Line::from(format!(
+                "LAM (laminarity)    : {:.3}",
+                r.laminarity
+            )));
+            content_lines.push(Line::from(format!(
+                "Lmax / Vmax         : {} / {}",
+                r.lmax, r.vmax
+            )));
             content_lines.push(Line::from(format!(
                 "Lentr / TT          : {:.2} / {:.2}",
                 r.lentr, r.trapping_time
             )));
             content_lines.push(Line::from(""));
         } else {
-            content_lines.push(Line::from("No RQA result yet. Press 'c' to edit params & compute."));
+            content_lines.push(Line::from(
+                "No RQA result yet. Press 'c' to edit params & compute.",
+            ));
         }
 
         // Reference for cRQA
@@ -89,16 +119,28 @@ pub fn render_dynamics_tab(frame: &mut Frame, app: &App, area: Rect) {
         let stats = crate::app::compute_basic_stats(&sig.current);
         let r_se = 0.2 * stats.std.max(0.01);
         let se = symworx_dynamics::sample_entropy(&sig.current, 2, r_se);
-        content_lines.push(Line::from(format!("Sample Entropy (m=2, r=0.2σ): {:.4}", se)));
+        content_lines.push(Line::from(format!(
+            "Sample Entropy (m=2, r=0.2σ): {:.4}",
+            se
+        )));
 
         let mse = symworx_dynamics::multiscale_entropy(&sig.current, 6, 2, r_se);
-        let mse_str: Vec<String> = mse.iter().enumerate().map(|(i, v)| format!("s{}:{:.3}", i+1, v)).collect();
-        content_lines.push(Line::from(format!("Multiscale Entropy (scales 1-6): {}", mse_str.join("  "))));
+        let mse_str: Vec<String> = mse
+            .iter()
+            .enumerate()
+            .map(|(i, v)| format!("s{}:{:.3}", i + 1, v))
+            .collect();
+        content_lines.push(Line::from(format!(
+            "Multiscale Entropy (scales 1-6): {}",
+            mse_str.join("  ")
+        )));
         content_lines.push(Line::from(""));
 
         // Improved recurrence plot preview (colored unicode)
         if app.last_rqa.is_some() || app.last_crqa.is_some() {
-            content_lines.push(Line::from(Span::raw("Recurrence Plot preview (█ recurrent, · elsewhere; downsampled):")));
+            content_lines.push(Line::from(Span::raw(
+                "Recurrence Plot preview (█ recurrent, · elsewhere; downsampled):",
+            )));
             let rp_lines = render_styled_rp_preview(
                 &sig.current,
                 app.rqa_params.m,
@@ -108,9 +150,13 @@ pub fn render_dynamics_tab(frame: &mut Frame, app: &App, area: Rect) {
             );
             content_lines.extend(rp_lines);
             content_lines.push(Line::from(""));
-            content_lines.push(Line::from("Keys: c=edit/compute RQA  x=cRQA  p=pin ref  e=export  r=reset"));
+            content_lines.push(Line::from(
+                "Keys: c=edit/compute RQA  x=cRQA  p=pin ref  e=export  r=reset",
+            ));
         } else {
-            content_lines.push(Line::from("Compute (c) to see recurrence structure preview + MSE."));
+            content_lines.push(Line::from(
+                "Compute (c) to see recurrence structure preview + MSE.",
+            ));
         }
 
         let content = Paragraph::new(content_lines).block(block);
@@ -154,7 +200,9 @@ fn render_styled_rp_preview(
     let side = mat.nrows().min(40);
 
     let mut out = Vec::with_capacity(side);
-    let rec_style = Style::default().fg(Color::Green).add_modifier(ratatui::style::Modifier::BOLD);
+    let rec_style = Style::default()
+        .fg(Color::Green)
+        .add_modifier(ratatui::style::Modifier::BOLD);
     let non_style = Style::default().fg(Color::DarkGray);
 
     for i in 0..side {

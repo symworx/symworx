@@ -1,11 +1,21 @@
 // Generate realistic synthetic physiological data using symworx-biosym
 // Run with: cargo run -p symworx-tui --example generate_biosym_demo
 
-use std::{fs, path::Path};
+use std::{
+    fs,
+    path::Path,
+};
 
 use symworx_biosym::physiology::{
-    ppg::{generate_ppg_timeseries, PPGNoiseConfig, PPGSimulationParams},
-    respiration::{generate_respiration_timeseries, RespSimulationParams},
+    ppg::{
+        generate_ppg_timeseries,
+        PPGNoiseConfig,
+        PPGSimulationParams,
+    },
+    respiration::{
+        generate_respiration_timeseries,
+        RespSimulationParams,
+    },
 };
 
 fn main() {

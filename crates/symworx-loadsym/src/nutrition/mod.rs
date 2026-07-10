@@ -17,8 +17,20 @@ pub mod weightloss;
 
 // Re-export primary public API (calories + weightloss)
 pub use calories::{
-    ActivityLevel, BmrConfig, DeficitLevel, DeficitStrategy, Gender, ObesityAdjustment,
-    calculate_bmi, calculate_bmr, calculate_calorie_targets, calculate_deficit,
-    calculate_deficit_from_active, calculate_tdee,
+    ActivityLevel,
+    BmrConfig,
+    DeficitLevel,
+    DeficitStrategy,
+    Gender,
+    ObesityAdjustment,
+    calculate_bmi,
+    calculate_bmr,
+    calculate_calorie_targets,
+    calculate_deficit,
+    calculate_deficit_from_active,
+    calculate_tdee,
 };
-pub use weightloss::{WeightlossModel, calculate_weightloss};
+pub use weightloss::{
+    WeightlossModel,
+    calculate_weightloss,
+};

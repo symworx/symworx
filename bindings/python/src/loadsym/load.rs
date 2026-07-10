@@ -1,6 +1,9 @@
 // Copyright (c) 2026 SymWorx
 
-use pyo3::{prelude::*, wrap_pyfunction};
+use pyo3::{
+    prelude::*,
+    wrap_pyfunction,
+};
 use symworx_loadsym::load::{
     AcwrSnapshot,
     RideMetrics,

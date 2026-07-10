@@ -1,7 +1,18 @@
 use ratatui::{
-    layout::{Constraint, Layout, Rect},
-    style::{Color, Style},
-    widgets::{Block, Borders, Paragraph},
+    layout::{
+        Constraint,
+        Layout,
+        Rect,
+    },
+    style::{
+        Color,
+        Style,
+    },
+    widgets::{
+        Block,
+        Borders,
+        Paragraph,
+    },
     Frame,
 };
 
