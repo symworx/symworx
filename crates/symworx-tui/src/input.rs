@@ -940,13 +940,22 @@ fn calendar_status(app: &App) -> String {
     } else {
         "demo"
     };
+    let rides = app.daily_ride_counts.get(idx).copied().unwrap_or(0);
+    let widx = app.loadsym_week_scroll;
     format!(
-        "Calendar [{}] {}  TSS={:.0}  ({}/{})  ↑↓ scroll  r:reload  Esc:list",
+        "Calendar [{}] {}  TSS={:.0} n={}  day {}/{} week {}/{}  ↑↓ day ←→ week  r:reload",
         src,
         date,
         tss,
+        rides,
         idx + 1,
-        app.daily_loads.len()
+        app.daily_loads.len(),
+        if app.weekly_loads.is_empty() {
+            0
+        } else {
+            widx + 1
+        },
+        app.weekly_loads.len()
     )
 }
 
@@ -976,9 +985,7 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
             KeyCode::Char('2') => {
                 app.loadsym_view = crate::app::LoadSymView::Calendar;
                 let _ = crate::processing::try_load_loadsym_catalog(app);
-                if app.daily_loads.is_empty() {
-                    app.loadsym_scroll = 0;
-                }
+                crate::processing::focus_calendar_most_recent(app);
                 app.status = calendar_status(app);
                 return false;
             }
@@ -993,6 +1000,7 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                     1 => {
                         app.loadsym_view = crate::app::LoadSymView::Calendar;
                         let _ = crate::processing::try_load_loadsym_catalog(app);
+                        crate::processing::focus_calendar_most_recent(app);
                         app.status = calendar_status(app);
                     }
                     2 => app.loadsym_view = crate::app::LoadSymView::Optimization,
@@ -1169,24 +1177,61 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
         }
         crate::app::LoadSymView::Calendar => {
             match code {
-                KeyCode::Left | KeyCode::Char('h') | KeyCode::Up => {
+                // Daily list (newest first on screen: ↓ = older, ↑ = newer)
+                KeyCode::Up | KeyCode::Char('k') => {
+                    app.loadsym_scroll =
+                        (app.loadsym_scroll + 1).min(app.daily_loads.len().saturating_sub(1));
+                    crate::processing::sync_week_scroll_from_daily(app);
+                }
+                KeyCode::Down | KeyCode::Char('j') => {
                     if app.loadsym_scroll > 0 {
                         app.loadsym_scroll -= 1;
                     }
+                    crate::processing::sync_week_scroll_from_daily(app);
                 }
-                KeyCode::Right | KeyCode::Char('l') | KeyCode::Down => {
-                    app.loadsym_scroll =
-                        (app.loadsym_scroll + 1).min(app.daily_loads.len().saturating_sub(1));
+                // Weekly: ← older (past), → newer (future); list still newest-first
+                KeyCode::Left | KeyCode::Char('h') => {
+                    if app.loadsym_week_scroll > 0 {
+                        app.loadsym_week_scroll -= 1;
+                    }
+                    if let Some(w) = app.weekly_loads.get(app.loadsym_week_scroll) {
+                        app.loadsym_scroll = w.day_index_hi;
+                        app.loadsym_scroll_from_week = true;
+                    }
+                }
+                KeyCode::Right | KeyCode::Char('l') => {
+                    if !app.weekly_loads.is_empty() {
+                        app.loadsym_week_scroll = (app.loadsym_week_scroll + 1)
+                            .min(app.weekly_loads.len().saturating_sub(1));
+                    }
+                    if let Some(w) = app.weekly_loads.get(app.loadsym_week_scroll) {
+                        app.loadsym_scroll = w.day_index_hi;
+                        app.loadsym_scroll_from_week = true;
+                    }
                 }
                 KeyCode::Home => {
                     app.loadsym_scroll = 0;
+                    crate::processing::sync_week_scroll_from_daily(app);
                 }
                 KeyCode::End => {
                     app.loadsym_scroll = app.daily_loads.len().saturating_sub(1);
+                    crate::processing::sync_week_scroll_from_daily(app);
+                }
+                KeyCode::PageUp => {
+                    app.loadsym_scroll = app.loadsym_scroll.saturating_sub(10);
+                    crate::processing::sync_week_scroll_from_daily(app);
+                }
+                KeyCode::PageDown => {
+                    app.loadsym_scroll = (app.loadsym_scroll + 10)
+                        .min(app.daily_loads.len().saturating_sub(1));
+                    crate::processing::sync_week_scroll_from_daily(app);
                 }
                 KeyCode::Char('r') | KeyCode::Char('R') => {
                     match crate::processing::try_load_loadsym_catalog(app) {
-                        Ok(true) => app.status = calendar_status(app),
+                        Ok(true) => {
+                            crate::processing::focus_calendar_most_recent(app);
+                            app.status = calendar_status(app);
+                        }
                         Ok(false) => {
                             app.status = "No catalog DB found — run symload ingest first".into()
                         }
@@ -1197,6 +1242,12 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                 KeyCode::Char('g') | KeyCode::Char('G') => {
                     crate::processing::apply_demo_daily_loads(app, 14);
                     app.status = "Calendar: synthetic demo (r reloads catalog)".into();
+                    return false;
+                }
+                KeyCode::Char('.') => {
+                    // Jump to most recent day
+                    crate::processing::focus_calendar_most_recent(app);
+                    app.status = calendar_status(app);
                     return false;
                 }
                 KeyCode::Esc => {

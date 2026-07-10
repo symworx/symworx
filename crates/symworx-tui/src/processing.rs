@@ -147,19 +147,18 @@ pub fn derive_load_from_current_activity(app: &App) -> Option<f64> {
     })
 }
 
-/// Load daily TSS / ACWR from the personal SQLite catalog (`$VELOFIT_HOME/db/…`).
-///
-/// Returns `Ok(true)` if rows were loaded, `Ok(false)` if no DB file, `Err` on I/O/SQL errors.
+use crate::app::{CatalogRideRow, WeeklyLoadRow};
+
+/// Load daily TSS / ACWR / rides from the personal SQLite catalog.
 pub fn try_load_loadsym_catalog(app: &mut App) -> Result<bool, String> {
     match symworx_loadsym::catalog::try_load_default_calendar()? {
-        None => {
-            // Leave existing series alone if catalog missing
-            Ok(false)
-        }
-        Some((path, rows)) => {
+        None => Ok(false),
+        Some((path, rows, rides)) => {
             if rows.is_empty() {
                 app.loadsym_catalog_path = Some(path);
                 app.loadsym_from_catalog = false;
+                app.catalog_rides.clear();
+                app.weekly_loads.clear();
                 return Ok(false);
             }
             app.daily_loads = rows.iter().map(|r| r.total_tss).collect();
@@ -167,10 +166,21 @@ pub fn try_load_loadsym_catalog(app: &mut App) -> Result<bool, String> {
             app.daily_acwr = rows.iter().map(|r| r.acwr).collect();
             app.daily_risk = rows.iter().map(|r| r.risk_level.clone()).collect();
             app.daily_ride_counts = rows.iter().map(|r| r.ride_count).collect();
+            app.catalog_rides = rides
+                .into_iter()
+                .map(|r| CatalogRideRow {
+                    ride_date: r.ride_date,
+                    source_file: r.source_file,
+                    tss: r.tss,
+                    duration_s: r.duration_s,
+                    np_w: r.np_w,
+                })
+                .collect();
+            app.weekly_loads =
+                build_weekly_loads(&app.daily_load_dates, &app.daily_loads, &app.daily_ride_counts);
             app.loadsym_catalog_path = Some(path);
             app.loadsym_from_catalog = true;
-            // Focus on most recent day
-            app.loadsym_scroll = app.daily_loads.len().saturating_sub(1);
+            focus_calendar_most_recent(app);
             Ok(true)
         }
     }
@@ -179,11 +189,173 @@ pub fn try_load_loadsym_catalog(app: &mut App) -> Result<bool, String> {
 /// Apply synthetic demo loads (clears catalog-backed date metadata).
 pub fn apply_demo_daily_loads(app: &mut App, days: usize) {
     app.daily_loads = symworx_loadsym::load::generate_demo_daily_loads(days, 400.0, 100.0);
-    app.daily_load_dates.clear();
+    app.daily_load_dates = (0..app.daily_loads.len())
+        .map(|i| format!("d{:03}", i))
+        .collect();
     app.daily_acwr.clear();
     app.daily_risk.clear();
-    app.daily_ride_counts.clear();
+    app.daily_ride_counts = vec![1; app.daily_loads.len()];
+    app.catalog_rides.clear();
+    app.weekly_loads =
+        build_weekly_loads(&app.daily_load_dates, &app.daily_loads, &app.daily_ride_counts);
     app.loadsym_from_catalog = false;
     app.loadsym_catalog_path = None;
-    app.loadsym_scroll = app.daily_loads.len().saturating_sub(1);
+    focus_calendar_most_recent(app);
+}
+
+/// Jump calendar focus to the most recent day (and its week).
+pub fn focus_calendar_most_recent(app: &mut App) {
+    if !app.daily_loads.is_empty() {
+        app.loadsym_scroll = app.daily_loads.len() - 1;
+    } else {
+        app.loadsym_scroll = 0;
+    }
+    sync_week_scroll_from_daily(app);
+    // Prefer newest week when weekly series exists
+    if !app.weekly_loads.is_empty() {
+        app.loadsym_week_scroll = app.weekly_loads.len() - 1;
+        // Keep daily on last day of that week (should match most recent day)
+        app.loadsym_scroll = app.weekly_loads[app.loadsym_week_scroll].day_index_hi;
+    }
+    app.loadsym_scroll_from_week = false;
+}
+
+/// Build Mon–Sun weeks from daily series.
+pub fn build_weekly_loads(
+    dates: &[String],
+    loads: &[f64],
+    ride_counts: &[i64],
+) -> Vec<WeeklyLoadRow> {
+    if dates.is_empty() || loads.is_empty() {
+        return vec![];
+    }
+    let mut weeks: Vec<WeeklyLoadRow> = Vec::new();
+    let mut i = 0usize;
+    while i < loads.len() {
+        let (week_start, group_end) = if let Some(ws) = week_start_ymd(&dates[i]) {
+            let mut j = i + 1;
+            while j < dates.len() {
+                match week_start_ymd(&dates[j]) {
+                    Some(w) if w == ws => j += 1,
+                    _ => break,
+                }
+            }
+            (ws, j)
+        } else {
+            let j = (i + 7).min(loads.len());
+            (format!("W{}", i / 7), j)
+        };
+        let slice = i..group_end;
+        let total_tss: f64 = loads[slice.clone()].iter().sum();
+        let ride_count: i64 = ride_counts
+            .get(slice.clone())
+            .map(|s| s.iter().sum())
+            .unwrap_or(0);
+        weeks.push(WeeklyLoadRow {
+            week_start,
+            total_tss,
+            ride_count,
+            day_count: group_end - i,
+            day_index_lo: i,
+            day_index_hi: group_end.saturating_sub(1),
+        });
+        i = group_end;
+    }
+    weeks
+}
+
+fn week_start_ymd(ymd: &str) -> Option<String> {
+    let (y, m, d) = parse_ymd(ymd)?;
+    let wd = weekday_mon0(y, m, d)?;
+    let mut yy = y;
+    let mut mm = m;
+    let mut dd = d as i32 - wd as i32;
+    while dd < 1 {
+        mm -= 1;
+        if mm < 1 {
+            mm = 12;
+            yy -= 1;
+        }
+        dd += days_in_month(yy, mm) as i32;
+    }
+    Some(format!("{:04}-{:02}-{:02}", yy, mm, dd))
+}
+
+fn parse_ymd(s: &str) -> Option<(i32, u32, u32)> {
+    let parts: Vec<&str> = s.split('-').collect();
+    if parts.len() != 3 {
+        return None;
+    }
+    Some((
+        parts[0].parse().ok()?,
+        parts[1].parse().ok()?,
+        parts[2].parse().ok()?,
+    ))
+}
+
+fn days_in_month(y: i32, m: u32) -> u32 {
+    match m {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 => {
+            if (y % 4 == 0 && y % 100 != 0) || y % 400 == 0 {
+                29
+            } else {
+                28
+            }
+        }
+        _ => 30,
+    }
+}
+
+fn weekday_mon0(y: i32, m: u32, d: u32) -> Option<u32> {
+    let t = [0i32, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
+    let mut y = y;
+    if m < 3 {
+        y -= 1;
+    }
+    let w = (y + y / 4 - y / 100 + y / 400 + t[(m - 1) as usize] + d as i32) % 7;
+    Some(((w + 6) % 7) as u32)
+}
+
+pub fn sync_week_scroll_from_daily(app: &mut App) {
+    app.loadsym_scroll_from_week = false;
+    if app.weekly_loads.is_empty() {
+        app.loadsym_week_scroll = 0;
+        return;
+    }
+    let day = app.loadsym_scroll.min(app.daily_loads.len().saturating_sub(1));
+    if let Some((wi, _)) = app
+        .weekly_loads
+        .iter()
+        .enumerate()
+        .find(|(_, w)| day >= w.day_index_lo && day <= w.day_index_hi)
+    {
+        app.loadsym_week_scroll = wi;
+    } else {
+        app.loadsym_week_scroll = app.weekly_loads.len().saturating_sub(1);
+    }
+}
+
+pub fn sync_daily_scroll_from_week(app: &mut App) {
+    app.loadsym_scroll_from_week = true;
+    if app.weekly_loads.is_empty() {
+        return;
+    }
+    let wi = app
+        .loadsym_week_scroll
+        .min(app.weekly_loads.len().saturating_sub(1));
+    app.loadsym_week_scroll = wi;
+    app.loadsym_scroll = app.weekly_loads[wi].day_index_lo;
+}
+
+pub fn rides_for_focus_day(app: &App) -> Vec<&CatalogRideRow> {
+    let date = match app.daily_load_dates.get(app.loadsym_scroll) {
+        Some(d) => d.as_str(),
+        None => return vec![],
+    };
+    app.catalog_rides
+        .iter()
+        .filter(|r| r.ride_date == date)
+        .collect()
 }

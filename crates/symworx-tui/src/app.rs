@@ -85,6 +85,29 @@ pub enum LoadSymView {
     Optimization,
 }
 
+/// One ride file for calendar daily list.
+#[derive(Debug, Clone)]
+pub struct CatalogRideRow {
+    pub ride_date: String,
+    pub source_file: String,
+    pub tss: f64,
+    pub duration_s: f64,
+    pub np_w: Option<f64>,
+}
+
+/// One ISO-ish week aggregate for calendar weekly list.
+#[derive(Debug, Clone)]
+pub struct WeeklyLoadRow {
+    /// Monday of the week (`YYYY-MM-DD`)
+    pub week_start: String,
+    pub total_tss: f64,
+    pub ride_count: i64,
+    pub day_count: usize,
+    /// Inclusive indices into `daily_loads` covered by this week
+    pub day_index_lo: usize,
+    pub day_index_hi: usize,
+}
+
 /// Lightweight holder for RQA parameters (editable in Dynamics)
 #[derive(Debug, Clone, Copy)]
 pub struct RqaParams {
@@ -241,7 +264,16 @@ pub struct App {
     pub daily_acwr: Vec<Option<f64>>,
     pub daily_risk: Vec<Option<String>>,
     pub daily_ride_counts: Vec<i64>,
-    pub loadsym_scroll: usize, // for long sessions / calendar scrolling
+    /// Focus day index (oldest → newest) for calendar daily list.
+    pub loadsym_scroll: usize,
+    /// Focus week index for calendar weekly list (kept in sync with daily).
+    pub loadsym_week_scroll: usize,
+    /// When true, last scroll action was on the weekly pane (affects linked top alignment).
+    pub loadsym_scroll_from_week: bool,
+    /// Per-ride rows from catalog (for daily file list).
+    pub catalog_rides: Vec<CatalogRideRow>,
+    /// Weekly aggregates derived from daily series (oldest → newest).
+    pub weekly_loads: Vec<WeeklyLoadRow>,
     /// Path of catalog last loaded into calendar (status only; may be None).
     pub loadsym_catalog_path: Option<PathBuf>,
     /// True when daily_loads came from SQLite catalog (not synthetic `g`).
@@ -308,6 +340,10 @@ impl App {
             daily_risk: vec![],
             daily_ride_counts: vec![],
             loadsym_scroll: 0,
+            loadsym_week_scroll: 0,
+            loadsym_scroll_from_week: false,
+            catalog_rides: vec![],
+            weekly_loads: vec![],
             loadsym_catalog_path: None,
             loadsym_from_catalog: false,
             loaded_activity: None,
