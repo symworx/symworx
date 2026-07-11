@@ -22,6 +22,11 @@ pub fn render_dynamics_tab(frame: &mut Frame, app: &App, area: Rect) {
     if app.help_mode {
         let help = Paragraph::new(
             "Dynamics help (M-? or Esc to close)\n\n\
+             PREP IN EXPLORE (BioSym)\n\
+             • Load/generate signal → optional p process (filter/derivative)\n\
+             • k / K peak detect + params if you care about event series later\n\
+             • Current Explore series is what RQA/cRQA/MSE use here\n\n\
+             RQA / cRQA\n\
              • c : open RQA/cRQA param editor (m/tau/radius)\n\
              • r : reset RQA params\n\
              • x : compute cRQA (needs reference or uses current vs reversed)\n\

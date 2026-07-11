@@ -569,54 +569,163 @@ fn handle_import_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) ->
     false
 }
 
+const PROCESS_NAMES: [&str; 5] = [
+    "Moving Average",
+    "Median Filter",
+    "Detrend (mean)",
+    "1st derivative",
+    "2nd derivative",
+];
+
 fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -> bool {
+    // Peak-parameter editor: checked before process and generic keys (input priority).
+    if app.pending_peak_params {
+        let n = crate::app::PeakDetectParams::N_FIELDS;
+        match code {
+            KeyCode::Esc => {
+                app.pending_peak_params = false;
+                app.status = "Peak params closed (overlays keep last detection).".to_string();
+            }
+            KeyCode::Up => {
+                if app.peak_param_selection > 0 {
+                    app.peak_param_selection -= 1;
+                } else {
+                    app.peak_param_selection = n - 1;
+                }
+                app.status = format!(
+                    "Peak param: {}  (←→ adjust, Enter re-detect, d defaults, Esc close)",
+                    crate::app::PeakDetectParams::field_name(app.peak_param_selection)
+                );
+            }
+            KeyCode::Down => {
+                app.peak_param_selection = (app.peak_param_selection + 1) % n;
+                app.status = format!(
+                    "Peak param: {}  (←→ adjust, Enter re-detect, d defaults, Esc close)",
+                    crate::app::PeakDetectParams::field_name(app.peak_param_selection)
+                );
+            }
+            KeyCode::Left | KeyCode::Char('-') | KeyCode::Char('_') => {
+                if app.peak_params.nudge(app.peak_param_selection, false) {
+                    app.status = crate::processing::run_peak_detection(app);
+                }
+            }
+            KeyCode::Right | KeyCode::Char('+') | KeyCode::Char('=') => {
+                if app.peak_params.nudge(app.peak_param_selection, true) {
+                    app.status = crate::processing::run_peak_detection(app);
+                }
+            }
+            KeyCode::Char('1') => {
+                app.peak_param_selection = 0;
+                app.status = "Peak param: height_frac".to_string();
+            }
+            KeyCode::Char('2') => {
+                app.peak_param_selection = 1;
+                app.status = "Peak param: prom_frac".to_string();
+            }
+            KeyCode::Char('3') => {
+                app.peak_param_selection = 2;
+                app.status = "Peak param: min_interval_sec".to_string();
+            }
+            KeyCode::Char('4') => {
+                app.peak_param_selection = 3;
+                app.status = "Peak param: match_tol".to_string();
+            }
+            KeyCode::Char('d') | KeyCode::Char('D') => {
+                let kind = app
+                    .loaded_signal
+                    .as_ref()
+                    .map(|s| s.kind)
+                    .unwrap_or_default();
+                app.peak_params = crate::app::PeakDetectParams::for_kind(kind);
+                app.status = format!(
+                    "Peak params reset to {} defaults. {}",
+                    kind.label(),
+                    crate::processing::run_peak_detection(app)
+                );
+            }
+            KeyCode::Enter | KeyCode::Char('k') => {
+                app.status = crate::processing::run_peak_detection(app);
+            }
+            _ => {}
+        }
+        return false;
+    }
+
     if app.pending_process {
         // IMPORTANT: check submode first (per AGENTS.md input priority rules)
+        let n_ops = PROCESS_NAMES.len();
         match code {
             KeyCode::Char('1') => {
                 app.process_selection = 0;
-                app.status = "Process: Moving Average selected. ↑↓ select   ←→/± window   Enter apply   Esc cancel".to_string();
+                app.status = format!(
+                    "Process: {} selected. ↑↓ select   ←→/± window   Enter apply   Esc cancel",
+                    PROCESS_NAMES[0]
+                );
             }
             KeyCode::Char('2') => {
                 app.process_selection = 1;
-                app.status = "Process: Median Filter selected. ↑↓ select   ←→/± window   Enter apply   Esc cancel".to_string();
+                app.status = format!(
+                    "Process: {} selected. ↑↓ select   ←→/± window   Enter apply   Esc cancel",
+                    PROCESS_NAMES[1]
+                );
             }
             KeyCode::Char('3') => {
                 app.process_selection = 2;
-                app.status =
-                    "Process: Detrend selected. ↑↓ select   ←→/± window   Enter apply   Esc cancel"
-                        .to_string();
+                app.status = format!(
+                    "Process: {} selected. ↑↓ select   ←→/± window   Enter apply   Esc cancel",
+                    PROCESS_NAMES[2]
+                );
+            }
+            KeyCode::Char('4') => {
+                app.process_selection = 3;
+                app.status = format!(
+                    "Process: {} selected (no window). Enter apply   Esc cancel",
+                    PROCESS_NAMES[3]
+                );
+            }
+            KeyCode::Char('5') => {
+                app.process_selection = 4;
+                app.status = format!(
+                    "Process: {} selected (no window). Enter apply   Esc cancel",
+                    PROCESS_NAMES[4]
+                );
             }
             KeyCode::Up => {
                 if app.process_selection > 0 {
                     app.process_selection -= 1;
                 } else {
-                    app.process_selection = 2;
+                    app.process_selection = n_ops - 1;
                 }
                 app.status = format!(
                     "Process: {} selected (↑↓ to change)",
-                    ["Moving Average", "Median Filter", "Detrend (mean)"][app.process_selection]
+                    PROCESS_NAMES[app.process_selection]
                 );
             }
             KeyCode::Down => {
-                app.process_selection = (app.process_selection + 1) % 3;
+                app.process_selection = (app.process_selection + 1) % n_ops;
                 app.status = format!(
                     "Process: {} selected (↑↓ to change)",
-                    ["Moving Average", "Median Filter", "Detrend (mean)"][app.process_selection]
+                    PROCESS_NAMES[app.process_selection]
                 );
             }
             KeyCode::Enter => {
+                let label = PROCESS_NAMES[app.process_selection.min(n_ops - 1)];
+                let window = app.process_window;
+                let sel = app.process_selection;
                 if let Some(signal) = &mut app.loaded_signal {
-                    let window = app.process_window;
-                    let processed = match app.process_selection {
+                    let processed = match sel {
                         0 => crate::processing::moving_average(&signal.current, window),
                         1 => crate::processing::median_filter(&signal.current, window),
                         2 => crate::processing::detrend_mean(&signal.current),
+                        3 => crate::processing::first_derivative(&signal.current),
+                        4 => crate::processing::second_derivative(&signal.current),
                         _ => signal.current.clone(),
                     };
                     signal.apply_processed(processed);
-                    app.status = "Processing applied.".to_string();
                 }
+                // Re-run peak detect so parameter + processing outcomes stay visible.
+                let peak_msg = crate::processing::run_peak_detection(app);
+                app.status = format!("{} applied. {}", label, peak_msg);
                 app.pending_process = false;
             }
             KeyCode::Esc => {
@@ -642,6 +751,7 @@ fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
         KeyCode::Esc => {
             // Back to Import (BioSym file list / generate)
             app.pending_process = false;
+            app.pending_peak_params = false;
             app.current_tab = Tab::Import;
             app.current_workflow = crate::app::Workflow::BioSym;
             app.status = "Import — file list / Ctrl+G generate".to_string();
@@ -650,22 +760,127 @@ fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
         }
         KeyCode::Char('p') | KeyCode::Char('P') => {
             app.pending_process = true;
+            app.pending_peak_params = false;
             app.status =
-                "Process: ↑↓ select 1/2/3   ←→/± window   Enter apply   Esc cancel".to_string();
+                "Process: ↑↓ or 1–5   ←→/± window (MA/Median)   Enter apply   Esc cancel"
+                    .to_string();
+            return false;
+        }
+        KeyCode::Char('k') => {
+            // Peak detection on current series with current params
+            app.status = crate::processing::run_peak_detection(app);
+            return false;
+        }
+        KeyCode::Char('K') => {
+            // Open peak-parameter editor (live re-detect on ←→)
+            if app.loaded_signal.is_none() {
+                app.status =
+                    "No signal loaded — generate (Ctrl+G) or load a file first.".to_string();
+                return false;
+            }
+            app.pending_process = false;
+            app.pending_peak_params = true;
+            // Seed a first detection so the chart shows something while editing.
+            let msg = crate::processing::run_peak_detection(app);
+            app.status = format!(
+                "Peak params: ↑↓ field  ←→/± adjust (live)  d defaults  Enter re-run  Esc close — {}",
+                msg
+            );
+            return false;
+        }
+        KeyCode::Char('t') => {
+            if let Some(signal) = &mut app.loaded_signal {
+                signal.show_known_peaks = !signal.show_known_peaks;
+                app.status = format!(
+                    "Known peaks overlay: {} ({} primary / {} secondary)",
+                    if signal.show_known_peaks { "ON" } else { "OFF" },
+                    signal.known_peaks_primary.len(),
+                    signal.known_peaks_secondary.len()
+                );
+            }
+            return false;
+        }
+        KeyCode::Char('T') => {
+            if let Some(signal) = &mut app.loaded_signal {
+                signal.show_detected_peaks = !signal.show_detected_peaks;
+                app.status = format!(
+                    "Detected peaks overlay: {} ({} peaks)",
+                    if signal.show_detected_peaks {
+                        "ON"
+                    } else {
+                        "OFF"
+                    },
+                    signal.detected_peaks.len()
+                );
+            }
+            return false;
+        }
+        KeyCode::Char('i') => {
+            // Toggle waveform ↔ tachogram (interval) view
+            if app.loaded_signal.is_none() {
+                app.status = "No signal loaded.".to_string();
+                return false;
+            }
+            app.explore_view = app.explore_view.toggle();
+            app.explore_scroll = 0;
+            if app.explore_view == crate::app::ExploreView::Tachogram {
+                // Ensure tachogram exists if we already have peaks
+                if let Some(sig) = &mut app.loaded_signal {
+                    if sig.tachogram.is_none() {
+                        sig.rebuild_tachogram();
+                    }
+                }
+                app.status = crate::processing::rebuild_tachogram_status(app);
+                if app.loaded_signal.as_ref().and_then(|s| s.tachogram.as_ref()).is_none() {
+                    app.status = format!(
+                        "Tachogram view — {}",
+                        app.status
+                    );
+                } else {
+                    app.status = format!("View: tachogram — {}", app.status);
+                }
+            } else {
+                app.status = "View: waveform (peaks overlays as before)".to_string();
+            }
+            return false;
+        }
+        KeyCode::Char('o') => {
+            // Cycle tachogram peak source (detected ↔ known primary)
+            if let Some(sig) = &mut app.loaded_signal {
+                sig.tachogram_source = sig.tachogram_source.toggle();
+                app.explore_scroll = 0;
+            }
+            app.status = crate::processing::rebuild_tachogram_status(app);
+            return false;
+        }
+        KeyCode::Char('e') | KeyCode::Char('E') => {
+            match crate::processing::export_tachogram(app) {
+                Ok(path) => {
+                    app.status = format!("Exported tachogram → {}", path.display());
+                }
+                Err(err) => {
+                    app.status = format!("Tachogram export: {}", err);
+                }
+            }
             return false;
         }
         KeyCode::Char('r') | KeyCode::Char('R') => {
             if let Some(signal) = &mut app.loaded_signal {
                 signal.reset();
                 app.explore_scroll = 0;
-                app.status = "Reset to original.".to_string();
+                app.explore_view = crate::app::ExploreView::Waveform;
+                app.status = "Reset to original (detected peaks + tachogram cleared).".to_string();
             }
             return false;
         }
-        // Pan x-axis viewport for long BioSym signals
+        // Pan x-axis viewport for long BioSym signals / tachogram
         KeyCode::Left | KeyCode::Char('h') | KeyCode::Char('H') => {
             if app.loaded_signal.is_some() {
-                let step = 30usize;
+                let step = if app.explore_view == crate::app::ExploreView::Tachogram {
+                    5usize
+                } else {
+                    30usize
+                };
                 app.explore_scroll = app.explore_scroll.saturating_sub(step);
                 app.status = format!("Explore: pan x → start={}", app.explore_scroll);
             }
@@ -673,9 +888,22 @@ fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
         }
         KeyCode::Right | KeyCode::Char('l') | KeyCode::Char('L') => {
             if let Some(sig) = &app.loaded_signal {
-                let view_len = crate::ui::tabs::explore::EXPLORE_VIEW_LEN;
-                let max_start = sig.current.len().saturating_sub(view_len);
-                let step = 30usize;
+                let (view_len, n, step) =
+                    if app.explore_view == crate::app::ExploreView::Tachogram {
+                        let n = sig
+                            .tachogram
+                            .as_ref()
+                            .map(|t| t.n_intervals())
+                            .unwrap_or(0);
+                        (crate::ui::tabs::explore::TACHO_VIEW_LEN, n, 5usize)
+                    } else {
+                        (
+                            crate::ui::tabs::explore::EXPLORE_VIEW_LEN,
+                            sig.current.len(),
+                            30usize,
+                        )
+                    };
+                let max_start = n.saturating_sub(view_len);
                 app.explore_scroll = (app.explore_scroll + step).min(max_start);
                 app.status = format!(
                     "Explore: pan x → start={} (max {})",

@@ -25,16 +25,28 @@ pub fn render_import_tab(frame: &mut Frame, app: &mut App, area: Rect) {
     if app.help_mode {
         let help = Paragraph::new(
             "Import help (M-? or Esc to close)\n\n\
+             FILES\n\
              • / : enter filter mode (type to narrow file list)\n\
              • Esc/Enter (in filter): exit filter (keeps active filter)\n\
              • ↑ ↓ : navigate list\n\
              • Enter : load selected (or manual path)\n\
              • c : convert selected (parquet/ibi → csv)\n\
-             • Ctrl+G : generate BioSym demo data (PPG/Resp/Stride)\n\n\
+             • Ctrl+R / F5 : refresh file list\n\n\
+             GENERATE (Ctrl+G)\n\
+             • 1 Resting PPG — synthetic waveform + systolic/diastolic ground-truth peaks\n\
+             • 2 Respiration — volume series + inhalation/exhalation known peaks\n\
+             • 3 Stride intervals — no waveform peaks (event series)\n\
+             • Multi-waveform demo — several variants for multi-file experiments\n\
+             Peaks are saved as sidecar `*.peaks.csv` and loaded with the CSV.\n\n\
+             AFTER LOAD → Explore (Ctrl+2)\n\
+             • p process (filters + 1st/2nd derivative)\n\
+             • k peak detect · K peak params (live) · t/T overlays · r reset\n\
+             • i tachogram (peak–peak IBI) · o source · e export CSV\n\
+             • M-? on Explore for the full BioSym peak / tachogram workflow\n\n\
              Files from ./data and . (csv/txt/dat etc) are discovered.\n\
              Multi-column CSVs prompt for signal column.",
         )
-        .block(Block::new().borders(Borders::ALL).title(" Help — Import "));
+        .block(Block::new().borders(Borders::ALL).title(" Help — Import (BioSym) "));
         frame.render_widget(help, area);
         return;
     }

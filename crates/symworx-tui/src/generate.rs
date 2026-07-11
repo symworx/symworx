@@ -2,6 +2,12 @@
 //!
 //! This module provides very simple preset-based generation for the TUI.
 //! The goal is convenience for demos and testing, not full modeling control.
+//!
+//! Synthetic generators in biosym already track ground-truth peaks:
+//! - PPG: `systolic_peaks` / `diastolic_peaks` (sample indices)
+//! - Respiration: `inhalation_peaks` / `exhalation_peaks`
+//!
+//! We surface those here so Explore can overlay known vs detected peaks.
 
 use std::path::{
     Path,
@@ -20,6 +26,8 @@ use symworx_biosym::physiology::{
         RespSimulationParams,
     },
 };
+
+use crate::app::SignalKind;
 
 /// Available demo presets (keep this small and opinionated).
 #[derive(Debug, Clone, Copy)]
@@ -41,14 +49,26 @@ impl DemoPreset {
     }
 }
 
+/// One generated demo file plus metadata used by Explore.
+#[derive(Debug, Clone)]
+pub struct GeneratedDemo {
+    pub path: PathBuf,
+    pub series: Vec<f64>,
+    pub fs: Option<f64>,
+    pub kind: SignalKind,
+    /// Primary ground-truth peaks (systolic / inhalation).
+    pub known_peaks_primary: Vec<usize>,
+    /// Secondary ground-truth peaks (diastolic / exhalation).
+    pub known_peaks_secondary: Vec<usize>,
+}
+
 /// Generate and save demo file(s) for the given preset.
-/// Single presets write one CSV. MultiWaveformDemo writes several variants.
-/// Returns path to a representative file to load into Explore.
-pub fn generate_and_save(preset: DemoPreset, data_dir: &Path) -> Result<std::path::PathBuf> {
+/// Single presets write one CSV (+ peaks sidecar). MultiWaveformDemo writes several variants.
+/// Returns metadata for the representative file to load into Explore.
+pub fn generate_and_save(preset: DemoPreset, data_dir: &Path) -> Result<GeneratedDemo> {
     std::fs::create_dir_all(data_dir)?;
 
     match preset {
-        // One file each (historical behavior). MultiWaveformDemo is the multi-file option.
         DemoPreset::RestingPPG => generate_ppg_variants(data_dir, 1),
         DemoPreset::LightRespiration => generate_respiration_variants(data_dir, 1),
         DemoPreset::SimpleStride => generate_stride_variants(data_dir, 1),
@@ -56,7 +76,7 @@ pub fn generate_and_save(preset: DemoPreset, data_dir: &Path) -> Result<std::pat
     }
 }
 
-fn generate_ppg_variants(data_dir: &Path, count: usize) -> Result<std::path::PathBuf> {
+fn generate_ppg_variants(data_dir: &Path, count: usize) -> Result<GeneratedDemo> {
     // Beat-to-beat shape/height variation is applied inside biosym via noise_config.
     // Seeds are left None so each Generate run is different.
     let base_params = PPGSimulationParams {
@@ -74,7 +94,7 @@ fn generate_ppg_variants(data_dir: &Path, count: usize) -> Result<std::path::Pat
         seed: None,
     };
 
-    let mut last_path = PathBuf::new();
+    let mut last: Option<GeneratedDemo> = None;
     for i in 0..count.max(1) {
         let params = base_params.clone();
         // Slightly variable RR intervals (~70 bpm + RSA) — longer series for pan demo
@@ -98,12 +118,24 @@ fn generate_ppg_variants(data_dir: &Path, count: usize) -> Result<std::path::Pat
 
         let path = data_dir.join(format!("demo_ppg_resting_v{}.csv", i + 1));
         save_two_column(&path, &ts.times, &ts.values, "time,ppg")?;
-        last_path = path;
+        save_peaks_sidecar(
+            &path,
+            &[("systolic", &ts.systolic_peaks), ("diastolic", &ts.diastolic_peaks)],
+        )?;
+
+        last = Some(GeneratedDemo {
+            path,
+            series: ts.values,
+            fs: Some(params.fs),
+            kind: SignalKind::Ppg,
+            known_peaks_primary: ts.systolic_peaks,
+            known_peaks_secondary: ts.diastolic_peaks,
+        });
     }
-    Ok(last_path)
+    last.ok_or_else(|| anyhow::anyhow!("no PPG generated"))
 }
 
-fn generate_respiration_variants(data_dir: &Path, count: usize) -> Result<std::path::PathBuf> {
+fn generate_respiration_variants(data_dir: &Path, count: usize) -> Result<GeneratedDemo> {
     // Closed inhale→exhale cycles in biosym (stationary tidal volume; no AC drift).
     // noise_level is relative to tidal (zero-mean on volume, not integrated flow).
     let base_params = RespSimulationParams {
@@ -119,7 +151,7 @@ fn generate_respiration_variants(data_dir: &Path, count: usize) -> Result<std::p
         seed: None,
     };
 
-    let mut last_path = PathBuf::new();
+    let mut last: Option<GeneratedDemo> = None;
     for i in 0..count.max(1) {
         let mut params = base_params.clone();
         // Mild variant spread (rate / amplitude) without locking seed
@@ -127,16 +159,32 @@ fn generate_respiration_variants(data_dir: &Path, count: usize) -> Result<std::p
         params.amplitude = 1.0 + 0.05 * i as f64;
         let ts = generate_respiration_timeseries(&params);
         let path = data_dir.join(format!("demo_respiration_v{}.csv", i + 1));
+        // Volume is more natural for visual peak check (inhale maxima); flow also has phase peaks.
         save_two_column(&path, &ts.times, &ts.volume, "time,volume")?;
-        last_path = path;
+        save_peaks_sidecar(
+            &path,
+            &[
+                ("inhalation", &ts.inhalation_peaks),
+                ("exhalation", &ts.exhalation_peaks),
+            ],
+        )?;
+
+        last = Some(GeneratedDemo {
+            path,
+            series: ts.volume,
+            fs: Some(params.fs),
+            kind: SignalKind::Respiration,
+            known_peaks_primary: ts.inhalation_peaks,
+            known_peaks_secondary: ts.exhalation_peaks,
+        });
     }
-    Ok(last_path)
+    last.ok_or_else(|| anyhow::anyhow!("no respiration generated"))
 }
 
-fn generate_stride_variants(data_dir: &Path, count: usize) -> Result<std::path::PathBuf> {
+fn generate_stride_variants(data_dir: &Path, count: usize) -> Result<GeneratedDemo> {
     use rand::Rng;
 
-    let mut last_path = PathBuf::new();
+    let mut last: Option<GeneratedDemo> = None;
     for i in 0..count.max(1) {
         let n_steps = 120 + (i * 30);
         let base_stride = 1.07 + 0.01 * (i as f64);
@@ -146,10 +194,8 @@ fn generate_stride_variants(data_dir: &Path, count: usize) -> Result<std::path::
         let mut times = Vec::with_capacity(n_steps);
         let mut intervals = Vec::with_capacity(n_steps);
 
-        let mut slow_drift = 0.0;
-
         for j in 0..n_steps {
-            slow_drift = 0.035 * ((j as f64) * 0.035).sin();
+            let slow_drift = 0.035 * ((j as f64) * 0.035).sin();
             let medium = 0.022 * ((j as f64) * 0.11 + 1.3).sin();
             let noise = 0.018 * (rng.random::<f64>() - 0.5) * 2.0;
             let micro = if rng.random::<f64>() < 0.07 {
@@ -165,17 +211,25 @@ fn generate_stride_variants(data_dir: &Path, count: usize) -> Result<std::path::
 
         let path = data_dir.join(format!("demo_stride_intervals_v{}.csv", i + 1));
         save_two_column(&path, &times, &intervals, "time,stride_time")?;
-        last_path = path;
+        // Stride series is already event intervals — no waveform peak ground truth.
+        last = Some(GeneratedDemo {
+            path,
+            series: intervals,
+            fs: None,
+            kind: SignalKind::Stride,
+            known_peaks_primary: vec![],
+            known_peaks_secondary: vec![],
+        });
     }
-    Ok(last_path)
+    last.ok_or_else(|| anyhow::anyhow!("no stride generated"))
 }
 
-fn generate_multi_waveform_demo(data_dir: &Path) -> Result<PathBuf> {
+fn generate_multi_waveform_demo(data_dir: &Path) -> Result<GeneratedDemo> {
     // Generate multiple variants for PPG, respiration, and steps/stride to demo multi-waveform features
-    let _ppg = generate_ppg_variants(data_dir, 3)?;
+    let ppg = generate_ppg_variants(data_dir, 3)?;
     let _resp = generate_respiration_variants(data_dir, 2)?;
     let _stride = generate_stride_variants(data_dir, 2)?;
-    Ok(data_dir.join("demo_ppg_resting_v1.csv"))
+    Ok(ppg)
 }
 
 fn save_two_column(path: &Path, x: &[f64], y: &[f64], header: &str) -> Result<()> {
@@ -190,13 +244,78 @@ fn save_two_column(path: &Path, x: &[f64], y: &[f64], header: &str) -> Result<()
     Ok(())
 }
 
+/// Write `basename.peaks.csv` next to the signal CSV (`kind,index` rows).
+fn save_peaks_sidecar(signal_path: &Path, groups: &[(&str, &[usize])]) -> Result<()> {
+    use std::io::Write;
+    let peaks_path = peaks_sidecar_path(signal_path);
+    let mut f = std::fs::File::create(&peaks_path)?;
+    writeln!(f, "kind,index")?;
+    for (kind, idxs) in groups {
+        for &i in *idxs {
+            writeln!(f, "{},{}", kind, i)?;
+        }
+    }
+    Ok(())
+}
+
+/// Sidecar path for a signal file: `foo.csv` → `foo.peaks.csv`.
+pub fn peaks_sidecar_path(signal_path: &Path) -> PathBuf {
+    let stem = signal_path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("signal");
+    signal_path
+        .parent()
+        .unwrap_or_else(|| Path::new("."))
+        .join(format!("{}.peaks.csv", stem))
+}
+
+/// Load known peaks from a `*.peaks.csv` sidecar if present.
+pub fn load_peaks_sidecar(signal_path: &Path) -> (Vec<usize>, Vec<usize>) {
+    use std::{
+        fs::File,
+        io::{
+            BufRead,
+            BufReader,
+        },
+    };
+    let path = peaks_sidecar_path(signal_path);
+    let Ok(file) = File::open(&path) else {
+        return (vec![], vec![]);
+    };
+    let mut primary = Vec::new();
+    let mut secondary = Vec::new();
+    for line in BufReader::new(file).lines().flatten() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with("kind") {
+            continue;
+        }
+        let mut parts = line.split(',');
+        let kind = parts.next().unwrap_or("").trim().to_ascii_lowercase();
+        let Ok(idx) = parts.next().unwrap_or("").trim().parse::<usize>() else {
+            continue;
+        };
+        match kind.as_str() {
+            "systolic" | "inhalation" | "primary" => primary.push(idx),
+            "diastolic" | "exhalation" | "secondary" => secondary.push(idx),
+            _ => primary.push(idx),
+        }
+    }
+    primary.sort_unstable();
+    secondary.sort_unstable();
+    (primary, secondary)
+}
+
 // Compatibility shims if old fns called directly elsewhere
-fn generate_ppg_resting(data_dir: &Path) -> Result<PathBuf> {
+#[allow(dead_code)]
+fn generate_ppg_resting(data_dir: &Path) -> Result<GeneratedDemo> {
     generate_ppg_variants(data_dir, 1)
 }
-fn generate_respiration_light(data_dir: &Path) -> Result<PathBuf> {
+#[allow(dead_code)]
+fn generate_respiration_light(data_dir: &Path) -> Result<GeneratedDemo> {
     generate_respiration_variants(data_dir, 1)
 }
-fn generate_simple_stride(data_dir: &Path) -> Result<PathBuf> {
+#[allow(dead_code)]
+fn generate_simple_stride(data_dir: &Path) -> Result<GeneratedDemo> {
     generate_stride_variants(data_dir, 1)
 }

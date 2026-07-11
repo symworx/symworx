@@ -122,6 +122,7 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
 
     // Append [Esc] hint when entering sub-pages / analysis modes where Escape is relevant
     let esc_hint = if app.pending_process
+        || app.pending_peak_params
         || app.pending_rqa
         || app.pending_spatial_import
         || app.filter_mode
@@ -183,6 +184,8 @@ pub fn render_action_bar(app: &App) -> Paragraph<'_> {
     // Determine if we are in a "subdir/analysis page" where Esc is relevant
     let esc = if app.pending_process {
         "  [Esc] cancel process"
+    } else if app.pending_peak_params {
+        "  [Esc] close peak params"
     } else if app.pending_rqa {
         "  [Esc] cancel RQA"
     } else if app.pending_spatial_import {
