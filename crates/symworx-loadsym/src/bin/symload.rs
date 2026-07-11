@@ -370,10 +370,12 @@ fn handle_ingest(args: &[String], force: bool) -> Result<(), String> {
         }
     }
 
+    // Rebuild daily rollups from activities (drops stale mtime-pile days after re-dating).
+    let days_n = symworx_loadsym::catalog::recompute_all_daily_loads(&conn)?;
     let metrics_n = recompute_load_metrics(&conn)?;
     println!(
-        "ingest done: inserted/updated={} skipped={} failed={}  load_metrics_rows={}",
-        inserted, skipped, failed, metrics_n
+        "ingest done: inserted/updated={} skipped={} failed={}  daily_days={}  load_metrics_rows={}",
+        inserted, skipped, failed, days_n, metrics_n
     );
     println!("db: {}", db.display());
     Ok(())

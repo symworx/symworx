@@ -26,6 +26,9 @@ pub struct ActivityData {
     pub product: Option<String>,
     /// Sport type string (e.g. "cycling", "running")
     pub sport: Option<String>,
+    /// Absolute start time as Unix seconds (UTC), when available from FIT timestamps.
+    /// Prefer this for ride dating — do not rely on filesystem mtime (unreliable after sync).
+    pub start_time_unix: Option<i64>,
 
     /// Relative time in seconds (0-based)
     pub times_s: Vec<f64>,
@@ -69,6 +72,66 @@ impl ActivityData {
     pub fn has_power(&self) -> bool {
         self.power_w.iter().any(|v| v.is_some_and(|p| p > 0.0))
     }
+
+    /// Calendar date `YYYY-MM-DD` (UTC) from [`Self::start_time_unix`], if known.
+    pub fn start_date_ymd(&self) -> Option<String> {
+        let ts = self.start_time_unix?;
+        unix_secs_to_ymd(ts)
+    }
+}
+
+/// FIT epoch: 1989-12-31 00:00:00 UTC → Unix offset in seconds.
+const FIT_EPOCH_UNIX: i64 = 631_065_600;
+
+/// Convert Unix seconds to `YYYY-MM-DD` (UTC).
+pub fn unix_secs_to_ymd(secs: i64) -> Option<String> {
+    if secs < 0 {
+        return None;
+    }
+    let days = (secs / 86_400) as u64;
+    // Civil-from-days (Howard Hinnant)
+    let z = days as i64 + 719_468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let doe = (z - era * 146_097) as u64;
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+    let y = yoe as i64 + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = if m <= 2 { y + 1 } else { y };
+    if y < 1970 || y > 2100 {
+        return None;
+    }
+    Some(format!("{:04}-{:02}-{:02}", y, m, d))
+}
+
+/// Parse a fitparser timestamp field to Unix seconds.
+#[cfg(feature = "fit")]
+fn fit_value_to_unix(v: &fitparser::Value) -> Option<i64> {
+    use fitparser::Value;
+    match v {
+        Value::Timestamp(dt) => Some(dt.timestamp()),
+        Value::UInt32(sec) => {
+            // Raw FIT timestamps are seconds since FIT epoch.
+            let u = *sec as i64 + FIT_EPOCH_UNIX;
+            // Sanity: between 1990 and 2100
+            if (631_152_000..=4_102_444_800).contains(&u) {
+                Some(u)
+            } else {
+                None
+            }
+        }
+        Value::SInt32(sec) if *sec > 0 => {
+            let u = *sec as i64 + FIT_EPOCH_UNIX;
+            if (631_152_000..=4_102_444_800).contains(&u) {
+                Some(u)
+            } else {
+                None
+            }
+        }
+        _ => None,
+    }
 }
 
 /// Read a full ActivityData from a FIT file.
@@ -94,6 +157,7 @@ pub fn load_fit_activity(path: &str) -> Result<ActivityData, SymError> {
     let mut manufacturer = None;
     let mut product = None;
     let mut sport = None;
+    let mut start_time_unix: Option<i64> = None;
 
     let mut times_raw: Vec<f64> = vec![];
     let mut power: Vec<Option<f64>> = vec![];
@@ -101,7 +165,8 @@ pub fn load_fit_activity(path: &str) -> Result<ActivityData, SymError> {
     let mut speed: Vec<Option<f64>> = vec![];
     let mut cadence: Vec<Option<f64>> = vec![];
 
-    let mut last_ts: Option<f64> = None;
+    // Absolute FIT-epoch or unix-normalized timestamps for deltas
+    let mut last_abs_unix: Option<i64> = None;
 
     for rec in records {
         let kind = rec.kind();
@@ -129,19 +194,37 @@ pub fn load_fit_activity(path: &str) -> Result<ActivityData, SymError> {
             }
         }
 
+        // Session / activity often carry a reliable start_time
+        if kind == fitparser::profile::MesgNum::Session
+            || kind == fitparser::profile::MesgNum::Activity
+        {
+            for f in rec.fields() {
+                if matches!(f.name(), "start_time" | "timestamp") {
+                    if let Some(u) = fit_value_to_unix(f.value()) {
+                        if start_time_unix.is_none() || matches!(f.name(), "start_time") {
+                            start_time_unix = Some(u);
+                        }
+                    }
+                }
+            }
+        }
+
         if kind == fitparser::profile::MesgNum::Record {
             let mut p: Option<f64> = None;
             let mut h: Option<f64> = None;
             let mut s: Option<f64> = None;
             let mut c: Option<f64> = None;
-            let mut ts: Option<f64> = None;
+            let mut ts_unix: Option<i64> = None;
 
             for field in rec.fields() {
                 match field.name() {
                     "timestamp" => {
-                        // fitparser sometimes exposes as u32 or Timestamp variant
-                        if let Value::UInt32(v) = field.value() {
-                            ts = Some(*v as f64);
+                        ts_unix = fit_value_to_unix(field.value());
+                        // Fallback: raw u32 treated as FIT-epoch seconds
+                        if ts_unix.is_none() {
+                            if let Value::UInt32(v) = field.value() {
+                                ts_unix = Some(*v as i64 + FIT_EPOCH_UNIX);
+                            }
                         }
                     }
                     "power" => match field.value() {
@@ -171,27 +254,22 @@ pub fn load_fit_activity(path: &str) -> Result<ActivityData, SymError> {
                 }
             }
 
-            // Build relative time from FIT timestamps.
-            // FIT timestamps are absolute (u32 seconds since ~1989-12-31 epoch).
-            // We compute elapsed by successive deltas when present; otherwise fall back to 1s steps.
-            let t = if let Some(tval) = ts {
-                if let Some(prev_abs) = last_ts {
-                    // tval is expected larger; use delta
-                    let dt = (tval - prev_abs).max(0.0);
-                    // accumulate a synthetic relative from previous relative + dt
-                    // (we store relative in times_raw after first)
-                    times_raw.last().copied().unwrap_or(0.0) + dt
+            // Relative time from absolute unix deltas (else 1 s steps).
+            let t = if let Some(tval) = ts_unix {
+                if start_time_unix.is_none() {
+                    start_time_unix = Some(tval);
+                }
+                if let Some(prev) = last_abs_unix {
+                    times_raw.last().copied().unwrap_or(0.0) + (tval - prev).max(0) as f64
                 } else {
                     0.0
                 }
             } else {
-                // no timestamp on this record: 1 s step
                 times_raw.last().copied().unwrap_or(0.0) + 1.0
             };
 
-            // Track last *absolute* ts for delta computation on next record
-            if let Some(tval) = ts {
-                last_ts = Some(tval);
+            if let Some(tval) = ts_unix {
+                last_abs_unix = Some(tval);
             }
             times_raw.push(t);
             power.push(p);
@@ -217,6 +295,7 @@ pub fn load_fit_activity(path: &str) -> Result<ActivityData, SymError> {
         manufacturer,
         product,
         sport,
+        start_time_unix,
         times_s,
         power_w: power,
         heart_rate_bpm: hr,
@@ -379,6 +458,7 @@ fn load_activity_from_csv(path: &str) -> Result<ActivityData, SymError> {
         manufacturer: None,
         product: None,
         sport: None,
+        start_time_unix: None,
         times_s,
         power_w: power,
         heart_rate_bpm: hr,

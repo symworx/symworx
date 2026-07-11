@@ -392,25 +392,56 @@ pub fn file_sha256(path: &Path) -> Result<String, String> {
     Ok(format!("{:x}", hasher.finalize()))
 }
 
-/// Best-effort ride date (YYYY-MM-DD) from filename patterns, else file mtime UTC.
+/// Best-effort ride date (`YYYY-MM-DD`).
+///
+/// Priority:
+/// 1. Date embedded in filename (`2015-05-05-…` / `2017_07_06_…`)
+/// 2. FIT/activity internal start timestamp (when `act` provided)
+/// 3. Filesystem mtime — **last resort only** (wrong after rclone/S3 copy bulk mtimes)
 pub fn infer_ride_date(path: &Path) -> String {
+    infer_ride_date_with_activity(path, None)
+}
+
+/// Like [`infer_ride_date`] but prefers timestamps from an already-loaded activity.
+pub fn infer_ride_date_with_activity(path: &Path, act: Option<&ActivityData>) -> String {
     if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
         if let Some(d) = parse_date_from_name(name) {
-            return d;
+            // Guard: only accept plausible sports years
+            if date_year_plausible(&d) {
+                return d;
+            }
         }
     }
+    if let Some(act) = act {
+        if let Some(d) = act.start_date_ymd() {
+            if date_year_plausible(&d) {
+                return d;
+            }
+        }
+    }
+    // Last resort: mtime (often "day of sync" for archives — avoid for bulk re-date)
     if let Ok(meta) = fs::metadata(path) {
         if let Ok(mtime) = meta.modified() {
             if let Ok(dur) = mtime.duration_since(std::time::UNIX_EPOCH) {
-                // Format UTC date from unix days (simple; good enough for mtime fallback)
                 let days = dur.as_secs() / 86400;
                 if let Some(d) = unix_days_to_ymd(days) {
-                    return d;
+                    if date_year_plausible(&d) {
+                        return d;
+                    }
                 }
             }
         }
     }
     "1970-01-01".to_string()
+}
+
+fn date_year_plausible(ymd: &str) -> bool {
+    // YYYY-MM-DD
+    if ymd.len() < 4 {
+        return false;
+    }
+    let y: i32 = ymd[..4].parse().unwrap_or(0);
+    (1990..=2100).contains(&y)
 }
 
 fn parse_date_from_name(name: &str) -> Option<String> {
@@ -568,7 +599,8 @@ pub fn ingest_one(
         };
     }
 
-    let ride_date = infer_ride_date(path);
+    // Prefer FIT internal start time over mtime (mtime is often "day of S3 copy").
+    let ride_date = infer_ride_date_with_activity(path, Some(&act));
     let sport = act.sport.as_deref();
     let ftp_res = match resolve_ftp(conn, &ride_date, sport, fallback_ftp) {
         Ok(r) => r,
@@ -713,6 +745,24 @@ fn guess_platform(act: &ActivityData) -> Option<String> {
     }
 }
 
+/// Rebuild *all* `daily_loads` rows from `activities` (clears stale dates like bulk-mtime piles).
+pub fn recompute_all_daily_loads(conn: &Connection) -> Result<usize, String> {
+    conn.execute("DELETE FROM daily_loads", [])
+        .map_err(|e| e.to_string())?;
+    let mut stmt = conn
+        .prepare("SELECT DISTINCT ride_date FROM activities ORDER BY ride_date")
+        .map_err(|e| e.to_string())?;
+    let dates: Vec<String> = stmt
+        .query_map([], |r| r.get(0))
+        .map_err(|e| e.to_string())?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())?;
+    for d in &dates {
+        recompute_daily_for_date(conn, d)?;
+    }
+    Ok(dates.len())
+}
+
 /// Recompute daily_loads row for one date from activities.
 pub fn recompute_daily_for_date(conn: &Connection, ride_date: &str) -> Result<(), String> {
     let mut stmt = conn
@@ -815,6 +865,45 @@ pub fn count_activities(conn: &Connection) -> Result<i64, String> {
         .map_err(|e| e.to_string())
 }
 
+/// Per-ride summary for calendar daily lists.
+#[derive(Debug, Clone)]
+pub struct RideSummary {
+    pub ride_date: String,
+    pub source_file: String,
+    pub tss: f64,
+    pub duration_s: f64,
+    pub np_w: Option<f64>,
+    pub avg_power_w: Option<f64>,
+}
+
+/// Load ride rows ordered by date then file (for calendar file lists).
+pub fn load_ride_summaries(conn: &Connection) -> Result<Vec<RideSummary>, String> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT ride_date, source_file,
+                    COALESCE(tss, 0), COALESCE(duration_s, 0),
+                    np_w, avg_power_w
+             FROM activities
+             ORDER BY ride_date ASC, source_file ASC",
+        )
+        .map_err(|e| e.to_string())?;
+    let rows = stmt
+        .query_map([], |row| {
+            Ok(RideSummary {
+                ride_date: row.get(0)?,
+                source_file: row.get(1)?,
+                tss: row.get(2)?,
+                duration_s: row.get(3)?,
+                np_w: row.get(4)?,
+                avg_power_w: row.get(5)?,
+            })
+        })
+        .map_err(|e| e.to_string())?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())?;
+    Ok(rows)
+}
+
 /// One day of load history for calendar / trend views.
 #[derive(Debug, Clone)]
 pub struct DailySnapshot {
@@ -867,16 +956,18 @@ pub fn load_daily_snapshots(conn: &Connection) -> Result<Vec<DailySnapshot>, Str
     Ok(rows)
 }
 
-/// Convenience: open default catalog path and load daily snapshots.
+/// Convenience: open default catalog path and load daily + ride rows for the TUI.
 /// Returns `Ok(None)` if the DB file does not exist (not an error for the TUI).
-pub fn try_load_default_calendar() -> Result<Option<(PathBuf, Vec<DailySnapshot>)>, String> {
+pub fn try_load_default_calendar(
+) -> Result<Option<(PathBuf, Vec<DailySnapshot>, Vec<RideSummary>)>, String> {
     let path = default_catalog_path();
     if !path.exists() {
         return Ok(None);
     }
     let conn = open_catalog(&path)?;
     let rows = load_daily_snapshots(&conn)?;
-    Ok(Some((path, rows)))
+    let rides = load_ride_summaries(&conn)?;
+    Ok(Some((path, rows, rides)))
 }
 
 #[cfg(test)]
