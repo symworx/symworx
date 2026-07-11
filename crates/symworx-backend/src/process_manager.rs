@@ -10,12 +10,13 @@ pub struct ProcessManager {
     server: Server,
 }
 
-impl ProcessManager {
-    // /// Initiate a new server.
-    // fn default() -> Self {
-    //     Self::new()
-    // }
+impl Default for ProcessManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
+impl ProcessManager {
     /// Initiate a new process.
     pub fn new() -> Self {
         Self {

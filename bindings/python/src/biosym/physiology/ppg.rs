@@ -77,7 +77,7 @@ pub fn py_analyze_ppg_with_quality(
 ) -> PyPpgAnalysis {
     let rust_ts = ppg_timeseries_from_py(ts);
     let quality: PPGSignalQuality = quality.into();
-    PyPpgAnalysis::from(analyze_ppg_with_quality(&rust_ts, quality))
+    PyPpgAnalysis::from(analyze_ppg_with_quality(&rust_ts, &quality))
 }
 
 #[pyclass(name = "PPGTimeSeries")]

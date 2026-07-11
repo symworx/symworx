@@ -84,8 +84,8 @@ All crates currently share a single version defined in the root `[workspace.pack
 
 We follow a branch-based workflow with a single shared version across the workspace:
 
-1. **Feature development** → merge to `develop` (CI runs tests, clippy, stable `cargo fmt`).
-2. **Staging / early access** → merge `develop` to `staging`. Beta releases (e.g. `0.2.0-beta.1`) can be published from here for testing.
+1. **Feature development** → merge to `develop` (CI runs nightly `cargo fmt --check`, clippy, tests, TUI build, Python bindings).
+2. **Staging / early access** → merge `develop` to `staging` (same CI gates). Beta releases (e.g. `0.2.0-beta.1`) can be published from here for testing.
 3. **Release preparation**:
    - Create a branch `release/vX.Y.Z` from `staging`.
    - Update the version in the root `Cargo.toml` (the only place that needs changing because of `[workspace.package]`).
@@ -117,7 +117,7 @@ The `symview` binary (from `symworx-tui`) can be installed with `cargo install s
 
 ### CI / Release Automation Notes
 
-- Every PR and push to `develop`/`staging` runs tests and formatting checks.
+- Every PR and push to `develop` / `staging` / `main` runs formatting (`cargo +nightly fmt --check`), clippy, tests, TUI smoke build, and Python bindings.
 - On tag `vX.Y.Z` (or push to a `release/` branch), a release workflow:
   - Runs the full test + format + clippy matrix.
   - Publishes Rust crates in the correct dependency order using trusted publishing (no long-lived tokens).

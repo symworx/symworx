@@ -34,12 +34,9 @@ pub fn l2(x: &Array2<f64>, y: &Array1<f64>) -> Array1<f64> {
     let xtx = x_aug.t().dot(&x_aug);
     let xty = x_aug.t().dot(y);
 
-    let beta = xtx
-        .inv()
+    xtx.inv()
         .expect("Matrix inversion failed — XᵀX is singular")
-        .dot(&xty);
-
-    beta
+        .dot(&xty)
 }
 
 /// Ordinary Least Squares (L2) linear regression with intercept (stub).

@@ -4,12 +4,13 @@
 /// Represents the server component of the backend.
 pub struct Server;
 
-impl Server {
-    // /// Initiate a new server.
-    // fn default() -> Self {
-    //     Self::new()
-    // }
+impl Default for Server {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
+impl Server {
     /// Initiate a new server.
     pub fn new() -> Self {
         Self

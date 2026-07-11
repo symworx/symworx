@@ -4,14 +4,21 @@
 // This binary never embeds personal emails, bucket names, or sample athlete rows.
 
 use std::{
-    env, fs,
-    path::{Path, PathBuf},
+    env,
+    fs,
+    path::{
+        Path,
+        PathBuf,
+    },
 };
 
 #[cfg(feature = "email")]
 use symworx_io::email;
 use symworx_io::{
-    default_velofit_inbox, default_velofit_raw, default_velofit_root, discover_activity_files,
+    default_velofit_inbox,
+    default_velofit_raw,
+    default_velofit_root,
+    discover_activity_files,
     load_activity,
 };
 use symworx_loadsym::load::compute_ride_metrics;
@@ -36,8 +43,7 @@ fn main() {
         "ingest" | "reprocess" => {
             #[cfg(feature = "sqlite")]
             {
-                let force = cmd == "reprocess"
-                    || args.iter().any(|a| a == "--force" || a == "-F");
+                let force = cmd == "reprocess" || args.iter().any(|a| a == "--force" || a == "-F");
                 if let Err(e) = handle_ingest(&args, force) {
                     eprintln!("ingest error: {}", e);
                     std::process::exit(8);
@@ -188,7 +194,11 @@ fn handle_db_command(args: &[String]) -> Result<(), String> {
 
 #[cfg(feature = "sqlite")]
 fn handle_ftp(args: &[String]) -> Result<(), String> {
-    use symworx_loadsym::catalog::{list_ftp_history, open_catalog, set_ftp_history};
+    use symworx_loadsym::catalog::{
+        list_ftp_history,
+        open_catalog,
+        set_ftp_history,
+    };
 
     let sub = args.get(2).map(|s| s.as_str()).unwrap_or("list");
     let db = parse_db_path(args);
@@ -295,7 +305,10 @@ fn parse_ingest_target(args: &[String]) -> PathBuf {
 #[cfg(feature = "sqlite")]
 fn handle_ingest(args: &[String], force: bool) -> Result<(), String> {
     use symworx_loadsym::catalog::{
-        ingest_one, open_catalog, recompute_load_metrics, IngestOutcome,
+        IngestOutcome,
+        ingest_one,
+        open_catalog,
+        recompute_load_metrics,
     };
 
     let db = parse_db_path(args);
@@ -320,7 +333,10 @@ fn handle_ingest(args: &[String], force: bool) -> Result<(), String> {
     }
 
     if force {
-        println!("reprocess mode: re-scoring with ftp_history (fallback FTP={:.0})", ftp);
+        println!(
+            "reprocess mode: re-scoring with ftp_history (fallback FTP={:.0})",
+            ftp
+        );
     }
 
     let mut inserted = 0usize;
@@ -384,9 +400,8 @@ fn handle_email_fetch(args: &[String]) -> Result<(), Box<dyn std::error::Error>>
     let user = env::var("SYMLOAD_USER").map_err(|_| {
         "set SYMLOAD_USER to your IMAP username (do not commit credentials)".to_string()
     })?;
-    let pass = env::var("SYMLOAD_APP_PASSWORD").map_err(|_| {
-        "set SYMLOAD_APP_PASSWORD (app password; do not commit)".to_string()
-    })?;
+    let pass = env::var("SYMLOAD_APP_PASSWORD")
+        .map_err(|_| "set SYMLOAD_APP_PASSWORD (app password; do not commit)".to_string())?;
 
     let target = if let Some(d) = args.get(2) {
         if d.starts_with('-') {

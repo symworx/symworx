@@ -61,8 +61,10 @@ pub mod respiration;
 /// Provided for discoverability and backward compatibility. All items are
 /// also available directly via the flat modules (`ppg`, `respiration`) or
 /// at the crate root.
+#[allow(ambiguous_glob_reexports)]
 pub mod physiology {
     // Re-exports so `physiology::PPGTimeSeries`, `physiology::analyze_ppg`, etc. continue to work.
+    // Glob re-exports intentionally overlap (common helpers via both ppg and respiration).
     pub use crate::{
         common,
         ppg,
@@ -80,6 +82,7 @@ pub mod physiology {
 ///
 /// All items are also available directly via the flat modules (e.g. `gait`) or at the
 /// crate root.
+#[allow(ambiguous_glob_reexports)]
 pub mod biomechanics {
     pub use crate::gait;
     // Re-exports so `biomechanics::GaitParams`, `biomechanics::analyze_gait`, etc. continue to work.
@@ -100,6 +103,8 @@ pub mod common;
 // Re-exports at the crate root for a convenient "batteries-included" experience.
 // New code is encouraged to use the flat modules (`gait`, `ppg`, `respiration`, `biosystems`)
 // or the named groupings (`biomechanics`, `physiology`) below.
+// Overlapping globs are intentional for discoverability; prefer module paths in new code.
+#[allow(ambiguous_glob_reexports)]
 pub use biosystems::*;
 pub use common::{
     IntervalSeries,
@@ -111,8 +116,11 @@ pub use common::{
         apply_peak_overrides,
     },
 };
+#[allow(ambiguous_glob_reexports)]
 pub use gait::*;
+#[allow(ambiguous_glob_reexports)]
 pub use ppg::*;
+#[allow(ambiguous_glob_reexports)]
 pub use respiration::*;
 
 // Temporary compatibility shim for code that still uses the old `cpg` path.

@@ -11,18 +11,19 @@ pub fn gamma(x: f64) -> f64 {
         return f64::NAN;
     }
 
-    // Lanczos coefficients for g=7, n=9 (good accuracy, common implementation)
+    // Lanczos coefficients for g=7, n=9 (good accuracy, common implementation).
+    // Literals use f64-representable precision (clippy::excessive_precision).
     const G: f64 = 7.0;
     const P: [f64; 9] = [
-        0.99999999999980993,
-        676.5203681218851,
-        -1259.1392167224028,
-        771.32342877765313,
-        -176.61502916214059,
-        12.507343278686905,
-        -0.13857109526572012,
-        9.9843695780195716e-6,
-        -1.5056327351493116e-7,
+        0.999_999_999_999_809_9,
+        676.520_368_121_885_1,
+        -1_259.139_216_722_402_8,
+        771.323_428_777_653_1,
+        -176.615_029_162_140_6,
+        12.507_343_278_686_905,
+        -0.138_571_095_265_720_12,
+        9.984_369_578_019_572e-6,
+        -1.505_632_735_149_311_6e-7,
     ];
 
     if x < 0.5 {
@@ -32,8 +33,8 @@ pub fn gamma(x: f64) -> f64 {
 
     let z = x - 1.0;
     let mut sum = P[0];
-    for i in 1..P.len() {
-        sum += P[i] / (z + i as f64);
+    for (i, &coeff) in P.iter().enumerate().skip(1) {
+        sum += coeff / (z + i as f64);
     }
 
     let t = z + G + 0.5;

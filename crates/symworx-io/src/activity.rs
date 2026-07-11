@@ -67,7 +67,7 @@ impl ActivityData {
 
     /// Return whether this activity has any non-zero power samples.
     pub fn has_power(&self) -> bool {
-        self.power_w.iter().any(|v| v.map_or(false, |p| p > 0.0))
+        self.power_w.iter().any(|v| v.is_some_and(|p| p > 0.0))
     }
 }
 
@@ -241,12 +241,12 @@ pub fn read_power_csv_series(path: &str) -> Result<(Vec<f64>, Vec<f64>), SymErro
     for result in rdr.records() {
         let record = result.map_err(|e| SymError::UnsupportedFormat(format!("csv row: {}", e)))?;
         // Try last column as power; second last as optional time or ignore
-        if let Some(last) = record.get(record.len() - 1) {
-            if let Ok(p) = last.trim().parse::<f64>() {
-                powers.push(p);
-                times.push(t);
-                t += 1.0;
-            }
+        if let Some(last) = record.get(record.len() - 1)
+            && let Ok(p) = last.trim().parse::<f64>()
+        {
+            powers.push(p);
+            times.push(t);
+            t += 1.0;
         }
     }
 
@@ -349,10 +349,10 @@ fn load_activity_from_csv(path: &str) -> Result<ActivityData, SymError> {
                 .and_then(|s| s.trim().parse::<f64>().ok())
         };
 
-        if let Some(c) = col_time {
-            if let Some(val) = rec.get(c).and_then(|s| s.parse::<f64>().ok()) {
-                t = val;
-            }
+        if let Some(c) = col_time
+            && let Some(val) = rec.get(c).and_then(|s| s.parse::<f64>().ok())
+        {
+            t = val;
         }
 
         times.push(t);

@@ -109,7 +109,7 @@ pub fn analyze_ppg_with(
 }
 
 /// Analysis using quality-preset bandpass and peak settings.
-pub fn analyze_ppg_with_quality(ts: &PPGTimeSeries, quality: PPGSignalQuality) -> PpgAnalysis {
+pub fn analyze_ppg_with_quality(ts: &PPGTimeSeries, quality: &PPGSignalQuality) -> PpgAnalysis {
     analyze_ppg_with(ts, &ppg_processing_for_quality(quality))
         .expect("quality presets use valid bandpass cutoffs")
 }
@@ -207,7 +207,7 @@ mod tests {
             &noise,
         );
 
-        let filtered = analyze_ppg_with_quality(&ts, PPGSignalQuality::Reference);
+        let filtered = analyze_ppg_with_quality(&ts, &PPGSignalQuality::Reference);
         assert!(
             !filtered.intervals.peak_indices.is_empty(),
             "bandpass + reference preset should detect beats on noisy PPG"

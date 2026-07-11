@@ -188,7 +188,7 @@ pub fn calculate_bmr(
     config: BmrConfig,
 ) -> f64 {
     // Basic validation (adult-oriented; formula not intended for children/elderly extremes)
-    if weight_kg < 20.0 || height_m < 0.5 || age_years < 18.0 || age_years > 99.0 {
+    if weight_kg < 20.0 || height_m < 0.5 || !(18.0..=99.0).contains(&age_years) {
         return f64::NAN;
     }
 
@@ -209,15 +209,15 @@ pub fn calculate_bmr(
             Gender::Male => 10.0 * adjusted_weight + 6.25 * height_cm - 5.0 * age_years + 5.0,
             Gender::Female => 10.0 * adjusted_weight + 6.25 * height_cm - 5.0 * age_years - 161.0,
         };
-    } else if let ObesityAdjustment::ReducedCoefficient = config.obesity_adjustment {
-        if bmi > 30.0 {
-            let excess_bmi = bmi - 30.0;
-            let reduction = (0.018 * excess_bmi * excess_bmi).min(4.5);
-            let weight_coeff = (10.0 - reduction).max(6.0);
+    } else if let ObesityAdjustment::ReducedCoefficient = config.obesity_adjustment
+        && bmi > 30.0
+    {
+        let excess_bmi = bmi - 30.0;
+        let reduction = (0.018 * excess_bmi * excess_bmi).min(4.5);
+        let weight_coeff = (10.0 - reduction).max(6.0);
 
-            bmr = weight_coeff * weight_kg + 6.25 * height_cm - 5.0 * age_years
-                + if gender == Gender::Male { 5.0 } else { -161.0 };
-        }
+        bmr = weight_coeff * weight_kg + 6.25 * height_cm - 5.0 * age_years
+            + if gender == Gender::Male { 5.0 } else { -161.0 };
     }
 
     bmr.round()
@@ -277,9 +277,7 @@ pub fn calculate_deficit(bmr: f64, tdee: f64, deficit_level: DeficitLevel) -> f6
 /// This approach scales the deficit relative to the individual's size and activity level.
 pub fn calculate_deficit_from_active(bmr: f64, tdee: f64, deficit_level: DeficitLevel) -> f64 {
     let active_calories = tdee - bmr;
-    let deficit = active_calories * deficit_level.as_percent_of_active();
-
-    deficit
+    active_calories * deficit_level.as_percent_of_active()
 }
 
 /// Given a total daily deficit and a strategy, compute the corresponding

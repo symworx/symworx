@@ -55,7 +55,7 @@ pub fn fnn(data: &[f64], m: usize, tau: usize, rtol: f64, atol: f64, theiler: us
             if i == j {
                 continue;
             }
-            if (i as isize - j as isize).unsigned_abs() <= theiler as usize {
+            if (i as isize - j as isize).unsigned_abs() <= theiler {
                 continue;
             }
 

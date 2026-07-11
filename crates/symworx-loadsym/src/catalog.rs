@@ -4,14 +4,36 @@
 //! `$VELOFIT_HOME/db/loadsym.sqlite`). This module never embeds credentials,
 //! emails, or other personal identifiers.
 
-use std::fs::{self, File};
-use std::io::Read;
-use std::path::{Path, PathBuf};
+use std::{
+    fs::{
+        self,
+        File,
+    },
+    io::Read,
+    path::{
+        Path,
+        PathBuf,
+    },
+};
 
-use rusqlite::{params, Connection, OptionalExtension};
-use sha2::{Digest, Sha256};
-use symworx_io::{load_activity, ActivityData};
-use symworx_loadsym_db::{get_schema, SCHEMA_VERSION, DEFAULT_DB_RELATIVE};
+use rusqlite::{
+    Connection,
+    OptionalExtension,
+    params,
+};
+use sha2::{
+    Digest,
+    Sha256,
+};
+use symworx_io::{
+    ActivityData,
+    load_activity,
+};
+use symworx_loadsym_db::{
+    DEFAULT_DB_RELATIVE,
+    SCHEMA_VERSION,
+    get_schema,
+};
 
 use crate::load::compute_ride_metrics;
 
@@ -73,10 +95,11 @@ pub fn open_catalog(db_path: &Path) -> Result<Connection, String> {
 }
 
 fn schema_version(conn: &Connection) -> Result<i32, String> {
-    let v: Result<i32, _> =
-        conn.query_row("SELECT COALESCE(MAX(version), 0) FROM schema_migrations", [], |r| {
-            r.get(0)
-        });
+    let v: Result<i32, _> = conn.query_row(
+        "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
+        [],
+        |r| r.get(0),
+    );
     match v {
         Ok(n) => Ok(n),
         Err(_) => Ok(0),
@@ -313,7 +336,9 @@ pub fn set_ftp_history(
 }
 
 /// List FTP history rows (newest first).
-pub fn list_ftp_history(conn: &Connection) -> Result<Vec<(i64, String, Option<String>, f64, String, Option<String>)>, String> {
+pub fn list_ftp_history(
+    conn: &Connection,
+) -> Result<Vec<(i64, String, Option<String>, f64, String, Option<String>)>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT id, effective_from, effective_to, ftp_w, sport, source
@@ -356,7 +381,9 @@ pub fn file_sha256(path: &Path) -> Result<String, String> {
     let mut hasher = Sha256::new();
     let mut buf = [0u8; 64 * 1024];
     loop {
-        let n = f.read(&mut buf).map_err(|e| format!("read for hash: {}", e))?;
+        let n = f
+            .read(&mut buf)
+            .map_err(|e| format!("read for hash: {}", e))?;
         if n == 0 {
             break;
         }
@@ -702,8 +729,11 @@ pub fn recompute_daily_for_date(conn: &Connection, ride_date: &str) -> Result<()
         .map_err(|e| e.to_string())?;
 
     if count == 0 {
-        conn.execute("DELETE FROM daily_loads WHERE ride_date = ?1", params![ride_date])
-            .map_err(|e| e.to_string())?;
+        conn.execute(
+            "DELETE FROM daily_loads WHERE ride_date = ?1",
+            params![ride_date],
+        )
+        .map_err(|e| e.to_string())?;
         return Ok(());
     }
 
@@ -724,7 +754,12 @@ pub fn recompute_daily_for_date(conn: &Connection, ride_date: &str) -> Result<()
 
 /// Recompute ACWR-style load_metrics for all days with daily_loads (chronological).
 pub fn recompute_load_metrics(conn: &Connection) -> Result<usize, String> {
-    use crate::load::{classify_acwr, compute_acute_chronic, compute_monotony, compute_strain};
+    use crate::load::{
+        classify_acwr,
+        compute_acute_chronic,
+        compute_monotony,
+        compute_strain,
+    };
 
     let mut stmt = conn
         .prepare("SELECT ride_date, total_tss FROM daily_loads ORDER BY ride_date ASC")

@@ -79,13 +79,13 @@ impl SymCpgModel {
     /// State order: [xh, vh, xl, vl, xr, vr, xresp, vresp, tau]
     pub fn derivatives(&self, t: f64, y: &Array1<f64>) -> Array1<f64> {
         let xh = y[0];
-        let vh = y[1];
+        let _vh = y[1];
         let xl = y[2];
-        let vl = y[3];
+        let _vl = y[3];
         let xr = y[4];
-        let vr = y[5];
+        let _vr = y[5];
         let xresp = y[6];
-        let vresp = y[7];
+        let _vresp = y[7];
         let tau = y[8];
 
         // Simple linear tau target for demo (extend with protocol closure later)
@@ -134,7 +134,7 @@ impl SymCpgModel {
 }
 
 /// Simple instantaneous frequency from peaks (basic version).
-pub fn instantaneous_freq(x: &Array1<f64>, t: &Array1<f64>, min_dist: usize) -> Array1<f64> {
+pub fn instantaneous_freq(x: &Array1<f64>, _t: &Array1<f64>, _min_dist: usize) -> Array1<f64> {
     // Placeholder: returns zeros. Full peak detection can be added later.
     // For now, this keeps the crate minimal.
     Array1::zeros(x.len())
@@ -142,14 +142,12 @@ pub fn instantaneous_freq(x: &Array1<f64>, t: &Array1<f64>, min_dist: usize) -> 
 
 #[cfg(test)]
 mod tests {
-    use ndarray::array;
-
     use super::*;
 
     #[test]
     fn test_van_der_pol_derivative() {
         let vdp = VanDerPol::new(1.0, 0.0, 1.0);
-        let (dx, dv) = vdp.derivative(1.0, 0.0);
+        let (dx, _dv) = vdp.derivative(1.0, 0.0);
         assert!((dx - 1.0).abs() < 1e-9);
     }
 

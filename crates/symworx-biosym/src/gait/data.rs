@@ -39,12 +39,12 @@ impl GaitData {
 
     /// Calculate stride intervals from stride times.
     pub fn calculate_stride_intervals(&mut self) -> Option<Array1<f64>> {
-        if let Some(ref times) = self.stride_times {
-            if times.len() >= 2 {
-                let intervals = metrics::compute_stride_intervals(times);
-                self.stride_intervals = Some(intervals.clone());
-                return Some(intervals);
-            }
+        if let Some(ref times) = self.stride_times
+            && times.len() >= 2
+        {
+            let intervals = metrics::compute_stride_intervals(times);
+            self.stride_intervals = Some(intervals.clone());
+            return Some(intervals);
         }
         None
     }
@@ -91,12 +91,12 @@ impl GaitData {
 
     /// Calculate step times (alternating left/right assumption).
     pub fn calculate_step_times(&mut self) {
-        if let Some(ref times) = self.stride_times {
-            if times.len() >= 2 {
-                let (left, right) = metrics::split_step_times(times);
-                self.left_step_times = Some(left);
-                self.right_step_times = Some(right);
-            }
+        if let Some(ref times) = self.stride_times
+            && times.len() >= 2
+        {
+            let (left, right) = metrics::split_step_times(times);
+            self.left_step_times = Some(left);
+            self.right_step_times = Some(right);
         }
     }
 
@@ -118,10 +118,10 @@ impl GaitData {
             let end_idx = end_idx.min(pos.len());
             if start_idx < end_idx {
                 let cycle = pos.slice(ndarray::s![start_idx..end_idx]);
-                if let Some(&max_v) = cycle.iter().max_by(|a, b| a.partial_cmp(b).unwrap()) {
-                    if let Some(&min_v) = cycle.iter().min_by(|a, b| a.partial_cmp(b).unwrap()) {
-                        oscillations.push(max_v - min_v);
-                    }
+                if let Some(&max_v) = cycle.iter().max_by(|a, b| a.partial_cmp(b).unwrap())
+                    && let Some(&min_v) = cycle.iter().min_by(|a, b| a.partial_cmp(b).unwrap())
+                {
+                    oscillations.push(max_v - min_v);
                 }
             }
         }

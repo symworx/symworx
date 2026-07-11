@@ -14,7 +14,7 @@ use ndarray::Array2;
 /// triangles are scanned.
 ///
 /// Supports rectangular matrices (nrows may != ncols), e.g. for cross-recurrence.
-pub(crate) fn find_diagonal_line_lengths(matrix: &Array2<bool>, min_length: usize) -> Vec<usize> {
+pub fn find_diagonal_line_lengths(matrix: &Array2<bool>, min_length: usize) -> Vec<usize> {
     let nrows = matrix.nrows();
     let ncols = matrix.ncols();
     if nrows == 0 || ncols == 0 || min_length == 0 {
@@ -80,7 +80,7 @@ pub(crate) fn find_diagonal_line_lengths(matrix: &Array2<bool>, min_length: usiz
 ///
 /// Supports rectangular matrices (e.g. cross-recurrence plots where
 /// nrows may != ncols). Scans each column fully from top to bottom.
-pub(crate) fn find_vertical_line_lengths(matrix: &Array2<bool>, min_length: usize) -> Vec<usize> {
+pub fn find_vertical_line_lengths(matrix: &Array2<bool>, min_length: usize) -> Vec<usize> {
     let nrows = matrix.nrows();
     let ncols = matrix.ncols();
     if nrows == 0 || ncols == 0 || min_length == 0 {
@@ -114,7 +114,7 @@ pub(crate) fn find_vertical_line_lengths(matrix: &Array2<bool>, min_length: usiz
 /// Compute Shannon entropy (base 2) of the discrete distribution of line lengths.
 ///
 /// `lengths` should already be filtered to those ≥ the chosen min_length.
-pub(crate) fn line_length_entropy(lengths: &[usize]) -> f64 {
+pub fn line_length_entropy(lengths: &[usize]) -> f64 {
     if lengths.is_empty() {
         return 0.0;
     }
@@ -138,7 +138,7 @@ pub(crate) fn line_length_entropy(lengths: &[usize]) -> f64 {
 }
 
 /// Count the total number of recurrent points (true cells) in the matrix.
-pub(crate) fn count_recurrences(matrix: &Array2<bool>) -> usize {
+pub fn count_recurrences(matrix: &Array2<bool>) -> usize {
     matrix.iter().filter(|&&b| b).count()
 }
 

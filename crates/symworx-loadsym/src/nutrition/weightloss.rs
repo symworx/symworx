@@ -84,6 +84,7 @@ pub struct WeightlossModel {
 ///
 /// The returned trajectory is always safe to use for display or further analysis,
 /// but callers should inspect the final BMI and total duration.
+#[allow(clippy::too_many_arguments)] // domain API: all parameters are part of the model inputs
 pub fn calculate_weightloss(
     age_years: f64,
     gender: Gender,

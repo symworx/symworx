@@ -190,7 +190,7 @@ pub fn classify_space_actions(
     look_ahead_sec: f64,
     groups: Option<&[u32]>,
     attacking_directions: Option<&[crate::geometry::Vec2]>,
-    playing_dimensions: Option<&crate::space::PlayingDimensions>,
+    _playing_dimensions: Option<&crate::space::PlayingDimensions>,
     goal_positions: Option<&[crate::geometry::Point2]>,
 ) -> Vec<Vec<AgentDecision>> {
     use crate::kinematics::{
@@ -432,9 +432,11 @@ pub fn classify_space_actions(
             // Simple proxy for "dangerous / scoring zone" using attacking direction.
             // When we have attacking_directions we can estimate how much this player has advanced
             // toward the goal (useful for gating Creation/Conversion/Prevention).
+            // Progress toward the attack direction; currently gated on dirs existing
+            // so we can later use dirs[a] as a richer goal-progress signal.
             let goal_progress = if let Some(dirs) = attacking_directions {
                 if a < dirs.len() {
-                    let att = dirs[a];
+                    let _att = dirs[a];
                     // Use the forward component itself as progress signal (higher = deeper in attacking half)
                     forward.max(0.0)
                 } else {
@@ -456,7 +458,7 @@ pub fn classify_space_actions(
             };
 
             // Build features — now using current avg_free_space
-            let mut features = DecisionFeatures {
+            let features = DecisionFeatures {
                 speed,
                 forward_component: forward,
                 nearest_opponent_dist: if nearest_dist.is_finite() {

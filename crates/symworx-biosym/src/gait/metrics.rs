@@ -108,8 +108,8 @@ pub fn compute_gait_stats(
 
     let mean_sl = stride_lengths.and_then(|l| if l.is_empty() { None } else { l.mean() });
     let std_sl = stride_lengths
-        .map(|l| array_std(l))
-        .filter(|_| stride_lengths.map_or(false, |l| !l.is_empty()));
+        .map(array_std)
+        .filter(|_| stride_lengths.is_some_and(|l| !l.is_empty()));
 
     let mean_step_l = step_lengths.and_then(|l| if l.is_empty() { None } else { l.mean() });
 

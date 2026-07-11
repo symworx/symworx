@@ -417,11 +417,7 @@ fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
         .cloned()
         .unwrap_or_else(|| format!("day {}", scroll));
 
-    let rides = app
-        .daily_ride_counts
-        .get(scroll)
-        .copied()
-        .unwrap_or(0);
+    let rides = app.daily_ride_counts.get(scroll).copied().unwrap_or(0);
 
     let mut lines: Vec<Line> = vec![
         Line::from(format!(

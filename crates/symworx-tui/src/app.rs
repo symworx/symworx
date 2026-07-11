@@ -721,10 +721,7 @@ impl App {
                 // Refresh catalog if empty (or always try when entering workflow)
                 let _ = crate::processing::try_load_loadsym_catalog(self);
                 let cat = if self.loadsym_from_catalog {
-                    format!(
-                        "catalog {} days",
-                        self.daily_loads.len()
-                    )
+                    format!("catalog {} days", self.daily_loads.len())
                 } else {
                     "no catalog (g=demo, or symload ingest)".to_string()
                 };

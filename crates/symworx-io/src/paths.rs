@@ -43,10 +43,10 @@ pub fn default_velofit_raw() -> PathBuf {
 ///
 /// Override with `SYMLOAD_DB` when set. The data file is personal — never commit it.
 pub fn default_velofit_db() -> PathBuf {
-    if let Ok(p) = std::env::var("SYMLOAD_DB") {
-        if !p.is_empty() {
-            return PathBuf::from(p);
-        }
+    if let Ok(p) = std::env::var("SYMLOAD_DB")
+        && !p.is_empty()
+    {
+        return PathBuf::from(p);
     }
     default_velofit_root().join("db").join("loadsym.sqlite")
 }
@@ -139,10 +139,10 @@ fn walk_recursive(dir: &Path, out: &mut Vec<ActivityFileEntry>) {
         let p = e.path();
         if p.is_dir() {
             // Skip hidden / scratch
-            if let Some(name) = p.file_name().and_then(|n| n.to_str()) {
-                if name.starts_with('.') {
-                    continue;
-                }
+            if let Some(name) = p.file_name().and_then(|n| n.to_str())
+                && name.starts_with('.')
+            {
+                continue;
             }
             walk_recursive(&p, out);
         }

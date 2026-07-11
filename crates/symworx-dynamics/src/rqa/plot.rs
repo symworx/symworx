@@ -25,6 +25,12 @@ pub struct RecurrencePlot {
     pub n_points: usize,
 }
 
+impl Default for RecurrencePlot {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RecurrencePlot {
     /// Create an empty recurrence plot (no points).
     pub fn new() -> Self {
@@ -54,7 +60,7 @@ impl RecurrencePlot {
 
         for i in 0..n {
             for j in 0..n {
-                if (i as isize - j as isize).abs() as usize <= theiler {
+                if (i as isize - j as isize).unsigned_abs() <= theiler {
                     continue;
                 }
                 let row_i = trajectory.row(i);
@@ -163,6 +169,12 @@ pub struct CrossRecurrencePlot {
     pub n_points_y: usize,
 }
 
+impl Default for CrossRecurrencePlot {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CrossRecurrencePlot {
     /// Empty CRP.
     pub fn new() -> Self {
@@ -178,6 +190,7 @@ impl CrossRecurrencePlot {
     ///
     /// * `tx` shape `(nx, m)`
     /// * `ty` shape `(ny, m)`
+    ///
     /// Theiler window (if >0) excludes pairs where `|i-j| <= theiler`. Useful when
     /// the two series are time-aligned; for independent recordings use theiler=0.
     pub fn from_trajectories(
@@ -201,7 +214,7 @@ impl CrossRecurrencePlot {
 
         for i in 0..nx {
             for j in 0..ny {
-                if theiler > 0 && (i as isize - j as isize).abs() as usize <= theiler {
+                if theiler > 0 && (i as isize - j as isize).unsigned_abs() <= theiler {
                     continue;
                 }
                 let d = euclidean(tx.row(i).as_slice().unwrap(), ty.row(j).as_slice().unwrap());

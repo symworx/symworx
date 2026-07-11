@@ -61,7 +61,7 @@ pub fn ppg_processing_poor() -> PhysiologyProcessingParams {
 }
 
 /// Map [`PPGSignalQuality`] to recommended analysis processing (noise config is separate).
-pub fn ppg_processing_for_quality(quality: PPGSignalQuality) -> PhysiologyProcessingParams {
+pub fn ppg_processing_for_quality(quality: &PPGSignalQuality) -> PhysiologyProcessingParams {
     match quality {
         PPGSignalQuality::Reference | PPGSignalQuality::High => ppg_processing_high(),
         PPGSignalQuality::Moderate => ppg_processing_moderate(),
