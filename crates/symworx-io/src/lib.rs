@@ -3,11 +3,8 @@
 
 //! # symworx-io
 //!
-//! Core input/output functions and file handling.
-//!
-//! This crate contains general-purpose tools to read and write files
-//! and is imported into both `symworx-core` and domain
-//! crates (especially `symworx-biosym`).
+//! I/O for biosignals and activity data (CSV, Parquet, IBI, FIT, optional email).
+//! Domain crates and the TUI load/save through this crate (see workspace I/O rule).
 
 #![warn(missing_docs)]
 

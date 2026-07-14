@@ -6,21 +6,34 @@ pub mod biomechanics;
 pub mod cpg;
 pub mod physiology;
 
+/// Attach child on parent + one public `sys.modules` entry (same pattern as `lib.rs`).
+fn attach_submodule(
+    parent: &Bound<'_, PyModule>,
+    child: &Bound<'_, PyModule>,
+    public_import_path: &str,
+) -> PyResult<()> {
+    parent.add_submodule(child)?;
+    let py = parent.py();
+    py.import("sys")?
+        .getattr("modules")?
+        .set_item(public_import_path, child)?;
+    Ok(())
+}
+
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    // Biomechanics submodule
     let biomechanics_mod = PyModule::new(m.py(), "biomechanics")?;
     biomechanics::register(&biomechanics_mod)?;
-    m.add_submodule(&biomechanics_mod)?;
+    attach_submodule(m, &biomechanics_mod, "symworx.biosym.biomechanics")?;
+    // Ergonomic top-level: `biosym.GaitParams` as well as `biosym.biomechanics.GaitParams`.
+    biomechanics::gait::register(m)?;
 
-    // CPG submodule
     let cpg_mod = PyModule::new(m.py(), "cpg")?;
     cpg::register(&cpg_mod)?;
-    m.add_submodule(&cpg_mod)?;
+    attach_submodule(m, &cpg_mod, "symworx.biosym.cpg")?;
 
-    // Physiology submodule
     let physiology_mod = PyModule::new(m.py(), "physiology")?;
     physiology::register(&physiology_mod)?;
-    m.add_submodule(&physiology_mod)?;
+    attach_submodule(m, &physiology_mod, "symworx.biosym.physiology")?;
 
     Ok(())
 }

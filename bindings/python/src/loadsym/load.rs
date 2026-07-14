@@ -65,9 +65,8 @@ pub fn py_optimize_load(parameters: Vec<f64>, data: Vec<f64>) -> PyResult<Vec<f6
     }
 }
 
-/// Multi-day load plan for a goal: "recovery" | "maintenance" | "overload".
-///
-/// Returns (daily_tss, form_start, form_end, success, messages).
+/// Multi-day plan: goal is ``"recovery"`` | ``"maintenance"`` | ``"overload"``.
+/// Returns ``(daily_tss, form_start, form_end, success, messages)``.
 #[pyfunction(name = "optimize_load_plan")]
 #[pyo3(signature = (daily_loads, goal, horizon_days=3))]
 pub fn py_optimize_load_plan(
@@ -96,8 +95,7 @@ pub fn py_optimize_load_plan(
     }
 }
 
-/// Simulate PMC pulse-response over daily loads.
-/// Returns (fitness/CTL, fatigue/ATL, form/TSB, performance).
+/// PMC pulse-response series: ``(fitness/CTL, fatigue/ATL, form/TSB, performance)``.
 #[pyfunction(name = "simulate_pulse_response")]
 pub fn py_simulate_pulse_response(
     daily_loads: Vec<f64>,

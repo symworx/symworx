@@ -2,10 +2,11 @@
 
 Numerical primitives for the SymWorx ecosystem (integration, special functions, distributions).
 
-## Current Contents
+## Current contents
 
 - Trapezoidal integration (`trapz`, `cumtrapz`)
-- **RK4 ODE integration** — `rk4_step` and `rk4_integrate` (used by BioSym CPG)
+- RK4 ODE integration (`rk4_step`, `rk4_integrate` — used by BioSym CPG)
+- Series helpers (`series`: successive differences, `rolling_mean` / `ewma`, windows)
 - Special functions (Gamma, Beta, ln versions)
 - Basic distributions and kernels
 

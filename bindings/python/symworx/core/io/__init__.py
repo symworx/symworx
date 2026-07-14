@@ -1,11 +1,11 @@
-# core/python/src/symworx/core/processing/__init__.py
 # Copyright (c) 2026 SymWorx. All rights reserved.
+"""Re-export ``symworx._lib.core.io``."""
 
-from ..core import io as _rust_io
+from __future__ import annotations
 
-# Re-export 
-globals().update({
-    name: getattr(_rust_io, name)
-    for name in dir(_rust_io)
-    if not name.startswith("_")
-})
+from symworx import _lib
+
+_rust = _lib.core.io
+globals().update(
+    {name: getattr(_rust, name) for name in dir(_rust) if not name.startswith("_")}
+)

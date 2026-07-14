@@ -1,15 +1,11 @@
 """
-Python example demonstrating symworx-loadsym nutrition functions.
+Nutrition demo for the unified ``symworx`` package.
 
-Run after:
-    cd bindings/python
-    maturin develop --manifest-path ../crates/symworx-loadsym/Cargo.toml -m pyproject-loadsym.toml
-
-Then:
+    maturin develop --manifest-path bindings/python/Cargo.toml
     python bindings/python/examples/loadsym_nutrition.py
 """
 
-import symworx_loadsym as loadsym
+from symworx import loadsym
 
 print("=== LoadSym Nutrition Python Demo ===\n")
 
