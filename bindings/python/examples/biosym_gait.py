@@ -1,11 +1,11 @@
 """
-Simple Python example for symworx-biosym gait functionality (params + data analysis).
+Gait demo for the unified ``symworx`` package.
 
-Usage (after maturin develop):
+    maturin develop --manifest-path bindings/python/Cargo.toml
     python bindings/python/examples/biosym_gait.py
 """
 
-import symworx_biosym as biosym
+from symworx import biosym
 
 print("=== BioSym Gait Python Demo ===\n")
 

@@ -1,11 +1,11 @@
-# core/python/src/symworx/core/statistics/__init__.py
 # Copyright (c) 2026 SymWorx. All rights reserved.
+"""Re-export ``symworx._lib.core.statistics``."""
 
-from ..core import statistics as _rust_statistics
+from __future__ import annotations
 
-# Re-export 
-globals().update({
-    name: getattr(_rust_statistics, name)
-    for name in dir(_rust_statistics)
-    if not name.startswith("_")
-})
+from symworx import _lib
+
+_rust = _lib.core.statistics
+globals().update(
+    {name: getattr(_rust, name) for name in dir(_rust) if not name.startswith("_")}
+)

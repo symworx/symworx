@@ -47,6 +47,36 @@ impl PyGaitParams {
     fn set_walking_speed(&mut self, v: f64) {
         self.inner.walking_speed = v;
     }
+
+    #[getter]
+    fn height(&self) -> f64 {
+        self.inner.height
+    }
+
+    #[setter]
+    fn set_height(&mut self, v: f64) {
+        self.inner.height = v;
+    }
+
+    #[getter]
+    fn step_length(&self) -> f64 {
+        self.inner.step_length
+    }
+
+    #[setter]
+    fn set_step_length(&mut self, v: f64) {
+        self.inner.step_length = v;
+    }
+
+    #[getter]
+    fn mass(&self) -> f64 {
+        self.inner.mass
+    }
+
+    #[setter]
+    fn set_mass(&mut self, v: f64) {
+        self.inner.mass = v;
+    }
 }
 
 #[pyclass(name = "GaitStats")]

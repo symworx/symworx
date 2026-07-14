@@ -268,6 +268,35 @@ fn parse_flag_value(args: &[String], flag: &str) -> Option<String> {
     None
 }
 
+/// First non-flag positional path for `email fetch` (skips --query/-q values).
+#[cfg(feature = "email")]
+fn parse_email_target_dir(args: &[String]) -> PathBuf {
+    // args[0]=bin, args[1]=email|fetch; if args[1]==email then args[2] may be "fetch"
+    let start = if args.get(1).map(|s| s.as_str()) == Some("email") {
+        if args.get(2).map(|s| s.as_str()) == Some("fetch") {
+            3
+        } else {
+            2
+        }
+    } else {
+        2
+    };
+    let mut i = start;
+    while i < args.len() {
+        let a = &args[i];
+        if a == "--query" || a == "-q" {
+            i += 2;
+            continue;
+        }
+        if a.starts_with('-') {
+            i += 1;
+            continue;
+        }
+        return PathBuf::from(a);
+    }
+    default_velofit_inbox()
+}
+
 /// First positional path after the command (skips known flags/values).
 fn parse_ingest_target(args: &[String]) -> PathBuf {
     let mut i = 2usize;
@@ -405,22 +434,28 @@ fn handle_email_fetch(args: &[String]) -> Result<(), Box<dyn std::error::Error>>
     let pass = env::var("SYMLOAD_APP_PASSWORD")
         .map_err(|_| "set SYMLOAD_APP_PASSWORD (app password; do not commit)".to_string())?;
 
-    let target = if let Some(d) = args.get(2) {
-        if d.starts_with('-') {
-            default_velofit_inbox()
-        } else {
-            PathBuf::from(d)
-        }
+    // Optional IMAP SEARCH query. Default matches SRM PC8 export subjects.
+    // Examples: --query "SUBJECT SRM UNSEEN"
+    //           --query "OR SUBJECT SRM SUBJECT Polar"
+    let query = parse_flag_value(args, "--query")
+        .or_else(|| parse_flag_value(args, "-q"))
+        .unwrap_or_else(|| "SUBJECT SRM".into());
+
+    // Target directory: first non-flag positional after the command, else inbox.
+    // Usage: symload email fetch [target_dir] [--query "..."]
+    let target = parse_email_target_dir(args);
+
+    let saved = if query == "SUBJECT SRM" {
+        email::fetch_srm_fit_attachments(&user, &pass, &target)?
     } else {
-        default_velofit_inbox()
+        email::fetch_fit_attachments(&user, &pass, &target, &query)?
     };
 
-    let saved = email::fetch_srm_fit_attachments(&user, &pass, &target)?;
-
     println!(
-        "Fetched {} new .fit file(s) to {}",
+        "Fetched {} new .fit file(s) to {}  (query: {})",
         saved.len(),
-        target.display()
+        target.display(),
+        query
     );
     for p in &saved {
         println!("  {}", p.display());
@@ -596,7 +631,8 @@ Commands:
   symload reprocess [path|dir] [--ftp 280]   same as ingest --force (re-score loads)
   symload ftp list
   symload ftp set --date YYYY-MM-DD --ftp N [--sport cycling] [--source manual] [--until DATE]
-  symload email fetch [target_dir]     (default: $VELOFIT_HOME/inbox)
+  symload email fetch [target_dir] [--query "SUBJECT SRM"]
+      default dir: $VELOFIT_HOME/inbox; default query matches SRM exports
   symload inbox promote [--from DIR] [--to DIR]
 
 Environment (never commit secrets):

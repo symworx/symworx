@@ -17,9 +17,13 @@ rand            = { workspace = true }
 symworx-core    = { path = "../../crates/symworx-core", version = "0.1" }
 symworx-biosym  = { path = "../../crates/symworx-biosym", version = "0.1" }
 symworx-loadsym = { path = "../../crates/symworx-loadsym", version = "0.1" }
-# io for activity/FIT + email (SRM fetch) loading.
-# Email feature pulls imap etc; can be stripped if not needed.
-symworx-io      = { path = "../../crates/symworx-io", version = "0.1", default-features = false, features = ["fit", "email"] }
+# FIT loading for activity helpers. IMAP/email is optional (needs OpenSSL).
+symworx-io      = { path = "../../crates/symworx-io", version = "0.1", default-features = false, features = ["fit"] }
+
+[features]
+default = []
+# Optional IMAP .fit fetch (`fetch_srm_fit_attachments`). Requires OpenSSL.
+email = ["symworx-io/email"]
 
 [lints]
 workspace = true

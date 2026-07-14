@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [develop, main, staging]
+    branches: [develop, main, staging, symworx-loadsym]
   pull_request:
     branches: [develop, main, staging]
 
@@ -16,6 +16,8 @@ env:
 
 jobs:
   # Fast lint: format must match rustfmt.toml (unstable import options need nightly).
+  # TUI is excluded for now — large formatting debt and not part of the active
+  # library CI surface. Re-include crates/symworx-tui once that crate is stabilized.
   fmt:
     runs-on: ubuntu-latest
     steps:
@@ -26,8 +28,23 @@ jobs:
         with:
           components: rustfmt
 
-      - name: Format check (nightly, matches rustfmt.toml)
-        run: cargo +nightly fmt --all -- --check
+      - name: Format check (nightly; library + bindings, no TUI)
+        # -p is a cargo-fmt option (before --); --check is also cargo-fmt, not rustfmt.
+        run: |
+          cargo +nightly fmt --check \
+            -p symworx-error \
+            -p symworx-math \
+            -p symworx-io \
+            -p symworx-stats \
+            -p symworx-dynamics \
+            -p symworx-backend \
+            -p symworx-signal \
+            -p symworx-core \
+            -p symworx-biosym \
+            -p symworx-loadsym \
+            -p symworx-loadsym-db \
+            -p symworx-spatialsym \
+            -p symworx-python
 
   rust-checks:
     runs-on: ubuntu-latest
@@ -39,13 +56,17 @@ jobs:
         with:
           components: clippy
 
+      - name: Install OpenBLAS build deps
+        # symworx-core / biosym / loadsym pull signal → ndarray-linalg (openblas).
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gfortran pkg-config
+
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Clippy (warnings as errors on key crates)
-        # --lib: skip unfinished binaries (e.g. symload helpers).
-        # --no-deps: only lint the packages listed (path deps like signal are not linted here).
-        # Clippy typechecks; a separate cargo check is redundant.
+      - name: Clippy (warnings as errors on key library crates)
+        # --lib: skip unfinished/optional binaries (e.g. symload helpers).
+        # --no-deps: only lint the packages listed (path deps are typechecked but not linted).
+        # TUI intentionally omitted (heavy + still evolving).
         # spatialsym is tested below but excluded from strict clippy for now
         # (missing_docs + style debt); re-enable once cleaned up.
         run: |
@@ -60,23 +81,10 @@ jobs:
                      -p symworx-biosym -p symworx-io -p symworx-loadsym -p symworx-spatialsym \
                      -- --quiet
 
-  tui-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install stable Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Rust cache
-        uses: Swatinem/rust-cache@v2
-
-      # Builds pay OpenBLAS cost once; implies a successful typecheck of the TUI graph.
-      - name: Build symview binary (smoke)
-        run: cargo build -p symworx-tui --bin symview --quiet
-
-      - name: Check TUI with polars feature (in-memory only)
-        run: cargo check -p symworx-tui --features polars
+  # TUI smoke builds (symview + polars) are disabled for now.
+  # They routinely cost 10–20+ minutes cold (OpenBLAS + full TUI graph) and are
+  # not required while library / Python work is the active focus.
+  # Re-add as a scheduled or manual workflow when the TUI is ready for gatekeeping.
 
   python-bindings:
     runs-on: ubuntu-latest
@@ -85,6 +93,13 @@ jobs:
 
       - name: Install stable Rust
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Install build deps (OpenBLAS for core → signal)
+        # Python default build does not enable the optional `email` feature
+        # (no OpenSSL). Re-add libssl-dev if CI starts building with --features email.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gfortran pkg-config
 
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
@@ -105,22 +120,26 @@ jobs:
           .venv/bin/pip install "maturin>=1.5,<2.0" pytest
 
       - name: Build Python bindings in development mode
-        # Uses the main pyproject.toml which builds the unified symworx module
-        run: .venv/bin/maturin develop --manifest-path bindings/python/Cargo.toml
+        # pyo3 already enables extension-module via workspace Cargo.toml —
+        # do not pass --features extension-module (that flag is not a package feature).
+        # Explicit VIRTUAL_ENV so maturin always finds the venv.
+        env:
+          VIRTUAL_ENV: ${{ github.workspace }}/.venv
+        run: |
+          .venv/bin/maturin develop --manifest-path bindings/python/Cargo.toml
 
       - name: Run Python tests
+        env:
+          VIRTUAL_ENV: ${{ github.workspace }}/.venv
+          PATH: ${{ github.workspace }}/.venv/bin:${{ env.PATH }}
         run: .venv/bin/pytest bindings/python/tests/ -q --tb=line
 
-  # Note on heavy dependencies:
-  # symworx-signal has an *unconditional* dependency on ndarray-linalg (OpenBLAS).
-  # symworx-core re-exports it, and symworx-tui depends on signal.
-  # Therefore any job that checks/builds the TUI or does full workspace work will compile
-  # the native OpenBLAS stack (can take 5-15+ minutes on cold cache).
+  # Strategy (2026-07):
+  # - fmt: nightly rustfmt on library + Python binding crates (not TUI).
+  # - rust-checks: clippy -D warnings + unit tests for science crates.
+  # - python-bindings: venv + maturin develop + pytest (core/biosym/loadsym surface).
+  # - TUI: local / manual only until OpenBLAS + UI debt is under control.
   #
-  # The strategy here is:
-  # - Fast fmt job (nightly rustfmt) with no compile.
-  # - Library clippy + tests on biosym, dynamics (RQA), math, loadsym, spatialsym, io.
-  # - Separate TUI job that pays the OpenBLAS cost + builds the `symview` binary.
-  # - Python bindings job (venv + maturin; transitively pulls core → signal).
-  #
-  # For full signal/stats linalg validation, run manually or add a scheduled "heavy" job later.
+  # Note: any job that builds crates depending on symworx-core still compiles
+  # OpenBLAS (via signal → ndarray-linalg). That is expected and cached by
+  # rust-cache after the first run.

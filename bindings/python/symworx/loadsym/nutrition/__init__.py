@@ -1,11 +1,11 @@
-# loadsym/python/src/symworx/loadsy/nurition/__init__.py
 # Copyright (c) 2026 SymWorx. All rights reserved.
+"""Re-export ``symworx._lib.loadsym.nutrition``."""
 
-from ..loadsym import nutrition as _rust_nutrition
+from __future__ import annotations
 
-# Re-export 
-globals().update({
-    name: getattr(_rust_nutrition, name)
-    for name in dir(_rust_nutrition)
-    if not name.startswith("_")
-})
+from symworx import _lib
+
+_rust = _lib.loadsym.nutrition
+globals().update(
+    {name: getattr(_rust, name) for name in dir(_rust) if not name.startswith("_")}
+)

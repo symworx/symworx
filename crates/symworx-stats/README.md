@@ -1,8 +1,7 @@
 # SymWorx-Stats
 
-Statistical analysis and classical data-driven modeling tools for the SymWorx
-ecosystem (physiological signals, biomechanics, training load, and general
-scientific data).
+Statistical analysis and classical data-driven modeling tools for the SymWorx ecosystem (physiological signals, biomechanics, training load, and general scientific data).
+This is a sub-crate to the [`symworx-core`](../symworx-core/README.md) crate.
 
 ## Module map (DDSE-aligned)
 

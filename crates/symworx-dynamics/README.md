@@ -1,6 +1,7 @@
 # SymWorx-Dynamics
 
 Nonlinear dynamics and data-driven dynamical systems tools for SymWorx.
+This is a sub-crate to the [`symworx-core`](../symworx-core/README.md) crate.
 
 ## Modules
 

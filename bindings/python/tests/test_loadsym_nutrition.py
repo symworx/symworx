@@ -1,26 +1,11 @@
 """
-Minimal tests for the symworx-loadsym nutrition Python bindings.
+Nutrition smoke tests for the unified ``symworx`` package.
 
 Run after:
-    cd bindings/python
-    maturin develop --manifest-path ../crates/symworx-loadsym/Cargo.toml -m pyproject-loadsym.toml
-
-Then:
-    python -m pytest tests/test_loadsym_nutrition.py -q
-    # or simply: python tests/test_loadsym_nutrition.py
+    maturin develop --manifest-path bindings/python/Cargo.toml
 """
 
-import sys
-from pathlib import Path
-
-# Make sure the package can be found when running directly
-sys.path.insert(0, str(Path(__file__).parent.parent / "symworx"))
-
-try:
-    import symworx_loadsym as loadsym
-except ImportError:
-    # Fallback when running inside the installed package layout
-    from symworx import loadsym
+from symworx import loadsym
 
 
 def test_calculate_bmi():

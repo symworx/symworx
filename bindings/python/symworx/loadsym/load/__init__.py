@@ -1,11 +1,11 @@
-# loadsym/python/src/symworx/loadsy/load/__init__.py
 # Copyright (c) 2026 SymWorx. All rights reserved.
+"""Re-export ``symworx._lib.loadsym.load``."""
 
-from ..loadsym import load as _rust_load
+from __future__ import annotations
 
-# Re-export 
-globals().update({
-    name: getattr(_rust_load, name)
-    for name in dir(_rust_load)
-    if not name.startswith("_")
-})
+from symworx import _lib
+
+_rust = _lib.loadsym.load
+globals().update(
+    {name: getattr(_rust, name) for name in dir(_rust) if not name.startswith("_")}
+)

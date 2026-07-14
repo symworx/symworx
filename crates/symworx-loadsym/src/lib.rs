@@ -6,15 +6,17 @@
 //! Training load quantification, optimization, nutrition, and energy expenditure
 //! modeling for the SymWorx ecosystem.
 //!
-//! ## Core Capabilities (2026)
-//! - Low-level mechanical & physiological load
-//!   (expanding toward TRIMP family, sRPE, etc.).
-//! - **ACWR / EWMA / risk classification** — the primary primitives for
-//!   populating `player_load_metrics` (acute/chronic, acwr, ewma_*, risk_level).
-//! - Monotony, strain, readiness, adaptive capacity, life-stress, and
-//!   periodization recommendations
-//! - Nutrition & body-composition modeling.
-//!   (BMR, TDEE, deficit strategies, weight-loss trajectories)
+//! ## Capabilities
+//! - Mechanical & physiological load helpers (ride metrics, NP/TSS, etc.)
+//! - **ACWR / EWMA / risk classification** for daily load series
+//! - **Pulse-response (fitness–fatigue)** — Banister and PMC-style CTL/ATL/TSB
+//!   (`load::pulse_response`) with open-loop recovery forecast
+//! - **Multi-day load planning** — overload / maintenance / recovery goals
+//!   (`load::optimization`)
+//! - Monotony and strain
+//! - Nutrition & body-composition modeling (BMR, TDEE, weight-loss trajectories)
+//!
+//! Optional `sqlite` catalog + `symload` CLI live under feature flags (see crate README).
 
 // #![warn(missing_docs)]
 #![doc(html_root_url = "https://docs.rs/symworx-loadsym")]

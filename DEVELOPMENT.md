@@ -117,7 +117,7 @@ The `symview` binary (from `symworx-tui`) can be installed with `cargo install s
 
 ### CI / Release Automation Notes
 
-- Every PR and push to `develop` / `staging` / `main` runs formatting (`cargo +nightly fmt --check`), clippy, tests, TUI smoke build, and Python bindings.
+- Every PR and push to `develop` / `staging` / `main` runs formatting (`cargo +nightly fmt --check` on library crates), clippy, library unit tests, and Python bindings (`maturin` + pytest). The TUI smoke build is currently **disabled** in CI (too slow / OpenBLAS-heavy); run `cargo build -p symworx-tui --bin symview` locally when touching the TUI.
 - On tag `vX.Y.Z` (or push to a `release/` branch), a release workflow:
   - Runs the full test + format + clippy matrix.
   - Publishes Rust crates in the correct dependency order using trusted publishing (no long-lived tokens).

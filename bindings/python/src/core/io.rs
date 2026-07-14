@@ -218,18 +218,16 @@ pub fn py_load_activity(path: &str) -> PyResult<PyObject> {
 }
 
 // ===========================================================
-// Email / IMAP fetching (new, for SRM PC8 email .fit ingestion etc.)
-// Gated behind feature in the underlying crate.
+// Email / IMAP fetching (optional; needs `email` feature + OpenSSL)
 // ===========================================================
 
+#[cfg(feature = "email")]
 #[pyfunction(name = "fetch_srm_fit_attachments")]
 pub fn py_fetch_srm_fit_attachments(
     user: &str,
     app_password: &str,
     target_dir: &str,
 ) -> PyResult<Vec<String>> {
-    // Note: requires the python bindings to be built with symworx-io "email" feature
-    // (and native-tls, mailparse etc.).
     match symworx_io::fetch_srm_fit_attachments(
         user,
         app_password,
@@ -254,6 +252,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_read_gbd, m)?)?;
     m.add_function(wrap_pyfunction!(py_read_ibi, m)?)?;
     m.add_function(wrap_pyfunction!(py_load_activity, m)?)?;
+    #[cfg(feature = "email")]
     m.add_function(wrap_pyfunction!(py_fetch_srm_fit_attachments, m)?)?;
 
     m.add_class::<PyCsvReader>()?;

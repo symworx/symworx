@@ -9,9 +9,8 @@
 - Interactive file browser for biosignal files
 - Manual path input support
 - File conversion: `.ibi` → CSV and `.parquet` → CSV (both via `symworx-io`). The TUI **must** use `symworx-io` for all signal file I/O. `polars/parquet` (or direct `parquet` deps) must never be used for loading — they create unresolvable version conflicts with the workspace's chosen Parquet stack. Optional Polars usage is strictly for in-memory DataFrame work after loading via `symworx-io`.
-- Clean two-screen interface: **File Selection** ↔ **Visualization**
-- Keyboard-driven (vim-friendly navigation)
-- Designed for easy integration with the rest of the Symworx crates
+- Tabbed UI: Import, Explore, Dynamics, LoadSym (and related views)
+- Keyboard-driven navigation
 
 ## Quick Start
 

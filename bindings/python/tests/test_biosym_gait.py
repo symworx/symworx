@@ -1,24 +1,19 @@
 """
 Smoke test for symworx-biosym gait (Python bindings) including analysis parity.
 
-Run after installing the package via maturin.
+Run after:
+    maturin develop --manifest-path bindings/python/Cargo.toml
 """
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent / "symworx"))
-
-try:
-    import symworx_biosym as biosym
-except ImportError:
-    from symworx import biosym
+from symworx import biosym
 
 
 def test_gait_params_defaults():
     params = biosym.GaitParams()
     assert hasattr(params, "height")
     assert params.height > 1.0  # meters
+    # Also available under biomechanics (submodule path)
+    assert hasattr(biosym.biomechanics, "GaitParams")
 
 
 def test_gait_data_calcs_and_stats():
@@ -45,14 +40,17 @@ def test_gait_data_calcs_and_stats():
 
 
 def test_gait_detect_and_analyze():
-    # toy square-ish signal with periodic peaks
-    fs = 50.0
-    sig = [0.0] * 5 + [1.0] + [0.0] * 45 + [1.0] + [0.0] * 45 + [1.0] + [0.0] * 5  # rough
-    # better: use the module if exposed, or just call with simple
-    analysis = biosym.analyze_gait_signal([0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0], 10.0)
+    # Long enough periodic signal for bandpass peak detection (matches Rust gait tests).
+    import math
+
+    fs = 100.0
+    # ~1.2 Hz stride-like sinusoid over 10 s
+    sig = [math.sin(2.0 * math.pi * 1.2 * (i / fs)) for i in range(int(10 * fs))]
+    analysis = biosym.analyze_gait_signal(sig, fs)
     assert hasattr(analysis, "stats")
     assert hasattr(analysis, "peak_times")
     assert len(analysis.peak_times) >= 1
+    assert analysis.stats.n_strides >= 1
 
 
 if __name__ == "__main__":

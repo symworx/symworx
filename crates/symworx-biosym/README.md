@@ -8,8 +8,7 @@ It provides tools for simulating and analyzing physiological and biomechanical s
 - **Gait modeling & analysis** — `GaitParams`, `GaitData`, `GaitStats`, `GaitAnalysis` (under `biomechanics::gait`) with stride detection from signals (`detect_gait_strides*`, `analyze_gait*`), quality presets, cadence, lengths, symmetry, vertical oscillation. Parity with physiology analysis.
 - **Central Pattern Generator (CPG)** — Coupled Van der Pol oscillators for heart, bilateral legs, and respiration, driven by a dynamic `tau` parameter.
 - **Numerical integration** — Uses RK4 from `symworx-math` for stable simulation.
-- **Python bindings** — Full PyO3 support. Can be used standalone (`import symworx_biosym`) or via the unified `symworx` package.
-- **Independent builds** — `maturin develop` works directly from the crate directory.
+- **Python bindings** — via the unified package (`from symworx import biosym`); optional split package `symworx_biosym` may still exist in `bindings/python/`.
 
 ## Physiology Analysis
 
@@ -30,11 +29,11 @@ See `physiology::{ppg,respiration}::analysis` and tests for details. Heavily reu
 - Real-sensor vs sim-tuned quality presets.
 - Streaming / incremental analysis.
 
-These are out of scope for current TUI/Dynamics focus (clean HR/BR + intervals + basic variability for RQA). See plan session for full evaluation.
+These advanced metrics are future work; current focus is clean HR/BR + intervals + basic variability for RQA-style analysis.
 
-## Biomechanics Analysis (Status)
+## Biomechanics analysis
 
-(See implementation plan in session notes for current scoping of gait event detection, `GaitStats`/`GaitAnalysis`, quality presets, CPG integration, and bindings completion. Current surface is the `GaitData` calculators + pure metrics in `biomechanics::gait`.)
+Gait event detection, `GaitStats` / `GaitAnalysis`, quality presets, and calculators live under `biomechanics::gait` (also re-exported at the crate root).
 
 ## Philosophy
 
@@ -57,11 +56,10 @@ let (times, states) = model.run((0.0, 10.0), 0.01);
 ## Usage (Python)
 
 ```python
-import symworx_biosym as biosym
+from symworx import biosym
 
 params = biosym.GaitParams()
-model = biosym.SymCpgModel()
-times, states = model.run(0.0, 10.0, 0.01)
+# CPG: biosym.SymCpgModel (when built via unified bindings)
 ```
 
 **License:** Apache-2.0

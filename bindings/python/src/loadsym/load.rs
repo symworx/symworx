@@ -6,6 +6,9 @@ use pyo3::{
 };
 use symworx_loadsym::load::{
     AcwrSnapshot,
+    LoadGoal,
+    OptimizationThresholds,
+    PulseResponseParams,
     RideMetrics,
     RiskLevel,
     calculate_mechanical_load,
@@ -20,6 +23,8 @@ use symworx_loadsym::load::{
     compute_strain,
     highest_rolling,
     optimize_load,
+    optimize_load_plan,
+    simulate_pulse_response,
 };
 
 // ==========================================================
@@ -42,7 +47,7 @@ pub fn py_calculate_mechanical_load(
 }
 
 // ==========================================================
-// Optimization
+// Optimization (legacy stub + multi-day plan)
 // ==========================================================
 
 #[pyfunction(name = "optimize_load")]
@@ -54,7 +59,52 @@ pub fn py_optimize_load(parameters: Vec<f64>, data: Vec<f64>) -> PyResult<Vec<f6
             data.len()
         )));
     }
-    Ok(optimize_load(&parameters, &data))
+    #[allow(deprecated)]
+    {
+        Ok(optimize_load(&parameters, &data))
+    }
+}
+
+/// Multi-day plan: goal is ``"recovery"`` | ``"maintenance"`` | ``"overload"``.
+/// Returns ``(daily_tss, form_start, form_end, success, messages)``.
+#[pyfunction(name = "optimize_load_plan")]
+#[pyo3(signature = (daily_loads, goal, horizon_days=3))]
+pub fn py_optimize_load_plan(
+    daily_loads: Vec<f64>,
+    goal: &str,
+    horizon_days: usize,
+) -> PyResult<(Vec<f64>, f64, f64, bool, Vec<String>)> {
+    let g = match goal.to_ascii_lowercase().as_str() {
+        "recovery" | "recover" => LoadGoal::Recovery,
+        "maintenance" | "maintain" => LoadGoal::Maintenance,
+        "overload" | "load" => LoadGoal::Overload,
+        other => {
+            return Err(pyo3::exceptions::PyValueError::new_err(format!(
+                "unknown goal '{other}' (use recovery|maintenance|overload)"
+            )));
+        }
+    };
+    let params = PulseResponseParams::pmc_defaults();
+    let thr = OptimizationThresholds {
+        horizon_days,
+        ..Default::default()
+    };
+    match optimize_load_plan(&daily_loads, &params, g, &thr) {
+        Ok(p) => Ok((p.daily_tss, p.form_start, p.form_end, p.success, p.messages)),
+        Err(e) => Err(pyo3::exceptions::PyValueError::new_err(e.to_string())),
+    }
+}
+
+/// PMC pulse-response series: ``(fitness/CTL, fatigue/ATL, form/TSB, performance)``.
+#[pyfunction(name = "simulate_pulse_response")]
+pub fn py_simulate_pulse_response(
+    daily_loads: Vec<f64>,
+) -> PyResult<(Vec<f64>, Vec<f64>, Vec<f64>, Vec<f64>)> {
+    let params = PulseResponseParams::pmc_defaults();
+    match simulate_pulse_response(&daily_loads, &params, None) {
+        Ok(s) => Ok((s.fitness, s.fatigue, s.form, s.performance)),
+        Err(e) => Err(pyo3::exceptions::PyValueError::new_err(e.to_string())),
+    }
 }
 
 // ==========================================================
@@ -197,6 +247,8 @@ pub fn py_highest_rolling(series: Vec<f64>, window: usize) -> f64 {
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_calculate_mechanical_load, m)?)?;
     m.add_function(wrap_pyfunction!(py_optimize_load, m)?)?;
+    m.add_function(wrap_pyfunction!(py_optimize_load_plan, m)?)?;
+    m.add_function(wrap_pyfunction!(py_simulate_pulse_response, m)?)?;
     m.add_function(wrap_pyfunction!(py_calculate_physiological_load, m)?)?;
 
     m.add_function(wrap_pyfunction!(py_compute_acute_chronic, m)?)?;
