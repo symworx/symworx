@@ -65,13 +65,18 @@ Ingest stores **relative** keys when files live under `$VELOFIT_HOME` (e.g. `raw
 
 ## Email → inbox (optional)
 
+IMAP + MIME extraction lives in **`symworx-io`** (`email` feature). The `symload` CLI only orchestrates credentials → fetch → `$VELOFIT_HOME/inbox`.
+
 ```bash
 export SYMLOAD_USER="you@example.com"          # placeholder
 export SYMLOAD_APP_PASSWORD="your-app-password" # never commit
 
 cargo run -p symworx-loadsym --features "fit,email" -- email fetch
+# Optional IMAP SEARCH (default: SUBJECT SRM for PC8 exports)
+cargo run -p symworx-loadsym --features "fit,email" -- email fetch --query "OR SUBJECT SRM SUBJECT Polar"
 cargo run -p symworx-loadsym --features fit -- inbox promote
 cargo run -p symworx-loadsym --features sqlite -- ingest --ftp 280
+# ingest also fills load_metrics.ctl / atl / tsb via the PMC pulse-response model
 ```
 
 ## Stats / TUI

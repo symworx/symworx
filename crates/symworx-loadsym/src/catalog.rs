@@ -803,12 +803,17 @@ pub fn recompute_daily_for_date(conn: &Connection, ride_date: &str) -> Result<()
 }
 
 /// Recompute ACWR-style load_metrics for all days with daily_loads (chronological).
+///
+/// Also fills PMC-style `ctl` / `atl` / `tsb` from the pulse-response model
+/// ([`crate::load::PulseResponseParams::pmc_defaults`]).
 pub fn recompute_load_metrics(conn: &Connection) -> Result<usize, String> {
     use crate::load::{
+        PulseResponseParams,
         classify_acwr,
         compute_acute_chronic,
         compute_monotony,
         compute_strain,
+        simulate_pulse_response,
     };
 
     let mut stmt = conn
@@ -821,6 +826,8 @@ pub fn recompute_load_metrics(conn: &Connection) -> Result<usize, String> {
         .map_err(|e| e.to_string())?;
 
     let loads: Vec<f64> = rows.iter().map(|(_, t)| *t).collect();
+    let pmc = PulseResponseParams::pmc_defaults();
+    let pr_series = simulate_pulse_response(&loads, &pmc, None).map_err(|e| e.to_string())?;
     let mut n_written = 0usize;
 
     for i in 0..rows.len() {
@@ -837,21 +844,36 @@ pub fn recompute_load_metrics(conn: &Connection) -> Result<usize, String> {
         };
         let mono = compute_monotony(prefix).ok();
         let strain = compute_strain(prefix).ok();
+        let (ctl, atl, tsb) = if i < pr_series.len() {
+            (
+                Some(pr_series.fitness[i]),
+                Some(pr_series.fatigue[i]),
+                Some(pr_series.form[i]),
+            )
+        } else {
+            (None, None, None)
+        };
 
         conn.execute(
             "INSERT INTO load_metrics (
                 ride_date, acute_load, chronic_load, acwr, risk_level,
+                ctl, atl, tsb,
                 monotony, strain, computed_at
-             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, datetime('now'))
+             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, datetime('now'))
              ON CONFLICT(ride_date) DO UPDATE SET
                 acute_load=excluded.acute_load,
                 chronic_load=excluded.chronic_load,
                 acwr=excluded.acwr,
                 risk_level=excluded.risk_level,
+                ctl=excluded.ctl,
+                atl=excluded.atl,
+                tsb=excluded.tsb,
                 monotony=excluded.monotony,
                 strain=excluded.strain,
                 computed_at=datetime('now')",
-            params![date, acute, chronic, acwr, risk, mono, strain],
+            params![
+                date, acute, chronic, acwr, risk, ctl, atl, tsb, mono, strain
+            ],
         )
         .map_err(|e| e.to_string())?;
         n_written += 1;
@@ -958,8 +980,8 @@ pub fn load_daily_snapshots(conn: &Connection) -> Result<Vec<DailySnapshot>, Str
 
 /// Convenience: open default catalog path and load daily + ride rows for the TUI.
 /// Returns `Ok(None)` if the DB file does not exist (not an error for the TUI).
-pub fn try_load_default_calendar(
-) -> Result<Option<(PathBuf, Vec<DailySnapshot>, Vec<RideSummary>)>, String> {
+pub fn try_load_default_calendar()
+-> Result<Option<(PathBuf, Vec<DailySnapshot>, Vec<RideSummary>)>, String> {
     let path = default_catalog_path();
     if !path.exists() {
         return Ok(None);

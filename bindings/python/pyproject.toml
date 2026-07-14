@@ -17,5 +17,8 @@ dev = ["maturin", "pytest"]
 [tool.maturin]
 python-source = "."
 module-name = "symworx"
-features = ["extension-module"]
+# Do NOT set `features = ["extension-module"]` here.
+# That makes maturin pass `--features extension-module` to cargo, but no
+# workspace package defines that feature (it lives on the pyo3 dependency,
+# already enabled in workspace Cargo.toml). Enabling it breaks `maturin develop`.
 # Include the biosym and other crates via the Rust lib

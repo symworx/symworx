@@ -81,6 +81,8 @@ impl ActivityData {
 }
 
 /// FIT epoch: 1989-12-31 00:00:00 UTC → Unix offset in seconds.
+/// Kept for FIT timestamp conversion helpers (used when the `fit` feature is enabled).
+#[allow(dead_code)]
 const FIT_EPOCH_UNIX: i64 = 631_065_600;
 
 /// Convert Unix seconds to `YYYY-MM-DD` (UTC).
@@ -100,7 +102,7 @@ pub fn unix_secs_to_ymd(secs: i64) -> Option<String> {
     let d = doy - (153 * mp + 2) / 5 + 1;
     let m = if mp < 10 { mp + 3 } else { mp - 9 };
     let y = if m <= 2 { y + 1 } else { y };
-    if y < 1970 || y > 2100 {
+    if !(1970..=2100).contains(&y) {
         return None;
     }
     Some(format!("{:04}-{:02}-{:02}", y, m, d))

@@ -11,6 +11,10 @@
 //!   (expanding toward TRIMP family, sRPE, etc.).
 //! - **ACWR / EWMA / risk classification** — the primary primitives for
 //!   populating `player_load_metrics` (acute/chronic, acwr, ewma_*, risk_level).
+//! - **Pulse-response (fitness–fatigue)** — Banister impulse-response and
+//!   PMC-style CTL/ATL/TSB (`load::pulse_response`), with open-loop recovery forecast.
+//! - **Multi-day load planning** — goal-conditioned sequences for overload /
+//!   maintenance / recovery with explicit success thresholds (`load::optimization`).
 //! - Monotony, strain, readiness, adaptive capacity, life-stress, and
 //!   periodization recommendations
 //! - Nutrition & body-composition modeling.

@@ -7,10 +7,12 @@ pub mod acwr;
 pub mod mechanical;
 /// Exercise monotony and load
 pub mod monotony;
-/// Load optimization algorithms
+/// Multi-day load planning (goal-conditioned optimization)
 pub mod optimization;
 /// Physiological load calculations
 pub mod physiological;
+/// Pulse-response / fitness–fatigue (Banister / PMC) model
+pub mod pulse_response;
 
 // re-exports of specific functions
 pub use acwr::{
@@ -43,5 +45,25 @@ pub use monotony::{
     compute_monotony,
     compute_strain,
 };
-pub use optimization::optimize_load;
+#[allow(deprecated)]
+pub use optimization::{
+    LoadGoal,
+    LoadPlan,
+    OptimizationThresholds,
+    optimize_load,
+    optimize_load_plan,
+};
 pub use physiological::calculate_physiological_load;
+pub use pulse_response::{
+    PulseResponseParams,
+    PulseResponseSeries,
+    PulseResponseState,
+    PulseUpdateRule,
+    estimate_recovery_days,
+    forecast_pulse_response,
+    forecast_with_constant_load,
+    simulate_pulse_response,
+    simulate_pulse_response_continuous,
+    step_pulse_response,
+    unit_impulse_response,
+};
