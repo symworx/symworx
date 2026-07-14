@@ -6,13 +6,16 @@ version          = { workspace = true }
 edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
-description      = "Nonlinear dynamics tools and resources (RQA, embedding, entropy, and phase space analysis)"
-keywords = ["rqa", "recurrence", "nonlinear-dynamics", "entropy", "embedding"]
+description      = "Nonlinear dynamics tools (RQA, embedding, entropy, DMD, Koopman/EDMD, LTI control)"
+keywords = ["rqa", "dmd", "koopman", "nonlinear-dynamics", "control", "embedding"]
 categories = ["science", "mathematics"]
 
 [dependencies]
-ndarray       = { workspace = true }
-symworx-stats = { path = "../symworx-stats" }
+ndarray        = { workspace = true }
+ndarray-linalg = { workspace = true }
+num-complex    = { workspace = true }
+# SVD for DMD (and shared distance metrics for embedding) — enable linalg for Svd.
+symworx-stats  = { path = "../symworx-stats", features = ["linalg"] }
 
 [lints]
 workspace = true

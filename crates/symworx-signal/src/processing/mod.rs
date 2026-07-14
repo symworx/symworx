@@ -33,6 +33,9 @@ pub mod outliers;
 /// Windowing helpers and RR-to-tachogram resampling (for equidistant feature windows).
 pub mod windows;
 
+/// Sparse / compressed sensing (ISTA, OMP, measurement matrices).
+pub mod sparse_sensing;
+
 pub use decimate::min_max_decimate;
 pub use interpolation::{
     interp_cubic,
@@ -63,6 +66,18 @@ pub use resample::{
 };
 pub use traits::PeakDetect;
 pub use windows::resample_rr_to_tachogram;
+pub use sparse_sensing::{
+    IstaConfig,
+    SparseRecoveryResult,
+    dct_basis,
+    effective_sensing,
+    ista,
+    measure,
+    omp,
+    random_gaussian_sensing,
+    reconstruct_signal,
+    row_selection_sensing,
+};
 
 /// Interpolation functions.
 pub mod interp {

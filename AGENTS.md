@@ -101,17 +101,31 @@ The workspace strongly prefers **minimal, intentional dependencies**. Every new 
 ### Linear Algebra & Heavy Dependencies
 - `ndarray-linalg` (and its transitive dependencies such as `cauchy`, `lax`, and LAPACK backends like OpenBLAS) is considered **heavy**.
 - `polars` (and its transitive dependencies: arrow, multiple compression crates, etc.) is also heavy. It is centralized in the workspace for version consistency because we may want/need it in more than just the TUI in the future. Keep usage behind opt-in features in consuming crates.
-- In `symworx-stats`, SVD, PCA, and the high-quality `l2`/`l1` regression implementations live behind an opt-in **`linalg`** feature.
+- In `symworx-stats`, SVD, PCA, and closed-form regression (`l2`/`ols`/`ridge`) live behind an opt-in **`linalg`** feature.
+  - Lasso / Elastic Net (coordinate descent), k-means clustering, and nonlinear least squares do **not** require `linalg`.
   - The feature is **off by default** in the standalone `symworx-stats` crate. This keeps the dependency footprint small for common use cases (basic statistics, variability metrics, correlations, etc.).
   - `symworx-core` enables the `linalg` feature on `symworx-stats` by default for convenience, since most consumers go through `symworx-core`.
+- Optimization primitives (gradient descent, finite differences) live in **`symworx-math::optimize`** — pure Rust, no LAPACK.
 - `symworx-signal` has a **direct unconditional dependency** on `ndarray-linalg` (via the workspace definition). This is intentional: advanced linear algebra (e.g. deconvolution, NNLS/Weiner solvers in `processing/deconvolution/`) is core to the crate and cannot reasonably be feature-gated for its primary use cases.
 - The workspace `Cargo.toml` declares `ndarray-linalg` with `features = ["openblas"]` (and the corresponding `openblas-build` build-dep). Do **not** add `ndarray-linalg` (or similar) unconditionally to `symworx-math`, `symworx-stats`, or most leaf crates unless the functionality is core *and* cannot reasonably be feature-gated.
 - When a heavy dependency is truly required, prefer feature-gating it (as done in stats) and documenting the cost (compile time, binary size, native OpenBLAS requirements). Signal is the explicit exception noted above.
 
 ### General Rules
 - Prefer pure-Rust or already-present workspace dependencies when possible.
-- `symworx-math` is the canonical home for low-level numerical and sequence primitives.
-- `symworx-stats` owns statistical descriptors and light modeling on top of those primitives.
+- `symworx-math` is the canonical home for low-level numerical, sequence, and optimization primitives.
+- `symworx-stats` owns statistical descriptors and classical modeling (regression, PCA/SVD, clustering) on top of those primitives.
+- Data-driven dynamical operators (DMD, Koopman, SINDy) belong in **`symworx-dynamics`**, not stats.
+  - DMD: `symworx-dynamics::dmd` (uses `symworx-stats` SVD via `linalg`).
+  - EDMD / Koopman: `symworx-dynamics::koopman`.
+  - SINDy (STLS): `symworx-dynamics::sindy` (polynomial library + sparse regression).
+  - SINDYc (with control): `symworx-dynamics::sindyc` — library `Θ(x,u)`, forced simulation.
+  - LTI plants + PID + state feedback: `symworx-dynamics::control`.
+- Sparse sensing / compressed sensing reconstruction belongs in **`symworx-signal`**, not stats.
+  - ISTA / OMP / sensing matrices: `symworx-signal::processing::sparse_sensing`.
+- State estimation stays in **`symworx-signal`** (avoids dynamics↔signal cycles via `symworx-core`):
+  - Linear Kalman + RTS + LTI constructors: `filters::nonlinear::kalman`
+  - EKF: `filters::nonlinear::ekf`
+  - UKF: `filters::nonlinear::ukf`
 - If you need to add a new dependency, follow the "When to Ask vs. When to Just Do It" rule above.
 
 ### I/O Layer (Critical Rule)

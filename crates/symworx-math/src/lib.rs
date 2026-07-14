@@ -12,6 +12,8 @@
 //!
 //! - [`series`] — Low-level operations on ordered sequences
 //!   (the canonical home for successive differences and similar primitives).
+//! - [`optimize`] — Gradient descent and finite-difference gradients
+//!   (no LAPACK; used by nonlinear regression and teaching demos).
 
 #![allow(unused_imports)]
 #![warn(missing_docs)]
@@ -23,6 +25,9 @@ pub mod distributions;
 
 /// Integration.
 pub mod integration;
+
+/// Optimization primitives (gradient descent, finite differences).
+pub mod optimize;
 
 /// Oscillators and related functions.
 pub mod oscillators;
@@ -48,6 +53,13 @@ pub use integration::{
     rk4_integrate,
     rk4_step,
     trapz,
+};
+pub use optimize::{
+    GradientDescentConfig,
+    GradientDescentResult,
+    finite_difference_gradient,
+    gradient_descent,
+    gradient_descent_fd,
 };
 pub use oscillators::VanDerPol;
 pub use random::*;
@@ -79,6 +91,11 @@ pub mod special_fn {
 /// Numerical integration methods (trapezoidal + ODE solvers).
 pub mod integrate {
     pub use super::integration::*;
+}
+
+/// Optimization primitives (gradient descent, finite differences).
+pub mod opt {
+    pub use super::optimize::*;
 }
 
 /// Series and sequential difference operations.

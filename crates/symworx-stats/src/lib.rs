@@ -11,8 +11,8 @@
 //!
 //! ## Linear algebra features
 //!
-//! SVD, PCA, and the high-precision `l2` (OLS) / `l1` (Lasso) regression
-//! functions require the **`linalg`** feature on `symworx-stats`:
+//! SVD, PCA, and the high-precision `l2`/`ols`/`ridge` regression solvers
+//! require the **`linalg`** feature on `symworx-stats`:
 //!
 //! ```toml
 //! [dependencies]
@@ -28,6 +28,9 @@
 //! However, `symworx-core` enables the `linalg` feature by default for
 //! convenience, so most users of the ecosystem get regression, SVD, and PCA
 //! without extra configuration.
+//!
+//! Lasso / Elastic Net (`l1`, `lasso`, `elastic_net`) and k-means clustering
+//! do **not** require `linalg`.
 
 #![allow(unused_imports)]
 #![warn(missing_docs)]
@@ -40,20 +43,26 @@ pub mod autocorrelation;
 /// Basic statistics, including mean, median, mad.
 pub mod basic;
 
+/// Clustering (k-means). Does not require the `linalg` feature.
+pub mod cluster;
+
 /// Correlation functions.
 pub mod correlation;
 
 /// Distance metrics (e.g., Euclidean).
 pub mod distance;
 
-/// Errors measurements.
+/// Predicted-vs-expected error metrics (MAE, RMSE, R², regression report).
 pub mod error_metrics;
 
-/// Linear regression models (e.g., l1 and l2).
+/// Linear regression models (OLS, Ridge, Lasso, Elastic Net).
 ///
-/// The high-quality `l2` implementation (and therefore `l1` which can call it)
-/// requires the `linalg` feature (which brings ndarray-linalg + cauchy etc.).
+/// Closed-form `l2` / `ols` / `ridge` require the `linalg` feature.
+/// Coordinate-descent `l1` / `lasso` / `elastic_net` do not.
 pub mod linreg;
+
+/// Nonlinear least-squares regression (gradient descent; no LAPACK).
+pub mod nlinreg;
 
 #[cfg(feature = "linalg")]
 /// Principal component analysis (requires `linalg` feature).
@@ -82,6 +91,14 @@ pub use correlation::{
     correlation_matrix_from_vec,
     pearson_correlation,
 };
+pub use cluster::{
+    KMeansConfig,
+    KMeansResult,
+    cluster_sizes,
+    compute_inertia,
+    kmeans,
+    kmeans_predict,
+};
 pub use distance::{
     chebyshev,
     cosine_distance,
@@ -89,14 +106,33 @@ pub use distance::{
     manhattan,
 };
 pub use error_metrics::{
+    RegressionReport,
+    bias,
     mae,
+    max_abs_error,
     mse,
+    r2,
+    regression_report,
+    residuals,
     rmse,
+};
+pub use linreg::{
+    LinearModel,
+    elastic_net,
+    l1,
+    lasso,
+    soft_threshold,
 };
 #[cfg(feature = "linalg")]
 pub use linreg::{
-    l1,
     l2,
+    ols,
+    ridge,
+};
+pub use nlinreg::{
+    NonlinearFitResult,
+    nonlinear_least_squares,
+    nonlinear_least_squares_design,
 };
 pub use variability::{
     mean_successive_differences,

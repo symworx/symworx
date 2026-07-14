@@ -253,6 +253,84 @@ pub struct FilterRun {
     pub predicted_covs: Vec<Array2<f64>>,
 }
 
+// ——— LTI helper constructors (Kim / textbook state-space forms) ———
+
+impl KalmanFilter {
+    /// 1D constant-velocity tracker: state `[position, velocity]`, observe position.
+    ///
+    /// Discrete white-noise acceleration model with process intensity `q_var`
+    /// and measurement variance `r_var`.
+    pub fn constant_velocity_1d(dt: f64, q_var: f64, r_var: f64) -> Self {
+        assert!(dt > 0.0);
+        let f = array![[1.0, dt], [0.0, 1.0]];
+        let h = array![[1.0, 0.0]];
+        let q = array![
+            [q_var * dt.powi(4) / 4.0, q_var * dt.powi(3) / 2.0],
+            [q_var * dt.powi(3) / 2.0, q_var * dt.powi(2)]
+        ];
+        let r = array![[r_var]];
+        let x0 = array![0.0, 0.0];
+        let p0 = Array2::eye(2) * 1e3;
+        Self::new(f, h, q, r, x0, p0)
+    }
+
+    /// Independent random-walk states, fully observed: `x⁺ = x + w`, `z = x + v`.
+    ///
+    /// Useful as a baseline smoother for slowly varying latent features
+    /// (e.g. windowed HRV metrics).
+    pub fn random_walk(n: usize, q_var: f64, r_var: f64) -> Self {
+        assert!(n > 0);
+        let f = Array2::eye(n);
+        let h = Array2::eye(n);
+        let q = Array2::eye(n) * q_var;
+        let r = Array2::eye(n) * r_var;
+        let x0 = Array1::zeros(n);
+        let p0 = Array2::eye(n) * 1e3;
+        Self::new(f, h, q, r, x0, p0)
+    }
+
+    /// Local-level + drift model (integrated random walk on the level):
+    /// state `[level, drift]`, observe level only.
+    ///
+    /// `q_level` / `q_drift` are diagonal process-noise intensities;
+    /// `r_var` is measurement variance.
+    pub fn local_linear_trend(dt: f64, q_level: f64, q_drift: f64, r_var: f64) -> Self {
+        assert!(dt > 0.0);
+        let f = array![[1.0, dt], [0.0, 1.0]];
+        let h = array![[1.0, 0.0]];
+        let q = array![[q_level, 0.0], [0.0, q_drift]];
+        let r = array![[r_var]];
+        let x0 = array![0.0, 0.0];
+        let p0 = Array2::eye(2) * 1e3;
+        Self::new(f, h, q, r, x0, p0)
+    }
+
+    /// Build a filter from explicit discrete LTI pieces (same as [`KalmanFilter::new`]
+    /// but documents the state-space interpretation used with control plants).
+    ///
+    /// ```text
+    /// x⁺ = F x + B u + w,    z = H x + v
+    /// ```
+    ///
+    /// Pass `b = None` for an uncontrolled plant; use [`KalmanFilter::with_control`]
+    /// when `B` is known.
+    pub fn from_discrete_lti(
+        f: Array2<f64>,
+        h: Array2<f64>,
+        q: Array2<f64>,
+        r: Array2<f64>,
+        x0: Array1<f64>,
+        p0: Array2<f64>,
+        b: Option<Array2<f64>>,
+    ) -> Self {
+        let mut kf = Self::new(f, h, q, r, x0, p0);
+        if let Some(b) = b {
+            kf = kf.with_control(b);
+        }
+        kf
+    }
+}
+
 /// Rauch–Tung–Striebel (RTS) smoother.
 ///
 /// Given a `FilterRun` produced by `KalmanFilter::run_forward` and the
@@ -296,6 +374,46 @@ mod tests {
     use ndarray::Array2;
 
     use super::*;
+
+    #[test]
+    fn test_constant_velocity_constructor() {
+        let mut kf = KalmanFilter::constant_velocity_1d(1.0, 1e-4, 0.1);
+        for t in 0..10 {
+            kf.predict(None);
+            kf.update(&array![t as f64]);
+        }
+        let (pos, vel) = (kf.state()[0], kf.state()[1]);
+        assert!(pos > 5.0, "position should track ramp, got {pos}");
+        assert!((vel - 1.0).abs() < 0.5, "velocity ≈ 1, got {vel}");
+    }
+
+    #[test]
+    fn test_random_walk_constructor() {
+        let mut kf = KalmanFilter::random_walk(2, 0.01, 0.1);
+        kf.predict(None);
+        kf.update(&array![1.0, -1.0]);
+        assert_eq!(kf.state().len(), 2);
+    }
+
+    #[test]
+    fn test_from_discrete_lti_with_control() {
+        let f = array![[1.0, 0.0], [0.0, 1.0]];
+        let h = array![[1.0, 0.0]];
+        let q = Array2::eye(2) * 0.01;
+        let r = array![[0.1]];
+        let b = array![[1.0], [0.0]];
+        let mut kf = KalmanFilter::from_discrete_lti(
+            f,
+            h,
+            q,
+            r,
+            array![0.0, 0.0],
+            Array2::eye(2),
+            Some(b),
+        );
+        kf.predict(Some(&array![0.5]));
+        assert!((kf.state()[0] - 0.5).abs() < 1e-12);
+    }
 
     #[test]
     fn test_general_reproduces_old_1d_cv() {
