@@ -19,8 +19,8 @@ iii) **scalability** via consistent APIs across embedded, desktop, and cloud env
 
 Much of the original work was developed in Python, but is now being rewritten in Rust.
 This shift was motivated by both a desire to deeply learn Rust and the opportunity to build a portable, high‑assurance computational engine that can 
-i) run on microcontrollers and bare‑metal systems, 
-ii) integrate seamlessly with Python for education, data science, and rapid prototyping, 
+i) run on microcontrollers and bare‑metal systems,
+ii) integrate seamlessly with Python for education, data science, and rapid prototyping,
 iii) serve as a stable foundation for higher‑level simulation frameworks
 
 **License:**
@@ -59,7 +59,7 @@ See `crates/symworx-biosym/src/` (particularly the `gait` module and future `run
 
 ### [LoadSym](crates/symworx-loadsym/README.md)
 
-**Overview**: The `symworx-loadsym` crate contains resources for quantifying and optimizing (exercise programming) training load (physiological and mechanical). Includes ACWR, monotony/strain, NP/TSS/IF for power meter rides (.fit from SRM PC8, Garmin, Polar), plus nutrition (BMR/TDEE/weightloss).
+**Overview**: The `symworx-loadsym` crate contains resources for quantifying and optimizing (exercise programming) training load (physiological and mechanical). Includes ACLi (acute-to-chronic load), monotony/strain, SEPi/TSLi/SRIi for power meter rides (.fit from SRM PC8, Garmin, Polar), plus nutrition (BMR/TDEE/weightloss).
 
 TUI (symview) has a first-class **LoadSym** workflow (Home → 2) with Workout analysis, Calendar trends, and Optimization recommendations. Press `i`/`a` to load the newest `.fit` from `$VELOFIT_HOME` (default `~/velofit`) or `./data`.
 
@@ -99,8 +99,8 @@ The workspace deliberately keeps heavy native dependencies minimal and opt-in wh
 
 ### I/O Principle
 - `symworx-io` is the canonical layer for all signal file I/O (Parquet, CSV, IBI, etc.).
-- No other crate (including the TUI or analysis code) should bypass it by depending directly on `parquet`, `polars/parquet`, or similar for reading/writing signal data. This avoids pulling duplicate and conflicting low-level stacks (Arrow, brotli, zstd, allocators, etc.).
-- Optional heavy analysis libraries (e.g. Polars) may be used for in-memory work, but data must first be loaded through `symworx-io`.
+- No other crate (including the TUI or analysis code) should bypass it by depending directly on `parquet`, `polars/parquet`, or similar for reading/writing signal data. This avoids pulling duplicate and incompatible transitive stacks (e.g. multiple versions of Arrow, brotli, zstd, and their allocator crates).
+- Keep the core I/O layer stable and independent of heavy optional analysis libraries.
 - The TUI follows this rule: it depends on `symworx-io` for loading and keeps any Polars usage strictly for in-memory exploration (never for I/O).
 
 

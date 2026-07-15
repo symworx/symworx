@@ -10,7 +10,7 @@ use symworx_loadsym::load::{compute_acute_chronic, classify_acwr, compute_monoto
 let daily_loads: Vec<f64> = (0..30).map(|i| 400.0 + (i as f64 % 7.0) * 30.0).collect();
 
 let snap = compute_acute_chronic(&daily_loads, 7, 28).unwrap();
-println!("ACWR = {:.2} → {:?}", snap.acwr, snap.risk_level);
+println!("ACLi = {:.2} → {:?}", snap.acwr, snap.risk_level);
 
 let mono = compute_monotony(&daily_loads[23..]).unwrap();
 println!("Recent monotony: {:.2}", mono);
@@ -18,11 +18,11 @@ println!("Recent monotony: {:.2}", mono);
 
 ## Pulse-response (fitness–fatigue) + multi-day plans
 
-Daily load series (e.g. TSS) drive a two-compartment model:
+Daily load series (e.g. TSLi) drive a two-compartment model:
 
 | Mode | Update | Interpretation |
 |------|--------|----------------|
-| **PMC** (`PulseResponseParams::pmc_defaults`) | EWMA CTL/ATL | `fitness`→CTL, `fatigue`→ATL, `form`→TSB |
+| **PMC** (`PulseResponseParams::pmc_defaults`) | EWMA LTSLi/STSLi | `fitness`→LTSLi, `fatigue`→STSLi, `readiness`→SLBi |
 | **Banister** (`banister_defaults`) | \(x_t = x_{t-1}e^{-1/\tau}+w_t\) | classic impulse-response; use \(k_h > k_g\) |
 
 ```rust
@@ -34,22 +34,22 @@ use symworx_loadsym::load::{
 let params = PulseResponseParams::pmc_defaults();
 let series = simulate_pulse_response(&daily_loads, &params, None).unwrap();
 let end = series.last_state().unwrap();
-println!("CTL={:.0} ATL={:.0} TSB={:.0}", end.ctl(), end.atl(), end.tsb());
+println!("LTSLi={:.0} STSLi={:.0} SLBi={:.0}", end.ctl(), end.atl(), end.tsb());
 
 let thr = OptimizationThresholds { horizon_days: 3, ..Default::default() };
 let plan = optimize_load_plan(&daily_loads, &params, LoadGoal::Recovery, &thr).unwrap();
-println!("plan TSS {:?} success={}", plan.daily_tss, plan.success);
+println!("plan TSLi {:?} success={}", plan.daily_tss, plan.success);
 ```
 
-**Optimization goals** (default horizon **4** days, max **10**) — primary success is **mean planned load vs chronic mean \(C\)** (last ≤28 days of TSS):
+**Optimization goals** (default horizon **4** days, max **10**) — primary success is **mean planned load vs chronic mean \(C\)** (last ≤28 days of TSLi):
 
 | Goal | Intent | Success (defaults) | Scoring prefers |
 |------|--------|--------------------|-----------------|
 | `Recovery` | Active recovery | \(0.20\,C \le \bar w \le 0.55\,C\) | ~0.38·C days (not pure rest) |
-| `Maintenance` | Hold load | \(0.85\,C \le \bar w \le 1.15\,C\) | Mean near \(C\) **with day-to-day TSS variance** (not flat) |
+| `Maintenance` | Hold load | \(0.85\,C \le \bar w \le 1.15\,C\) | Mean near \(C\) **with day-to-day TSLi variance** (not flat) |
 | `Overload` | Elevated load | \(1.15\,C \le \bar w \le 1.40\,C\), \(\bar w > C\) | ~1.25·C with variety; soft limit consecutive hard days |
 
-Form (TSB) and projected ACWR are **soft / separate context** — they do not alone hard-fail success.
+Readiness (SLBi) and projected ACLi are **soft / separate context** — they do not alone hard-fail success.
 
 Search uses a fine template grid (rest → long). Short horizons fully enumerate
 candidates; longer horizons (when `7^H` is large) use **beam search** so H=10 stays interactive.
@@ -92,7 +92,7 @@ cargo run -p symworx-loadsym --features fit -- inbox promote
 | `fit` | Load `.fit` for `stats` |
 | `email` | IMAP fetch of `.fit` attachments (implies `fit`) |
 | `db` | `db print-schema` from `symworx-loadsym-db` |
-| `sqlite` | Personal catalog init + ingest (`rusqlite` + `fit` + `db`) |
+| `sqlite` | Personal catalog init + ingest (`ruslit e` + `fit` + `db`) |
 
 ### Environment
 
@@ -111,5 +111,5 @@ See `crates/symworx-loadsym-db/docs/loadsym-personal-starter.md`.
 ```rust
 use symworx_loadsym::load::compute_ride_metrics;
 let m = compute_ride_metrics(&times_s, &power_w, 300.0);
-println!("NP={} TSS={:.1}", m.np, m.tss);
+println!("SEPi={} TSLi={:.1}", m.np, m.tss);
 ```
