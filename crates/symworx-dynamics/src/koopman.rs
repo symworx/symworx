@@ -172,8 +172,11 @@ pub fn edmd_pair(x: &Array2<f64>, x_prime: &Array2<f64>, config: &EdmdConfig) ->
         }
     }
     let y_prime_yt = y_prime.dot(&y.t());
-    let k = y_prime_yt
-        .dot(&gram.inv().expect("EDMD Gram matrix inversion failed — try ridge > 0"));
+    let k = y_prime_yt.dot(
+        &gram
+            .inv()
+            .expect("EDMD Gram matrix inversion failed — try ridge > 0"),
+    );
 
     let (evals, evecs) = k
         .eig()
@@ -337,8 +340,9 @@ fn mean_relative_column_error(target: &Array2<f64>, pred: &Array2<f64>) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::array;
+
+    use super::*;
 
     fn simulate_linear(a: &Array2<f64>, x0: Array1<f64>, steps: usize) -> Array2<f64> {
         let n = x0.len();

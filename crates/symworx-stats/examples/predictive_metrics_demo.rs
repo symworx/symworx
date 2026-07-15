@@ -15,13 +15,13 @@ use ndarray::{
     Array1,
     array,
 };
-use symworx_stats::pca::Pca;
 use symworx_stats::{
     KMeansConfig,
     elastic_net,
     kmeans,
     lasso,
     ols,
+    pca::Pca,
     regression_report,
     ridge,
 };

@@ -86,11 +86,6 @@ pub use basic::{
     std_dev,
     std_dev_sample,
 };
-pub use correlation::{
-    correlation_matrix,
-    correlation_matrix_from_vec,
-    pearson_correlation,
-};
 pub use cluster::{
     KMeansConfig,
     KMeansResult,
@@ -98,6 +93,11 @@ pub use cluster::{
     compute_inertia,
     kmeans,
     kmeans_predict,
+};
+pub use correlation::{
+    correlation_matrix,
+    correlation_matrix_from_vec,
+    pearson_correlation,
 };
 pub use distance::{
     chebyshev,

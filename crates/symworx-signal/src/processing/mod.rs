@@ -64,8 +64,6 @@ pub use resample::{
     Resample,
     ResampleMethod,
 };
-pub use traits::PeakDetect;
-pub use windows::resample_rr_to_tachogram;
 pub use sparse_sensing::{
     IstaConfig,
     SparseRecoveryResult,
@@ -78,6 +76,8 @@ pub use sparse_sensing::{
     reconstruct_signal,
     row_selection_sensing,
 };
+pub use traits::PeakDetect;
+pub use windows::resample_rr_to_tachogram;
 
 /// Interpolation functions.
 pub mod interp {

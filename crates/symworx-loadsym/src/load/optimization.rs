@@ -661,8 +661,7 @@ fn evaluate_candidate(
             }
             Err(_) => {
                 messages.push(
-                    "ACWR context: insufficient history for 7/28 window (advisory skipped)"
-                        .into(),
+                    "ACWR context: insufficient history for 7/28 window (advisory skipped)".into(),
                 );
             }
         }

@@ -214,7 +214,10 @@ pub fn snapshots_from_states(states: &[Array1<f64>]) -> Array2<f64> {
 /// Input `embedded` is a list of delay vectors (each length `m_embed`);
 /// output is `m_embed × n_vectors`.
 pub fn snapshots_from_embedding(embedded: &[Vec<f64>]) -> Array2<f64> {
-    assert!(!embedded.is_empty(), "embedded trajectories must not be empty");
+    assert!(
+        !embedded.is_empty(),
+        "embedded trajectories must not be empty"
+    );
     let n = embedded[0].len();
     let m = embedded.len();
     let mut out = Array2::zeros((n, m));
@@ -292,8 +295,9 @@ fn fit_amplitudes(modes: &Array2<Complex64>, x0: &Array1<f64>) -> Array1<Complex
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::array;
+
+    use super::*;
 
     /// Linear system x_{k+1} = A x_k with known eigenvalues.
     fn simulate_linear(a: &Array2<f64>, x0: Array1<f64>, steps: usize) -> Array2<f64> {
@@ -324,10 +328,7 @@ mod tests {
 
         assert_eq!(result.rank, 2);
         // Expected eigenvalues
-        let expected = [
-            Complex64::new(0.9, 0.2),
-            Complex64::new(0.9, -0.2),
-        ];
+        let expected = [Complex64::new(0.9, 0.2), Complex64::new(0.9, -0.2)];
         // Match each expected to nearest computed (order may vary)
         for exp in &expected {
             let min_dist = result
@@ -359,10 +360,7 @@ mod tests {
         for k in [0usize, 5, 10, 15] {
             let pred = result.predict_discrete(k);
             let true_x = snaps.column(k);
-            let err = (&pred - &true_x.to_owned())
-                .mapv(|v| v * v)
-                .sum()
-                .sqrt();
+            let err = (&pred - &true_x.to_owned()).mapv(|v| v * v).sum().sqrt();
             assert!(err < 1e-4, "step {k} prediction error {err}");
         }
     }

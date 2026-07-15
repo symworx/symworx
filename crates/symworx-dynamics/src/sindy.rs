@@ -326,9 +326,10 @@ pub(crate) fn mean_relative_column_error(target: &Array2<f64>, pred: &Array2<f64
 
 #[cfg(test)]
 mod tests {
+    use ndarray::array;
+
     use super::*;
     use crate::koopman::Dictionary;
-    use ndarray::array;
 
     /// Linear system ẋ = A x with known A.
     fn simulate_linear_continuous(
@@ -371,14 +372,14 @@ mod tests {
         // ξ column 0 should ≈ [0, -0.5, 0.1, 0, 0, 0]
         // ξ column 1 should ≈ [0, 0, -0.3, 0, 0, 0]
         assert_eq!(model.library_dim, 6);
-        assert!(model.sparsity(1e-6) <= 4, "sparsity {}", model.sparsity(1e-6));
+        assert!(
+            model.sparsity(1e-6) <= 4,
+            "sparsity {}",
+            model.sparsity(1e-6)
+        );
 
         let xi = &model.xi;
-        assert!(
-            (xi[[1, 0]] + 0.5).abs() < 0.08,
-            "A00: got {}",
-            xi[[1, 0]]
-        );
+        assert!((xi[[1, 0]] + 0.5).abs() < 0.08, "A00: got {}", xi[[1, 0]]);
         assert!((xi[[2, 0]] - 0.1).abs() < 0.08, "A01: got {}", xi[[2, 0]]);
         assert!((xi[[2, 1]] + 0.3).abs() < 0.08, "A11: got {}", xi[[2, 1]]);
         // Constant and quadratic terms should be ~0
@@ -428,10 +429,7 @@ mod tests {
     #[test]
     fn test_sindy_with_exact_derivatives() {
         // ẋ1 = -x1, ẋ2 = -2 x2 — exact derivatives, identity library
-        let states = array![
-            [1.0, 0.8, 0.6, 0.4],
-            [1.0, 0.5, 0.25, 0.125]
-        ];
+        let states = array![[1.0, 0.8, 0.6, 0.4], [1.0, 0.5, 0.25, 0.125]];
         let mut derivs = Array2::zeros((2, 4));
         for j in 0..4 {
             derivs[[0, j]] = -states[[0, j]];

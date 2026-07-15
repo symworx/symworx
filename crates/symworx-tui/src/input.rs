@@ -761,9 +761,8 @@ fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
         KeyCode::Char('p') | KeyCode::Char('P') => {
             app.pending_process = true;
             app.pending_peak_params = false;
-            app.status =
-                "Process: ↑↓ or 1–5   ←→/± window (MA/Median)   Enter apply   Esc cancel"
-                    .to_string();
+            app.status = "Process: ↑↓ or 1–5   ←→/± window (MA/Median)   Enter apply   Esc cancel"
+                .to_string();
             return false;
         }
         KeyCode::Char('k') => {
@@ -831,11 +830,13 @@ fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                     }
                 }
                 app.status = crate::processing::rebuild_tachogram_status(app);
-                if app.loaded_signal.as_ref().and_then(|s| s.tachogram.as_ref()).is_none() {
-                    app.status = format!(
-                        "Tachogram view — {}",
-                        app.status
-                    );
+                if app
+                    .loaded_signal
+                    .as_ref()
+                    .and_then(|s| s.tachogram.as_ref())
+                    .is_none()
+                {
+                    app.status = format!("Tachogram view — {}", app.status);
                 } else {
                     app.status = format!("View: tachogram — {}", app.status);
                 }
@@ -888,21 +889,17 @@ fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
         }
         KeyCode::Right | KeyCode::Char('l') | KeyCode::Char('L') => {
             if let Some(sig) = &app.loaded_signal {
-                let (view_len, n, step) =
-                    if app.explore_view == crate::app::ExploreView::Tachogram {
-                        let n = sig
-                            .tachogram
-                            .as_ref()
-                            .map(|t| t.n_intervals())
-                            .unwrap_or(0);
-                        (crate::ui::tabs::explore::TACHO_VIEW_LEN, n, 5usize)
-                    } else {
-                        (
-                            crate::ui::tabs::explore::EXPLORE_VIEW_LEN,
-                            sig.current.len(),
-                            30usize,
-                        )
-                    };
+                let (view_len, n, step) = if app.explore_view == crate::app::ExploreView::Tachogram
+                {
+                    let n = sig.tachogram.as_ref().map(|t| t.n_intervals()).unwrap_or(0);
+                    (crate::ui::tabs::explore::TACHO_VIEW_LEN, n, 5usize)
+                } else {
+                    (
+                        crate::ui::tabs::explore::EXPLORE_VIEW_LEN,
+                        sig.current.len(),
+                        30usize,
+                    )
+                };
                 let max_start = n.saturating_sub(view_len);
                 app.explore_scroll = (app.explore_scroll + step).min(max_start);
                 app.status = format!(
@@ -1449,8 +1446,8 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                     crate::processing::sync_week_scroll_from_daily(app);
                 }
                 KeyCode::PageDown => {
-                    app.loadsym_scroll = (app.loadsym_scroll + 10)
-                        .min(app.daily_loads.len().saturating_sub(1));
+                    app.loadsym_scroll =
+                        (app.loadsym_scroll + 10).min(app.daily_loads.len().saturating_sub(1));
                     crate::processing::sync_week_scroll_from_daily(app);
                 }
                 KeyCode::Char('r') | KeyCode::Char('R') => {

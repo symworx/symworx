@@ -402,15 +402,8 @@ mod tests {
         let q = Array2::eye(2) * 0.01;
         let r = array![[0.1]];
         let b = array![[1.0], [0.0]];
-        let mut kf = KalmanFilter::from_discrete_lti(
-            f,
-            h,
-            q,
-            r,
-            array![0.0, 0.0],
-            Array2::eye(2),
-            Some(b),
-        );
+        let mut kf =
+            KalmanFilter::from_discrete_lti(f, h, q, r, array![0.0, 0.0], Array2::eye(2), Some(b));
         kf.predict(Some(&array![0.5]));
         assert!((kf.state()[0] - 0.5).abs() < 1e-12);
     }

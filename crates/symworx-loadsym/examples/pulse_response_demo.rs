@@ -69,7 +69,10 @@ fn main() {
         horizon_days: 4,
         ..Default::default()
     };
-    println!("\n--- Next {}-day plans (default H=4, max 10) ---", thr.horizon_days);
+    println!(
+        "\n--- Next {}-day plans (default H=4, max 10) ---",
+        thr.horizon_days
+    );
     for goal in [
         LoadGoal::Recovery,
         LoadGoal::Maintenance,

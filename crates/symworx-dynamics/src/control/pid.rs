@@ -97,9 +97,10 @@ impl Pid {
 
 #[cfg(test)]
 mod tests {
+    use ndarray::array;
+
     use super::*;
     use crate::control::lti::LtiDiscrete;
-    use ndarray::array;
 
     #[test]
     fn test_p_only_reduces_error() {

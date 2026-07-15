@@ -77,6 +77,16 @@ pub use koopman::{
     lift_snapshots,
     lift_state,
 };
+pub use rqa::{
+    CrossRecurrencePlot,
+    DEFAULT_LMIN,
+    DEFAULT_VMIN,
+    RecurrencePlot,
+    RqaResult,
+    crqa,
+    rqa,
+    rqa_from_trajectory,
+};
 pub use sindy::{
     SindyConfig,
     SindyResult,
@@ -92,16 +102,6 @@ pub use sindyc::{
     lift_xu,
     sindyc,
     sindyc_with_derivatives,
-};
-pub use rqa::{
-    CrossRecurrencePlot,
-    DEFAULT_LMIN,
-    DEFAULT_VMIN,
-    RecurrencePlot,
-    RqaResult,
-    crqa,
-    rqa,
-    rqa_from_trajectory,
 };
 
 // Version info

@@ -37,9 +37,9 @@ use symworx_loadsym::load::{
     ride_load_from_metrics,
     simulate_pulse_response,
     LoadGoal,
-    MAX_HORIZON_DAYS,
     PulseResponseParams,
     RiskLevel,
+    MAX_HORIZON_DAYS,
 };
 
 use crate::app::{
@@ -473,10 +473,7 @@ fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
             week_num,
             week_total.min(9999),
         )),
-        Line::from(Span::styled(
-            col_hdr,
-            Style::default().fg(Color::DarkGray),
-        )),
+        Line::from(Span::styled(col_hdr, Style::default().fg(Color::DarkGray))),
         Line::from(Span::styled(
             col_vals,
             Style::default()
@@ -509,10 +506,7 @@ fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
     )));
     // Render newest → older so most recent is at the top of the pane
     daily_lines.push(Line::from(Span::styled(
-        format!(
-            "  {:<10}  {:>7}  {:>3}  {:>6}",
-            "date", "TSS", "n", "ACWR"
-        ),
+        format!("  {:<10}  {:>7}  {:>3}  {:>6}", "date", "TSS", "n", "ACWR"),
         Style::default().fg(Color::DarkGray),
     )));
     for idx in (day_lo..=day_hi).rev() {
@@ -522,11 +516,7 @@ fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
             .get(idx)
             .cloned()
             .unwrap_or_else(|| format!("d{idx}"));
-        let ac = app
-            .daily_acwr
-            .get(idx)
-            .and_then(|a| *a)
-            .unwrap_or(0.0);
+        let ac = app.daily_acwr.get(idx).and_then(|a| *a).unwrap_or(0.0);
         let nr = app.daily_ride_counts.get(idx).copied().unwrap_or(0);
         daily_lines.push(Line::from(format!(
             "{marker} {:<10}  {:>7.1}  {:>3}  {:>6.2}",
@@ -552,12 +542,12 @@ fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
             Style::default().fg(Color::DarkGray),
         )));
     } else {
-        for (k, r) in day_rides.iter().take(ride_lines_budget.saturating_sub(1)).enumerate() {
-            let name = r
-                .source_file
-                .rsplit('/')
-                .next()
-                .unwrap_or(&r.source_file);
+        for (k, r) in day_rides
+            .iter()
+            .take(ride_lines_budget.saturating_sub(1))
+            .enumerate()
+        {
+            let name = r.source_file.rsplit('/').next().unwrap_or(&r.source_file);
             let mins = r.duration_s / 60.0;
             daily_lines.push(Line::from(format!(
                 "  {:>2}. {:<24}  {:>7.1}  {:>5.0}m",
@@ -855,8 +845,16 @@ fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect) {
     let n = loads.len();
     let last7: f64 = loads.iter().rev().take(7).sum();
     let last28: f64 = loads.iter().rev().take(28).sum();
-    let date_lo = app.daily_load_dates.first().map(|s| s.as_str()).unwrap_or("?");
-    let date_hi = app.daily_load_dates.last().map(|s| s.as_str()).unwrap_or("?");
+    let date_lo = app
+        .daily_load_dates
+        .first()
+        .map(|s| s.as_str())
+        .unwrap_or("?");
+    let date_hi = app
+        .daily_load_dates
+        .last()
+        .map(|s| s.as_str())
+        .unwrap_or("?");
     let src = if app.loadsym_from_catalog {
         "catalog"
     } else {
@@ -870,9 +868,10 @@ fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect) {
         .unwrap_or("-");
 
     // Fixed-width fields so goal tabbing does not reflow this strip.
-    let (ctl, atl, tsb) = state
-        .map(|s| (s.ctl(), s.atl(), s.tsb()))
-        .unwrap_or((f64::NAN, f64::NAN, f64::NAN));
+    let (ctl, atl, tsb) =
+        state
+            .map(|s| (s.ctl(), s.atl(), s.tsb()))
+            .unwrap_or((f64::NAN, f64::NAN, f64::NAN));
     metric_lines.push(Line::from(format!(
         " source={:<7}  days={:<4}  range={:<10} → {:<10}  file={:<16}  H={:<2}d",
         src,
@@ -979,10 +978,7 @@ fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect) {
             lines.push(Line::from(format!("  • {}", m)));
         }
         if plan.messages.len() > 4 {
-            lines.push(Line::from(format!(
-                "  … +{} more",
-                plan.messages.len() - 4
-            )));
+            lines.push(Line::from(format!("  … +{} more", plan.messages.len() - 4)));
         }
 
         render_opt_dual_charts(
@@ -1148,10 +1144,7 @@ fn render_hist_proj_bar<F>(
 
     // Visual split between history and projection
     frame.render_widget(
-        Paragraph::new(Span::styled(
-            "│",
-            Style::default().fg(Color::DarkGray),
-        )),
+        Paragraph::new(Span::styled("│", Style::default().fg(Color::DarkGray))),
         cols[1],
     );
 

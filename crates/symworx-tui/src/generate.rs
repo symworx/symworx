@@ -120,7 +120,10 @@ fn generate_ppg_variants(data_dir: &Path, count: usize) -> Result<GeneratedDemo>
         save_two_column(&path, &ts.times, &ts.values, "time,ppg")?;
         save_peaks_sidecar(
             &path,
-            &[("systolic", &ts.systolic_peaks), ("diastolic", &ts.diastolic_peaks)],
+            &[
+                ("systolic", &ts.systolic_peaks),
+                ("diastolic", &ts.diastolic_peaks),
+            ],
         )?;
 
         last = Some(GeneratedDemo {

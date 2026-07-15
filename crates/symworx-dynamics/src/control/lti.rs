@@ -120,16 +120,19 @@ impl LtiDiscrete {
             .b
             .as_ref()
             .expect("state feedback requires an input matrix B");
-        assert_eq!(k_gain.nrows(), b.ncols(), "K rows must equal number of inputs");
-        assert_eq!(k_gain.ncols(), self.n_states(), "K cols must equal state dim");
+        assert_eq!(
+            k_gain.nrows(),
+            b.ncols(),
+            "K rows must equal number of inputs"
+        );
+        assert_eq!(
+            k_gain.ncols(),
+            self.n_states(),
+            "K cols must equal state dim"
+        );
         let a_cl = &self.a - &b.dot(k_gain);
         // r enters through B: x⁺ = A_cl x + B r
-        Self::new(
-            a_cl,
-            Some(b.clone()),
-            self.c.clone(),
-            self.d.clone(),
-        )
+        Self::new(a_cl, Some(b.clone()), self.c.clone(), self.d.clone())
     }
 
     /// Discrete double-integrator (1D position/velocity) with sample time `dt`.
@@ -137,11 +140,7 @@ impl LtiDiscrete {
     /// State `[p, v]`, input acceleration `u`, output position.
     pub fn double_integrator(dt: f64) -> Self {
         assert!(dt > 0.0);
-        let a = Array2::from_shape_vec(
-            (2, 2),
-            vec![1.0, dt, 0.0, 1.0],
-        )
-        .unwrap();
+        let a = Array2::from_shape_vec((2, 2), vec![1.0, dt, 0.0, 1.0]).unwrap();
         let b = Array2::from_shape_vec((2, 1), vec![0.5 * dt * dt, dt]).unwrap();
         let c = Array2::from_shape_vec((1, 2), vec![1.0, 0.0]).unwrap();
         Self::new(a, Some(b), c, None)
@@ -169,8 +168,9 @@ pub struct LtiSimResult {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::array;
+
+    use super::*;
 
     #[test]
     fn test_autonomous_decay() {

@@ -49,12 +49,7 @@ impl ExtendedKalmanFilter {
         assert_eq!(q.nrows(), n);
         assert_eq!(q.ncols(), n);
         assert_eq!(r.nrows(), r.ncols());
-        Self {
-            q,
-            r,
-            x: x0,
-            p: p0,
-        }
+        Self { q, r, x: x0, p: p0 }
     }
 
     /// Current state estimate.
@@ -172,8 +167,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::array;
+
+    use super::*;
 
     #[test]
     fn test_numerical_jacobian_linear() {
@@ -188,12 +184,8 @@ mod tests {
     #[test]
     fn test_ekf_linear_reduces_to_kf_behavior() {
         // Linear system: x⁺ = 0.9 x, z = x + v  (1D)
-        let mut ekf = ExtendedKalmanFilter::new(
-            array![0.0],
-            array![[1.0]],
-            array![[0.01]],
-            array![[0.1]],
-        );
+        let mut ekf =
+            ExtendedKalmanFilter::new(array![0.0], array![[1.0]], array![[0.01]], array![[0.1]]);
 
         let f = |x: &Array1<f64>, _: Option<&Array1<f64>>| array![0.9 * x[0]];
         let f_j = |_: &Array1<f64>, _: Option<&Array1<f64>>| array![[0.9]];
@@ -217,12 +209,8 @@ mod tests {
     #[test]
     fn test_ekf_fd_nonlinear_measurement() {
         // State is angle θ; measure sin(θ)
-        let mut ekf = ExtendedKalmanFilter::new(
-            array![0.1],
-            array![[0.5]],
-            array![[1e-4]],
-            array![[0.01]],
-        );
+        let mut ekf =
+            ExtendedKalmanFilter::new(array![0.1], array![[0.5]], array![[1e-4]], array![[0.01]]);
         let f = |x: &Array1<f64>, _: Option<&Array1<f64>>| array![x[0]]; // static
         let true_theta = 0.5_f64;
         for _ in 0..30 {

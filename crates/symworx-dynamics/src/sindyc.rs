@@ -26,13 +26,15 @@ use ndarray::{
     s,
 };
 
-use crate::koopman::{
-    Dictionary,
-    lift_state,
-};
-use crate::sindy::{
-    mean_relative_column_error,
-    stls,
+use crate::{
+    koopman::{
+        Dictionary,
+        lift_state,
+    },
+    sindy::{
+        mean_relative_column_error,
+        stls,
+    },
 };
 
 /// Fitted SINDYc model: `ẋ = Θ(x, u) Ξ`.
@@ -343,19 +345,16 @@ fn has_constant(dict: &Dictionary) -> bool {
 }
 
 fn nonconst_start(dict: &Dictionary) -> usize {
-    if has_constant(dict) {
-        1
-    } else {
-        0
-    }
+    if has_constant(dict) { 1 } else { 0 }
 }
 
 // ——— Tests ———
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::array;
+
+    use super::*;
 
     /// ẋ = A x + B u  (Euler)
     fn simulate_forced(

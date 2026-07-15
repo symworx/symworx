@@ -395,11 +395,7 @@ pub struct TachogramData {
 }
 
 impl TachogramData {
-    pub fn from_peak_indices(
-        indices: &[usize],
-        fs: Option<f64>,
-        source: TachogramSource,
-    ) -> Self {
+    pub fn from_peak_indices(indices: &[usize], fs: Option<f64>, source: TachogramSource) -> Self {
         if indices.len() < 2 {
             return Self {
                 peak_indices: indices.to_vec(),

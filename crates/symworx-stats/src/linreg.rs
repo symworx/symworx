@@ -102,7 +102,11 @@ pub fn l2(_x: &Array2<f64>, _y: &Array1<f64>) -> Array1<f64> {
 pub fn ols(x: &Array2<f64>, y: &Array1<f64>) -> LinearModel {
     let n_samples = x.nrows();
     let n_features = x.ncols();
-    assert_eq!(y.len(), n_samples, "X and y must have the same number of rows");
+    assert_eq!(
+        y.len(),
+        n_samples,
+        "X and y must have the same number of rows"
+    );
 
     // Augment X with column of ones for intercept
     let mut x_aug = Array2::<f64>::ones((n_samples, n_features + 1));
@@ -140,7 +144,11 @@ pub fn ols(_x: &Array2<f64>, _y: &Array1<f64>) -> LinearModel {
 pub fn ridge(x: &Array2<f64>, y: &Array1<f64>, alpha: f64) -> LinearModel {
     let n_samples = x.nrows();
     let n_features = x.ncols();
-    assert_eq!(y.len(), n_samples, "X and y must have the same number of rows");
+    assert_eq!(
+        y.len(),
+        n_samples,
+        "X and y must have the same number of rows"
+    );
     assert!(alpha >= 0.0, "alpha must be non-negative");
 
     // Center so intercept is unpenalized and solved in closed form after β
@@ -226,7 +234,11 @@ pub fn elastic_net(
 ) -> LinearModel {
     let n_samples = x.nrows();
     let n_features = x.ncols();
-    assert_eq!(y.len(), n_samples, "X and y must have the same number of rows");
+    assert_eq!(
+        y.len(),
+        n_samples,
+        "X and y must have the same number of rows"
+    );
     assert!(alpha >= 0.0, "alpha must be non-negative");
     assert!(
         (0.0..=1.0).contains(&l1_ratio),
@@ -324,7 +336,11 @@ mod tests {
         let y = array![2.0, 4.0, 6.0, 8.0];
         let model = ols(&x, &y);
         let pred = model.predict(&x);
-        let max_err = (&pred - &y).mapv(f64::abs).iter().cloned().fold(0.0, f64::max);
+        let max_err = (&pred - &y)
+            .mapv(f64::abs)
+            .iter()
+            .cloned()
+            .fold(0.0, f64::max);
         assert!(max_err < 1e-9);
         assert!((model.intercept).abs() < 1e-9);
         assert!((model.coefficients[0] - 2.0).abs() < 1e-9);

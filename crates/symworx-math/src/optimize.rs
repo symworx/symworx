@@ -220,8 +220,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::array;
+
+    use super::*;
 
     #[test]
     fn test_fd_gradient_quadratic() {

@@ -1,6 +1,6 @@
 use symworx_core::{
-    PeakFinderBuilder,
     successive_differences,
+    PeakFinderBuilder,
 };
 
 use crate::{
@@ -274,11 +274,7 @@ pub fn export_tachogram(app: &App) -> anyhow::Result<std::path::PathBuf> {
         let i1 = tacho.peak_indices[i + 1];
         let t_end = tacho.peak_times[i + 1];
         let rate = tacho.rates_per_min.get(i).copied().unwrap_or(f64::NAN);
-        writeln!(
-            f,
-            "{},{},{},{:.6},{:.6},{:.6}",
-            i, i0, i1, t_end, ibi, rate
-        )?;
+        writeln!(f, "{},{},{},{:.6},{:.6},{:.6}", i, i0, i1, t_end, ibi, rate)?;
     }
     Ok(path)
 }
@@ -375,7 +371,10 @@ pub fn derive_load_from_current_activity(app: &App) -> Option<f64> {
     })
 }
 
-use crate::app::{CatalogRideRow, WeeklyLoadRow};
+use crate::app::{
+    CatalogRideRow,
+    WeeklyLoadRow,
+};
 
 /// Load daily TSS / ACWR / rides from the personal SQLite catalog.
 pub fn try_load_loadsym_catalog(app: &mut App) -> Result<bool, String> {
@@ -404,8 +403,11 @@ pub fn try_load_loadsym_catalog(app: &mut App) -> Result<bool, String> {
                     np_w: r.np_w,
                 })
                 .collect();
-            app.weekly_loads =
-                build_weekly_loads(&app.daily_load_dates, &app.daily_loads, &app.daily_ride_counts);
+            app.weekly_loads = build_weekly_loads(
+                &app.daily_load_dates,
+                &app.daily_loads,
+                &app.daily_ride_counts,
+            );
             app.loadsym_catalog_path = Some(path);
             app.loadsym_from_catalog = true;
             invalidate_loadsym_plan_cache(app);
@@ -425,8 +427,11 @@ pub fn apply_demo_daily_loads(app: &mut App, days: usize) {
     app.daily_risk.clear();
     app.daily_ride_counts = vec![1; app.daily_loads.len()];
     app.catalog_rides.clear();
-    app.weekly_loads =
-        build_weekly_loads(&app.daily_load_dates, &app.daily_loads, &app.daily_ride_counts);
+    app.weekly_loads = build_weekly_loads(
+        &app.daily_load_dates,
+        &app.daily_loads,
+        &app.daily_ride_counts,
+    );
     app.loadsym_from_catalog = false;
     app.loadsym_catalog_path = None;
     invalidate_loadsym_plan_cache(app);
@@ -435,10 +440,12 @@ pub fn apply_demo_daily_loads(app: &mut App, days: usize) {
 
 /// Fingerprint of plan inputs (goal, horizon, daily TSS series).
 pub fn loadsym_plan_input_key(app: &App) -> u64 {
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{
-        Hash,
-        Hasher,
+    use std::{
+        collections::hash_map::DefaultHasher,
+        hash::{
+            Hash,
+            Hasher,
+        },
     };
     let mut h = DefaultHasher::new();
     app.loadsym_plan_goal.as_str().hash(&mut h);
@@ -459,10 +466,10 @@ pub fn invalidate_loadsym_plan_cache(app: &mut App) {
 /// Recompute plan only when goal / horizon / loads changed (not every TUI frame).
 pub fn ensure_loadsym_plan(app: &mut App) {
     use symworx_loadsym::load::{
-        MAX_HORIZON_DAYS,
+        optimize_load_plan,
         OptimizationThresholds,
         PulseResponseParams,
-        optimize_load_plan,
+        MAX_HORIZON_DAYS,
     };
     if app.daily_loads.is_empty() {
         invalidate_loadsym_plan_cache(app);
@@ -615,7 +622,9 @@ pub fn sync_week_scroll_from_daily(app: &mut App) {
         app.loadsym_week_scroll = 0;
         return;
     }
-    let day = app.loadsym_scroll.min(app.daily_loads.len().saturating_sub(1));
+    let day = app
+        .loadsym_scroll
+        .min(app.daily_loads.len().saturating_sub(1));
     if let Some((wi, _)) = app
         .weekly_loads
         .iter()

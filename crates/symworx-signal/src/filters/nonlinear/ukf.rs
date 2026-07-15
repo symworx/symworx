@@ -193,9 +193,7 @@ pub fn sigma_points(
     for i in 0..n {
         let col = chol.column(i);
         sigmas.column_mut(i + 1).assign(&(x + &col.to_owned()));
-        sigmas
-            .column_mut(i + 1 + n)
-            .assign(&(x - &col.to_owned()));
+        sigmas.column_mut(i + 1 + n).assign(&(x - &col.to_owned()));
     }
 
     let mut w_m = Array1::zeros(n_sig);
@@ -225,8 +223,9 @@ fn outer(a: &Array1<f64>, b: &Array1<f64>) -> Array2<f64> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::array;
+
+    use super::*;
 
     #[test]
     fn test_sigma_points_mean() {
@@ -243,12 +242,8 @@ mod tests {
 
     #[test]
     fn test_ukf_linear_tracking() {
-        let mut ukf = UnscentedKalmanFilter::new(
-            array![0.0],
-            array![[1.0]],
-            array![[0.01]],
-            array![[0.1]],
-        );
+        let mut ukf =
+            UnscentedKalmanFilter::new(array![0.0], array![[1.0]], array![[0.01]], array![[0.1]]);
         let f = |x: &Array1<f64>, _: Option<&Array1<f64>>| array![0.9 * x[0]];
         let h = |x: &Array1<f64>| array![x[0]];
 

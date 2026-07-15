@@ -254,9 +254,7 @@ fn kmeans_pp_init(data: &Array2<f64>, k: usize, seed: u64) -> Array2<f64> {
 /// Simple LCG for deterministic, dependency-free seeding.
 fn lcg_next(state: &mut u64) -> u64 {
     // Numerical Recipes LCG
-    *state = state
-        .wrapping_mul(1664525)
-        .wrapping_add(1013904223);
+    *state = state.wrapping_mul(1664525).wrapping_add(1013904223);
     *state
 }
 
@@ -275,8 +273,9 @@ pub fn cluster_sizes(labels: &[usize], k: usize) -> Vec<usize> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::array;
+
+    use super::*;
 
     #[test]
     fn test_kmeans_two_blobs() {

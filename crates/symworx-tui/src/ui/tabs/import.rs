@@ -46,7 +46,11 @@ pub fn render_import_tab(frame: &mut Frame, app: &mut App, area: Rect) {
              Files from ./data and . (csv/txt/dat etc) are discovered.\n\
              Multi-column CSVs prompt for signal column.",
         )
-        .block(Block::new().borders(Borders::ALL).title(" Help — Import (BioSym) "));
+        .block(
+            Block::new()
+                .borders(Borders::ALL)
+                .title(" Help — Import (BioSym) "),
+        );
         frame.render_widget(help, area);
         return;
     }

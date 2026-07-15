@@ -69,7 +69,12 @@ where
         rss
     };
 
-    let opt = gradient_descent(loss, None::<fn(&Array1<f64>) -> Array1<f64>>, theta0, config);
+    let opt = gradient_descent(
+        loss,
+        None::<fn(&Array1<f64>) -> Array1<f64>>,
+        theta0,
+        config,
+    );
     let rss = opt.loss;
     let rmse = if n > 0.0 { (rss / n).sqrt() } else { 0.0 };
 
@@ -94,7 +99,11 @@ pub fn nonlinear_least_squares_design<M>(
 where
     M: Fn(&Array1<f64>, &Array1<f64>) -> f64,
 {
-    assert_eq!(x.nrows(), y.len(), "X and y must have the same number of rows");
+    assert_eq!(
+        x.nrows(),
+        y.len(),
+        "X and y must have the same number of rows"
+    );
     let n = y.len() as f64;
 
     let loss = |theta: &Array1<f64>| {
@@ -107,7 +116,12 @@ where
         rss
     };
 
-    let opt = gradient_descent(loss, None::<fn(&Array1<f64>) -> Array1<f64>>, theta0, config);
+    let opt = gradient_descent(
+        loss,
+        None::<fn(&Array1<f64>) -> Array1<f64>>,
+        theta0,
+        config,
+    );
     let rss = opt.loss;
     let rmse = if n > 0.0 { (rss / n).sqrt() } else { 0.0 };
 
@@ -121,9 +135,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::array;
     use symworx_math::optimize::GradientDescentConfig;
+
+    use super::*;
 
     #[test]
     fn test_fit_linear_as_nonlinear() {
@@ -142,7 +157,11 @@ mod tests {
 
         let fit = nonlinear_least_squares(&x, &y, model, array![0.0, 0.0], &cfg);
         assert!((fit.params[0] - 2.0).abs() < 1e-3, "slope {:?}", fit.params);
-        assert!((fit.params[1] - 1.0).abs() < 1e-3, "intercept {:?}", fit.params);
+        assert!(
+            (fit.params[1] - 1.0).abs() < 1e-3,
+            "intercept {:?}",
+            fit.params
+        );
         assert!(fit.rmse < 1e-3);
     }
 
@@ -151,10 +170,7 @@ mod tests {
         let x: Vec<f64> = (0..15).map(|i| i as f64 * 0.2).collect();
         let a_true = 1.5;
         let b_true = 0.4;
-        let y: Vec<f64> = x
-            .iter()
-            .map(|&xi| a_true * (b_true * xi).exp())
-            .collect();
+        let y: Vec<f64> = x.iter().map(|&xi| a_true * (b_true * xi).exp()).collect();
 
         let model = |xi: f64, th: &Array1<f64>| th[0] * (th[1] * xi).exp();
         let cfg = GradientDescentConfig {

@@ -462,7 +462,10 @@ fn render_peak_params_panel(frame: &mut Frame, app: &App, area: Rect) {
     let fields: [(&str, String); 4] = [
         (
             "height_frac",
-            format!("{:.2}   (min height as frac of range above min)", pp.height_frac),
+            format!(
+                "{:.2}   (min height as frac of range above min)",
+                pp.height_frac
+            ),
         ),
         (
             "prom_frac",
@@ -474,7 +477,8 @@ fn render_peak_params_panel(frame: &mut Frame, app: &App, area: Rect) {
                 "{:.2} s  → dist {} samples @ fs={}",
                 pp.min_interval_sec,
                 thr.map(|t| t.2).unwrap_or(0),
-                fs.map(|f| format!("{:.0}", f)).unwrap_or_else(|| "?".into())
+                fs.map(|f| format!("{:.0}", f))
+                    .unwrap_or_else(|| "?".into())
             ),
         ),
         (

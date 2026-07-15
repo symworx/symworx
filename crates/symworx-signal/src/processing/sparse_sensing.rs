@@ -149,10 +149,7 @@ pub fn ista(theta: &Array2<f64>, y: &Array1<f64>, config: &IstaConfig) -> Sparse
     }
 
     let residual_norm = (y - &theta.dot(&x)).mapv(|v| v * v).sum().sqrt();
-    let sparsity = x
-        .iter()
-        .filter(|&&v| v.abs() > config.sparsity_tol)
-        .count();
+    let sparsity = x.iter().filter(|&&v| v.abs() > config.sparsity_tol).count();
 
     SparseRecoveryResult {
         coefficients: x,
@@ -276,8 +273,7 @@ pub fn dct_basis(n: usize) -> Array2<f64> {
     for k in 0..n {
         let s = if k == 0 { scale0 } else { scale };
         for i in 0..n {
-            let angle =
-                std::f64::consts::PI * k as f64 * (2.0 * i as f64 + 1.0) / (2.0 * n as f64);
+            let angle = std::f64::consts::PI * k as f64 * (2.0 * i as f64 + 1.0) / (2.0 * n as f64);
             psi[[i, k]] = s * angle.cos();
         }
     }
@@ -336,8 +332,9 @@ fn lcg_next(state: &mut u64) -> u64 {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::array;
+
+    use super::*;
 
     #[test]
     fn test_measure_identity() {
@@ -401,7 +398,11 @@ mod tests {
         let rec = omp(&phi, &y, 3, 1e-8);
 
         // Support should include the large atoms
-        assert!(rec.coefficients[3].abs() > 0.5, "coeff 3 = {}", rec.coefficients[3]);
+        assert!(
+            rec.coefficients[3].abs() > 0.5,
+            "coeff 3 = {}",
+            rec.coefficients[3]
+        );
         assert!(
             rec.coefficients[11].abs() > 0.5,
             "coeff 11 = {}",
