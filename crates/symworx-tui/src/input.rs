@@ -1218,8 +1218,7 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                 return false;
             }
             KeyCode::Char('3') => {
-                app.loadsym_view = crate::app::LoadSymView::Optimization;
-                app.status = "LoadSym: Programming Optimization — Esc to list".to_string();
+                enter_loadsym_optimization(app);
                 return false;
             }
             KeyCode::Enter => {
@@ -1231,7 +1230,7 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                         crate::processing::focus_calendar_most_recent(app);
                         app.status = calendar_status(app);
                     }
-                    2 => app.loadsym_view = crate::app::LoadSymView::Optimization,
+                    2 => enter_loadsym_optimization(app),
                     _ => {}
                 }
                 return false;
@@ -1487,15 +1486,94 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
             }
             app.status = calendar_status(app);
         }
-        crate::app::LoadSymView::Optimization => {
-            if code == KeyCode::Esc {
+        crate::app::LoadSymView::Optimization => match code {
+            KeyCode::Esc => {
                 app.loadsym_view = crate::app::LoadSymView::List;
                 app.status = "LoadSym — back to list".to_string();
             }
-        }
+            KeyCode::Char('1') => {
+                app.loadsym_plan_goal = symworx_loadsym::load::LoadGoal::Recovery;
+                crate::processing::ensure_loadsym_plan(app);
+                app.status = opt_status(app);
+            }
+            KeyCode::Char('2') => {
+                app.loadsym_plan_goal = symworx_loadsym::load::LoadGoal::Maintenance;
+                crate::processing::ensure_loadsym_plan(app);
+                app.status = opt_status(app);
+            }
+            KeyCode::Char('3') => {
+                app.loadsym_plan_goal = symworx_loadsym::load::LoadGoal::Overload;
+                crate::processing::ensure_loadsym_plan(app);
+                app.status = opt_status(app);
+            }
+            KeyCode::Char('-') | KeyCode::Char('_') => {
+                if app.loadsym_plan_horizon > 2 {
+                    app.loadsym_plan_horizon -= 1;
+                    crate::processing::ensure_loadsym_plan(app);
+                }
+                app.status = opt_status(app);
+            }
+            KeyCode::Char('+') | KeyCode::Char('=') => {
+                let max_h = symworx_loadsym::load::MAX_HORIZON_DAYS;
+                if app.loadsym_plan_horizon < max_h {
+                    app.loadsym_plan_horizon += 1;
+                    crate::processing::ensure_loadsym_plan(app);
+                }
+                app.status = opt_status(app);
+            }
+            // Enter: re-run plan with current goal/horizon (explicit recompute)
+            KeyCode::Enter => {
+                crate::processing::invalidate_loadsym_plan_cache(app);
+                crate::processing::ensure_loadsym_plan(app);
+                app.status = format!("Recomputed. {}", opt_status(app));
+            }
+            KeyCode::Char('g') | KeyCode::Char('G') => {
+                crate::processing::apply_demo_daily_loads(app, 28);
+                crate::processing::ensure_loadsym_plan(app);
+                app.status = format!("Demo loads (28d). {}", opt_status(app));
+            }
+            KeyCode::Char('r') | KeyCode::Char('R') => {
+                match crate::processing::try_load_loadsym_catalog(app) {
+                    Ok(true) => {
+                        crate::processing::ensure_loadsym_plan(app);
+                        app.status = format!("Catalog reloaded. {}", opt_status(app));
+                    }
+                    Ok(false) => {
+                        app.status =
+                            "No catalog — run symload db init && ingest, or g for demo".to_string();
+                    }
+                    Err(e) => app.status = format!("Catalog error: {}", e),
+                }
+            }
+            _ => {}
+        },
         _ => {}
     }
     false
+}
+
+fn enter_loadsym_optimization(app: &mut App) {
+    app.loadsym_view = crate::app::LoadSymView::Optimization;
+    if app.daily_loads.is_empty() {
+        let _ = crate::processing::try_load_loadsym_catalog(app);
+    }
+    if app.daily_loads.is_empty() {
+        app.status =
+            "Optimization — no loads. r catalog / g demo · set H with −/+ · Enter recompute"
+                .to_string();
+    } else {
+        crate::processing::ensure_loadsym_plan(app);
+        app.status = opt_status(app);
+    }
+}
+
+fn opt_status(app: &App) -> String {
+    format!(
+        "Plan goal={}  H={}d (max {})  · 1/2/3  −/+ days  Enter recompute  r/g  Esc",
+        app.loadsym_plan_goal.as_str(),
+        app.loadsym_plan_horizon,
+        symworx_loadsym::load::MAX_HORIZON_DAYS,
+    )
 }
 
 /// Try to load a real spatial trajectories CSV from ./data/

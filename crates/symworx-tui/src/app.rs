@@ -666,6 +666,16 @@ pub struct App {
     pub loadsym_catalog_path: Option<PathBuf>,
     /// True when daily_loads came from SQLite catalog (not synthetic `g`).
     pub loadsym_from_catalog: bool,
+    /// Goal for Programming Optimization multi-day plan.
+    pub loadsym_plan_goal: symworx_loadsym::load::LoadGoal,
+    /// Plan horizon in days (2–[`MAX_HORIZON_DAYS`]; default 4). Select before recompute.
+    pub loadsym_plan_horizon: usize,
+    /// Cached plan (recomputed only when inputs change — not every frame).
+    pub loadsym_cached_plan: Option<symworx_loadsym::load::LoadPlan>,
+    /// Cached plan error message when optimize fails.
+    pub loadsym_cached_plan_err: Option<String>,
+    /// Fingerprint of (goal, horizon, loads) used for the cache.
+    pub loadsym_plan_cache_key: u64,
 
     // Loaded activity (from .fit or activity CSV) — used by LoadSym Workout
     pub loaded_activity: Option<symworx_io::ActivityData>,
@@ -739,6 +749,11 @@ impl App {
             weekly_loads: vec![],
             loadsym_catalog_path: None,
             loadsym_from_catalog: false,
+            loadsym_plan_goal: symworx_loadsym::load::LoadGoal::Recovery,
+            loadsym_plan_horizon: 4,
+            loadsym_cached_plan: None,
+            loadsym_cached_plan_err: None,
+            loadsym_plan_cache_key: 0,
             loaded_activity: None,
             activity_scroll: 0,
             activity_series: 0,

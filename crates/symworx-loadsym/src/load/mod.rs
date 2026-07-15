@@ -49,6 +49,7 @@ pub use monotony::{
 pub use optimization::{
     LoadGoal,
     LoadPlan,
+    MAX_HORIZON_DAYS,
     OptimizationThresholds,
     optimize_load,
     optimize_load_plan,

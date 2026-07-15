@@ -41,15 +41,18 @@ let plan = optimize_load_plan(&daily_loads, &params, LoadGoal::Recovery, &thr).u
 println!("plan TSS {:?} success={}", plan.daily_tss, plan.success);
 ```
 
-**Optimization goals** (default horizon 3 days):
+**Optimization goals** (default horizon **4** days, max **10**) — primary success is **mean planned load vs chronic mean \(C\)** (last ≤28 days of TSS):
 
-| Goal | Intent | Success threshold (defaults) |
-|------|--------|------------------------------|
-| `Recovery` | Raise form, light days | ≥80% of rest-trajectory form gain |
-| `Maintenance` | Hold form | Relative form drift ≤ **20%** |
-| `Overload` | Controlled form dip + progressive load | Dip near target; ACWR hard cap 1.5 |
+| Goal | Intent | Success (defaults) | Scoring prefers |
+|------|--------|--------------------|-----------------|
+| `Recovery` | Active recovery | \(0.20\,C \le \bar w \le 0.55\,C\) | ~0.38·C days (not pure rest) |
+| `Maintenance` | Hold load | \(0.85\,C \le \bar w \le 1.15\,C\) | Mean near \(C\) **with day-to-day TSS variance** (not flat) |
+| `Overload` | Elevated load | \(1.15\,C \le \bar w \le 1.40\,C\), \(\bar w > C\) | ~1.25·C with variety; soft limit consecutive hard days |
 
-Search enumerates rest/easy/steady/hard/long templates scaled to chronic load (no external solver).
+Form (TSB) and projected ACWR are **soft / separate context** — they do not alone hard-fail success.
+
+Search uses a fine template grid (rest → long). Short horizons fully enumerate
+candidates; longer horizons (when `7^H` is large) use **beam search** so H=10 stays interactive.
 
 Demo:
 
