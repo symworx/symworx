@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [develop, main, staging, symworx-loadsym]
+    branches: [develop, main, staging]
   pull_request:
     branches: [develop, main, staging]
 
@@ -13,11 +13,10 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: 0
+  CARGO_PROFILE_DEV_DEBUG: "0"
+  CARGO_PROFILE_TEST_DEBUG: "0"
 
 jobs:
-  # Fast lint: format must match rustfmt.toml (unstable import options need nightly).
-  # TUI is excluded for now — large formatting debt and not part of the active
-  # library CI surface. Re-include crates/symworx-tui once that crate is stabilized.
   fmt:
     runs-on: ubuntu-latest
     steps:
@@ -28,8 +27,7 @@ jobs:
         with:
           components: rustfmt
 
-      - name: Format check (nightly; library + bindings, no TUI)
-        # -p is a cargo-fmt option (before --); --check is also cargo-fmt, not rustfmt.
+      - name: Format check (library + bindings, no TUI)
         run: |
           cargo +nightly fmt --check \
             -p symworx-error \
@@ -56,35 +54,42 @@ jobs:
         with:
           components: clippy
 
-      - name: Install OpenBLAS build deps
-        # symworx-core / biosym / loadsym pull signal → ndarray-linalg (openblas).
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gfortran pkg-config
+      # Use distro OpenBLAS instead of OpenBLAS-from-source.
+      # Cuts down on build time...
+      - name: Install system OpenBLAS + Fortran
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            gfortran pkg-config libopenblas-dev
+
+      - name: Prefer system OpenBLAS (skip source compile)
+        run: |
+          # Workspace defaults to features = ["openblas"] (builds openblas-src).
+          # CI switches to openblas-system for speed; local dev can keep source build.
+          sed -i 's/features = \["openblas"\]/features = ["openblas-system"]/' Cargo.toml
+          grep -n 'ndarray-linalg' Cargo.toml
 
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
+        with:
+          # Separate cache key namespace so openblas-system artifacts don't clash
+          # with local/source openblas builds if keys overlap.
+          prefix-key: v1-sys-openblas
 
-      - name: Clippy (warnings as errors on key library crates)
-        # --lib: skip unfinished/optional binaries (e.g. symload helpers).
-        # --no-deps: only lint the packages listed (path deps are typechecked but not linted).
-        # TUI intentionally omitted (heavy + still evolving).
-        # spatialsym is tested below but excluded from strict clippy for now
-        # (missing_docs + style debt); re-enable once cleaned up.
+      # One compile graph: clippy typechecks libs; tests reuse target/
+      - name: Clippy + unit tests (science crates)
         run: |
-          cargo clippy --lib --no-deps \
-            -p symworx-core -p symworx-dynamics -p symworx-math \
-            -p symworx-biosym -p symworx-io -p symworx-loadsym \
-            -- -D warnings
-
-      - name: Test (core scientific + supporting crates)
-        run: |
-          cargo test -p symworx-core -p symworx-math -p symworx-dynamics \
-                     -p symworx-biosym -p symworx-io -p symworx-loadsym -p symworx-spatialsym \
-                     -- --quiet
-
-  # TUI smoke builds (symview + polars) are disabled for now.
-  # They routinely cost 10–20+ minutes cold (OpenBLAS + full TUI graph) and are
-  # not required while library / Python work is the active focus.
-  # Re-add as a scheduled or manual workflow when the TUI is ready for gatekeeping.
+          set -euo pipefail
+          PKGS=(
+            -p symworx-math
+            -p symworx-dynamics
+            -p symworx-io
+            -p symworx-biosym
+            -p symworx-loadsym
+            -p symworx-spatialsym
+          )
+          cargo clippy --lib --no-deps "${PKGS[@]}" -- -D warnings
+          cargo test --lib "${PKGS[@]}" -- --quiet
 
   python-bindings:
     runs-on: ubuntu-latest
@@ -94,16 +99,20 @@ jobs:
       - name: Install stable Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install build deps (OpenBLAS for core → signal)
-        # Python default build does not enable the optional `email` feature
-        # (no OpenSSL). Re-add libssl-dev if CI starts building with --features email.
+      - name: Install system OpenBLAS + Fortran
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends gfortran pkg-config
+          sudo apt-get install -y --no-install-recommends \
+            gfortran pkg-config libopenblas-dev
+
+      - name: Prefer system OpenBLAS (skip source compile)
+        run: |
+          sed -i 's/features = \["openblas"\]/features = ["openblas-system"]/' Cargo.toml
 
       - name: Rust cache
         uses: Swatinem/rust-cache@v2
         with:
+          prefix-key: v1-sys-openblas
           workspaces: |
             . -> target
             bindings/python -> target
@@ -120,9 +129,6 @@ jobs:
           .venv/bin/pip install "maturin>=1.5,<2.0" pytest
 
       - name: Build Python bindings in development mode
-        # pyo3 already enables extension-module via workspace Cargo.toml —
-        # do not pass --features extension-module (that flag is not a package feature).
-        # Explicit VIRTUAL_ENV so maturin always finds the venv.
         env:
           VIRTUAL_ENV: ${{ github.workspace }}/.venv
         run: |
@@ -133,13 +139,3 @@ jobs:
           VIRTUAL_ENV: ${{ github.workspace }}/.venv
           PATH: ${{ github.workspace }}/.venv/bin:${{ env.PATH }}
         run: .venv/bin/pytest bindings/python/tests/ -q --tb=line
-
-  # Strategy (2026-07):
-  # - fmt: nightly rustfmt on library + Python binding crates (not TUI).
-  # - rust-checks: clippy -D warnings + unit tests for science crates.
-  # - python-bindings: venv + maturin develop + pytest (core/biosym/loadsym surface).
-  # - TUI: local / manual only until OpenBLAS + UI debt is under control.
-  #
-  # Note: any job that builds crates depending on symworx-core still compiles
-  # OpenBLAS (via signal → ndarray-linalg). That is expected and cached by
-  # rust-cache after the first run.
