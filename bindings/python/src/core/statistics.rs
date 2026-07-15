@@ -12,8 +12,6 @@ use pyo3::{
 use symworx_core::stats::{
     // autocorrelation
     acf,
-    // correlation
-    correlation_matrix,
     correlation_matrix_from_vec,
     // distance
     euclidean,

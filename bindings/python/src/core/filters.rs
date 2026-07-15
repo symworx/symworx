@@ -151,8 +151,8 @@ fn vec2_to_array2(v: Vec<Vec<f64>>) -> PyResult<Array2<f64>> {
         }
         data.extend_from_slice(row);
     }
-    Ok(Array2::from_shape_vec((nrows, ncols), data)
-        .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))?)
+    Array2::from_shape_vec((nrows, ncols), data)
+        .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
 }
 
 // Helper to convert Vec<f64> -> Array1<f64>

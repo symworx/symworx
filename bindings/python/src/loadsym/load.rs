@@ -5,18 +5,15 @@ use pyo3::{
     wrap_pyfunction,
 };
 use symworx_loadsym::load::{
-    AcwrSnapshot,
     LoadGoal,
     OptimizationThresholds,
     PulseResponseParams,
     RideMetrics,
-    RiskLevel,
     calculate_mechanical_load,
     calculate_physiological_load,
     // New high-value surface
     classify_acwr,
     compute_acute_chronic,
-    compute_acwr_series,
     compute_ewma_acute_chronic,
     compute_monotony,
     compute_ride_metrics,

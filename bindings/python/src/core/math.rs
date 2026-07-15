@@ -6,10 +6,7 @@ use pyo3::{
     prelude::*,
     wrap_pyfunction,
 };
-use rand::{
-    Rng,
-    rng,
-};
+use rand::rng;
 use symworx_core::math::{
     // Distributions
     beta_kernel,

@@ -7,7 +7,6 @@ use symworx_loadsym::nutrition::{
     DeficitLevel,
     DeficitStrategy,
     Gender,
-    WeightlossModel,
     calculate_bmi,
     calculate_bmr,
     calculate_calorie_targets,
