@@ -33,10 +33,17 @@ symworx-stats = { path = "...", features = ["linalg"] }
 ## Related crates
 
 - **`symworx-math`** — optimization / integration primitives (no LAPACK)
-- **`symworx-signal`** — Kalman, filters, sparse sensing (`processing::sparse_sensing`)
-- **`symworx-dynamics`** — embedding, RQA, DMD (`dmd`); Koopman/SINDy planned
+- **`symworx-signal`** — Kalman / EKF / UKF, sparse sensing
+- **`symworx-dynamics`** — embedding, RQA, DMD, EDMD, SINDy/SINDYc, LTI/PID
 
-## Quick examples
+## Runnable example
+
+```bash
+# OLS/Ridge/Lasso, k-means, PCA, regression_report vs mean baseline
+cargo run -p symworx-stats --example predictive_metrics_demo --features linalg
+```
+
+## Quick snippets
 
 ### Predicted vs expected
 
@@ -48,7 +55,6 @@ let yhat = [1.1, 1.9, 3.2, 3.8];
 let rep = regression_report(&y, &yhat);
 // residual convention: e = y − ŷ  (positive bias ⇒ under-prediction)
 println!("{rep}"); // n=… MAE=… RMSE=… R²=… bias=… max|e|=…
-assert!(rep.r2.is_finite());
 ```
 
 ### Clustering
@@ -59,7 +65,6 @@ use ndarray::array;
 
 let data = array![[0.0, 0.0], [0.1, 0.0], [5.0, 5.0], [5.1, 5.0]];
 let result = kmeans(&data, &KMeansConfig { k: 2, ..Default::default() });
-assert_eq!(result.labels.len(), 4);
 ```
 
 ```rust

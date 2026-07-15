@@ -68,13 +68,13 @@ fn main() {
         &segments[..segments.len().min(3)]
     );
 
-    println!("\nNext steps in research pipeline (not in this example):");
-    println!("- Compute RMSSD / sample_entropy per window (use symworx_stats + symworx_dynamics)");
-    println!("- Align windows with delta power epochs from PSG");
-    println!(
-        "- Feed the multivariate window feature matrix (HR, RMSSD, SampEn, delta) into the generalized Kalman"
-    );
-    println!(
-        "- Summarize the latent slow-drifting capacity trajectory per bout and relate to exercise / cognitive outcomes"
-    );
+    println!("\nNext steps in research pipeline:");
+    println!("- RMSSD / sample entropy per window → symworx_stats + symworx_dynamics");
+    println!("- Score window predictions with symworx_stats::regression_report");
+    println!("- Latent state tracking:");
+    println!("    KalmanFilter::random_walk / local_linear_trend  (linear-Gaussian)");
+    println!("    ExtendedKalmanFilter / UnscentedKalmanFilter   (nonlinear obs)");
+    println!("  see: cargo run -p symworx-signal --example state_estimation_demo");
+    println!("- Sparse / compressed sensing on feature maps:");
+    println!("  see: cargo run -p symworx-signal --example sparse_sensing_demo");
 }

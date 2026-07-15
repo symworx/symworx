@@ -32,5 +32,9 @@ symworx-math   = { path = "../symworx-math" }
 [build-dependencies]
 openblas-build = { workspace = true }
 
+[[example]]
+name = "predictive_metrics_demo"
+required-features = ["linalg"]
+
 [lints]
 workspace = true

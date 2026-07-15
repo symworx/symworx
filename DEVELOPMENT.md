@@ -47,6 +47,13 @@ Specific crates often have their own examples:
 cargo run -p symworx-biosym --example gait_demo
 cargo run -p symworx-loadsym --example nutrition_demo
 cargo run -p symworx-spatialsym --example synthetic_decisions
+
+# Recent data-driven / predictive stack
+cargo run -p symworx-stats --example predictive_metrics_demo --features linalg
+cargo run -p symworx-dynamics --example data_driven_dynamics_demo
+cargo run -p symworx-signal --example sparse_sensing_demo
+cargo run -p symworx-signal --example state_estimation_demo
+cargo run -p symworx-signal --example windowed_rr_features
 ```
 
 ## Python Bindings Development

@@ -38,9 +38,16 @@ let plant = LtiDiscrete::double_integrator(0.01);
 let mut pid = Pid::gains(2.0, 0.1, 0.05, 0.01);
 ```
 
+## Runnable example
+
+```bash
+# DMD + EDMD + SINDy + SINDYc + LTI/PID (scores DMD with regression_report)
+cargo run -p symworx-dynamics --example data_driven_dynamics_demo
+```
+
 ## Related
 
-- **`symworx-stats`** — SVD, regression, clustering
+- **`symworx-stats`** — SVD, regression, clustering, `regression_report`
 - **`symworx-signal`** — Kalman / EKF / UKF, sparse sensing
 
 ### SINDy / SINDYc
