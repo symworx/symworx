@@ -408,6 +408,7 @@ pub fn try_load_loadsym_catalog(app: &mut App) -> Result<bool, String> {
                 build_weekly_loads(&app.daily_load_dates, &app.daily_loads, &app.daily_ride_counts);
             app.loadsym_catalog_path = Some(path);
             app.loadsym_from_catalog = true;
+            invalidate_loadsym_plan_cache(app);
             focus_calendar_most_recent(app);
             Ok(true)
         }
@@ -428,7 +429,69 @@ pub fn apply_demo_daily_loads(app: &mut App, days: usize) {
         build_weekly_loads(&app.daily_load_dates, &app.daily_loads, &app.daily_ride_counts);
     app.loadsym_from_catalog = false;
     app.loadsym_catalog_path = None;
+    invalidate_loadsym_plan_cache(app);
     focus_calendar_most_recent(app);
+}
+
+/// Fingerprint of plan inputs (goal, horizon, daily TSS series).
+pub fn loadsym_plan_input_key(app: &App) -> u64 {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{
+        Hash,
+        Hasher,
+    };
+    let mut h = DefaultHasher::new();
+    app.loadsym_plan_goal.as_str().hash(&mut h);
+    app.loadsym_plan_horizon.hash(&mut h);
+    app.daily_loads.len().hash(&mut h);
+    for &v in &app.daily_loads {
+        v.to_bits().hash(&mut h);
+    }
+    h.finish()
+}
+
+pub fn invalidate_loadsym_plan_cache(app: &mut App) {
+    app.loadsym_cached_plan = None;
+    app.loadsym_cached_plan_err = None;
+    app.loadsym_plan_cache_key = 0;
+}
+
+/// Recompute plan only when goal / horizon / loads changed (not every TUI frame).
+pub fn ensure_loadsym_plan(app: &mut App) {
+    use symworx_loadsym::load::{
+        MAX_HORIZON_DAYS,
+        OptimizationThresholds,
+        PulseResponseParams,
+        optimize_load_plan,
+    };
+    if app.daily_loads.is_empty() {
+        invalidate_loadsym_plan_cache(app);
+        return;
+    }
+    let key = loadsym_plan_input_key(app);
+    if key == app.loadsym_plan_cache_key
+        && (app.loadsym_cached_plan.is_some() || app.loadsym_cached_plan_err.is_some())
+    {
+        return;
+    }
+    let horizon = app.loadsym_plan_horizon.clamp(2, MAX_HORIZON_DAYS);
+    app.loadsym_plan_horizon = horizon;
+    let thr = OptimizationThresholds {
+        horizon_days: horizon,
+        ..Default::default()
+    };
+    let params = PulseResponseParams::pmc_defaults();
+    match optimize_load_plan(&app.daily_loads, &params, app.loadsym_plan_goal, &thr) {
+        Ok(plan) => {
+            app.loadsym_cached_plan = Some(plan);
+            app.loadsym_cached_plan_err = None;
+        }
+        Err(e) => {
+            app.loadsym_cached_plan = None;
+            app.loadsym_cached_plan_err = Some(e.to_string());
+        }
+    }
+    app.loadsym_plan_cache_key = key;
 }
 
 /// Jump calendar focus to the most recent day (and its week).

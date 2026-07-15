@@ -5,12 +5,16 @@
 //!
 //! Given recent daily loads (e.g. TSS), choose a short horizon plan
 //! (default 3 days) aimed at one of:
-//! - [`LoadGoal::Overload`] — productive progressive load (controlled form dip)
-//! - [`LoadGoal::Maintenance`] — hold form within a relative tolerance (~20%)
-//! - [`LoadGoal::Recovery`] — clear fatigue / raise form with light days
+//! - [`LoadGoal::Recovery`] — active recovery: mean load ~25–55% of chronic
+//! - [`LoadGoal::Maintenance`] — mean load ~85–115% of chronic, even days
+//! - [`LoadGoal::Overload`] — mean load ~115–140% of chronic, with variety
 //!
-//! Search uses a discrete template library (rest / easy / steady / hard / long)
-//! scaled to chronic load — no external solver dependency.
+//! **Primary success is chronic-relative mean load** (scale-free). Form (TSB)
+//! and ACWR are soft / separate context — they do not alone hard-fail a plan.
+//!
+//! Scoring prefers **realistic structure** (not pure rest for recovery, not
+//! all-max for overload): target load fractions + day-to-day variety + limits
+//! on consecutive hard days.
 
 use super::{
     acwr::{
@@ -34,11 +38,11 @@ use crate::error::{
 /// Training goal for the next few days.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LoadGoal {
-    /// Raise acute load with a controlled short-term form dip.
+    /// Elevated load vs chronic (progressive stress).
     Overload,
-    /// Keep form near current level (relative drift ≤ threshold).
+    /// Hold load near chronic mean.
     Maintenance,
-    /// Prioritize form recovery with reduced load.
+    /// Reduced load vs chronic (active recovery / deload).
     Recovery,
 }
 
@@ -52,49 +56,103 @@ impl LoadGoal {
     }
 }
 
-/// Success / failure thresholds for [`optimize_load_plan`].
+/// Thresholds for [`optimize_load_plan`].
+///
+/// Primary bands are **fractions of chronic mean load** \(C\). Scoring pulls
+/// toward mid-band targets and realistic day patterns.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct OptimizationThresholds {
-    /// Max relative form drift for Maintenance success (default 0.20 = 20%).
-    pub maintenance_form_rel_tol: f64,
-    /// Minimum fraction of desired form gain for Recovery success (default 0.80).
-    pub recovery_min_fraction_of_gain: f64,
-    /// Below this fraction of desired gain → Recovery hard failure (default 0.20).
-    pub recovery_fail_fraction_of_gain: f64,
-    /// Max overshoot of intended form dip for Overload (default 1.20 = 120%).
-    pub overload_max_overshoot: f64,
-    /// Target form dip for Overload (TSB units; positive number meaning how far form drops).
-    pub overload_target_form_dip: f64,
-    /// Hard ACWR safety cap on projected history+plan (default 1.5).
-    pub acwr_hard_cap: f64,
-    /// Planning horizon in days (default 3).
+    /// Planning horizon in days (default 4; allowed 1..=[`MAX_HORIZON_DAYS`]).
     pub horizon_days: usize,
-    /// Max daily load as multiple of recent max (default 1.5).
-    pub max_load_factor: f64,
-    /// Allow plans that breach ACWR hard cap (default false).
-    pub allow_aggressive: bool,
-    /// Minimum history days preferred for chronic estimate (default 14).
+    /// Minimum history days for chronic estimate (default 7).
     pub min_history_days: usize,
+    /// Cap template daily load as multiple of recent max (default 1.5).
+    pub max_load_factor: f64,
+
+    /// Recovery success: mean plan load ≥ this × chronic (default 0.20).
+    /// Prevents pure-rest (0,0,0) from counting as the only optimum.
+    pub recovery_load_frac_min: f64,
+    /// Recovery success: mean plan load ≤ this × chronic (default 0.55).
+    pub recovery_load_frac_max: f64,
+    /// Recovery score center (default 0.38 — active recovery).
+    pub recovery_load_frac_target: f64,
+    /// Soft form note vs rest trajectory (default 0.35).
+    pub recovery_form_gain_soft_frac: f64,
+
+    /// Maintenance: mean plan load ≥ this × chronic (default 0.85).
+    pub maintenance_load_frac_lo: f64,
+    /// Maintenance: mean plan load ≤ this × chronic (default 1.15).
+    pub maintenance_load_frac_hi: f64,
+    /// Soft weight pulling mean load toward 1.0×C (default 0.5).
+    pub maintenance_mean_weight: f64,
+    /// Target coefficient of variation (std/mean) for maintenance days (default 0.28).
+    pub maintenance_cv_target: f64,
+    /// Soft weight on |cv − target| (default 0.55).
+    pub maintenance_cv_weight: f64,
+    /// Extra penalty when all days are nearly equal (default 0.45).
+    pub maintenance_flat_penalty: f64,
+    /// Soft: penalize days below this × C (default 0.30) — avoid pure rest in maintain.
+    pub maintenance_day_frac_min: f64,
+    /// Soft: penalize days above this × C (default 1.35) — avoid race-day spikes.
+    pub maintenance_day_frac_max: f64,
+
+    /// Overload: mean plan load ≥ this × chronic (default 1.15).
+    pub overload_load_frac_lo: f64,
+    /// Overload: mean plan load ≤ this × chronic (default 1.40).
+    pub overload_load_frac_hi: f64,
+    /// Overload score center as fraction of chronic (default 1.25).
+    pub overload_target_load_frac: f64,
+    /// Soft weight on consecutive hard days (default 0.20).
+    pub overload_consecutive_hard_weight: f64,
+    /// Day is "hard" if load ≥ this × chronic (default 1.20).
+    pub hard_day_frac: f64,
+    /// Soft max consecutive hard days before penalty grows (default 2).
+    pub max_consecutive_hard_soft: usize,
+
+    /// When true, attach projected ACWR as **context** (never hard-fails success).
+    pub report_acwr: bool,
 }
+
+/// Maximum supported plan horizon (days). Longer horizons use beam search
+/// rather than full template enumeration (see [`optimize_load_plan`]).
+pub const MAX_HORIZON_DAYS: usize = 10;
+
+/// Full enumeration only when `n_templates^H` is at most this (keeps UI snappy).
+const FULL_ENUM_MAX: u64 = 20_000;
+
+/// Beam width when H is large (7 templates × 10 days is ~2.8e8 — not enumerable).
+const BEAM_WIDTH: usize = 64;
 
 impl Default for OptimizationThresholds {
     fn default() -> Self {
         Self {
-            maintenance_form_rel_tol: 0.20,
-            recovery_min_fraction_of_gain: 0.80,
-            recovery_fail_fraction_of_gain: 0.20,
-            overload_max_overshoot: 1.20,
-            overload_target_form_dip: 15.0,
-            acwr_hard_cap: 1.5,
-            horizon_days: 3,
-            max_load_factor: 1.5,
-            allow_aggressive: false,
+            horizon_days: 4,
             min_history_days: 7,
+            max_load_factor: 1.5,
+            recovery_load_frac_min: 0.20,
+            recovery_load_frac_max: 0.55,
+            recovery_load_frac_target: 0.38,
+            recovery_form_gain_soft_frac: 0.35,
+            maintenance_load_frac_lo: 0.85,
+            maintenance_load_frac_hi: 1.15,
+            maintenance_mean_weight: 0.5,
+            maintenance_cv_target: 0.28,
+            maintenance_cv_weight: 0.55,
+            maintenance_flat_penalty: 0.45,
+            maintenance_day_frac_min: 0.30,
+            maintenance_day_frac_max: 1.35,
+            overload_load_frac_lo: 1.15,
+            overload_load_frac_hi: 1.40,
+            overload_target_load_frac: 1.25,
+            overload_consecutive_hard_weight: 0.20,
+            hard_day_frac: 1.20,
+            max_consecutive_hard_soft: 2,
+            report_acwr: true,
         }
     }
 }
 
-/// Result of multi-day load optimization.
+/// Result of multi-day load planning.
 #[derive(Debug, Clone, PartialEq)]
 pub struct LoadPlan {
     /// Recommended daily TSS (or load units) for each horizon day.
@@ -102,27 +160,38 @@ pub struct LoadPlan {
     /// Predicted pulse-response states over the plan horizon only.
     pub predicted_states: PulseResponseSeries,
     pub goal: LoadGoal,
-    /// Whether the plan meets success criteria (and safety constraints).
+    /// Whether the plan meets **load-band** success criteria for the goal.
     pub success: bool,
     /// Lower is better (used for ranking candidate sequences).
     pub score: f64,
-    /// Human-readable notes (goal assessment, safety, etc.).
+    /// Human-readable notes (goal assessment, form soft notes, ACWR context).
     pub messages: Vec<String>,
     /// Form at start of plan (after history).
     pub form_start: f64,
     /// Form at end of plan.
     pub form_end: f64,
-    /// Chronic load estimate used to scale templates.
+    /// Chronic load estimate used to scale templates and bands.
     pub chronic_ref: f64,
+    /// Mean planned daily load.
+    pub mean_plan_load: f64,
+    /// \(\bar w / C\) when \(C > 0\).
+    pub load_frac: f64,
+    /// Projected ACWR after appending the plan (separate context; optional).
+    pub projected_acwr: Option<f64>,
 }
 
-/// Day templates as fractions of chronic reference load.
-const TEMPLATE_FRACS: [f64; 5] = [0.0, 0.4, 1.0, 1.3, 1.5]; // rest, easy, steady, hard, long
+/// Day templates as fractions of chronic (finer grid → more realistic mixes).
+/// rest · easy · moderate · steady · tempo · hard · long
+const TEMPLATE_FRACS: [f64; 7] = [0.0, 0.25, 0.45, 0.70, 1.0, 1.20, 1.40];
 
 /// Optimize a short multi-day load plan for the given goal.
 ///
-/// `history_loads` should be oldest → newest daily loads (TSS). Requires at least
-/// a few days of history for a meaningful chronic reference.
+/// `history_loads` should be oldest → newest daily loads (TSS).
+///
+/// **Search strategy:** full enumeration when `templates^H` is small
+/// (`≤ 20_000`); otherwise **beam search** (width 64). There is no
+/// mathematical “convergence” issue for H ≤ 10 — the plant is a stable
+/// linear filter — only combinatorial cost of brute force.
 pub fn optimize_load_plan(
     history_loads: &[f64],
     params: &PulseResponseParams,
@@ -135,10 +204,11 @@ pub fn optimize_load_plan(
             "need at least one historical daily load".into(),
         ));
     }
-    if thresholds.horizon_days == 0 || thresholds.horizon_days > 7 {
-        return Err(LoadSymError::InvalidParameter(
-            "horizon_days must be in 1..=7".into(),
-        ));
+    if thresholds.horizon_days == 0 || thresholds.horizon_days > MAX_HORIZON_DAYS {
+        return Err(LoadSymError::InvalidParameter(format!(
+            "horizon_days must be in 1..={} (got {})",
+            MAX_HORIZON_DAYS, thresholds.horizon_days
+        )));
     }
     if history_loads.len() < thresholds.min_history_days {
         return Err(LoadSymError::InsufficientData(format!(
@@ -167,12 +237,53 @@ pub fn optimize_load_plan(
         .collect();
 
     let h = thresholds.horizon_days;
-    let mut best: Option<LoadPlan> = None;
+    let n_t = templates.len() as u64;
+    // 7^10 fits in u64; saturating_pow for safety
+    let total = n_t.saturating_pow(h as u32);
 
-    // Enumerate all template sequences of length h (5^h; h<=7 → manageable for small h;
-    // for h=5: 3125, h=6: 15625, h=7: 78125 — fine for offline planning).
+    let best = if total > 0 && total <= FULL_ENUM_MAX {
+        search_full_enum(
+            history_loads,
+            &templates,
+            h,
+            start,
+            params,
+            goal,
+            thresholds,
+            chronic_ref,
+        )
+    } else {
+        search_beam(
+            history_loads,
+            &templates,
+            h,
+            start,
+            params,
+            goal,
+            thresholds,
+            chronic_ref,
+            BEAM_WIDTH,
+        )
+    };
+
+    best.ok_or_else(|| {
+        LoadSymError::InvalidValue("no valid load plan candidates under constraints".into())
+    })
+}
+
+fn search_full_enum(
+    history_loads: &[f64],
+    templates: &[f64],
+    h: usize,
+    start: PulseResponseState,
+    params: &PulseResponseParams,
+    goal: LoadGoal,
+    thresholds: &OptimizationThresholds,
+    chronic_ref: f64,
+) -> Option<LoadPlan> {
     let n_t = templates.len();
     let total = n_t.pow(h as u32);
+    let mut best: Option<LoadPlan> = None;
     for idx in 0..total {
         let mut seq = Vec::with_capacity(h);
         let mut rem = idx;
@@ -180,8 +291,7 @@ pub fn optimize_load_plan(
             seq.push(templates[rem % n_t]);
             rem /= n_t;
         }
-
-        if let Some(plan) = evaluate_candidate(
+        consider_candidate(
             history_loads,
             &seq,
             start,
@@ -189,26 +299,103 @@ pub fn optimize_load_plan(
             goal,
             thresholds,
             chronic_ref,
-        ) {
-            let replace = match &best {
-                None => true,
-                Some(b) => rank_key(&plan) < rank_key(b),
-            };
-            if replace {
-                best = Some(plan);
-            }
-        }
+            &mut best,
+        );
     }
-
-    best.ok_or_else(|| {
-        LoadSymError::InvalidValue("no valid load plan candidates under constraints".into())
-    })
+    best
 }
 
-/// Prefer successful plans, then lower score.
+/// Beam search: expand day-by-day, keep top `width` partial sequences by rank.
+fn search_beam(
+    history_loads: &[f64],
+    templates: &[f64],
+    h: usize,
+    start: PulseResponseState,
+    params: &PulseResponseParams,
+    goal: LoadGoal,
+    thresholds: &OptimizationThresholds,
+    chronic_ref: f64,
+    width: usize,
+) -> Option<LoadPlan> {
+    // Each beam entry is a partial (or full) day sequence.
+    let mut beam: Vec<Vec<f64>> = vec![Vec::new()];
+    let mut best: Option<LoadPlan> = None;
+
+    for _day in 0..h {
+        let mut scored: Vec<(Vec<f64>, LoadPlan)> = Vec::new();
+        for partial in &beam {
+            for &t in templates {
+                let mut seq = partial.clone();
+                seq.push(t);
+                if let Some(plan) = evaluate_candidate(
+                    history_loads,
+                    &seq,
+                    start,
+                    params,
+                    goal,
+                    thresholds,
+                    chronic_ref,
+                ) {
+                    // Track global best among complete sequences only at the end;
+                    // still use intermediate scores for pruning.
+                    scored.push((seq, plan));
+                }
+            }
+        }
+        if scored.is_empty() {
+            return best;
+        }
+        scored.sort_by(|a, b| rank_key(&a.1).cmp(&rank_key(&b.1)));
+        scored.truncate(width);
+        beam = scored.into_iter().map(|(s, _)| s).collect();
+    }
+
+    for seq in &beam {
+        consider_candidate(
+            history_loads,
+            seq,
+            start,
+            params,
+            goal,
+            thresholds,
+            chronic_ref,
+            &mut best,
+        );
+    }
+    best
+}
+
+fn consider_candidate(
+    history_loads: &[f64],
+    seq: &[f64],
+    start: PulseResponseState,
+    params: &PulseResponseParams,
+    goal: LoadGoal,
+    thresholds: &OptimizationThresholds,
+    chronic_ref: f64,
+    best: &mut Option<LoadPlan>,
+) {
+    if let Some(plan) = evaluate_candidate(
+        history_loads,
+        seq,
+        start,
+        params,
+        goal,
+        thresholds,
+        chronic_ref,
+    ) {
+        let replace = match best {
+            None => true,
+            Some(b) => rank_key(&plan) < rank_key(b),
+        };
+        if replace {
+            *best = Some(plan);
+        }
+    }
+}
+
 fn rank_key(p: &LoadPlan) -> (u8, i64) {
     let fail = if p.success { 0u8 } else { 1u8 };
-    // quantize score for Ord
     let s = (p.score * 1e6) as i64;
     (fail, s)
 }
@@ -221,8 +408,58 @@ fn chronic_reference(history: &[f64]) -> f64 {
     if mean.is_finite() && mean > 1.0 {
         mean
     } else {
-        50.0 // fallback so templates are non-degenerate
+        50.0
     }
+}
+
+/// Mean |w_i − target| / target (scale-free day-to-day fit to a daily target).
+fn mean_abs_frac_dev(days: &[f64], target: f64) -> f64 {
+    let t = target.max(1.0);
+    if days.is_empty() {
+        return 0.0;
+    }
+    days.iter().map(|w| (w - t).abs() / t).sum::<f64>() / days.len() as f64
+}
+
+/// Longest run of days with load ≥ thresh.
+fn max_consecutive_ge(days: &[f64], thresh: f64) -> usize {
+    let mut best = 0usize;
+    let mut cur = 0usize;
+    for &w in days {
+        if w + 1e-9 >= thresh {
+            cur += 1;
+            best = best.max(cur);
+        } else {
+            cur = 0;
+        }
+    }
+    best
+}
+
+/// Coefficient of variation (std / mean); 0 if mean ≈ 0.
+fn coeff_of_variation(days: &[f64]) -> f64 {
+    if days.len() < 2 {
+        return 0.0;
+    }
+    let n = days.len() as f64;
+    let mean = days.iter().sum::<f64>() / n;
+    if mean.abs() < 1e-9 {
+        return 0.0;
+    }
+    let var = days.iter().map(|w| (w - mean).powi(2)).sum::<f64>() / n;
+    var.sqrt() / mean.abs()
+}
+
+/// True if all days are within `eps_frac` of each other relative to mean.
+fn is_nearly_flat(days: &[f64], eps_frac: f64) -> bool {
+    if days.len() < 2 {
+        return true;
+    }
+    let mean = days.iter().sum::<f64>() / days.len() as f64;
+    let scale = mean.abs().max(1.0);
+    let lo = days.iter().copied().fold(f64::INFINITY, f64::min);
+    let hi = days.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+    (hi - lo) / scale < eps_frac
 }
 
 fn evaluate_candidate(
@@ -238,134 +475,197 @@ fn evaluate_candidate(
     let form_start = start.form;
     let form_end = predicted.last_state()?.form;
 
-    // Safety: projected ACWR on history + plan
-    let mut extended: Vec<f64> = history.to_vec();
-    extended.extend_from_slice(plan_loads);
-    let acwr_breach = match compute_acute_chronic(&extended, 7, 28) {
-        Ok(s) => s.acwr > thr.acwr_hard_cap,
-        Err(_) => false, // not enough for full chronic — skip hard check
-    };
-    if acwr_breach && !thr.allow_aggressive {
-        return Some(LoadPlan {
-            daily_tss: plan_loads.to_vec(),
-            predicted_states: predicted,
-            goal,
-            success: false,
-            score: 1e9,
-            messages: vec![format!(
-                "FAIL safety: projected ACWR exceeds hard cap {:.2}",
-                thr.acwr_hard_cap
-            )],
-            form_start,
-            form_end,
-            chronic_ref,
-        });
-    }
-
     let mean_plan = plan_loads.iter().sum::<f64>() / plan_loads.len().max(1) as f64;
+    let c = chronic_ref.max(1.0);
+    let load_frac = mean_plan / c;
+
     let mut messages = Vec::new();
     let (success, score) = match goal {
-        LoadGoal::Maintenance => {
-            let denom = form_start.abs().max(10.0); // avoid tiny-denominator blowup
-            let rel = (form_end - form_start).abs() / denom;
-            let ok = rel <= thr.maintenance_form_rel_tol;
-            // Prefer form stability + loads near chronic
-            let load_dev = (mean_plan - chronic_ref).abs() / chronic_ref.max(1.0);
-            let score = rel + 0.25 * load_dev;
+        LoadGoal::Recovery => {
+            // Active recovery band: not pure rest, not moderate training.
+            let ok = load_frac + 1e-12 >= thr.recovery_load_frac_min
+                && load_frac <= thr.recovery_load_frac_max + 1e-12;
+
+            let target = thr.recovery_load_frac_target;
+            // Prefer mean near target + days near target·C (easy rides, not one big + zeros).
+            let day_dev = mean_abs_frac_dev(plan_loads, target * c);
+            let mut score = 1.2 * (load_frac - target).abs() + 0.8 * day_dev;
+
+            // Extra push away from pure rest
+            let zero_frac = plan_loads.iter().filter(|&&w| w < 1.0).count() as f64
+                / plan_loads.len().max(1) as f64;
+            if zero_frac > 0.67 {
+                score += 0.4 * zero_frac;
+            }
+
+            let rest_traj =
+                forecast_pulse_response(start, &vec![0.0; plan_loads.len()], params).ok()?;
+            let form_rest = rest_traj.last_state()?.form;
+            let rest_gain = (form_rest - form_start).max(0.0);
+            let gain = form_end - form_start;
+            let soft_frac = if rest_gain > 1e-6 {
+                gain / rest_gain
+            } else if gain >= 0.0 {
+                1.0
+            } else {
+                0.0
+            };
+            // Mild reward for form recovery
+            if gain > 0.0 {
+                score -= 0.03 * soft_frac.min(1.0);
+            }
+
             if ok {
                 messages.push(format!(
-                    "OK maintenance: form drift {:.1}% ≤ {:.0}%",
-                    rel * 100.0,
-                    thr.maintenance_form_rel_tol * 100.0
+                    "OK recovery: mean load {:.0}% of chronic (band {:.0}–{:.0}%, target ~{:.0}%)",
+                    load_frac * 100.0,
+                    thr.recovery_load_frac_min * 100.0,
+                    thr.recovery_load_frac_max * 100.0,
+                    target * 100.0
                 ));
             } else {
                 messages.push(format!(
-                    "FAIL maintenance: form drift {:.1}% > {:.0}%",
-                    rel * 100.0,
-                    thr.maintenance_form_rel_tol * 100.0
+                    "FAIL recovery: mean load {:.0}% of chronic (need {:.0}–{:.0}%)",
+                    load_frac * 100.0,
+                    thr.recovery_load_frac_min * 100.0,
+                    thr.recovery_load_frac_max * 100.0
+                ));
+            }
+            messages.push(format!(
+                "form soft: {:+.1} ({:.0}% of rest gain; soft ≥ {:.0}%)",
+                gain,
+                soft_frac * 100.0,
+                thr.recovery_form_gain_soft_frac * 100.0
+            ));
+            (ok, score)
+        }
+        LoadGoal::Maintenance => {
+            let ok = load_frac >= thr.maintenance_load_frac_lo - 1e-12
+                && load_frac <= thr.maintenance_load_frac_hi + 1e-12;
+            // Keep weekly/horizon mean near chronic…
+            let mut score = thr.maintenance_mean_weight * (load_frac - 1.0).abs();
+            // …but prefer modulated days (easy / steady / moderate), not flat TSS.
+            let cv = coeff_of_variation(plan_loads);
+            score += thr.maintenance_cv_weight * (cv - thr.maintenance_cv_target).abs();
+            if is_nearly_flat(plan_loads, 0.08) {
+                score += thr.maintenance_flat_penalty;
+            }
+            // Soft bounds per day: avoid pure rest + race-day spikes that only average to C
+            let mut extreme_pen = 0.0;
+            for &w in plan_loads {
+                let f = w / c;
+                if f + 1e-12 < thr.maintenance_day_frac_min {
+                    extreme_pen += thr.maintenance_day_frac_min - f;
+                }
+                if f > thr.maintenance_day_frac_max + 1e-12 {
+                    extreme_pen += f - thr.maintenance_day_frac_max;
+                }
+            }
+            score += 0.4 * extreme_pen;
+
+            if ok {
+                messages.push(format!(
+                    "OK maintenance: mean load {:.0}% of chronic (band {:.0}–{:.0}%)",
+                    load_frac * 100.0,
+                    thr.maintenance_load_frac_lo * 100.0,
+                    thr.maintenance_load_frac_hi * 100.0
+                ));
+            } else {
+                messages.push(format!(
+                    "FAIL maintenance: mean load {:.0}% of chronic (need {:.0}–{:.0}%)",
+                    load_frac * 100.0,
+                    thr.maintenance_load_frac_lo * 100.0,
+                    thr.maintenance_load_frac_hi * 100.0
+                ));
+            }
+            messages.push(format!(
+                "structure soft: CV={:.2} (target ~{:.2}; modulate days, avoid flat)",
+                cv, thr.maintenance_cv_target
+            ));
+            (ok, score)
+        }
+        LoadGoal::Overload => {
+            let ok = load_frac >= thr.overload_load_frac_lo - 1e-12
+                && load_frac <= thr.overload_load_frac_hi + 1e-12
+                && mean_plan > c;
+            let target = thr.overload_target_load_frac;
+            let mut score = 1.1 * (load_frac - target).abs();
+            // Prefer days near target·C rather than all-long or one spike
+            let day_dev = mean_abs_frac_dev(plan_loads, target * c);
+            score += 0.45 * day_dev;
+
+            let hard_thr = thr.hard_day_frac * c;
+            let cons = max_consecutive_ge(plan_loads, hard_thr);
+            if cons > thr.max_consecutive_hard_soft {
+                score += thr.overload_consecutive_hard_weight
+                    * (cons - thr.max_consecutive_hard_soft) as f64;
+                messages.push(format!(
+                    "structure soft: {} consecutive hard days (≥{:.0}%C); prefer ≤{}",
+                    cons,
+                    thr.hard_day_frac * 100.0,
+                    thr.max_consecutive_hard_soft
+                ));
+            } else {
+                messages.push(format!(
+                    "structure soft: max consecutive hard days = {} (ok ≤{})",
+                    cons, thr.max_consecutive_hard_soft
+                ));
+            }
+
+            if form_end > form_start + 1.0 {
+                score += 0.1;
+                messages.push(format!(
+                    "form soft: form rising {:+.1} under elevated load",
+                    form_end - form_start
+                ));
+            } else {
+                messages.push(format!(
+                    "form soft: form {:+.1} (no absolute TSB dip required)",
+                    form_end - form_start
+                ));
+            }
+
+            if ok {
+                messages.push(format!(
+                    "OK overload: mean load {:.0}% of chronic (band {:.0}–{:.0}%, target ~{:.0}%)",
+                    load_frac * 100.0,
+                    thr.overload_load_frac_lo * 100.0,
+                    thr.overload_load_frac_hi * 100.0,
+                    target * 100.0
+                ));
+            } else {
+                messages.push(format!(
+                    "FAIL overload: mean load {:.0}% of chronic (need {:.0}–{:.0}% and > chronic)",
+                    load_frac * 100.0,
+                    thr.overload_load_frac_lo * 100.0,
+                    thr.overload_load_frac_hi * 100.0
                 ));
             }
             (ok, score)
         }
-        LoadGoal::Recovery => {
-            // Desired: raise form; ideal is rest-ish trajectory target
-            let rest_traj =
-                forecast_pulse_response(start, &vec![0.0; plan_loads.len()], params).ok()?;
-            let form_rest = rest_traj.last_state()?.form;
-            let desired_gain = (form_rest - form_start).max(1.0);
-            let gain = form_end - form_start;
-            let frac = gain / desired_gain;
-            let ok = gain > 0.0 && frac >= thr.recovery_min_fraction_of_gain;
-            // Hard fail band for messaging (still ranked by score)
-            if frac < thr.recovery_fail_fraction_of_gain {
-                messages.push(format!(
-                    "FAIL recovery: form gain only {:.0}% of rest-trajectory target",
-                    frac * 100.0
-                ));
-            } else if ok {
-                messages.push(format!(
-                    "OK recovery: form {:+.1} ({:.0}% of rest-trajectory gain)",
-                    gain,
-                    frac * 100.0
-                ));
-            } else {
-                messages.push(format!(
-                    "PARTIAL recovery: form {:+.1} ({:.0}% of target; need ≥ {:.0}%)",
-                    gain,
-                    frac * 100.0,
-                    thr.recovery_min_fraction_of_gain * 100.0
-                ));
-            }
-            // Prefer higher form gain and lower total load
-            let score = -gain + 0.01 * mean_plan;
-            (ok && !acwr_breach, score)
-        }
-        LoadGoal::Overload => {
-            let dip = form_start - form_end; // positive if form dropped
-            let target = thr.overload_target_form_dip;
-            let overshoot = dip > target * thr.overload_max_overshoot;
-            // Success: meaningful dip into band without overshoot; mean load ≥ chronic
-            let in_band = dip >= target * 0.5 && dip <= target * thr.overload_max_overshoot;
-            let progressive = mean_plan >= chronic_ref * 0.95;
-            let ok = in_band && progressive && !overshoot;
-            if overshoot {
-                messages.push(format!(
-                    "FAIL overload: form dip {:.1} overshoots {:.0}% of target {:.1}",
-                    dip,
-                    thr.overload_max_overshoot * 100.0,
-                    target
-                ));
-            } else if ok {
-                messages.push(format!(
-                    "OK overload: form dip {:.1} (target ~{:.1}), mean load {:.0}",
-                    dip, target, mean_plan
-                ));
-            } else {
-                messages.push(format!(
-                    "PARTIAL overload: form dip {:.1}, mean load {:.0} (chronic {:.0})",
-                    dip, mean_plan, chronic_ref
-                ));
-            }
-            // Score: distance from target dip + prefer progressive load
-            let score = (dip - target).abs() + if progressive { 0.0 } else { 20.0 };
-            (ok && !acwr_breach, score)
-        }
     };
 
-    if acwr_breach {
-        messages.push(format!(
-            "note: projected ACWR above {:.2} (aggressive)",
-            thr.acwr_hard_cap
-        ));
-    }
-
-    // Secondary risk label for messaging
-    if let Ok(s) = compute_acute_chronic(&extended, 7, 28) {
-        messages.push(format!(
-            "projected ACWR={:.2} ({})",
-            s.acwr,
-            classify_acwr(s.acwr).as_str()
-        ));
+    // ACWR: separate context only
+    let mut projected_acwr = None;
+    if thr.report_acwr {
+        let mut extended: Vec<f64> = history.to_vec();
+        extended.extend_from_slice(plan_loads);
+        match compute_acute_chronic(&extended, 7, 28) {
+            Ok(s) => {
+                projected_acwr = Some(s.acwr);
+                messages.push(format!(
+                    "ACWR context: projected={:.2} ({}) — advisory only",
+                    s.acwr,
+                    classify_acwr(s.acwr).as_str()
+                ));
+            }
+            Err(_) => {
+                messages.push(
+                    "ACWR context: insufficient history for 7/28 window (advisory skipped)"
+                        .into(),
+                );
+            }
+        }
     }
 
     Some(LoadPlan {
@@ -378,13 +678,13 @@ fn evaluate_candidate(
         form_start,
         form_end,
         chronic_ref,
+        mean_plan_load: mean_plan,
+        load_frac,
+        projected_acwr,
     })
 }
 
 /// Legacy stub retained for API compatibility (element-wise product).
-///
-/// Prefer [`optimize_load_plan`] for real planning. This will be removed in a
-/// future major version.
 #[deprecated(note = "use optimize_load_plan for goal-conditioned multi-day planning")]
 pub fn optimize_load(parameters: &[f64], data: &[f64]) -> Vec<f64> {
     parameters
@@ -394,7 +694,6 @@ pub fn optimize_load(parameters: &[f64], data: &[f64]) -> Vec<f64> {
         .collect()
 }
 
-/// Single-step helper used by tests / interactive tools.
 #[allow(dead_code)]
 pub fn apply_plan_day(
     state: PulseResponseState,
@@ -410,7 +709,6 @@ mod tests {
     use crate::load::generate_demo_daily_loads;
 
     fn base_history() -> Vec<f64> {
-        // ~4 weeks moderate then a hard finish
         let mut loads = generate_demo_daily_loads(28, 60.0, 15.0);
         for l in loads.iter_mut().skip(21) {
             *l = 120.0;
@@ -419,7 +717,7 @@ mod tests {
     }
 
     #[test]
-    fn recovery_plan_reduces_load_and_raises_form() {
+    fn recovery_is_active_not_pure_rest() {
         let hist = base_history();
         let params = PulseResponseParams::pmc_defaults();
         let thr = OptimizationThresholds {
@@ -427,67 +725,98 @@ mod tests {
             ..Default::default()
         };
         let plan = optimize_load_plan(&hist, &params, LoadGoal::Recovery, &thr).unwrap();
-        let mean_hist: f64 = hist.iter().sum::<f64>() / hist.len() as f64;
-        let mean_plan: f64 = plan.daily_tss.iter().sum::<f64>() / plan.daily_tss.len() as f64;
-        assert!(
-            mean_plan < mean_hist,
-            "recovery mean {} should be < hist {}",
-            mean_plan,
-            mean_hist
-        );
-        assert!(
-            plan.form_end >= plan.form_start,
-            "form should not drop in recovery"
-        );
         assert!(plan.success, "messages: {:?}", plan.messages);
+        assert!(
+            plan.load_frac >= thr.recovery_load_frac_min - 1e-9,
+            "should not be pure rest: load_frac {} days {:?}",
+            plan.load_frac,
+            plan.daily_tss
+        );
+        assert!(
+            plan.load_frac <= thr.recovery_load_frac_max + 1e-9,
+            "load_frac {}",
+            plan.load_frac
+        );
+        // At least one non-rest day
+        assert!(
+            plan.daily_tss.iter().any(|&w| w > 1.0),
+            "expected active recovery days: {:?}",
+            plan.daily_tss
+        );
+        assert!(plan.messages.iter().any(|m| m.contains("ACWR context")));
     }
 
     #[test]
-    fn maintenance_stays_within_tol() {
+    fn maintenance_modulates_days_not_flat() {
         let hist = generate_demo_daily_loads(28, 70.0, 10.0);
         let params = PulseResponseParams::pmc_defaults();
         let thr = OptimizationThresholds {
             horizon_days: 3,
-            maintenance_form_rel_tol: 0.20,
             ..Default::default()
         };
         let plan = optimize_load_plan(&hist, &params, LoadGoal::Maintenance, &thr).unwrap();
-        let denom = plan.form_start.abs().max(10.0);
-        let rel = (plan.form_end - plan.form_start).abs() / denom;
+        assert!(plan.success, "messages: {:?}", plan.messages);
         assert!(
-            rel <= thr.maintenance_form_rel_tol + 1e-9,
-            "drift {} messages {:?}",
-            rel,
-            plan.messages
+            plan.load_frac >= thr.maintenance_load_frac_lo - 1e-9
+                && plan.load_frac <= thr.maintenance_load_frac_hi + 1e-9
         );
-        assert!(plan.success);
+        let c = plan.chronic_ref;
+        let max_w = plan.daily_tss.iter().copied().fold(0.0, f64::max);
+        let min_w = plan.daily_tss.iter().copied().fold(f64::INFINITY, f64::min);
+        assert!(
+            max_w - min_w > 0.05 * c,
+            "expected modulated TSS, got flat {:?}, C={}",
+            plan.daily_tss,
+            c
+        );
+        // Still avoid pure rest / extreme spikes
+        for &w in &plan.daily_tss {
+            assert!(
+                w >= 0.15 * c - 1.0 && w <= 1.5 * c + 1.0,
+                "day load {} extreme vs C {}: {:?}",
+                w,
+                c,
+                plan.daily_tss
+            );
+        }
     }
 
     #[test]
-    fn overload_increases_acute_load() {
+    fn overload_elevated_with_variety() {
         let hist = generate_demo_daily_loads(28, 55.0, 8.0);
         let params = PulseResponseParams::pmc_defaults();
         let thr = OptimizationThresholds {
             horizon_days: 3,
-            overload_target_form_dip: 10.0,
-            allow_aggressive: true, // short demo series may spike ACWR
             ..Default::default()
         };
         let plan = optimize_load_plan(&hist, &params, LoadGoal::Overload, &thr).unwrap();
-        let mean_plan: f64 = plan.daily_tss.iter().sum::<f64>() / plan.daily_tss.len() as f64;
+        assert!(plan.success, "messages: {:?}", plan.messages);
+        assert!(plan.mean_plan_load > plan.chronic_ref);
+        assert!(plan.load_frac >= thr.overload_load_frac_lo - 1e-9);
+        // Not all identical max days
+        let max_w = plan.daily_tss.iter().copied().fold(0.0, f64::max);
+        let min_w = plan.daily_tss.iter().copied().fold(f64::INFINITY, f64::min);
         assert!(
-            mean_plan >= plan.chronic_ref * 0.9,
-            "overload mean {} chronic {}",
-            mean_plan,
-            plan.chronic_ref
+            max_w - min_w > 1.0 || plan.daily_tss.len() == 1,
+            "prefer some variety: {:?}",
+            plan.daily_tss
         );
-        // Form should not rise (we're stressing)
-        assert!(
-            plan.form_end <= plan.form_start + 1.0,
-            "form_start {} form_end {}",
-            plan.form_start,
-            plan.form_end
-        );
+    }
+
+    #[test]
+    fn acwr_context_does_not_hard_fail_success() {
+        let mut hist = generate_demo_daily_loads(30, 80.0, 5.0);
+        for l in hist.iter_mut().skip(23) {
+            *l = 150.0;
+        }
+        let params = PulseResponseParams::pmc_defaults();
+        let thr = OptimizationThresholds {
+            horizon_days: 3,
+            ..Default::default()
+        };
+        let plan = optimize_load_plan(&hist, &params, LoadGoal::Recovery, &thr).unwrap();
+        assert!(plan.success, "messages: {:?}", plan.messages);
+        assert!(plan.messages.iter().any(|m| m.contains("ACWR context")));
     }
 
     #[test]
@@ -496,6 +825,20 @@ mod tests {
         let thr = OptimizationThresholds::default();
         let err = optimize_load_plan(&[10.0, 20.0], &params, LoadGoal::Maintenance, &thr);
         assert!(matches!(err, Err(LoadSymError::InsufficientData(_))));
+    }
+
+    #[test]
+    fn long_horizon_beam_completes() {
+        // 7^10 is huge — must use beam path and still return a plan quickly.
+        let hist = generate_demo_daily_loads(30, 70.0, 10.0);
+        let params = PulseResponseParams::pmc_defaults();
+        let thr = OptimizationThresholds {
+            horizon_days: 10,
+            ..Default::default()
+        };
+        let plan = optimize_load_plan(&hist, &params, LoadGoal::Maintenance, &thr).unwrap();
+        assert_eq!(plan.daily_tss.len(), 10);
+        assert!(plan.success, "messages: {:?}", plan.messages);
     }
 
     #[test]

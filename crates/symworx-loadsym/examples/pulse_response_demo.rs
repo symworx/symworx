@@ -66,10 +66,10 @@ fn main() {
 
     // Multi-day optimization for each goal
     let thr = OptimizationThresholds {
-        horizon_days: 3,
+        horizon_days: 4,
         ..Default::default()
     };
-    println!("\n--- Next {}-day plans ---", thr.horizon_days);
+    println!("\n--- Next {}-day plans (default H=4, max 10) ---", thr.horizon_days);
     for goal in [
         LoadGoal::Recovery,
         LoadGoal::Maintenance,
@@ -78,12 +78,14 @@ fn main() {
         match optimize_load_plan(&loads, &params, goal, &thr) {
             Ok(plan) => {
                 println!(
-                    "\n[{}] success={}  form {:.1} → {:.1}  score={:.2}",
+                    "\n[{}] success={}  load={:.0}%C  mean={:.0}  C≈{:.0}  form {:.1} → {:.1}",
                     goal.as_str(),
                     plan.success,
+                    plan.load_frac * 100.0,
+                    plan.mean_plan_load,
+                    plan.chronic_ref,
                     plan.form_start,
-                    plan.form_end,
-                    plan.score
+                    plan.form_end
                 );
                 println!(
                     "  daily TSS: {}",
