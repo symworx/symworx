@@ -54,21 +54,21 @@ pub fn render_loadsym_tab(frame: &mut Frame, app: &App, area: Rect) {
             "LoadSym help (M-? or Esc to close)\n\n\
              • ↑↓ or 1/2/3 : select sub-view from List\n\
              • In sub-views: arrows/letters for nav/scroll (sparkline), Esc to List\n\
-             • Uses real ACWR / monotony / strain + NP/TSS from symworx-loadsym\n\n\
+             • Uses real ACLi / monotony / strain + SEPi/TSLi from symworx-loadsym (LOADsym metrics)\n\n\
              1) Workout — i/a to load newest .fit/CSV from $VELOFIT_HOME (raw|inbox) or ./data.\n\
-                NP/TSS (set FTP with f/F). Thresh regions (t/T d/D). Best efforts + exceedance bars.\n\
-             2) Calendar — daily TSS from personal SQLite catalog ($VELOFIT_HOME/db).\n\
+                SEPi/TSLi (set FTP with f/F). Thresh regions (t/T d/D). Best efforts + exceedance bars.\n\
+             2) Calendar — daily TSLi from personal SQLite catalog ($VELOFIT_HOME/db).\n\
                 ↑↓/←→ scroll  Home/End  r:reload catalog  g:demo\n\
-             3) Programming Optimization — load vs chronic bands (1/2/3 goals; ACWR is context)\n\n\
+             3) Programming Optimization — load vs chronic bands (1/2/3 goals; ACLi is context)\n\n\
              Archive: $VELOFIT_HOME (default ~/velofit). Catalog is personal (not in git).\n\
-             Real SRM/Garmin/Polar .fit supported (power preferred for TSS)."
+             Real SRM/Garmin/Polar .fit supported (power preferred for TSLi)."
         ).block(Block::new().borders(Borders::ALL).title(" Help — LoadSym "));
         frame.render_widget(help, area);
         return;
     }
 
     let outer = Block::new()
-        .title(" LoadSym — Training Load, ACWR, Optimization ")
+        .title(" LoadSym — Training Load, ACLi, Optimization ")
         .borders(Borders::ALL)
         .border_style(Color::Yellow);
 
@@ -116,11 +116,11 @@ fn render_loadsym_list(frame: &mut Frame, app: &App, area: Rect) {
         Line::from(Span::styled(
             if app.loadsym_from_catalog {
                 format!(
-                    "   {} days from catalog  • multi-day TSS + ACWR",
+                    "   {} days from catalog  • multi-day TSLi + ACLi",
                     app.daily_loads.len()
                 )
             } else {
-                "   Multi-day load + ACWR (r: reload catalog, g: demo)".to_string()
+                "   Multi-day load + ACLi (r: reload catalog, g: demo)".to_string()
             },
             Style::default().fg(Color::DarkGray),
         )),
@@ -168,9 +168,9 @@ fn render_workout_view(frame: &mut Frame, app: &App, area: Rect) {
         } else {
             let spd = act
                 .speed_mps
-                .iter()
-                .map(|v| v.unwrap_or(0.0) * 3.6)
-                .collect::<Vec<_>>();
+                    .iter()
+                    .map(|v| v.unwrap_or(0.0) * 3.6)
+                    .collect::<Vec<_>>();
             (spd, "speed (km/h)")
         };
         (
@@ -199,7 +199,7 @@ fn render_workout_view(frame: &mut Frame, app: &App, area: Rect) {
     };
 
     // Visible window (scrolling viewport)
-    let view_len = 60usize; // tune for terminal width feel
+    let view_len = 60usize; // tune for terminal width feel;
     let max_scroll = session.len().saturating_sub(1);
     let start = scroll
         .min(max_scroll)
@@ -243,7 +243,7 @@ fn render_workout_view(frame: &mut Frame, app: &App, area: Rect) {
 
     let marker = exceedance_marker_string(session, thresh);
 
-    // New: cycling power metrics (TSS etc) when we have a real activity with power
+    // New: cycling power metrics (TSLi/SEPi) when we have a real activity with power
     let ride_metrics = if is_real {
         if let Some(act) = &app.loaded_activity {
             let p = act.power_series();
@@ -257,7 +257,7 @@ fn render_workout_view(frame: &mut Frame, app: &App, area: Rect) {
 
     // EVENLY TABULATED SUMMARY ACROSS THE TOP (auto-derived core stats)
     let header_row: Vec<Cell> = vec![
-        "Mean", "Std", "Peak", "Best3", "Best30", "Regions", "Thresh", "NP", "TSS",
+        "Mean", "Std", "Peak", "Best3", "Best30", "Regions", "Thresh", "SEPi", "TSLi",
     ]
     .into_iter()
     .map(|h| {
@@ -326,7 +326,7 @@ fn render_workout_view(frame: &mut Frame, app: &App, area: Rect) {
     }
     if let Some(ref m) = ride_metrics {
         info_lines.push(format!(
-            "Ride: NP={:.0}W  IF={:.2}  TSS={:.1}  Work={:.0}kJ",
+            "Ride: SEPi={:.0}W  SRIi={:.2}  TSLi={:.1}  Work={:.0}kJ",
             m.np, m.if_, m.tss, m.total_work_kj
         ));
     }
@@ -422,7 +422,7 @@ fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
     let outer = Layout::vertical([
         Constraint::Length(5), // header
         Constraint::Min(6),    // dual lists
-        Constraint::Length(7), // weekly TSS: * above + bars + * below + label
+        Constraint::Length(7), // weekly TSLi: * above + bars + * below + label
     ])
     .split(area);
 
@@ -445,10 +445,10 @@ fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
     let week_total = app.weekly_loads.len();
 
     // Fixed-width columns so values don't jump while scrolling
-    //   DATE       TSS      n │ WEEK       W-TSS    rides │ ACWR  risk       mono  strain
+    //   DATE       TSLi     n │ WEEK       W-TSLi   rides │ ACLi  risk       mono  strain
     let col_hdr = format!(
         "{:<10}  {:>7}  {:>3}  │  {:<10}  {:>7}  {:>5}  │  {:>5}  {:<9}  {:>5}  {:>7}",
-        "DATE", "TSS", "n", "WEEK", "W-TSS", "rides", "ACWR", "risk", "mono", "strain"
+        "DATE", "TSLi", "n", "WEEK", "W-TSLi", "rides", "ACLi", "risk", "mono", "strain"
     );
     let col_vals = format!(
         "{:<10}  {:>7.1}  {:>3}  │  {:<10}  {:>7.1}  {:>5}  │  {:>5.2}  {:<9}  {:>5.2}  {:>7.1}",
@@ -506,7 +506,7 @@ fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
     )));
     // Render newest → older so most recent is at the top of the pane
     daily_lines.push(Line::from(Span::styled(
-        format!("  {:<10}  {:>7}  {:>3}  {:>6}", "date", "TSS", "n", "ACWR"),
+        format!("  {:<10}  {:>7}  {:>3}  {:>6}", "date", "TSLi", "n", "ACLi"),
         Style::default().fg(Color::DarkGray),
     )));
     for idx in (day_lo..=day_hi).rev() {
@@ -596,7 +596,7 @@ fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
         week_lines.push(Line::from(Span::styled(
             format!(
                 "  {:<10}  {:>7}  {:>5}  {:>4}",
-                "week", "W-TSS", "rides", "days"
+                "week", "W-TSLi", "rides", "days"
             ),
             Style::default().fg(Color::DarkGray),
         )));
@@ -625,22 +625,22 @@ fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
     );
     frame.render_widget(week_p, cols[1]);
 
-    // --- Bottom bar: weekly TSS aggregates + * under focused week ---
-    render_weekly_tss_bar(frame, app, outer[2], week_i);
+    // --- Bottom bar: weekly TSLi aggregates + * under focused week ---
+    render_weekly_tsl i_bar(frame, app, outer[2], week_i);
 }
 
-/// Weekly TSS sparkline across the bottom; `*` marks the focused week (above + below).
-fn render_weekly_tss_bar(frame: &mut Frame, app: &App, area: Rect, week_i: usize) {
+/// Weekly TSLi sparkline across the bottom; `*` marks the focused week (above + below).
+fn render_weekly_tsl i_bar(frame: &mut Frame, app: &App, area: Rect, week_i: usize) {
     let n_weeks = app.weekly_loads.len();
     let title = if n_weeks == 0 {
-        " weekly TSS — no weeks loaded (r to reload catalog) ".to_string()
+        " weekly TSLi — no weeks loaded (r to reload catalog) ".to_string()
     } else if let Some(w) = app.weekly_loads.get(week_i) {
         format!(
-            " weekly TSS  ·  {} weeks  ·  focus {}  TSS={:.0}  rides={}  * ",
+            " weekly TSLi  ·  {} weeks  ·  focus {}  TSLi={:.0}  rides={}  * ",
             n_weeks, w.week_start, w.total_tss, w.ride_count
         )
     } else {
-        format!(" weekly TSS  ·  {} weeks ", n_weeks)
+        format!(" weekly TSLi  ·  {} weeks ", n_weeks)
     };
     let block = Block::new()
         .borders(Borders::ALL)
@@ -745,7 +745,7 @@ fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect) {
             Constraint::Length(3), // goal tabs
             Constraint::Length(4), // metrics from daily summary
             Constraint::Min(6),    // plan body
-            Constraint::Length(9), // two hist|proj bars: Load + Form
+            Constraint::Length(9), // two hist|proj bars: Load + Readiness
             Constraint::Length(1), // keys
         ])
         .split(area);
@@ -795,7 +795,7 @@ fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect) {
         frame.render_widget(p, rect);
     }
 
-    // --- Metrics strip (same daily TSS series as Calendar) ---
+    // --- Metrics strip (same daily TSLi series as Calendar) ---
     let mut metric_lines: Vec<Line> = Vec::new();
     if loads.is_empty() {
         metric_lines.push(Line::from(Span::styled(
@@ -882,7 +882,7 @@ fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect) {
         horizon
     )));
     metric_lines.push(Line::from(format!(
-        " CTL={:>6.0}  ATL={:>6.0}  TSB={:>+7.1}  |  ACWR={:>5.2} ({:<9})  mono={:>5.2}  |  7d TSS={:>6.0}  28d TSS={:>7.0}",
+        " LTSLi={:>6.0}  STSLi={:>6.0}  SLBi={:>+7.1}  |  ACLi={:>5.2} ({:<9})  mono={:>5.2}  |  7d TSLi={:>6.0}  28d TSLi={:>7.0}",
         ctl,
         atl,
         tsb,
@@ -897,7 +897,7 @@ fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect) {
         Paragraph::new(metric_lines).block(
             Block::new()
                 .borders(Borders::ALL)
-                .title(" Daily summary → planner input (same TSS series as Calendar) "),
+                .title(" Daily summary → planner input (same TSLi series as Calendar) "),
         ),
         outer[1],
     );
@@ -922,14 +922,14 @@ fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect) {
                 "SUCCESS",
                 Style::default()
                     .fg(Color::Green)
-                    .add_modifier(Modifier::BOLD),
+                .add_modifier(Modifier::BOLD),
             )
         } else {
             Span::styled(
                 "FAIL/partial",
                 Style::default()
                     .fg(Color::Yellow)
-                    .add_modifier(Modifier::BOLD),
+                .add_modifier(Modifier::BOLD),
             )
         };
         lines.push(Line::from(vec![
@@ -948,7 +948,7 @@ fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect) {
         if let Some(a) = plan.projected_acwr {
             lines.push(Line::from(Span::styled(
                 format!(
-                    " ACWR context (advisory): projected={:.2} — does not drive SUCCESS",
+                    " ACLi context (advisory): projected={:.2} — does not drive SUCCESS",
                     a
                 ),
                 Style::default().fg(Color::DarkGray),
@@ -956,7 +956,7 @@ fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect) {
         }
         lines.push(Line::from(""));
         lines.push(Line::from(Span::styled(
-            format!(" {:<6}{:>8}{:>12}", "Day", "TSS", "form"),
+            format!(" {:<6}{:>8}{:>12}", "Day", "TSLi", "form"),
             Style::default().fg(Color::DarkGray),
         )));
         for (i, tss) in plan.daily_tss.iter().enumerate() {
@@ -1033,19 +1033,19 @@ fn render_empty_opt_charts(frame: &mut Frame, area: Rect) {
         Block::new()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::LightYellow))
-            .title(" Load (TSS)  ·  yellow=history | purple=projected "),
+            .title(" Load (TSLi)  ·  yellow=history | purple=projected "),
         rows[0],
     );
     frame.render_widget(
         Block::new()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::LightYellow))
-            .title(" Form (TSB)  ·  yellow=history | purple=projected "),
+            .title(" Readiness (SLBi)  ·  yellow=history | purple=projected "),
         rows[1],
     );
 }
 
-/// Two horizontal bars: Load TSS and Form TSB.
+/// Two horizontal bars: Load TSLi and Readiness SLBi.
 /// Each bar is history (yellow, calendar-style) | projected (purple).
 fn render_opt_dual_charts(
     frame: &mut Frame,
@@ -1061,7 +1061,7 @@ fn render_opt_dual_charts(
         .split(area);
 
     // Scale from **history only** so yellow bars do not jump when the goal
-    // (and thus projected TSS/form) changes. Projected may clip at 100 if it
+    // (and thus projected TSLi/form) changes. Projected may clip at 100 if it
     // exceeds the historical max — that is intentional for a stable past.
     let load_max = load_hist
         .iter()
@@ -1077,10 +1077,10 @@ fn render_opt_dual_charts(
         .fold(1.0_f64, f64::max)
         .max(1.0);
 
-    render_hist_proj_bar(frame, rows[0], " Load (TSS) ", load_hist, load_proj, |v| {
+    render_hist_proj_bar(frame, rows[0], " Load (TSLi) ", load_hist, load_proj, |v| {
         ((v / load_max) * 100.0).round().clamp(0.0, 100.0) as u64
     });
-    render_hist_proj_bar(frame, rows[1], " Form (TSB) ", form_hist, form_proj, |v| {
+    render_hist_proj_bar(frame, rows[1], " Readiness (SLBi) ", form_hist, form_proj, |v| {
         let s = form_to_spark_f(v);
         ((s / form_max) * 100.0).round().clamp(0.0, 100.0) as u64
     });
