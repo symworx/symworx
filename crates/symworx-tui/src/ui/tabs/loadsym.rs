@@ -626,11 +626,11 @@ fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
     frame.render_widget(week_p, cols[1]);
 
     // --- Bottom bar: weekly TSLi aggregates + * under focused week ---
-    render_weekly_tsl i_bar(frame, app, outer[2], week_i);
+    render_weekly_tsli_bar(frame, app, outer[2], week_i);
 }
 
 /// Weekly TSLi sparkline across the bottom; `*` marks the focused week (above + below).
-fn render_weekly_tsl i_bar(frame: &mut Frame, app: &App, area: Rect, week_i: usize) {
+fn render_weekly_tsli_bar(frame: &mut Frame, app: &App, area: Rect, week_i: usize) {
     let n_weeks = app.weekly_loads.len();
     let title = if n_weeks == 0 {
         " weekly TSLi — no weeks loaded (r to reload catalog) ".to_string()
