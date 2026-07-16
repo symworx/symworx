@@ -168,9 +168,9 @@ fn render_workout_view(frame: &mut Frame, app: &App, area: Rect) {
         } else {
             let spd = act
                 .speed_mps
-                    .iter()
-                    .map(|v| v.unwrap_or(0.0) * 3.6)
-                    .collect::<Vec<_>>();
+                .iter()
+                .map(|v| v.unwrap_or(0.0) * 3.6)
+                .collect::<Vec<_>>();
             (spd, "speed (km/h)")
         };
         (
@@ -922,14 +922,14 @@ fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect) {
                 "SUCCESS",
                 Style::default()
                     .fg(Color::Green)
-                .add_modifier(Modifier::BOLD),
+                    .add_modifier(Modifier::BOLD),
             )
         } else {
             Span::styled(
                 "FAIL/partial",
                 Style::default()
                     .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD),
+                    .add_modifier(Modifier::BOLD),
             )
         };
         lines.push(Line::from(vec![
@@ -1080,10 +1080,17 @@ fn render_opt_dual_charts(
     render_hist_proj_bar(frame, rows[0], " Load (TSLi) ", load_hist, load_proj, |v| {
         ((v / load_max) * 100.0).round().clamp(0.0, 100.0) as u64
     });
-    render_hist_proj_bar(frame, rows[1], " Readiness (SLBi) ", form_hist, form_proj, |v| {
-        let s = form_to_spark_f(v);
-        ((s / form_max) * 100.0).round().clamp(0.0, 100.0) as u64
-    });
+    render_hist_proj_bar(
+        frame,
+        rows[1],
+        " Readiness (SLBi) ",
+        form_hist,
+        form_proj,
+        |v| {
+            let s = form_to_spark_f(v);
+            ((s / form_max) * 100.0).round().clamp(0.0, 100.0) as u64
+        },
+    );
 }
 
 /// One metric row: [ history sparkline yellow | projected sparkline purple ].
