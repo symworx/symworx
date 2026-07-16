@@ -46,7 +46,7 @@ pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
              BINDINGS\n\
              • p       process menu (1–5 ops; ←→ window for MA/median)\n\
              • k       run peak detection (current params) + rebuild tachogram\n\
-             • K       peak parameter editor (live re-detect)\n\
+             • K       peak parameter editor (chart stays visible; Enter applies)\n\
              • i       toggle waveform ↔ tachogram (interval series)\n\
              • o       tachogram source: detected peaks ↔ known primary\n\
              • e       export tachogram CSV → data/tachogram_*.csv\n\
@@ -61,7 +61,9 @@ pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
              • Uses successive differences (symworx-math) on peak times\n\n\
              PEAK PARAMS (K)\n\
              • height_frac / prom_frac / min_interval_sec / match_tol\n\
-             • ↑↓ field  ←→/± live  1–4 jump  d defaults  Enter re-run\n\n\
+             • ↑↓ field  ←→/± live  1–4 jump  d defaults\n\
+             • k re-run (stay open)  ·  Enter apply + close  ·  Esc close\n\
+             • Waveform chart stays visible under the editor so overlays update live\n\n\
              TIP: PPG → k → i (tachogram) → o (known vs detected IBI) → e export.",
         )
         .block(
@@ -74,7 +76,16 @@ pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
     }
 
     if app.pending_peak_params {
-        render_peak_params_panel(frame, app, area);
+        // Keep the waveform chart visible under the editor so live / Enter / k
+        // re-detects are immediately visible (previously the full-screen panel
+        // made re-run look like a no-op when peak counts were unchanged).
+        if app.loaded_signal.is_some() {
+            let chunks = Layout::vertical([Constraint::Length(16), Constraint::Min(6)]).split(area);
+            render_peak_params_panel(frame, app, chunks[0]);
+            render_waveform(frame, app, chunks[1]);
+        } else {
+            render_peak_params_panel(frame, app, area);
+        }
         return;
     }
 
@@ -518,9 +529,9 @@ fn render_peak_params_panel(frame: &mut Frame, app: &App, area: Rect) {
     }
 
     lines.push(
-        "\n  ↑↓ select field   ←→ / ± adjust (live re-detect)   1–4 jump\n\
-           d kind defaults   Enter / k re-run   Esc close (keep result)\n\
-           Chart stays under status bar — pan after Esc to inspect overlays.\n"
+        "\n  ↑↓ field   ←→ / ± live re-detect   1–4 jump   d kind defaults\n\
+           k / K re-run (stay here)   Enter apply + close   Esc close (keep result)\n\
+           Waveform below updates live — red = detected, green/yellow = known.\n"
             .to_string(),
     );
 

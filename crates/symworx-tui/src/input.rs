@@ -593,14 +593,14 @@ fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                     app.peak_param_selection = n - 1;
                 }
                 app.status = format!(
-                    "Peak param: {}  (←→ adjust, Enter re-detect, d defaults, Esc close)",
+                    "Peak param: {}  (←→ live  k re-run  Enter apply+close  d defaults  Esc)",
                     crate::app::PeakDetectParams::field_name(app.peak_param_selection)
                 );
             }
             KeyCode::Down => {
                 app.peak_param_selection = (app.peak_param_selection + 1) % n;
                 app.status = format!(
-                    "Peak param: {}  (←→ adjust, Enter re-detect, d defaults, Esc close)",
+                    "Peak param: {}  (←→ live  k re-run  Enter apply+close  d defaults  Esc)",
                     crate::app::PeakDetectParams::field_name(app.peak_param_selection)
                 );
             }
@@ -643,8 +643,17 @@ fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                     crate::processing::run_peak_detection(app)
                 );
             }
-            KeyCode::Enter | KeyCode::Char('k') => {
-                app.status = crate::processing::run_peak_detection(app);
+            // k/K: re-run while staying in the editor (chart below updates live).
+            KeyCode::Char('k') | KeyCode::Char('K') => {
+                let msg = crate::processing::run_peak_detection(app);
+                app.status = format!("Re-ran peak detect — {}", msg);
+            }
+            // Enter: apply (re-run) and close — same pattern as process menu.
+            // Also accept \n/\r for terminals that emit Char instead of KeyCode::Enter.
+            KeyCode::Enter | KeyCode::Char('\n') | KeyCode::Char('\r') => {
+                let msg = crate::processing::run_peak_detection(app);
+                app.pending_peak_params = false;
+                app.status = format!("Peak params applied — {}", msg);
             }
             _ => {}
         }
@@ -771,7 +780,7 @@ fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
             return false;
         }
         KeyCode::Char('K') => {
-            // Open peak-parameter editor (live re-detect on ←→)
+            // Open peak-parameter editor (live re-detect on ←→; chart stays visible below)
             if app.loaded_signal.is_none() {
                 app.status =
                     "No signal loaded — generate (Ctrl+G) or load a file first.".to_string();
@@ -779,10 +788,10 @@ fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
             }
             app.pending_process = false;
             app.pending_peak_params = true;
-            // Seed a first detection so the chart shows something while editing.
+            // Seed a first detection so the waveform under the editor shows overlays.
             let msg = crate::processing::run_peak_detection(app);
             app.status = format!(
-                "Peak params: ↑↓ field  ←→/± adjust (live)  d defaults  Enter re-run  Esc close — {}",
+                "Peak params: ↑↓ field  ←→/± live  k re-run  Enter apply+close  d defaults  Esc — {}",
                 msg
             );
             return false;
