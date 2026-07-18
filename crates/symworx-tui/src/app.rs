@@ -689,6 +689,9 @@ pub struct App {
     pub ftp: f64,
     // Directories to scan for .fit / activity files (in addition to ./data)
     pub loadsym_archive_dirs: Vec<PathBuf>,
+
+    /// Live host stream (simulator / future serial). When set, Explore shows live UI.
+    pub live: Option<crate::live::LiveSession>,
 }
 
 impl App {
@@ -760,6 +763,7 @@ impl App {
             ftp: 300.0,
             // Prefer personal velofit archive, then project-relative folders.
             loadsym_archive_dirs: symworx_io::default_activity_search_dirs(),
+            live: None,
         };
         app.refresh_file_list();
         if !app.file_list.is_empty() {
@@ -795,6 +799,52 @@ impl App {
         self.explore_scroll = 0;
         self.workout_user_thresh = 0.0;
         self.workout_user_min_dur = 3;
+        // Live is a modal stream — stop when clearing modes / switching home.
+        self.stop_live();
+    }
+
+    /// Drain live samples into the ring buffer (call every frame).
+    pub fn poll_live(&mut self) {
+        if let Some(live) = self.live.as_mut() {
+            live.poll();
+        }
+    }
+
+    /// Whether a live session is active.
+    pub fn is_live(&self) -> bool {
+        self.live.is_some()
+    }
+
+    /// Start (or restart) the synthetic live stream and jump to Explore.
+    pub fn start_live_simulator(&mut self) {
+        self.stop_live();
+        self.pending_process = false;
+        self.pending_peak_params = false;
+        self.help_mode = false;
+        let sid = "S001".to_string();
+        self.live = Some(crate::live::LiveSession::start_simulator(sid.clone()));
+        self.current_workflow = Workflow::BioSym;
+        self.current_tab = Tab::Explore;
+        self.explore_view = ExploreView::Waveform;
+        self.status = format!(
+            "LIVE · simulator · sid={} · Esc stop · Ctrl+L restart",
+            sid
+        );
+    }
+
+    /// Stop the live session if any (idempotent). Does not change status.
+    pub fn stop_live(&mut self) {
+        if let Some(session) = self.live.take() {
+            session.stop();
+        }
+    }
+
+    /// User-initiated stop (Esc / restart path messaging).
+    pub fn stop_live_user(&mut self) {
+        if self.live.is_some() {
+            self.stop_live();
+            self.status = "Live stream stopped.  Ctrl+L to start simulator again.".to_string();
+        }
     }
 
     pub fn refresh_file_list(&mut self) {
@@ -1224,7 +1274,7 @@ impl App {
                         .to_string()
                 }
                 Tab::Explore => {
-                    "Explore — p process  k peaks  K params  i tachogram  e export  t/T overlays"
+                    "Explore — Ctrl+L live  p process  k peaks  K params  i tachogram  e export"
                         .to_string()
                 }
                 Tab::Dynamics => "Dynamics (RQA/cRQA + MSE)".to_string(),

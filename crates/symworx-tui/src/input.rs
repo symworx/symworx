@@ -153,6 +153,11 @@ pub fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool
             app.ensure_status_for_current_tab();
             return false;
         }
+        // Live stream (simulator). Bare `l`/`L` is Explore pan — use Ctrl+L only.
+        KeyCode::Char('l') | KeyCode::Char('L') if modifiers.contains(KeyModifiers::CONTROL) => {
+            app.start_live_simulator();
+            return false;
+        }
         _ => {}
     }
 
@@ -578,6 +583,23 @@ const PROCESS_NAMES: [&str; 5] = [
 ];
 
 fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -> bool {
+    // Live stream mode: swallow most keys; Esc stops (before other Explore Esc).
+    // Checked after peak/process? No — live is exclusive; check before those only if live
+    // was started while they were closed. If user somehow had both, peak/process first.
+    if app.is_live() && !app.pending_peak_params && !app.pending_process {
+        match code {
+            KeyCode::Esc => {
+                app.stop_live_user();
+                return false;
+            }
+            // Allow pan-like keys to be no-ops with a hint; Ctrl+L restarts (handled globally).
+            _ => {
+                // Don't leak into offline Explore handlers while streaming.
+                return false;
+            }
+        }
+    }
+
     // Peak-parameter editor: checked before process and generic keys (input priority).
     if app.pending_peak_params {
         let n = crate::app::PeakDetectParams::N_FIELDS;
@@ -758,6 +780,11 @@ fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
 
     match code {
         KeyCode::Esc => {
+            // Live first (if peak/process already closed above)
+            if app.is_live() {
+                app.stop_live_user();
+                return false;
+            }
             // Back to Import (BioSym file list / generate)
             app.pending_process = false;
             app.pending_peak_params = false;

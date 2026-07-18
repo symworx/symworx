@@ -128,6 +128,8 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
         || app.filter_mode
     {
         "  [Esc] cancel"
+    } else if app.is_live() {
+        "  [Esc] stop live"
     } else if app.current_workflow == crate::app::Workflow::LoadSym
         && app.loadsym_view != crate::app::LoadSymView::List
     {
@@ -190,6 +192,8 @@ pub fn render_action_bar(app: &App) -> Paragraph<'_> {
         "  [Esc] cancel RQA"
     } else if app.pending_spatial_import {
         "  [Esc] cancel import"
+    } else if app.is_live() {
+        "  [Esc] stop live"
     } else if app.current_workflow == crate::app::Workflow::LoadSym {
         match app.loadsym_view {
             crate::app::LoadSymView::List => "",
@@ -206,7 +210,11 @@ pub fn render_action_bar(app: &App) -> Paragraph<'_> {
         ""
     };
 
-    let base = "  ↑↓   ←→ (Ctrl+arrows)   •   Enter   •   Ctrl+H Home   •   M-? help";
+    let base = if app.is_live() {
+        "  Ctrl+L restart live   •   Ctrl+H Home   •   M-? help   •   q Quit"
+    } else {
+        "  ↑↓   ←→ (Ctrl+arrows)   •   Enter   •   Ctrl+L live   •   Ctrl+H Home   •   M-? help"
+    };
 
     let text = if esc.is_empty() {
         base.to_string()

@@ -14,6 +14,7 @@ mod app;
 mod convert;
 mod generate;
 mod input;
+mod live;
 mod processing;
 mod ui;
 
@@ -30,6 +31,9 @@ fn app(terminal: &mut DefaultTerminal) -> std::io::Result<()> {
     let tick_rate = Duration::from_millis(100);
 
     loop {
+        // Drain live samples even when no key is pressed so the chart animates.
+        app.poll_live();
+
         terminal.draw(|frame| ui::ui(frame, &mut app))?;
 
         if event::poll(tick_rate)? {
