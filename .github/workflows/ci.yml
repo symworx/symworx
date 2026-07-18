@@ -46,6 +46,30 @@ jobs:
 
   rust-checks:
     runs-on: ubuntu-latest
+    # ------------------------------------------------------------------
+    # System OpenBLAS linking (CI-only; keep symworx-math free of OpenBLAS)
+    #
+    # Why this exists:
+    #   Several science crates (dynamics/signal/stats+linalg) depend on
+    #   ndarray-linalg → OpenBLAS. Cargo feature-unifies `ndarray` so the
+    #   BLAS backend can apply to the whole multi-package `cargo test`
+    #   graph — including crates like symworx-math that only call small
+    #   ndarray ops (e.g. `.dot()`) and intentionally do NOT depend on
+    #   openblas-src. Those test binaries then need CBLAS symbols at link
+    #   time (`cblas_ddot` / `cblas_sdot`) but nothing in their crate
+    #   graph emits `-lopenblas`.
+    #
+    # What we do instead of a crate-level OpenBLAS dep on math:
+    #   1. Install distro libopenblas-dev (below).
+    #   2. Prefer openblas-system over compiling OpenBLAS from source.
+    #   3. Pass RUSTFLAGS so the linker always resolves system OpenBLAS.
+    #
+    # Policy: keep math light (pure-Rust primitives, no native LA).
+    # Heavy LA stays in stats/signal/dynamics. Do not "fix" this by
+    # adding OpenBLAS as a default dependency of symworx-math.
+    # ------------------------------------------------------------------
+    env:
+      RUSTFLAGS: "-C link-arg=-lopenblas"
     steps:
       - uses: actions/checkout@v4
 
@@ -55,7 +79,7 @@ jobs:
           components: clippy
 
       # Use distro OpenBLAS instead of OpenBLAS-from-source.
-      # Cuts down on build time...
+      # Cuts down on build time; required for RUSTFLAGS=-lopenblas above.
       - name: Install system OpenBLAS + Fortran
         run: |
           sudo apt-get update
