@@ -223,14 +223,7 @@ fn render_live_stream(frame: &mut Frame, app: &App, area: Rect) {
     // Full ring = rolling window (oldest left → newest right). No pan needed.
     let ir = sanitize_series(&live.ir_series());
     let resp = sanitize_series(&live.resp_series());
-    render_live_channel_chart(
-        frame,
-        chunks[1],
-        " PPG (IR) ",
-        Color::LightCyan,
-        &ir,
-        true,
-    );
+    render_live_channel_chart(frame, chunks[1], " PPG (IR) ", Color::LightCyan, &ir, true);
     render_live_channel_chart(
         frame,
         chunks[2],

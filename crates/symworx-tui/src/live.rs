@@ -6,15 +6,35 @@
 //! Phase 1: **simulator** only (dual PPG + respiration). Serial can share
 //! the same session shape later.
 
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{self, Receiver, TryRecvError};
-use std::sync::Arc;
-use std::thread::{self, JoinHandle};
-use std::time::Duration;
+use std::{
+    sync::{
+        atomic::{
+            AtomicBool,
+            Ordering,
+        },
+        mpsc::{
+            self,
+            Receiver,
+            TryRecvError,
+        },
+        Arc,
+    },
+    thread::{
+        self,
+        JoinHandle,
+    },
+    time::Duration,
+};
 
 use symworx_embed::{
-    analyze_vitals, Channel, SampleRing, SimulatorConfig, SimulatorSource, StreamSample,
-    StreamSource, VitalsStatus,
+    analyze_vitals,
+    Channel,
+    SampleRing,
+    SimulatorConfig,
+    SimulatorSource,
+    StreamSample,
+    StreamSource,
+    VitalsStatus,
 };
 
 /// Nominal sample period for the live simulator (UI ~10 Hz redraw).

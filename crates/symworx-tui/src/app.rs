@@ -826,10 +826,7 @@ impl App {
         self.current_workflow = Workflow::BioSym;
         self.current_tab = Tab::Explore;
         self.explore_view = ExploreView::Waveform;
-        self.status = format!(
-            "LIVE · simulator · sid={} · Esc stop · Ctrl+L restart",
-            sid
-        );
+        self.status = format!("LIVE · simulator · sid={} · Esc stop · Ctrl+L restart", sid);
     }
 
     /// Stop the live session if any (idempotent). Does not change status.
