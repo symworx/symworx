@@ -82,18 +82,33 @@ pub fn generate_noisy_trajectory(
 pub enum SpatialEvent {
     /// Agent starts moving toward a target position at given speed.
     StartRun {
+        /// Index of the agent that begins the run.
         agent: usize,
+        /// World position the agent moves toward.
         target: Point2,
+        /// Movement speed (m/s).
         speed: f64,
+        /// Simulation time when the run begins.
         start_time: f64,
     },
     /// Ball is passed from one agent to another at time.
-    Pass { from: usize, to: usize, time: f64 },
+    Pass {
+        /// Agent releasing the ball.
+        from: usize,
+        /// Agent receiving the ball.
+        to: usize,
+        /// Simulation time of the pass.
+        time: f64,
+    },
     /// Defender starts closing on target.
     Close {
+        /// Index of the defending agent.
         agent: usize,
+        /// Index of the agent being closed down.
         target: usize,
+        /// Closing speed (m/s).
         speed: f64,
+        /// Simulation time when the close begins.
         start_time: f64,
     },
 }
@@ -104,7 +119,7 @@ pub enum SpatialEvent {
 pub fn generate_event_driven(
     initial_positions: Vec<Point2>,
     focal_start: Point2,
-    events: Vec<SpatialEvent>,
+    events: &[SpatialEvent],
     duration: f64,
     dt: f64,
 ) -> (Vec<f64>, Vec<Vec<Point2>>, Vec<Point2>) {
@@ -126,7 +141,7 @@ pub fn generate_event_driven(
         let _prev_t = times[step - 1];
 
         // Process events at this time
-        for ev in &events {
+        for ev in events {
             match ev {
                 SpatialEvent::StartRun {
                     agent,
@@ -225,65 +240,59 @@ pub fn generate_ground_truth(
     let mut labels = vec![vec![crate::decision::SpaceAction::Neutral; n_steps]; n_agents];
     match scenario_type {
         "dribble_pen" => {
-            for t in 3..n_steps.min(8) {
-                labels[0][t] = crate::decision::SpaceAction::Penetration;
+            for label in labels[0].iter_mut().take(n_steps.min(8)).skip(3) {
+                *label = crate::decision::SpaceAction::Penetration;
             }
         }
         "support_run" => {
-            for t in 5..n_steps.min(10) {
-                labels[1][t] = crate::decision::SpaceAction::Penetration; // off ball exploit
+            for label in labels[1].iter_mut().take(n_steps.min(10)).skip(5) {
+                *label = crate::decision::SpaceAction::Penetration; // off ball exploit
             }
         }
         "close_pressure" => {
-            for t in 7..n_steps {
-                labels[2][t] = crate::decision::SpaceAction::Pressure;
+            for label in labels[2].iter_mut().take(n_steps).skip(7) {
+                *label = crate::decision::SpaceAction::Pressure;
             }
         }
         "pass_then_press" => {
-            for t in 4..7 {
-                labels[0][t] = crate::decision::SpaceAction::Expansion; // create/pass
+            for label in labels[0].iter_mut().take(7).skip(4) {
+                *label = crate::decision::SpaceAction::Expansion; // create/pass
             }
-            for t in 8..n_steps.min(12) {
-                labels[1][t] = crate::decision::SpaceAction::Pressure; // receiver pressed
+            for label in labels[1].iter_mut().take(n_steps.min(12)).skip(8) {
+                *label = crate::decision::SpaceAction::Pressure; // receiver pressed
             }
         }
         "create_chance" => {
             // Attacker creates a scoring opportunity (e.g. gets open near target)
-            for t in 6..n_steps.min(11) {
-                labels[0][t] = crate::decision::SpaceAction::Creation;
+            for label in labels[0].iter_mut().take(n_steps.min(11)).skip(6) {
+                *label = crate::decision::SpaceAction::Creation;
             }
         }
         "conversion" => {
             // Successful score / conversion
-            for t in 9..n_steps.min(12) {
-                labels[0][t] = crate::decision::SpaceAction::Conversion;
+            for label in labels[0].iter_mut().take(n_steps.min(12)).skip(9) {
+                *label = crate::decision::SpaceAction::Conversion;
             }
         }
         "deny_chance" => {
             // Defender prevents a scoring opportunity
-            for t in 5..n_steps.min(10) {
-                labels[2][t] = crate::decision::SpaceAction::Prevention;
+            for label in labels[2].iter_mut().take(n_steps.min(10)).skip(5) {
+                *label = crate::decision::SpaceAction::Prevention;
             }
         }
         "scoring_sequence" => {
-            // Longer sequence demonstrating Creation (run creates chance) + Denial (defender closes) + Conversion (finishes)
+            // Longer sequence: Creation (run creates chance) + Denial + Conversion
             // Agent 0 creates by running into space near goal area
-            for t in 8..15 {
-                if t < n_steps {
-                    labels[0][t] = crate::decision::SpaceAction::Creation;
-                }
+            for label in labels[0].iter_mut().take(n_steps.min(15)).skip(8) {
+                *label = crate::decision::SpaceAction::Creation;
             }
             // Agent 1 receives and converts
-            for t in 16..20 {
-                if t < n_steps {
-                    labels[1][t] = crate::decision::SpaceAction::Conversion;
-                }
+            for label in labels[1].iter_mut().take(n_steps.min(20)).skip(16) {
+                *label = crate::decision::SpaceAction::Conversion;
             }
             // Defender (agent 2) tries to deny the space
-            for t in 10..18 {
-                if t < n_steps {
-                    labels[2][t] = crate::decision::SpaceAction::Prevention;
-                }
+            for label in labels[2].iter_mut().take(n_steps.min(18)).skip(10) {
+                *label = crate::decision::SpaceAction::Prevention;
             }
         }
         _ => {}

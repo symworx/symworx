@@ -97,7 +97,7 @@ where
 /// * `config` — step size, tolerances, line search
 pub fn gradient_descent<F, G>(
     f: F,
-    grad: Option<G>,
+    grad: Option<&G>,
     x0: Array1<f64>,
     config: &GradientDescentConfig,
 ) -> GradientDescentResult
@@ -116,7 +116,7 @@ where
     for iter in 0..config.max_iter {
         iterations = iter + 1;
 
-        let g = match &grad {
+        let g = match grad {
             Some(g_fn) => g_fn(&x),
             None => finite_difference_gradient(&f, &x, 1e-6),
         };
@@ -128,16 +128,7 @@ where
         }
 
         let step = if config.line_search {
-            armijo_step(
-                &f,
-                &x,
-                loss,
-                &g,
-                config.learning_rate,
-                config.armijo_c,
-                config.armijo_tau,
-                config.armijo_max_steps,
-            )
+            armijo_step(&f, &x, loss, &g, config)
         } else {
             config.learning_rate
         };
@@ -156,7 +147,7 @@ where
 
     // Final gradient check (in case we hit max_iter with tiny gradient)
     if !converged {
-        let g = match &grad {
+        let g = match grad {
             Some(g_fn) => g_fn(&x),
             None => finite_difference_gradient(&f, &x, 1e-6),
         };
@@ -183,35 +174,35 @@ pub fn gradient_descent_fd<F>(
 where
     F: Fn(&Array1<f64>) -> f64,
 {
-    // Use a dummy analytic gradient type that is never called
-    gradient_descent(f, None::<fn(&Array1<f64>) -> Array1<f64>>, x0, config)
+    // Turbofish supplies a dummy G so `None` type-checks as `Option<&G>`.
+    gradient_descent(f, None::<&fn(&Array1<f64>) -> Array1<f64>>, x0, config)
 }
 
 /// Armijo backtracking: find step length `α` along `−∇f` satisfying
 /// `f(x − α g) ≤ f(x) − c α ‖g‖²`.
+///
+/// Armijo knobs come from [`GradientDescentConfig`] so this stays under
+/// Clippy's argument-count limit.
 fn armijo_step<F>(
     f: &F,
     x: &Array1<f64>,
     f_x: f64,
     g: &Array1<f64>,
-    alpha0: f64,
-    c: f64,
-    tau: f64,
-    max_steps: usize,
+    config: &GradientDescentConfig,
 ) -> f64
 where
     F: Fn(&Array1<f64>) -> f64,
 {
-    let mut alpha = alpha0;
+    let mut alpha = config.learning_rate;
     let g_norm_sq = g.dot(g);
 
-    for _ in 0..max_steps {
+    for _ in 0..config.armijo_max_steps {
         let x_trial = x - &(g * alpha);
         let f_trial = f(&x_trial);
-        if f_trial <= f_x - c * alpha * g_norm_sq {
+        if f_trial <= f_x - config.armijo_c * alpha * g_norm_sq {
             return alpha;
         }
-        alpha *= tau;
+        alpha *= config.armijo_tau;
     }
     alpha
 }
@@ -246,7 +237,7 @@ mod tests {
             ..Default::default()
         };
 
-        let result = gradient_descent(f, Some(g), array![0.0, 0.0], &cfg);
+        let result = gradient_descent(f, Some(&g), array![0.0, 0.0], &cfg);
         assert!(result.converged);
         assert!((result.params[0] - 3.0).abs() < 1e-6);
         assert!((result.params[1] + 1.0).abs() < 1e-6);

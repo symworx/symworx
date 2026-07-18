@@ -255,7 +255,7 @@ mod tests {
         assert!((speeds[0] - 1.0).abs() < 0.01);
         assert!((speeds[1] - 2.0).abs() < 0.01);
 
-        let (acc, dec) = count_accelerations_decelerations(&speeds, &times, 0.5);
+        let (acc, _dec) = count_accelerations_decelerations(&speeds, &times, 0.5);
         assert!(acc >= 1); // 1->2 accel
         // decel may or not depending exact
     }

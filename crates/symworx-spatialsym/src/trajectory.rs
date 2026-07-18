@@ -60,13 +60,18 @@ pub struct SpatialFrame {
 /// (future) space geometry features. Preferred name per design discussion.
 #[derive(Clone, Debug)]
 pub struct SpatialContext {
+    /// Timestamp of this frame (seconds).
     pub time: f64,
+    /// Positions of all agents at this time.
     pub positions: Vec<Point2>,
+    /// Optional position of the focal object (e.g. ball/puck).
     pub focal: Option<Point2>,
+    /// Per-agent speed (m/s) at this frame.
     pub speeds: Vec<f64>,
+    /// Index of the inferred ball carrier, if any.
     pub on_ball_idx: Option<usize>,
-    // Rich geometry features will be populated here as we build primitives
-    pub free_space_ahead: Vec<Option<f64>>, // per agent
+    /// Per-agent free-space-ahead proxy (rich geometry features grow here).
+    pub free_space_ahead: Vec<Option<f64>>,
 }
 
 impl SpatialFrame {
@@ -115,7 +120,7 @@ impl SpatialFrame {
                 continue;
             }
             let d = my_pos.distance(pos);
-            if best.map_or(true, |(_, bd)| d < bd) {
+            if best.is_none_or(|(_, bd)| d < bd) {
                 best = Some((i, d));
             }
         }
@@ -143,6 +148,8 @@ impl SpatialFrame {
     pub fn pairwise_distances(&self) -> Vec<Vec<f64>> {
         let n = self.num_agents();
         let mut mat = vec![vec![0.0; n]; n];
+        // Symmetric fill needs both indices; range loops stay clearer than split borrows.
+        #[allow(clippy::needless_range_loop)]
         for i in 0..n {
             for j in (i + 1)..n {
                 let d = self.agent_positions[i].distance(self.agent_positions[j]);
@@ -243,10 +250,10 @@ impl SpatialFrame {
         }
 
         // Default ~2m threshold as discussed
-        if let Some(idx) = best {
-            if self.agent_positions[idx].distance(focal) > 2.0 {
-                return None;
-            }
+        if let Some(idx) = best
+            && self.agent_positions[idx].distance(focal) > 2.0
+        {
+            return None;
         }
         best
     }
@@ -488,15 +495,14 @@ impl AgentTrajectories {
         // Compute simple vel_toward using delta if possible
         let mut vel_toward = vec![0.0; self.num_agents()];
         if t > 0 {
-            for i in 0..self.num_agents() {
+            for (i, vt) in vel_toward.iter_mut().enumerate() {
                 if t < self.positions[i].len() {
                     let dpos = self.positions[i][t] - self.positions[i][t - 1];
                     let to_focal = focal_pos - self.positions[i][t - 1];
                     if to_focal.norm() > 1e-6 && dpos.norm() > 1e-6 {
                         let dir = dpos.normalize();
                         let unit_to = to_focal.normalize();
-                        vel_toward[i] =
-                            dir.dot(unit_to) * dpos.norm() / (self.times[t] - self.times[t - 1]);
+                        *vt = dir.dot(unit_to) * dpos.norm() / (self.times[t] - self.times[t - 1]);
                     }
                 }
             }
@@ -547,18 +553,16 @@ impl AgentTrajectories {
         proximity_radius: f64,
         look_ahead_sec: f64,
     ) -> Vec<Vec<crate::decision::AgentDecision>> {
-        crate::decision::classify_space_actions(
-            &self.positions,
-            &self.times,
-            None,
+        let params = crate::decision::ClassifySpaceParams {
             window_sec,
             proximity_radius,
             look_ahead_sec,
-            self.groups.as_deref(),
-            self.attacking_directions.as_deref(),
-            self.playing_dimensions.as_ref(),
-            self.goal_positions.as_deref(),
-        )
+            groups: self.groups.as_deref(),
+            attacking_directions: self.attacking_directions.as_deref(),
+            playing_dimensions: self.playing_dimensions.as_ref(),
+            goal_positions: self.goal_positions.as_deref(),
+        };
+        crate::decision::classify_space_actions(&self.positions, &self.times, None, &params)
     }
 
     /// Classify with focal + parameters.
@@ -569,18 +573,16 @@ impl AgentTrajectories {
         proximity_radius: f64,
         look_ahead_sec: f64,
     ) -> Vec<Vec<crate::decision::AgentDecision>> {
-        crate::decision::classify_space_actions(
-            &self.positions,
-            &self.times,
-            Some(focal),
+        let params = crate::decision::ClassifySpaceParams {
             window_sec,
             proximity_radius,
             look_ahead_sec,
-            self.groups.as_deref(),
-            self.attacking_directions.as_deref(),
-            self.playing_dimensions.as_ref(),
-            self.goal_positions.as_deref(),
-        )
+            groups: self.groups.as_deref(),
+            attacking_directions: self.attacking_directions.as_deref(),
+            playing_dimensions: self.playing_dimensions.as_ref(),
+            goal_positions: self.goal_positions.as_deref(),
+        };
+        crate::decision::classify_space_actions(&self.positions, &self.times, Some(focal), &params)
     }
 
     /// Async version of classification (default params).
@@ -606,18 +608,16 @@ impl AgentTrajectories {
         let arena = self.arena;
         let goals = self.goal_positions.clone();
         tokio::task::spawn_blocking(move || {
-            crate::decision::classify_space_actions(
-                &positions,
-                &times,
-                None,
+            let params = crate::decision::ClassifySpaceParams {
                 window_sec,
                 proximity_radius,
                 look_ahead_sec,
-                groups.as_deref(),
-                attacking.as_deref(),
-                arena.as_ref(),
-                goals.as_deref(),
-            )
+                groups: groups.as_deref(),
+                attacking_directions: attacking.as_deref(),
+                playing_dimensions: arena.as_ref(),
+                goal_positions: goals.as_deref(),
+            };
+            crate::decision::classify_space_actions(&positions, &times, None, &params)
         })
         .await
         .unwrap_or_else(|_| vec![vec![]; self.num_agents()])
@@ -660,13 +660,21 @@ impl AgentTrajectories {
 /// Combines spatial-derived signals with generic load metrics from loadsym.
 #[derive(Debug, Clone)]
 pub struct PlayerSummary {
+    /// Index of this player in the trajectory batch.
     pub player_idx: usize,
+    /// Optional group/team id when groups are set on the batch.
     pub group: Option<u32>,
+    /// Path length over the session (meters).
     pub total_distance: f64,
+    /// Mean speed (m/s).
     pub avg_speed: f64,
+    /// Peak speed (m/s).
     pub max_speed: f64,
+    /// Count of acceleration events above threshold.
     pub accel_count: usize,
+    /// Count of deceleration events below threshold.
     pub decel_count: usize,
+    /// Estimated external load from loadsym metrics.
     pub estimated_load: f64,
     /// Average distance to focal object across the session (if focal provided).
     pub avg_dist_to_focal: Option<f64>,
@@ -676,12 +684,19 @@ pub struct PlayerSummary {
 /// Team/group level aggregate.
 #[derive(Debug, Clone)]
 pub struct GroupSummary {
+    /// Group/team id for this aggregate.
     pub group: u32,
+    /// Number of players in the group.
     pub num_players: usize,
+    /// Sum of per-player total distances (meters).
     pub total_distance: f64,
+    /// Mean of per-player max speeds (m/s).
     pub avg_max_speed: f64,
+    /// Sum of acceleration event counts.
     pub total_accels: usize,
+    /// Sum of deceleration event counts.
     pub total_decels: usize,
+    /// Sum of estimated loads across players.
     pub total_estimated_load: f64,
     /// Average pairwise distance between members of this group (cohesion / spread metric).
     pub avg_intra_group_distance: f64,

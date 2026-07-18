@@ -91,11 +91,46 @@ pub enum SpaceAction {
 /// Richer per-agent decision output for classifier maturity.
 #[derive(Clone, Debug)]
 pub struct AgentDecision {
+    /// Classified space-management action for this agent at this time.
     pub action: SpaceAction,
     /// Optional confidence [0,1] or strength score.
     pub confidence: Option<f64>,
     /// Key features that drove the decision (for explainability and richer rules).
     pub features: DecisionFeatures,
+}
+
+/// Configuration and optional context for [`classify_space_actions`].
+#[derive(Clone, Debug)]
+pub struct ClassifySpaceParams<'a> {
+    /// Past/future bearing window in seconds.
+    pub window_sec: f64,
+    /// Radius (m) around the ball carrier for nearby-agent labeling.
+    pub proximity_radius: f64,
+    /// How far ahead (s) to look for post-hoc reclassification.
+    pub look_ahead_sec: f64,
+    /// Per-agent group ids (e.g. team); used for opponent vs teammate logic.
+    pub groups: Option<&'a [u32]>,
+    /// Per-agent attacking direction unit vectors.
+    pub attacking_directions: Option<&'a [crate::geometry::Vec2]>,
+    /// Optional pitch/court dimensions (reserved for geometry-aware rules).
+    pub playing_dimensions: Option<&'a crate::space::PlayingDimensions>,
+    /// Per-agent goal/target positions for scoring-opportunity logic.
+    pub goal_positions: Option<&'a [crate::geometry::Point2]>,
+}
+
+impl<'a> ClassifySpaceParams<'a> {
+    /// Build params with common defaults (12 m proximity, 1 s look-ahead).
+    pub fn new(window_sec: f64) -> Self {
+        Self {
+            window_sec,
+            proximity_radius: 12.0,
+            look_ahead_sec: 1.0,
+            groups: None,
+            attacking_directions: None,
+            playing_dimensions: None,
+            goal_positions: None,
+        }
+    }
 }
 
 /// Container for features used in decision making. These can come from
@@ -155,25 +190,23 @@ pub fn classify_single_trajectory_with_params(
     attacking_directions: Option<&[crate::geometry::Vec2]>,
 ) -> Vec<AgentDecision> {
     let trajs = vec![positions.to_vec()];
-    let results = classify_space_actions(
-        &trajs,
-        times,
-        None,
+    let params = ClassifySpaceParams {
         window_sec,
         proximity_radius,
         look_ahead_sec,
         groups,
         attacking_directions,
-        None,
-        None,
-    );
+        playing_dimensions: None,
+        goal_positions: None,
+    };
+    let results = classify_space_actions(&trajs, times, None, &params);
     results.into_iter().next().unwrap_or_default()
 }
 
 /// Improved post-hoc classifier that focuses on the **on-ball player + nearby players**.
 ///
 /// We identify the player closest to the focal object ("on-ball player") and also
-/// consider players within `proximity_radius` of them.
+/// consider players within `params.proximity_radius` of them.
 ///
 /// Special post-hoc rule (using future information):
 /// If a player plays the ball to someone outside the radius, and that receiver
@@ -185,13 +218,7 @@ pub fn classify_space_actions(
     agent_trajectories: &[Vec<crate::geometry::Point2>],
     times: &[f64],
     focal_trajectory: Option<&[crate::geometry::Point2]>,
-    window_sec: f64,
-    proximity_radius: f64,
-    look_ahead_sec: f64,
-    groups: Option<&[u32]>,
-    attacking_directions: Option<&[crate::geometry::Vec2]>,
-    _playing_dimensions: Option<&crate::space::PlayingDimensions>,
-    goal_positions: Option<&[crate::geometry::Point2]>,
+    params: &ClassifySpaceParams<'_>,
 ) -> Vec<Vec<AgentDecision>> {
     use crate::kinematics::{
         future_bearings,
@@ -203,6 +230,13 @@ pub fn classify_space_actions(
         return vec![vec![]; n_agents];
     }
     let n_times = times.len();
+    let window_sec = params.window_sec;
+    let proximity_radius = params.proximity_radius;
+    let look_ahead_sec = params.look_ahead_sec;
+    let groups = params.groups;
+    let attacking_directions = params.attacking_directions;
+    let goal_positions = params.goal_positions;
+    let _playing_dimensions = params.playing_dimensions;
 
     // Helper: are these two agents opponents? (different group id)
     // If no groups info, assume all interactions are relevant (opponents).
@@ -239,12 +273,10 @@ pub fn classify_space_actions(
             for i in 0..n_times {
                 if i < focal.len() {
                     let to_focal = focal[i] - traj[i];
-                    if to_focal.norm() > 1e-6 {
-                        if i > 0 && speeds[i] > 0.0 {
-                            let dir = (traj[i] - traj[i - 1]).normalize();
-                            let unit_to_focal = to_focal.normalize();
-                            vel_toward[i] = Some(dir.dot(unit_to_focal) * speeds[i]);
-                        }
+                    if to_focal.norm() > 1e-6 && i > 0 && speeds[i] > 0.0 {
+                        let dir = (traj[i] - traj[i - 1]).normalize();
+                        let unit_to_focal = to_focal.normalize();
+                        vel_toward[i] = Some(dir.dot(unit_to_focal) * speeds[i]);
                     }
                 }
             }
@@ -310,14 +342,14 @@ pub fn classify_space_actions(
                 let carrier_pos = agent_trajectories[ball_carrier][t];
                 let mut nearby = vec![];
 
-                for a in 0..n_agents {
+                for (a, traj) in agent_trajectories.iter().enumerate() {
                     if a == ball_carrier {
                         continue;
                     }
-                    if t >= agent_trajectories[a].len() {
+                    if t >= traj.len() {
                         continue;
                     }
-                    let d = (agent_trajectories[a][t] - carrier_pos).norm();
+                    let d = (traj[t] - carrier_pos).norm();
                     if d <= proximity_radius {
                         nearby.push(a);
                     }
@@ -418,7 +450,7 @@ pub fn classify_space_actions(
                     if a < dirs.len() {
                         let att = dirs[a];
                         // cos of angle between future bearing and attacking dir
-                        (fb.cos() * att.x + fb.sin() * att.y).max(-1.0).min(1.0)
+                        (fb.cos() * att.x + fb.sin() * att.y).clamp(-1.0, 1.0)
                     } else {
                         fb.cos()
                     }
@@ -554,42 +586,39 @@ pub fn classify_space_actions(
     for t in 0..n_times.saturating_sub(look_ahead_frames) {
         if let (Some(carrier), Some(receiver)) =
             (on_ball_at_t[t], on_ball_at_t[t + look_ahead_frames])
+            && carrier != receiver
         {
-            if carrier != receiver {
-                let receiver_now_pressed = {
-                    let mut min_d = f64::INFINITY;
-                    for other in 0..n_agents {
-                        if other == receiver {
-                            continue;
-                        }
-                        if t + look_ahead_frames >= agent_trajectories[other].len() {
-                            continue;
-                        }
-                        if !is_opponent(receiver, other) {
-                            continue;
-                        }
-                        let d = (agent_trajectories[other][t + look_ahead_frames]
-                            - agent_trajectories[receiver][t + look_ahead_frames])
-                            .norm();
-                        if d < min_d {
-                            min_d = d;
-                        }
+            let receiver_now_pressed = {
+                let mut min_d = f64::INFINITY;
+                for other in 0..n_agents {
+                    if other == receiver {
+                        continue;
                     }
-                    min_d < 7.0
-                };
+                    if t + look_ahead_frames >= agent_trajectories[other].len() {
+                        continue;
+                    }
+                    if !is_opponent(receiver, other) {
+                        continue;
+                    }
+                    let d = (agent_trajectories[other][t + look_ahead_frames]
+                        - agent_trajectories[receiver][t + look_ahead_frames])
+                        .norm();
+                    if d < min_d {
+                        min_d = d;
+                    }
+                }
+                min_d < 7.0
+            };
 
-                if receiver_now_pressed {
-                    if let Some(dec) = results.get_mut(carrier).and_then(|v| v.get_mut(t)) {
-                        match dec.action {
-                            SpaceAction::Penetration
-                            | SpaceAction::Creation
-                            | SpaceAction::Conversion => {
-                                dec.action = SpaceAction::Neutral;
-                                // Reclassified because the receiver was under immediate pressure
-                            }
-                            _ => {}
-                        }
+            if receiver_now_pressed
+                && let Some(dec) = results.get_mut(carrier).and_then(|v| v.get_mut(t))
+            {
+                match dec.action {
+                    SpaceAction::Penetration | SpaceAction::Creation | SpaceAction::Conversion => {
+                        dec.action = SpaceAction::Neutral;
+                        // Reclassified because the receiver was under immediate pressure
                     }
+                    _ => {}
                 }
             }
         }

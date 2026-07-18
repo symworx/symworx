@@ -241,29 +241,20 @@ pub fn optimize_load_plan(
     // 7^10 fits in u64; saturating_pow for safety
     let total = n_t.saturating_pow(h as u32);
 
+    // Bundle shared search inputs once — keeps helpers under Clippy's arg limit.
+    let ctx = PlanSearchCtx {
+        history_loads,
+        start,
+        params,
+        goal,
+        thresholds,
+        chronic_ref,
+    };
+
     let best = if total > 0 && total <= FULL_ENUM_MAX {
-        search_full_enum(
-            history_loads,
-            &templates,
-            h,
-            start,
-            params,
-            goal,
-            thresholds,
-            chronic_ref,
-        )
+        search_full_enum(&ctx, &templates, h)
     } else {
-        search_beam(
-            history_loads,
-            &templates,
-            h,
-            start,
-            params,
-            goal,
-            thresholds,
-            chronic_ref,
-            BEAM_WIDTH,
-        )
+        search_beam(&ctx, &templates, h, BEAM_WIDTH)
     };
 
     best.ok_or_else(|| {
@@ -271,16 +262,17 @@ pub fn optimize_load_plan(
     })
 }
 
-fn search_full_enum(
-    history_loads: &[f64],
-    templates: &[f64],
-    h: usize,
+/// Shared inputs for full-enumeration / beam plan search.
+struct PlanSearchCtx<'a> {
+    history_loads: &'a [f64],
     start: PulseResponseState,
-    params: &PulseResponseParams,
+    params: &'a PulseResponseParams,
     goal: LoadGoal,
-    thresholds: &OptimizationThresholds,
+    thresholds: &'a OptimizationThresholds,
     chronic_ref: f64,
-) -> Option<LoadPlan> {
+}
+
+fn search_full_enum(ctx: &PlanSearchCtx<'_>, templates: &[f64], h: usize) -> Option<LoadPlan> {
     let n_t = templates.len();
     let total = n_t.pow(h as u32);
     let mut best: Option<LoadPlan> = None;
@@ -291,30 +283,16 @@ fn search_full_enum(
             seq.push(templates[rem % n_t]);
             rem /= n_t;
         }
-        consider_candidate(
-            history_loads,
-            &seq,
-            start,
-            params,
-            goal,
-            thresholds,
-            chronic_ref,
-            &mut best,
-        );
+        consider_candidate(ctx, &seq, &mut best);
     }
     best
 }
 
 /// Beam search: expand day-by-day, keep top `width` partial sequences by rank.
 fn search_beam(
-    history_loads: &[f64],
+    ctx: &PlanSearchCtx<'_>,
     templates: &[f64],
     h: usize,
-    start: PulseResponseState,
-    params: &PulseResponseParams,
-    goal: LoadGoal,
-    thresholds: &OptimizationThresholds,
-    chronic_ref: f64,
     width: usize,
 ) -> Option<LoadPlan> {
     // Each beam entry is a partial (or full) day sequence.
@@ -328,13 +306,13 @@ fn search_beam(
                 let mut seq = partial.clone();
                 seq.push(t);
                 if let Some(plan) = evaluate_candidate(
-                    history_loads,
+                    ctx.history_loads,
                     &seq,
-                    start,
-                    params,
-                    goal,
-                    thresholds,
-                    chronic_ref,
+                    ctx.start,
+                    ctx.params,
+                    ctx.goal,
+                    ctx.thresholds,
+                    ctx.chronic_ref,
                 ) {
                     // Track global best among complete sequences only at the end;
                     // still use intermediate scores for pruning.
@@ -345,44 +323,26 @@ fn search_beam(
         if scored.is_empty() {
             return best;
         }
-        scored.sort_by(|a, b| rank_key(&a.1).cmp(&rank_key(&b.1)));
+        scored.sort_by_key(|a| rank_key(&a.1));
         scored.truncate(width);
         beam = scored.into_iter().map(|(s, _)| s).collect();
     }
 
     for seq in &beam {
-        consider_candidate(
-            history_loads,
-            seq,
-            start,
-            params,
-            goal,
-            thresholds,
-            chronic_ref,
-            &mut best,
-        );
+        consider_candidate(ctx, seq, &mut best);
     }
     best
 }
 
-fn consider_candidate(
-    history_loads: &[f64],
-    seq: &[f64],
-    start: PulseResponseState,
-    params: &PulseResponseParams,
-    goal: LoadGoal,
-    thresholds: &OptimizationThresholds,
-    chronic_ref: f64,
-    best: &mut Option<LoadPlan>,
-) {
+fn consider_candidate(ctx: &PlanSearchCtx<'_>, seq: &[f64], best: &mut Option<LoadPlan>) {
     if let Some(plan) = evaluate_candidate(
-        history_loads,
+        ctx.history_loads,
         seq,
-        start,
-        params,
-        goal,
-        thresholds,
-        chronic_ref,
+        ctx.start,
+        ctx.params,
+        ctx.goal,
+        ctx.thresholds,
+        ctx.chronic_ref,
     ) {
         let replace = match best {
             None => true,

@@ -48,6 +48,7 @@ pub mod trajectory;
 // Re-exports for convenience (mirrors symworx-core / biosym style)
 pub use decision::{
     AgentDecision,
+    ClassifySpaceParams,
     DecisionFeatures,
     SpaceAction,
     classify_single_trajectory,

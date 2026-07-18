@@ -899,7 +899,7 @@ impl App {
             },
         ];
         let (ev_t, ev_p, ev_f) =
-            synthetic::generate_event_driven(init, Point2::new(0.25, 0.), evs.clone(), 1.4, 0.1);
+            synthetic::generate_event_driven(init, Point2::new(0.25, 0.), &evs, 1.4, 0.1);
         let groups = vec![0u32, 0, 1];
         let att = vec![Vec2::new(1., 0.), Vec2::new(1., 0.), Vec2::new(-1., 0.)];
         let dims = Some(PlayingDimensions::new(105.0, 68.0));

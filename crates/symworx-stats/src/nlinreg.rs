@@ -13,7 +13,7 @@ use ndarray::{
 use symworx_math::optimize::{
     GradientDescentConfig,
     GradientDescentResult,
-    gradient_descent,
+    gradient_descent_fd,
 };
 
 /// Result of a nonlinear least-squares fit.
@@ -69,12 +69,7 @@ where
         rss
     };
 
-    let opt = gradient_descent(
-        loss,
-        None::<fn(&Array1<f64>) -> Array1<f64>>,
-        theta0,
-        config,
-    );
+    let opt = gradient_descent_fd(loss, theta0, config);
     let rss = opt.loss;
     let rmse = if n > 0.0 { (rss / n).sqrt() } else { 0.0 };
 
@@ -116,12 +111,7 @@ where
         rss
     };
 
-    let opt = gradient_descent(
-        loss,
-        None::<fn(&Array1<f64>) -> Array1<f64>>,
-        theta0,
-        config,
-    );
+    let opt = gradient_descent_fd(loss, theta0, config);
     let rss = opt.loss;
     let rmse = if n > 0.0 { (rss / n).sqrt() } else { 0.0 };
 
