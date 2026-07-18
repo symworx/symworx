@@ -6,13 +6,35 @@ version          = { workspace = true }
 edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
-description      = "Embedded algorithms and example utilities for SymWorx"
-keywords = ["embedded", "examples", "utilities"]
-categories = ["development-tools"]
+description      = "Host-side embedded streaming: PPG sample protocol, serial/simulator sources, ring buffers"
+keywords = ["embedded", "streaming", "ppg", "serial", "biosignals"]
+categories = ["science", "embedded"]
+
+[features]
+default = ["simulate"]
+## Synthetic stream source (no hardware).
+simulate = []
+## Serial port source (Arduino JSON lines, etc.).
+serial = ["dep:serialport"]
 
 [dependencies]
-ndarray         = { version = "0.15", features = ["std"] }
-thiserror       = { workspace = true }
+serde       = { version = "1", features = ["derive"] }
+serde_json  = { version = "1" }
+thiserror   = { workspace = true }
+# default-features off: avoid libudev (pkg-config) so host builds work in
+# minimal toolboxes; opening a known path (e.g. /dev/ttyACM0) does not need udev.
+serialport  = { version = "4", optional = true, default-features = false }
+
+[dev-dependencies]
+# examples share feature-gated deps; nothing extra required for unit tests
 
 [lints]
 workspace = true
+
+[[example]]
+name = "simulate_print"
+required-features = ["simulate"]
+
+[[example]]
+name = "serial_dump"
+required-features = ["serial"]

@@ -42,8 +42,11 @@ pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
              3. k peak detect  ·  K peak params (live)  ·  p process (incl. 1st/2nd derivative)\n\
              4. Peak–peak intervals rebuild as a tachogram after each detect\n\
              5. i toggle tachogram view  ·  o source (detected vs known)  ·  e export CSV\n\
-             6. Compare known vs detected (match count in status)\n\n\
+             6. Compare known vs detected (match count in status)\n\
+             7. Ctrl+L live dual stream: PPG + respiration split charts (Esc stop)\n\
+                Rolling window (~15 s / 300 pts) drops oldest once full\n\n\
              BINDINGS\n\
+             • Ctrl+L  start/restart LIVE simulator (sid=S001, dual PPG+resp); Esc stops\n\
              • p       process menu (1–5 ops; ←→ window for MA/median)\n\
              • k       run peak detection (current params) + rebuild tachogram\n\
              • K       peak parameter editor (chart stays visible; Enter applies)\n\
@@ -53,7 +56,7 @@ pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
              • t / T   toggle known / detected peak overlays (waveform)\n\
              • r       reset original (clears detected peaks + tachogram)\n\
              • ← → h l pan viewport (waveform samples / tachogram intervals)\n\
-             • Esc     back to Import (or close process/peak-param submode)\n\n\
+             • Esc     stop live if active · else back to Import (or close submode)\n\n\
              TACHOGRAM\n\
              • Y = peak–peak interval (sec when fs known, else samples)\n\
              • X = interval index (beat n → n+1)\n\
@@ -72,6 +75,12 @@ pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
                 .title(" Help — Explore (BioSym) "),
         );
         frame.render_widget(help, area);
+        return;
+    }
+
+    // Live stream takes Explore content (offline waveform still available after stop).
+    if app.is_live() {
+        render_live_stream(frame, app, area);
         return;
     }
 
@@ -129,6 +138,7 @@ pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
             .border_style(Color::Magenta);
         let content = Paragraph::new(
             "Load or Generate BioSym signal (Import or Ctrl+G presets)\n\n\
+             Or start a LIVE simulator:  Ctrl+L  (Esc to stop)\n\n\
              Resting PPG / Respiration keep generator ground-truth peaks for overlay.\n\
              After load: p process · k peak detect · K params · i tachogram · e export.\n\n\
              Chart: cyan = series; green = known primary; yellow = secondary; red = detected.\n\
@@ -143,6 +153,168 @@ pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
         ExploreView::Waveform => render_waveform(frame, app, area),
         ExploreView::Tachogram => render_tachogram(frame, app, area),
     }
+}
+
+fn render_live_stream(frame: &mut Frame, app: &App, area: Rect) {
+    let live = app.live.as_ref().expect("is_live");
+    let status = live.last_status;
+    let status_color = match status.color_name() {
+        "red" => Color::LightRed,
+        "yellow" => Color::Yellow,
+        _ => Color::LightGreen,
+    };
+
+    let roll = if live.is_rolling() {
+        "rolling"
+    } else {
+        "filling"
+    };
+    let outer = Block::new()
+        .title(format!(
+            " LIVE · {} · sid={} · window {:.0}s ({} pts, {}) ",
+            live.source_label,
+            live.sid,
+            live.window_secs(),
+            live.window_samples,
+            roll
+        ))
+        .borders(Borders::ALL)
+        .border_style(status_color);
+
+    let bpm_s = live
+        .last_bpm
+        .map(|b| format!("{:.1}", b))
+        .unwrap_or_else(|| "—".into());
+    let bpm_avg_s = live
+        .last_bpm_avg
+        .map(|b| format!("{:.1}", b))
+        .unwrap_or_else(|| "—".into());
+    let spo2_s = live
+        .last_spo2
+        .map(|b| format!("{:.1}", b))
+        .unwrap_or_else(|| "—".into());
+
+    let header = format!(
+        "BPM {}  avg {}  SpO2 {}  |  status {}  |  total {}  in-window {}\n\
+         Split: PPG (IR) top · Respiration bottom  ·  Ctrl+L restart  ·  Esc stop",
+        bpm_s,
+        bpm_avg_s,
+        spo2_s,
+        status.as_str(),
+        live.samples_recv,
+        live.ring_len(),
+    );
+
+    let inner = outer.inner(area);
+    frame.render_widget(Paragraph::new("").block(outer), area);
+
+    let chunks = Layout::vertical([
+        Constraint::Length(3),
+        Constraint::Percentage(50),
+        Constraint::Percentage(50),
+    ])
+    .split(inner);
+
+    frame.render_widget(
+        Paragraph::new(header).style(Style::default().fg(status_color)),
+        chunks[0],
+    );
+
+    // Full ring = rolling window (oldest left → newest right). No pan needed.
+    let ir = sanitize_series(&live.ir_series());
+    let resp = sanitize_series(&live.resp_series());
+    render_live_channel_chart(
+        frame,
+        chunks[1],
+        " PPG (IR) ",
+        Color::LightCyan,
+        &ir,
+        true,
+    );
+    render_live_channel_chart(
+        frame,
+        chunks[2],
+        " Respiration ",
+        Color::LightMagenta,
+        &resp,
+        false,
+    );
+}
+
+fn sanitize_series(raw: &[f64]) -> Vec<f64> {
+    raw.iter()
+        .copied()
+        .map(|v| if v.is_finite() { v } else { 0.0 })
+        .collect()
+}
+
+fn render_live_channel_chart(
+    frame: &mut Frame,
+    area: Rect,
+    title: &str,
+    color: Color,
+    series: &[f64],
+    integer_y: bool,
+) {
+    let n = series.len();
+    let data: Vec<(f64, f64)> = series
+        .iter()
+        .enumerate()
+        .map(|(i, &v)| (i as f64, v))
+        .collect();
+
+    let mut y_min = series.iter().copied().fold(f64::INFINITY, f64::min);
+    let mut y_max = series.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+    if !y_min.is_finite() || !y_max.is_finite() || (y_max - y_min).abs() < 1e-12 {
+        y_min = -1.0;
+        y_max = 1.0;
+    }
+    let pad = (y_max - y_min) * 0.08;
+    y_min -= pad;
+    y_max += pad;
+
+    let x_hi = (n.max(2) - 1) as f64;
+    let datasets = vec![Dataset::default()
+        .name(title.trim())
+        .marker(symbols::Marker::Braille)
+        .graph_type(GraphType::Line)
+        .style(Style::default().fg(color))
+        .data(&data)];
+
+    let y_labels = if integer_y {
+        vec![
+            Line::from(format!("{:.0}", y_min)),
+            Line::from(format!("{:.0}", y_max)),
+        ]
+    } else {
+        vec![
+            Line::from(format!("{:.2}", y_min)),
+            Line::from(format!("{:.2}", y_max)),
+        ]
+    };
+
+    let chart = Chart::new(datasets)
+        .block(
+            Block::new()
+                .borders(Borders::ALL)
+                .title(title)
+                .border_style(color),
+        )
+        .x_axis(
+            Axis::default()
+                .title("t → (rolling window)")
+                .style(Style::default().fg(Color::Gray))
+                .bounds([0.0, x_hi])
+                .labels(vec![Line::from("old"), Line::from("new")]),
+        )
+        .y_axis(
+            Axis::default()
+                .style(Style::default().fg(Color::Gray))
+                .bounds([y_min, y_max])
+                .labels(y_labels),
+        );
+
+    frame.render_widget(chart, area);
 }
 
 fn render_waveform(frame: &mut Frame, app: &App, area: Rect) {

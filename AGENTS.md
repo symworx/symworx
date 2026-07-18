@@ -13,6 +13,7 @@ Key crates:
 - `symworx-io` — Loading/saving signals (CSV, Parquet, IBI, etc.)
 - `symworx-dynamics` — Embedding, entropy, RQA/CRQA (core algorithms)
 - `symworx-tui` — Terminal UI (`symview`) — current primary focus
+- `symworx-embed` — Host-side live streaming (PPG JSON protocol, serial/simulator sources, ring buffers); not firmware
 - `symworx-math` — Low-level numerical and sequence primitives (including the canonical home for series operations in `src/series.rs`)
 - `symworx-stats`, `symworx-backend`, Python bindings, etc.
 
@@ -29,11 +30,12 @@ The main active work is on **`crates/symworx-tui`** (the `symview` TUI).
 
 **Keybindings (finalized after multiple iterations):**
 - `Ctrl+G` → Open Generate demo data menu (in Import tab)
+- `Ctrl+L` → Start/restart **live simulator** stream (Explore; host path via `symworx-embed`, `sid=S001`). Bare `l`/`L` remains Explore pan — do not reuse.
 - `Ctrl+R` or `F5` → Refresh file list (must be reliable even while typing)
 - `Ctrl+Left` / `Ctrl+Right` → Tab navigation (kept for convenience)
 - Bare `Ctrl+1/2/3` still exist but are **not** the primary method
 - `q` → Hard quit (always works)
-- `Esc` → Cancel current sub-mode (column picker, generate menu, filter) **or** quit if nothing active
+- `Esc` → Stop live stream if active · cancel current sub-mode (column picker, generate menu, filter) **or** quit if nothing active
 - In Import tab: `/` enters filter mode, `c` converts selected file
 
 **Critical Implementation Rules for TUI:**
@@ -114,6 +116,11 @@ The workspace strongly prefers **minimal, intentional dependencies**. Every new 
 - Prefer pure-Rust or already-present workspace dependencies when possible.
 - `symworx-math` is the canonical home for low-level numerical, sequence, and optimization primitives.
 - `symworx-stats` owns statistical descriptors and classical modeling (regression, PCA/SVD, clustering) on top of those primitives.
+- **`symworx-embed`** owns host-side device streaming and framing (JSON-line PPG protocol, serial/simulator sources, rolling buffers, simple vitals thresholds).
+  - Use **subject** terminology: wire/API field **`sid`** (subject id). Accept legacy `patient_id` on ingress only for SentryWard compatibility; never emit `patient_id` outbound.
+  - Feature-gate hardware deps (`serial`); keep default path light (`simulate` only).
+  - Do **not** put Embassy / `no_std` firmware or heavy LA/polars in this crate’s default build. Firmware (Arduino today, Embassy later) stays separate.
+  - Recording streams to disk still goes through **`symworx-io`**. Signal algorithms (peak detect, filters) stay in **`symworx-signal`**.
 - Data-driven dynamical operators (DMD, Koopman, SINDy) belong in **`symworx-dynamics`**, not stats.
   - DMD: `symworx-dynamics::dmd` (uses `symworx-stats` SVD via `linalg`).
   - EDMD / Koopman: `symworx-dynamics::koopman`.
@@ -152,6 +159,6 @@ RQA and RecurrencePlot are exposed via PyO3 in `bindings/python/`. Keep the Rust
 
 ---
 
-**Last updated:** After establishing the core I/O rule (all file loading/saving for signals must go through `symworx-io`; analysis backends like optional Polars are consumers only) and removing `polars/parquet` support from the TUI to prevent conflicting Arrow/brotli stacks. Also covers prior `ndarray-linalg` hygiene.
+**Last updated:** Host-first `symworx-embed` (SentryWard concepts: JSON PPG protocol, `sid` subject naming, serial/simulator sources). Still covers the core I/O rule (`symworx-io` only for on-disk signal I/O), TUI input priority, and `ndarray-linalg` / polars hygiene.
 
 When you start a new session, read this file and respect the TUI input priority rules above.
