@@ -33,7 +33,12 @@ pub mod email;
 
 #[cfg(feature = "email")]
 pub use email::{
+    ImapConfig,
+    SYMLOAD_IMAP_HOST_ENV,
+    SYMLOAD_IMAP_MAILBOX_ENV,
+    SYMLOAD_IMAP_PORT_ENV,
     fetch_fit_attachments,
+    fetch_fit_attachments_with_config,
     fetch_srm_fit_attachments,
 };
 

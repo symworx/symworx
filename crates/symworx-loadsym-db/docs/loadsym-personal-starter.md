@@ -67,9 +67,16 @@ Ingest stores **relative** keys when files live under `$VELOFIT_HOME` (e.g. `raw
 
 IMAP + MIME extraction lives in **`symworx-io`** (`email` feature). The `symload` CLI only orchestrates credentials → fetch → `$VELOFIT_HOME/inbox`.
 
+This path is **host-side and reproducible**: a dedicated IMAP account + `$VELOFIT_HOME/.env` (gitignored). It does not depend on Grok, Outlook MCP, or any interactive session.
+
 ```bash
+# Preferred: secrets only in $VELOFIT_HOME/.env (see .env.example in your velofit tree)
+# SYMLOAD_USER / SYMLOAD_APP_PASSWORD / SYMLOAD_IMAP_HOST=...
+
+# Or export in the shell (never commit):
 export SYMLOAD_USER="you@example.com"          # placeholder
 export SYMLOAD_APP_PASSWORD="your-app-password" # never commit
+# export SYMLOAD_IMAP_HOST=imap.gmail.com      # default; override per provider
 
 cargo run -p symworx-loadsym --features "fit,email" -- email fetch
 # Optional IMAP SEARCH (default: SUBJECT SRM for PC8 exports)

@@ -426,13 +426,144 @@ fn parse_db_path(args: &[String]) -> PathBuf {
     }
 }
 
+/// Parse `$VELOFIT_HOME/.env` into a map. Does **not** mutate process env.
+/// Shell/CI exports still take priority via [`env_or_dotenv`].
+/// Supports `#` comments, blanks, `export ` prefixes, and quoted values.
+/// Never prints secret values.
+#[cfg(feature = "email")]
+fn parse_velofit_dotenv() -> std::collections::HashMap<String, String> {
+    let mut out = std::collections::HashMap::new();
+    let path = default_velofit_root().join(".env");
+    let Ok(text) = fs::read_to_string(&path) else {
+        return out;
+    };
+    for raw in text.lines() {
+        let line = raw.trim();
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        let line = line.strip_prefix("export ").unwrap_or(line).trim();
+        let Some((key, val)) = line.split_once('=') else {
+            continue;
+        };
+        let key = key.trim();
+        if key.is_empty() {
+            continue;
+        }
+        let mut val = val.trim();
+        if (val.starts_with('"') && val.ends_with('"') && val.len() >= 2)
+            || (val.starts_with('\'') && val.ends_with('\'') && val.len() >= 2)
+        {
+            val = &val[1..val.len() - 1];
+        }
+        // Gmail shows app passwords as "xxxx xxxx xxxx xxxx"; IMAP wants the 16
+        // alphanumerics. Strip whitespace for password keys only.
+        let val = if key.contains("PASSWORD") || key.contains("SECRET") || key.contains("TOKEN") {
+            val.chars()
+                .filter(|c| !c.is_whitespace())
+                .collect::<String>()
+        } else {
+            val.to_string()
+        };
+        out.insert(key.to_string(), val);
+    }
+    if !out.is_empty() {
+        eprintln!(
+            "loaded {} key(s) from {} (process env still wins when set)",
+            out.len(),
+            path.display()
+        );
+    }
+    out
+}
+
+/// Prefer process environment; fall back to a key from the dotenv map.
+/// Password-like keys have whitespace stripped (Gmail app-password formatting).
+#[cfg(feature = "email")]
+fn env_or_dotenv(key: &str, dotenv: &std::collections::HashMap<String, String>) -> Option<String> {
+    let strip_ws = key.contains("PASSWORD") || key.contains("SECRET") || key.contains("TOKEN");
+    let normalize = |s: String| -> String {
+        if strip_ws {
+            s.chars().filter(|c| !c.is_whitespace()).collect()
+        } else {
+            s
+        }
+    };
+    env::var(key)
+        .ok()
+        .filter(|s| !s.is_empty())
+        .map(normalize)
+        .or_else(|| {
+            dotenv
+                .get(key)
+                .cloned()
+                .filter(|s| !s.is_empty())
+                .map(normalize)
+        })
+}
+
+/// Build [`email::ImapConfig`] from process env, then dotenv fallbacks.
+#[cfg(feature = "email")]
+fn imap_config_from_env_and_dotenv(
+    dotenv: &std::collections::HashMap<String, String>,
+) -> email::ImapConfig {
+    let mut cfg = email::ImapConfig::default();
+    if let Some(h) = env_or_dotenv(email::SYMLOAD_IMAP_HOST_ENV, dotenv) {
+        cfg.host = h;
+    }
+    if let Some(p) = env_or_dotenv(email::SYMLOAD_IMAP_PORT_ENV, dotenv) {
+        if let Ok(n) = p.trim().parse::<u16>() {
+            if n > 0 {
+                cfg.port = n;
+            }
+        }
+    }
+    if let Some(m) = env_or_dotenv(email::SYMLOAD_IMAP_MAILBOX_ENV, dotenv) {
+        cfg.mailbox = m;
+    }
+    cfg
+}
+
 #[cfg(feature = "email")]
 fn handle_email_fetch(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
-    let user = env::var("SYMLOAD_USER").map_err(|_| {
-        "set SYMLOAD_USER to your IMAP username (do not commit credentials)".to_string()
+    // Reproducible local config: $VELOFIT_HOME/.env (gitignored), independent of any AI/MCP session.
+    let dotenv = parse_velofit_dotenv();
+    let root = default_velofit_root();
+
+    let user = env_or_dotenv("SYMLOAD_USER", &dotenv).ok_or_else(|| {
+        format!(
+            "set SYMLOAD_USER (IMAP username) via env or {}/.env — do not commit credentials",
+            root.display()
+        )
     })?;
-    let pass = env::var("SYMLOAD_APP_PASSWORD")
-        .map_err(|_| "set SYMLOAD_APP_PASSWORD (app password; do not commit)".to_string())?;
+    let pass = env_or_dotenv("SYMLOAD_APP_PASSWORD", &dotenv).ok_or_else(|| {
+        format!(
+            "set SYMLOAD_APP_PASSWORD via env or {}/.env — do not commit",
+            root.display()
+        )
+    })?;
+
+    // Safe preflight (no secrets): helps diagnose AUTHENTICATIONFAILED without dumping .env.
+    {
+        let domain = user
+            .rsplit_once('@')
+            .map(|(_, d)| d)
+            .unwrap_or("(no @ in SYMLOAD_USER)");
+        eprintln!(
+            "imap preflight: user_domain={} user_len={} pass_len={} (spaces already stripped)",
+            domain,
+            user.len(),
+            pass.len()
+        );
+        if pass.len() != 16 {
+            eprintln!(
+                "warning: Gmail app passwords are usually 16 characters after removing spaces; got {}",
+                pass.len()
+            );
+        }
+    }
+
+    let imap_cfg = imap_config_from_env_and_dotenv(&dotenv);
 
     // Optional IMAP SEARCH query. Default matches SRM PC8 export subjects.
     // Examples: --query "SUBJECT SRM UNSEEN"
@@ -445,17 +576,16 @@ fn handle_email_fetch(args: &[String]) -> Result<(), Box<dyn std::error::Error>>
     // Usage: symload email fetch [target_dir] [--query "..."]
     let target = parse_email_target_dir(args);
 
-    let saved = if query == "SUBJECT SRM" {
-        email::fetch_srm_fit_attachments(&user, &pass, &target)?
-    } else {
-        email::fetch_fit_attachments(&user, &pass, &target, &query)?
-    };
+    let saved = email::fetch_fit_attachments_with_config(&user, &pass, &target, &query, &imap_cfg)?;
 
     println!(
-        "Fetched {} new .fit file(s) to {}  (query: {})",
+        "Fetched {} new .fit file(s) to {}  (query: {}; imap: {}:{}/{})",
         saved.len(),
         target.display(),
-        query
+        query,
+        imap_cfg.host,
+        imap_cfg.port,
+        imap_cfg.mailbox
     );
     for p in &saved {
         println!("  {}", p.display());
@@ -633,13 +763,17 @@ Commands:
   symload ftp set --date YYYY-MM-DD --ftp N [--sport cycling] [--source manual] [--until DATE]
   symload email fetch [target_dir] [--query "SUBJECT SRM"]
       default dir: $VELOFIT_HOME/inbox; default query matches SRM exports
+      loads $VELOFIT_HOME/.env when present (does not override existing env)
   symload inbox promote [--from DIR] [--to DIR]
 
-Environment (never commit secrets):
+Environment (never commit secrets; email also reads $VELOFIT_HOME/.env):
   VELOFIT_HOME          archive root (default: ~/velofit)
   SYMLOAD_DB            SQLite path override
   SYMLOAD_USER          IMAP username for email fetch
   SYMLOAD_APP_PASSWORD  IMAP app password
+  SYMLOAD_IMAP_HOST     IMAP host (default: imap.gmail.com)
+  SYMLOAD_IMAP_PORT     IMAP TLS port (default: 993)
+  SYMLOAD_IMAP_MAILBOX  mailbox to search (default: INBOX)
   SYMLOAD_INGEST_VERBOSE  set to log skipped files
 
 Privacy: the catalog and FIT archive live under VELOFIT_HOME only — not in the SymWorx repo.

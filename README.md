@@ -81,7 +81,7 @@ Zero-dep SQL schema (Postgres + SQLite). No sample data. Consumable via the `db`
 
 ### Email / SRM ingestion
 
-IMAP MIME extraction behind `email`. Credentials only via `SYMLOAD_USER` / `SYMLOAD_APP_PASSWORD`. Default drop zone: `$VELOFIT_HOME/inbox`.
+IMAP MIME extraction behind `email`. Credentials only via `SYMLOAD_USER` / `SYMLOAD_APP_PASSWORD` (or `$VELOFIT_HOME/.env`). Optional: `SYMLOAD_IMAP_HOST` / `PORT` / `MAILBOX` (defaults: Gmail `imap.gmail.com:993` / `INBOX`). Default drop zone: `$VELOFIT_HOME/inbox`. Host-side only — no AI/MCP dependency.
 
 ### [SpatialSym](crates/symworx-spatialsym/README.md)
 
