@@ -75,10 +75,13 @@ cargo run -p symworx-loadsym --features sqlite -- db status
 # Schema only (no driver)
 cargo run -p symworx-loadsym --features db -- db print-schema --sqlite
 
-# Email fetch (credentials via env only — never commit)
+# Email fetch (credentials via env or $VELOFIT_HOME/.env — never commit)
 # IMAP lives in symworx-io; CLI orchestrates drop → promote → ingest
+# Host-side only: no AI/MCP dependency
 export SYMLOAD_USER="you@example.com"
 export SYMLOAD_APP_PASSWORD="your-app-password"
+# Optional host (default imap.gmail.com):
+# export SYMLOAD_IMAP_HOST=outlook.office365.com
 cargo run -p symworx-loadsym --features "fit,email" -- email fetch
 # Optional custom IMAP SEARCH (default: SUBJECT SRM)
 cargo run -p symworx-loadsym --features "fit,email" -- email fetch --query "OR SUBJECT SRM SUBJECT Polar"
@@ -92,7 +95,7 @@ cargo run -p symworx-loadsym --features fit -- inbox promote
 | `fit` | Load `.fit` for `stats` |
 | `email` | IMAP fetch of `.fit` attachments (implies `fit`) |
 | `db` | `db print-schema` from `symworx-loadsym-db` |
-| `sqlite` | Personal catalog init + ingest (`ruslit e` + `fit` + `db`) |
+| `sqlite` | Personal catalog init + ingest (`rusqlite` + `fit` + `db`) |
 
 ### Environment
 
@@ -100,7 +103,12 @@ cargo run -p symworx-loadsym --features fit -- inbox promote
 |----------|------|
 | `VELOFIT_HOME` | Archive root (default `~/velofit`) |
 | `SYMLOAD_DB` | SQLite path override |
-| `SYMLOAD_USER` / `SYMLOAD_APP_PASSWORD` | IMAP only |
+| `SYMLOAD_USER` / `SYMLOAD_APP_PASSWORD` | IMAP credentials |
+| `SYMLOAD_IMAP_HOST` | IMAP host (default `imap.gmail.com`) |
+| `SYMLOAD_IMAP_PORT` | IMAP TLS port (default `993`) |
+| `SYMLOAD_IMAP_MAILBOX` | Mailbox to search (default `INBOX`) |
+
+`email fetch` also loads `$VELOFIT_HOME/.env` when present (process env wins).
 
 **Privacy:** catalog + FIT files stay under `$VELOFIT_HOME`. Do not commit `*.sqlite`, `.env`, or ride archives into SymWorx.
 

@@ -5,6 +5,18 @@
 //! such as SRM PC8 powermeter exports).
 //!
 //! Enabled via the `email` feature.
+//!
+//! # Configuration (environment only — never hardcode credentials)
+//!
+//! | Variable | Role | Default |
+//! |----------|------|---------|
+//! | `SYMLOAD_USER` | IMAP username | (required) |
+//! | `SYMLOAD_APP_PASSWORD` | App password / IMAP password | (required) |
+//! | `SYMLOAD_IMAP_HOST` | IMAP server hostname | `imap.gmail.com` |
+//! | `SYMLOAD_IMAP_PORT` | IMAP TLS port | `993` |
+//! | `SYMLOAD_IMAP_MAILBOX` | Mailbox to search | `INBOX` |
+//!
+//! Common hosts: `imap.gmail.com`, `outlook.office365.com`, `imap-mail.outlook.com`.
 
 use std::path::{
     Path,
@@ -13,15 +25,69 @@ use std::path::{
 
 use symworx_error::SymError;
 
-/// Fetch .fit attachments from Gmail IMAP for emails related to SRM.
+/// Env: IMAP hostname (default `imap.gmail.com`).
+pub const SYMLOAD_IMAP_HOST_ENV: &str = "SYMLOAD_IMAP_HOST";
+/// Env: IMAP TLS port (default `993`).
+pub const SYMLOAD_IMAP_PORT_ENV: &str = "SYMLOAD_IMAP_PORT";
+/// Env: mailbox name (default `INBOX`).
+pub const SYMLOAD_IMAP_MAILBOX_ENV: &str = "SYMLOAD_IMAP_MAILBOX";
+
+/// Resolved IMAP connection settings (from env, with defaults).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ImapConfig {
+    /// Server hostname.
+    pub host: String,
+    /// TLS port (typically 993).
+    pub port: u16,
+    /// Mailbox to `SELECT` before SEARCH (e.g. `INBOX`).
+    pub mailbox: String,
+}
+
+impl Default for ImapConfig {
+    fn default() -> Self {
+        Self {
+            host: "imap.gmail.com".into(),
+            port: 993,
+            mailbox: "INBOX".into(),
+        }
+    }
+}
+
+impl ImapConfig {
+    /// Read host/port/mailbox from environment, falling back to defaults.
+    ///
+    /// Empty env values are ignored. Invalid `SYMLOAD_IMAP_PORT` falls back to 993.
+    pub fn from_env() -> Self {
+        let mut cfg = Self::default();
+        if let Ok(h) = std::env::var(SYMLOAD_IMAP_HOST_ENV) {
+            let h = h.trim();
+            if !h.is_empty() {
+                cfg.host = h.to_string();
+            }
+        }
+        if let Ok(p) = std::env::var(SYMLOAD_IMAP_PORT_ENV) {
+            if let Ok(n) = p.trim().parse::<u16>() {
+                if n > 0 {
+                    cfg.port = n;
+                }
+            }
+        }
+        if let Ok(m) = std::env::var(SYMLOAD_IMAP_MAILBOX_ENV) {
+            let m = m.trim();
+            if !m.is_empty() {
+                cfg.mailbox = m.to_string();
+            }
+        }
+        cfg
+    }
+}
+
+/// Fetch .fit attachments for emails related to SRM (default search: `SUBJECT SRM`).
 ///
-/// Uses the provided credentials (App Password recommended for Gmail).
-/// Saves matching attachments to `target_dir`.
+/// Uses the provided credentials (app password recommended). Connection target is
+/// taken from [`ImapConfig::from_env`]. Saves matching attachments to `target_dir`.
 ///
-/// Returns the list of saved .fit file paths.
-///
-/// This is intentionally focused on common SRM export patterns. Customize
-/// the search query or parsing as needed for your workflow.
+/// Returns the list of newly saved .fit file paths.
 ///
 /// Files that already exist at the destination (same basename) are skipped
 /// so re-runs are safe. Only decoded MIME attachment bytes are written —
@@ -35,16 +101,37 @@ pub fn fetch_srm_fit_attachments(
     fetch_fit_attachments(user, app_password, target_dir, "SUBJECT SRM")
 }
 
-/// Fetch .fit attachments from Gmail IMAP using a custom IMAP SEARCH query.
+/// Fetch .fit attachments via IMAP using a custom IMAP SEARCH query.
 ///
 /// Example queries: `"SUBJECT SRM"`, `"SUBJECT SRM UNSEEN"`,
 /// `"OR SUBJECT SRM SUBJECT Polar"`.
+///
+/// Host/port/mailbox come from env ([`ImapConfig::from_env`]).
 #[cfg(feature = "email")]
 pub fn fetch_fit_attachments(
     user: &str,
     app_password: &str,
     target_dir: &Path,
     search_query: &str,
+) -> Result<Vec<PathBuf>, SymError> {
+    fetch_fit_attachments_with_config(
+        user,
+        app_password,
+        target_dir,
+        search_query,
+        &ImapConfig::from_env(),
+    )
+}
+
+/// Same as [`fetch_fit_attachments`] but with an explicit [`ImapConfig`]
+/// (useful for tests and non-env configuration).
+#[cfg(feature = "email")]
+pub fn fetch_fit_attachments_with_config(
+    user: &str,
+    app_password: &str,
+    target_dir: &Path,
+    search_query: &str,
+    imap_cfg: &ImapConfig,
 ) -> Result<Vec<PathBuf>, SymError> {
     use std::{
         fs::File,
@@ -57,29 +144,68 @@ pub fn fetch_fit_attachments(
     std::fs::create_dir_all(target_dir)
         .map_err(|e| SymError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
 
-    // ClientBuilder uses native-tls/rustls automatically for port 993.
-    let client = imap::ClientBuilder::new("imap.gmail.com", 993)
+    // ClientBuilder uses native-tls for port 993 (implicit TLS).
+    let client = imap::ClientBuilder::new(&imap_cfg.host, imap_cfg.port)
         .connect()
-        .map_err(|e| SymError::UnsupportedFormat(format!("IMAP connect failed: {}", e)))?;
+        .map_err(|e| {
+            SymError::UnsupportedFormat(format!(
+                "IMAP connect failed ({}:{}): {}",
+                imap_cfg.host, imap_cfg.port, e
+            ))
+        })?;
 
     let mut sess: Session<_> = client
         .login(user, app_password)
         .map_err(|(e, _)| SymError::UnsupportedFormat(format!("IMAP login failed: {}", e)))?;
 
-    sess.select("INBOX")
-        .map_err(|e| SymError::UnsupportedFormat(format!("Select INBOX failed: {}", e)))?;
+    eprintln!(
+        "imap: logged in → select {} @ {}:{}",
+        imap_cfg.mailbox, imap_cfg.host, imap_cfg.port
+    );
 
-    let uids = sess
+    sess.select(&imap_cfg.mailbox).map_err(|e| {
+        SymError::UnsupportedFormat(format!(
+            "Select mailbox '{}' failed: {}",
+            imap_cfg.mailbox, e
+        ))
+    })?;
+
+    eprintln!("imap: searching ({}) …", search_query);
+    // `search` returns sequence numbers (not UIDs); pair with `fetch`, not `uid_fetch`.
+    let mut seqs: Vec<u32> = sess
         .search(search_query)
-        .map_err(|e| SymError::UnsupportedFormat(format!("Search failed: {}", e)))?;
+        .map_err(|e| SymError::UnsupportedFormat(format!("Search failed: {}", e)))?
+        .into_iter()
+        .collect();
+    // Stable order so progress reads sensibly on re-runs.
+    seqs.sort_unstable();
+    let total = seqs.len();
+    eprintln!(
+        "imap: {} message(s) matched; downloading .fit attachments → {}",
+        total,
+        target_dir.display()
+    );
 
     let mut saved = Vec::new();
+    let mut skipped_existing = 0usize;
+    let mut no_fit = 0usize;
 
-    for uid in uids {
+    for (i, seq) in seqs.iter().enumerate() {
+        let n = i + 1;
+        if n == 1 || n == total || n % 10 == 0 {
+            eprintln!(
+                "imap: progress {n}/{total}  (new={}, skipped_existing={}, no_fit={})",
+                saved.len(),
+                skipped_existing,
+                no_fit
+            );
+        }
+
         let fetches = sess
-            .fetch(uid.to_string(), "RFC822")
-            .map_err(|e| SymError::UnsupportedFormat(format!("Fetch failed: {}", e)))?;
+            .fetch(seq.to_string(), "RFC822")
+            .map_err(|e| SymError::UnsupportedFormat(format!("Fetch failed (seq {seq}): {e}")))?;
 
+        let mut got_fit_this_msg = false;
         for fetch in fetches.iter() {
             let Some(body) = fetch.body() else {
                 continue;
@@ -89,7 +215,7 @@ pub fn fetch_fit_attachments(
                 Ok(m) => m,
                 Err(e) => {
                     // Fall back: save .eml for manual inspection
-                    let out_path = target_dir.join(format!("srm-{}.eml", uid));
+                    let out_path = target_dir.join(format!("srm-{}.eml", seq));
                     if !out_path.exists() {
                         let mut file = File::create(&out_path).map_err(SymError::Io)?;
                         file.write_all(body).map_err(SymError::Io)?;
@@ -99,7 +225,7 @@ pub fn fetch_fit_attachments(
                 }
             };
 
-            let attachments = extract_fit_attachments_from_mail(&parsed, uid);
+            let attachments = extract_fit_attachments_from_mail(&parsed, *seq);
             for (fname, bytes) in attachments {
                 if bytes.is_empty() {
                     continue;
@@ -109,17 +235,34 @@ pub fn fetch_fit_attachments(
                     continue;
                 }
 
+                got_fit_this_msg = true;
                 // Skip if this basename already exists (re-runs are safe).
                 let out_path = target_dir.join(&fname);
                 if out_path.exists() {
+                    skipped_existing += 1;
                     continue;
                 }
                 let mut file = File::create(&out_path).map_err(SymError::Io)?;
                 file.write_all(&bytes).map_err(SymError::Io)?;
+                eprintln!(
+                    "  + {}",
+                    out_path.file_name().unwrap_or_default().to_string_lossy()
+                );
                 saved.push(out_path);
             }
         }
+        if !got_fit_this_msg {
+            no_fit += 1;
+        }
     }
+
+    eprintln!(
+        "imap: done — new={} skipped_existing={} messages_without_fit={} of {}",
+        saved.len(),
+        skipped_existing,
+        no_fit,
+        total
+    );
 
     let _ = sess.logout();
 
@@ -242,5 +385,13 @@ Li4uLi4uLi4uLi4uLi4uLi4=\r\n\
         assert_eq!(parts.len(), 1);
         assert_eq!(parts[0].0, "ride.fit");
         assert!(!parts[0].1.is_empty());
+    }
+
+    #[test]
+    fn imap_config_defaults() {
+        let cfg = ImapConfig::default();
+        assert_eq!(cfg.host, "imap.gmail.com");
+        assert_eq!(cfg.port, 993);
+        assert_eq!(cfg.mailbox, "INBOX");
     }
 }
