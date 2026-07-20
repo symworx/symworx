@@ -14,6 +14,11 @@
 #
 # Goal: catch nightly rustfmt failures before CI. Keep this hook fast —
 # clippy / tests stay in CI (OpenBLAS-heavy workspace).
+#
+# Cargo resolution (first match wins):
+#   1. cargo on PATH (or $CARGO_HOME/bin / $HOME/.cargo/bin)
+#   2. toolbox run -c $SYMWORX_RUST_TOOLBOX (default: dev-rust)
+#      — needed on Fedora Atomic / toolbox hosts where Rust lives in a container
 
 set -euo pipefail
 
@@ -29,17 +34,61 @@ if ! git diff --cached --name-only --diff-filter=ACM | grep -qE \
   exit 0
 fi
 
-if ! command -v cargo >/dev/null 2>&1; then
-  echo "pre-commit: cargo not found (expected in \$PATH or \$HOME/.cargo/bin)" >&2
-  exit 1
-fi
+# ---------------------------------------------------------------------------
+# Resolve how to invoke cargo (host install vs toolbox container).
+# ---------------------------------------------------------------------------
+SYMWORX_RUST_TOOLBOX="${SYMWORX_RUST_TOOLBOX:-dev-rust}"
+CARGO_PREFIX=() # empty → run "cargo …"; or ("toolbox" "run" "-c" "dev-rust")
 
-if ! cargo +nightly fmt --version >/dev/null 2>&1; then
+resolve_cargo() {
+  if command -v cargo >/dev/null 2>&1; then
+    CARGO_PREFIX=()
+    return 0
+  fi
+
+  if command -v toolbox >/dev/null 2>&1; then
+    # toolbox list --containers is quiet when missing; "run" fails clearly if down.
+    if toolbox run -c "$SYMWORX_RUST_TOOLBOX" true >/dev/null 2>&1; then
+      if toolbox run -c "$SYMWORX_RUST_TOOLBOX" command -v cargo >/dev/null 2>&1; then
+        CARGO_PREFIX=(toolbox run -c "$SYMWORX_RUST_TOOLBOX")
+        return 0
+      fi
+    fi
+  fi
+
+  cat >&2 <<EOF
+pre-commit: cargo not found on the host PATH, and toolbox fallback failed.
+
+  Host PATH looked in: \$PATH and \$HOME/.cargo/bin
+  Toolbox container:   ${SYMWORX_RUST_TOOLBOX}
+    (override with: export SYMWORX_RUST_TOOLBOX=your-container)
+
+Fix one of:
+  • Commit from an environment where cargo is on PATH, or
+  • Start the Rust toolbox:  toolbox enter ${SYMWORX_RUST_TOOLBOX}
+    (hook will use: toolbox run -c ${SYMWORX_RUST_TOOLBOX} cargo …), or
+  • Bypass once:  git commit --no-verify
+EOF
+  return 1
+}
+
+run_cargo() {
+  if ((${#CARGO_PREFIX[@]})); then
+    "${CARGO_PREFIX[@]}" cargo "$@"
+  else
+    cargo "$@"
+  fi
+}
+
+resolve_cargo || exit 1
+
+if ! run_cargo +nightly fmt --version >/dev/null 2>&1; then
   cat >&2 <<'EOF'
 pre-commit: cargo +nightly fmt is required (matches CI).
 
   rustup toolchain install nightly --component rustfmt
 
+(If using toolbox, run that inside the Rust container.)
 Then re-run the commit.
 EOF
   exit 1
@@ -71,14 +120,24 @@ if printf '%s\n' "$staged" | grep -qE '(^|/)crates/symworx-embed/'; then
   PKGS+=(-p symworx-embed)
 fi
 
-echo "pre-commit: cargo +nightly fmt --check ${PKGS[*]}"
-if ! cargo +nightly fmt --check "${PKGS[@]}"; then
-  cat >&2 <<'EOF'
+if ((${#CARGO_PREFIX[@]})); then
+  echo "pre-commit: (${CARGO_PREFIX[*]}) cargo +nightly fmt --check ${PKGS[*]}"
+else
+  echo "pre-commit: cargo +nightly fmt --check ${PKGS[*]}"
+fi
+
+if ! run_cargo +nightly fmt --check "${PKGS[@]}"; then
+  if ((${#CARGO_PREFIX[@]})); then
+    fix_cmd="${CARGO_PREFIX[*]} cargo +nightly fmt"
+  else
+    fix_cmd="cargo +nightly fmt"
+  fi
+  cat >&2 <<EOF
 
 pre-commit: rustfmt check failed.
 
 Fix with (from repo root):
-  cargo +nightly fmt
+  ${fix_cmd}
 
 Then stage the formatting changes and re-commit.
 EOF

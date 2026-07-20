@@ -32,12 +32,29 @@ Clippy, tests, and Python bindings stay in CI — they are too slow/heavy
 
 ## Requirements
 
-- `cargo` on `PATH`
-- Nightly rustfmt (same as CI):
+- Nightly rustfmt (same as CI)
+- **Cargo** via one of:
+  1. `cargo` on `PATH` (or `$HOME/.cargo/bin`), or
+  2. A running [toolbox](https://containertoolbx.org/) container with cargo
+     (default name: `dev-rust`)
 
   ```bash
+  # Host / normal rustup install
   rustup toolchain install nightly --component rustfmt
+
+  # Toolbox (Fedora Atomic, etc. — Rust only inside the container)
+  toolbox enter dev-rust
+  # Override container name if yours differs:
+  export SYMWORX_RUST_TOOLBOX=my-rust-box
   ```
+
+The hook prefers host `cargo`, then falls back to:
+
+```bash
+toolbox run -c dev-rust cargo +nightly fmt --check …
+```
+
+So commits from the **host** still work when the `dev-rust` toolbox is available.
 
 ## Bypass
 
