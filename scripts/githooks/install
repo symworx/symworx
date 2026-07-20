@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Point this clone at the versioned hooks under scripts/githooks/.
+#
+# Usage (from anywhere inside the repo):
+#   ./scripts/githooks/install
+
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+HOOKS_PATH="scripts/githooks"
+
+# Ensure hook scripts are executable (git ignores non-executable hooks).
+chmod +x "$ROOT/$HOOKS_PATH/pre-commit" "$ROOT/$HOOKS_PATH/install"
+
+git -C "$ROOT" config core.hooksPath "$HOOKS_PATH"
+
+echo "Installed git hooks:"
+echo "  core.hooksPath = $(git -C "$ROOT" config --get core.hooksPath)"
+echo
+echo "Active pre-commit checks:"
+echo "  cargo +nightly fmt --check  (CI package set; + tui/embed if staged)"
+echo
+echo "To uninstall: git config --unset core.hooksPath"

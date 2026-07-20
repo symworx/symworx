@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+# SymWorx pre-commit hook (versioned under scripts/githooks/).
+#
+# Enable once per clone (from the repo root):
+#   git config core.hooksPath scripts/githooks
+# or:
+#   ./scripts/githooks/install
+#
+# Disable:
+#   git config --unset core.hooksPath
+#
+# Bypass for a single commit (use sparingly):
+#   git commit --no-verify
+#
+# Goal: catch nightly rustfmt failures before CI. Keep this hook fast —
+# clippy / tests stay in CI (OpenBLAS-heavy workspace).
+
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+# Hooks often run with a minimal PATH (no login shell). Prefer rustup's cargo.
+export PATH="${CARGO_HOME:-$HOME/.cargo}/bin:$PATH"
+
+# Only gate commits that touch Rust sources or fmt/workspace config.
+if ! git diff --cached --name-only --diff-filter=ACM | grep -qE \
+  '\.rs$|(^|/)rustfmt\.toml$|(^|/)Cargo\.toml$|(^|/)Cargo\.lock$'; then
+  exit 0
+fi
+
+if ! command -v cargo >/dev/null 2>&1; then
+  echo "pre-commit: cargo not found (expected in \$PATH or \$HOME/.cargo/bin)" >&2
+  exit 1
+fi
+
+if ! cargo +nightly fmt --version >/dev/null 2>&1; then
+  cat >&2 <<'EOF'
+pre-commit: cargo +nightly fmt is required (matches CI).
+
+  rustup toolchain install nightly --component rustfmt
+
+Then re-run the commit.
+EOF
+  exit 1
+fi
+
+# Same package set as .github/workflows/ci.yml "Format check (library + bindings, no TUI)".
+PKGS=(
+  -p symworx-error
+  -p symworx-math
+  -p symworx-io
+  -p symworx-stats
+  -p symworx-dynamics
+  -p symworx-backend
+  -p symworx-signal
+  -p symworx-core
+  -p symworx-biosym
+  -p symworx-loadsym
+  -p symworx-loadsym-db
+  -p symworx-spatialsym
+  -p symworx-python
+)
+
+# CI skips TUI/embed for speed; still format-check them when those paths are staged.
+staged="$(git diff --cached --name-only --diff-filter=ACM || true)"
+if printf '%s\n' "$staged" | grep -qE '(^|/)crates/symworx-tui/'; then
+  PKGS+=(-p symworx-tui)
+fi
+if printf '%s\n' "$staged" | grep -qE '(^|/)crates/symworx-embed/'; then
+  PKGS+=(-p symworx-embed)
+fi
+
+echo "pre-commit: cargo +nightly fmt --check ${PKGS[*]}"
+if ! cargo +nightly fmt --check "${PKGS[@]}"; then
+  cat >&2 <<'EOF'
+
+pre-commit: rustfmt check failed.
+
+Fix with (from repo root):
+  cargo +nightly fmt
+
+Then stage the formatting changes and re-commit.
+EOF
+  exit 1
+fi
+
+exit 0
