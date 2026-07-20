@@ -164,6 +164,16 @@ pub use error_metrics::{
     residuals,
     rmse,
 };
+pub use knn::{
+    KnnClassifier,
+    KnnConfig,
+    KnnMetric,
+    knn_classify,
+};
+pub use lda::{
+    LdaModel,
+    lda,
+};
 pub use linreg::{
     LinearModel,
     elastic_net,
@@ -186,25 +196,6 @@ pub use logistic::{
     logistic_regression,
     logistic_regression_ovr,
     sigmoid,
-};
-pub use lda::{
-    LdaModel,
-    lda,
-};
-pub use knn::{
-    KnnClassifier,
-    KnnConfig,
-    KnnMetric,
-    knn_classify,
-};
-pub use rules::{
-    ClassificationRule,
-    Comparison,
-    DecisionStump,
-    RuleHit,
-    RuleListClassifier,
-    ThresholdCondition,
-    fit_decision_stump,
 };
 pub use naive_bayes::{
     GaussianNb,
@@ -231,6 +222,15 @@ pub use polyreg::{
 pub use preprocess::{
     MinMaxScaler,
     StandardScaler,
+};
+pub use rules::{
+    ClassificationRule,
+    Comparison,
+    DecisionStump,
+    RuleHit,
+    RuleListClassifier,
+    ThresholdCondition,
+    fit_decision_stump,
 };
 pub use split::{
     MIN_SPLIT_FRACTION,

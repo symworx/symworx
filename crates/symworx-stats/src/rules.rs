@@ -94,18 +94,13 @@ impl ThresholdCondition {
             self.feature,
             row.len()
         );
-        self.op
-            .eval(row[self.feature], self.threshold, self.atol)
+        self.op.eval(row[self.feature], self.threshold, self.atol)
     }
 }
 
 impl fmt::Display for ThresholdCondition {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "x[{}] {} {}",
-            self.feature, self.op, self.threshold
-        )
+        write!(f, "x[{}] {} {}", self.feature, self.op, self.threshold)
     }
 }
 
@@ -122,12 +117,7 @@ pub struct ClassificationRule {
 
 impl ClassificationRule {
     /// Single-threshold rule (decision stump style).
-    pub fn threshold(
-        feature: usize,
-        op: Comparison,
-        threshold: f64,
-        label: usize,
-    ) -> Self {
+    pub fn threshold(feature: usize, op: Comparison, threshold: f64, label: usize) -> Self {
         Self {
             conditions: vec![ThresholdCondition::new(feature, op, threshold)],
             label,
@@ -332,10 +322,11 @@ impl DecisionStump {
             self.left_label,
         )
         .with_name("stump_left");
-        RuleListClassifier::new(vec![rule], self.right_label, [
-            self.left_label,
+        RuleListClassifier::new(
+            vec![rule],
             self.right_label,
-        ])
+            [self.left_label, self.right_label],
+        )
     }
 
     /// Predict labels.
@@ -365,9 +356,7 @@ pub fn fit_decision_stump(x: &Array2<f64>, y: &[usize]) -> Option<DecisionStump>
     let mut best: Option<DecisionStump> = None;
 
     for j in 0..x.ncols() {
-        let mut pairs: Vec<(f64, usize)> = (0..x.nrows())
-            .map(|i| (x[[i, j]], y[i]))
-            .collect();
+        let mut pairs: Vec<(f64, usize)> = (0..x.nrows()).map(|i| (x[[i, j]], y[i])).collect();
         pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
 
         // Unique midpoints
@@ -453,19 +442,14 @@ fn majority(labels: &[usize]) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::array;
+
+    use super::*;
 
     #[test]
     fn single_threshold_rule() {
         let clf = RuleListClassifier::new(
-            vec![ClassificationRule::threshold(
-                0,
-                Comparison::Ge,
-                0.5,
-                1,
-            )
-            .with_name("high")],
+            vec![ClassificationRule::threshold(0, Comparison::Ge, 0.5, 1).with_name("high")],
             0,
             [0, 1],
         );
@@ -502,14 +486,7 @@ mod tests {
 
     #[test]
     fn decision_stump_separates() {
-        let x = array![
-            [0.0],
-            [0.1],
-            [0.2],
-            [0.8],
-            [0.9],
-            [1.0],
-        ];
+        let x = array![[0.0], [0.1], [0.2], [0.8], [0.9], [1.0],];
         let y = vec![0, 0, 0, 1, 1, 1];
         let stump = fit_decision_stump(&x, &y).expect("stump");
         assert_eq!(stump.feature, 0);

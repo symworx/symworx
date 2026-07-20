@@ -127,11 +127,8 @@ fn main() {
         println!("   fold {k}: val accuracy = {acc:.3}");
     }
     let mean_cv = fold_acc.iter().sum::<f64>() / fold_acc.len() as f64;
-    let var_cv = fold_acc
-        .iter()
-        .map(|a| (a - mean_cv).powi(2))
-        .sum::<f64>()
-        / fold_acc.len() as f64;
+    let var_cv =
+        fold_acc.iter().map(|a| (a - mean_cv).powi(2)).sum::<f64>() / fold_acc.len() as f64;
     println!(
         "   CV mean accuracy = {mean_cv:.3}  (std ≈ {:.3})",
         var_cv.sqrt()

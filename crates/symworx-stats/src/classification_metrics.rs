@@ -381,11 +381,7 @@ fn trapz_auc(fpr: &[f64], tpr: &[f64]) -> f64 {
 ///
 /// If `classes` is `None`, assumes labels and score columns are `0..K-1`.
 /// Returns `NaN` if any class AUC is undefined (empty positive/negative set).
-pub fn roc_auc_ovr(
-    y_true: &[usize],
-    scores: &Array2<f64>,
-    classes: Option<&[usize]>,
-) -> f64 {
+pub fn roc_auc_ovr(y_true: &[usize], scores: &Array2<f64>, classes: Option<&[usize]>) -> f64 {
     if y_true.len() != scores.nrows() || y_true.is_empty() {
         return f64::NAN;
     }
@@ -418,8 +414,9 @@ pub fn roc_auc_ovr(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::array;
+
+    use super::*;
 
     #[test]
     fn perfect_binary() {

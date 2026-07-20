@@ -47,11 +47,11 @@ fn main() {
     println!("{clf}");
 
     let x = array![
-        [72.0, 45.0],   // normal
-        [165.0, 15.0],  // high_load (rule 0)
-        [50.0, 18.0],   // recovery_concern
-        [145.0, 40.0],  // elevated_hr only
-        [100.0, 50.0],  // default normal
+        [72.0, 45.0],  // normal
+        [165.0, 15.0], // high_load (rule 0)
+        [50.0, 18.0],  // recovery_concern
+        [145.0, 40.0], // elevated_hr only
+        [100.0, 50.0], // default normal
     ];
     let y_true = vec![0, 1, 2, 1, 0];
 

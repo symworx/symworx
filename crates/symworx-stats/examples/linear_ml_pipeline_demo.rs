@@ -95,11 +95,7 @@ fn main() {
     print_linear("Lasso", &lasso_m);
 
     println!("\n   hold-out test metrics (e = y − ŷ):");
-    for (name, model) in [
-        ("OLS  ", &ols_m),
-        ("Ridge", &ridge_m),
-        ("Lasso", &lasso_m),
-    ] {
+    for (name, model) in [("OLS  ", &ols_m), ("Ridge", &ridge_m), ("Lasso", &lasso_m)] {
         let yhat = model.predict(&x_test);
         let rep = regression_report(&y_test.to_vec(), &yhat.to_vec());
         println!(
@@ -142,9 +138,7 @@ fn main() {
         ols_rmses.push(o_rmse);
         ridge_rmses.push(r_rmse);
         lasso_rmses.push(l_rmse);
-        println!(
-            "   fold {k}: OLS={o_rmse:.4}  Ridge={r_rmse:.4}  Lasso={l_rmse:.4}"
-        );
+        println!("   fold {k}: OLS={o_rmse:.4}  Ridge={r_rmse:.4}  Lasso={l_rmse:.4}");
     }
 
     let mean = |v: &[f64]| v.iter().sum::<f64>() / v.len() as f64;

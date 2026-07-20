@@ -173,10 +173,7 @@ pub fn logistic_regression(
         "X and y must have the same number of rows"
     );
     assert!(config.l2 >= 0.0, "l2 must be non-negative");
-    assert!(
-        config.learning_rate > 0.0,
-        "learning_rate must be positive"
-    );
+    assert!(config.learning_rate > 0.0, "learning_rate must be positive");
     assert!(n_samples > 0, "need at least one sample");
 
     for (i, &yi) in y.iter().enumerate() {
@@ -464,8 +461,9 @@ pub fn logistic_ovr(x: &Array2<f64>, y: &[usize]) -> MulticlassLogisticModel {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::array;
+
+    use super::*;
 
     #[test]
     fn sigmoid_bounds_and_center() {
@@ -549,16 +547,7 @@ mod tests {
 
     #[test]
     fn l2_shrinks_coefficients() {
-        let x = array![
-            [0.0],
-            [0.2],
-            [0.4],
-            [0.6],
-            [0.8],
-            [1.0],
-            [0.1],
-            [0.9],
-        ];
+        let x = array![[0.0], [0.2], [0.4], [0.6], [0.8], [1.0], [0.1], [0.9],];
         let y = array![0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0];
 
         let unreg = logistic_regression(

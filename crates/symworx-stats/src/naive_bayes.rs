@@ -201,8 +201,9 @@ pub fn gaussian_nb_default(x: &Array2<f64>, y: &[usize]) -> GaussianNb {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::array;
+
+    use super::*;
 
     #[test]
     fn separates_two_blobs() {

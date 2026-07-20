@@ -34,7 +34,10 @@ fn main() {
     ];
     let y = array![0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0];
 
-    println!("1) Data: n = {}, n_features = 1 (threshold around x = 0.5)", x.nrows());
+    println!(
+        "1) Data: n = {}, n_features = 1 (threshold around x = 0.5)",
+        x.nrows()
+    );
 
     let model = logistic_regression(
         &x,

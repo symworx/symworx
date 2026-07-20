@@ -18,7 +18,6 @@ use ndarray::{
     Array1,
     Array2,
 };
-
 #[cfg(feature = "linalg")]
 use ndarray_linalg::Inverse;
 
@@ -205,8 +204,9 @@ pub fn lda(_x: &Array2<f64>, _y: &[usize]) -> LdaModel {
 
 #[cfg(all(test, feature = "linalg"))]
 mod tests {
-    use super::*;
     use ndarray::array;
+
+    use super::*;
 
     #[test]
     fn lda_two_class_separable() {

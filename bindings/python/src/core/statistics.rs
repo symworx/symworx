@@ -12,10 +12,20 @@ use pyo3::{
     wrap_pyfunction,
 };
 use symworx_core::stats::{
-    // autocorrelation
-    acf,
+    GaussianNb as RustGaussianNb,
+    // types
+    GaussianNbConfig,
+    LogisticConfig,
+    LogisticModel as RustLogisticModel,
+    MulticlassLogisticModel as RustMulticlassLogistic,
+    // split
+    SplitConfig,
+    // preprocess
+    StandardScaler as RustStandardScaler,
     // classification metrics
     accuracy as rust_accuracy,
+    // autocorrelation
+    acf,
     classification_report as rust_classification_report,
     correlation_matrix_from_vec,
     // distance
@@ -38,15 +48,6 @@ use symworx_core::stats::{
     mse,
     pearson_correlation,
     percentile,
-    // preprocess
-    StandardScaler as RustStandardScaler,
-    // split
-    SplitConfig,
-    // types
-    GaussianNbConfig,
-    LogisticConfig,
-    LogisticModel as RustLogisticModel,
-    MulticlassLogisticModel as RustMulticlassLogistic,
     rmse,
     rmssd,
     roc_auc as rust_roc_auc,
@@ -55,7 +56,6 @@ use symworx_core::stats::{
     // variability
     successive_differences,
     train_test_split as rust_train_test_split,
-    GaussianNb as RustGaussianNb,
 };
 
 // ==========================================================
@@ -71,7 +71,9 @@ fn array2_from_rows(x: Vec<Vec<f64>>) -> PyResult<Array2<f64>> {
         return Err(PyValueError::new_err("X must have at least one feature"));
     }
     if x.iter().any(|row| row.len() != ncols) {
-        return Err(PyValueError::new_err("All rows of X must have the same length"));
+        return Err(PyValueError::new_err(
+            "All rows of X must have the same length",
+        ));
     }
     let nrows = x.len();
     let flat: Vec<f64> = x.into_iter().flatten().collect();

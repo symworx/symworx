@@ -34,7 +34,12 @@ fn main() {
     println!("   priors  = {:?}", model.priors.to_vec());
     println!(
         "   coef rows (per class) = {:?}",
-        model.coef.rows().into_iter().map(|r| r.to_vec()).collect::<Vec<_>>()
+        model
+            .coef
+            .rows()
+            .into_iter()
+            .map(|r| r.to_vec())
+            .collect::<Vec<_>>()
     );
     println!("   intercepts = {:?}", model.intercept.to_vec());
 

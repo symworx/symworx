@@ -183,13 +183,7 @@ fn main() {
     )
     .expect("repeats");
     for (i, p) in plans.iter().enumerate() {
-        let fold_sizes: Vec<usize> = p
-            .folds
-            .as_ref()
-            .unwrap()
-            .iter()
-            .map(|f| f.len())
-            .collect();
+        let fold_sizes: Vec<usize> = p.folds.as_ref().unwrap().iter().map(|f| f.len()).collect();
         println!(
             "   repeat {i}: train={}, test={}, fold_sizes={fold_sizes:?}, seed={:?}",
             p.train_idx.len(),
@@ -197,9 +191,7 @@ fn main() {
             p.seed
         );
     }
-    println!(
-        "   (same ratio/folds; different shuffles — use for split-variance checks)"
-    );
+    println!("   (same ratio/folds; different shuffles — use for split-variance checks)");
 
     println!("\nDone. Use the same TrainTestSplit indices on any table backend.");
 }

@@ -225,8 +225,9 @@ pub fn knn_classify(x: &Array2<f64>, y: &[usize], config: &KnnConfig) -> KnnClas
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::array;
+
+    use super::*;
 
     #[test]
     fn two_class_blobs() {

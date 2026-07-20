@@ -37,10 +37,7 @@ fn main() {
 
     println!("1) Standardize features (fit on all rows for this toy demo)");
     let (scaler, x_std) = StandardScaler::fit_transform(&x);
-    println!(
-        "   mean  = [{:.3}, {:.3}]",
-        scaler.mean[0], scaler.mean[1]
-    );
+    println!("   mean  = [{:.3}, {:.3}]", scaler.mean[0], scaler.mean[1]);
     println!(
         "   scale = [{:.3}, {:.3}]",
         scaler.scale[0], scaler.scale[1]

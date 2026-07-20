@@ -41,11 +41,12 @@ impl StandardScaler {
     /// Panics if `x` has zero rows or zero columns.
     pub fn fit(x: &Array2<f64>) -> Self {
         assert!(x.nrows() > 0, "StandardScaler::fit needs at least one row");
-        assert!(x.ncols() > 0, "StandardScaler::fit needs at least one column");
+        assert!(
+            x.ncols() > 0,
+            "StandardScaler::fit needs at least one column"
+        );
 
-        let mean = x
-            .mean_axis(Axis(0))
-            .expect("mean_axis on non-empty array");
+        let mean = x.mean_axis(Axis(0)).expect("mean_axis on non-empty array");
         let n = x.nrows() as f64;
         let mut scale = Array1::<f64>::zeros(x.ncols());
         for j in 0..x.ncols() {
@@ -196,17 +197,13 @@ impl MinMaxScaler {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::array;
+
+    use super::*;
 
     #[test]
     fn standard_scaler_zero_mean_unit_var() {
-        let x = array![
-            [1.0, 100.0],
-            [2.0, 200.0],
-            [3.0, 300.0],
-            [4.0, 400.0],
-        ];
+        let x = array![[1.0, 100.0], [2.0, 200.0], [3.0, 300.0], [4.0, 400.0],];
         let (sc, z) = StandardScaler::fit_transform(&x);
         for j in 0..2 {
             let mean_j: f64 = z.column(j).mean().unwrap();

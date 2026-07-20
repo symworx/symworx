@@ -553,11 +553,7 @@ fn max_train_folds_from_train(n_train: usize) -> usize {
         return n_train;
     }
     let max_k = n_train / min_sz;
-    if max_k < 2 {
-        0
-    } else {
-        max_k.min(n_train)
-    }
+    if max_k < 2 { 0 } else { max_k.min(n_train) }
 }
 
 /// Gather references into `data` by row index (no clone of elements).
@@ -996,6 +992,9 @@ mod tests {
     #[test]
     fn repeated_zero_errors() {
         let err = repeated_train_test_split(50, &SplitConfig::default(), 0).unwrap_err();
-        assert!(matches!(err, SplitError::InvalidRepeatCount { n_repeats: 0 }));
+        assert!(matches!(
+            err,
+            SplitError::InvalidRepeatCount { n_repeats: 0 }
+        ));
     }
 }

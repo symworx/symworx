@@ -36,14 +36,16 @@ use ndarray::{
     Array2,
 };
 
-use crate::error_metrics::{
-    RegressionReport,
-    regression_report,
-    residuals,
-};
-use crate::linreg::{
-    LinearModel,
-    ols,
+use crate::{
+    error_metrics::{
+        RegressionReport,
+        regression_report,
+        residuals,
+    },
+    linreg::{
+        LinearModel,
+        ols,
+    },
 };
 
 /// Options for [`fit_polynomial_degrees_with`].
@@ -459,7 +461,11 @@ mod tests {
         assert_eq!(search.max_degree_fitted, 3);
         assert!(search.fit_for_degree(5).is_none());
         assert!(search.fit_for_degree(4).is_none());
-        assert!(search.warnings.iter().any(|w| w.contains("omitted") || w.contains("max_degree−1") || w.contains("max_degree-1") || w.contains("degree-5") || w.contains("supports degree")));
+        assert!(search.warnings.iter().any(|w| w.contains("omitted")
+            || w.contains("max_degree−1")
+            || w.contains("max_degree-1")
+            || w.contains("degree-5")
+            || w.contains("supports degree")));
     }
 
     #[test]
@@ -470,10 +476,10 @@ mod tests {
         let search = fit_polynomial_degrees(&x, &y, 2).unwrap();
         assert!(search.fit_for_degree(2).is_some());
         assert!(
-            search
-                .warnings
-                .iter()
-                .any(|w| w.contains("soft") || w.contains("2×") || w.contains("2x") || w.contains("poorly determined")),
+            search.warnings.iter().any(|w| w.contains("soft")
+                || w.contains("2×")
+                || w.contains("2x")
+                || w.contains("poorly determined")),
             "warnings: {:?}",
             search.warnings
         );
