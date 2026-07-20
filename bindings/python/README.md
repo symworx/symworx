@@ -35,3 +35,33 @@ Optional IMAP helpers need OpenSSL and:
 ```bash
 maturin develop --manifest-path bindings/python/Cargo.toml --features email
 ```
+
+## Statistics / classical ML (`symworx.core.statistics`)
+
+Rust `symworx-stats` surface exposed for 0.1 (in addition to basic mean/corr/l1/l2/HRV):
+
+| API | Role |
+|-----|------|
+| `train_test_split` | Index-only train/test (+ optional folds) |
+| `standard_scaler_fit` / `StandardScaler` | Fit/transform (train-only fit) |
+| `logistic_regression` / `LogisticModel` | Binary logistic |
+| `logistic_regression_ovr` / `MulticlassLogisticModel` | One-vs-rest multiclass |
+| `gaussian_nb` / `GaussianNb` | Gaussian Naive Bayes |
+| `accuracy`, `classification_report` | Classification metrics |
+| `roc_auc`, `roc_auc_ovr` | ROC-AUC binary / macro OVR |
+
+```python
+from symworx.core import statistics as st
+
+plan = st.train_test_split(len(X), test_ratio=0.3, seed=42)
+scaler, Xs = st.standard_scaler_fit([X[i] for i in plan.train_idx])
+model = st.logistic_regression_ovr(Xs, [y[i] for i in plan.train_idx], max_iter=5000)
+print(model.predict(scaler.transform([X[i] for i in plan.test_idx])))
+```
+
+Example: `python bindings/python/examples/stats_logistic.py`  
+Tests: `pytest bindings/python/tests/test_core_statistics.py -q`
+
+**Not yet bound:** rule lists, k-NN, LDA, polyreg, full ridge/ols objects (use `l1`/`l2` packed coeffs). See Rust examples for those.
+
+**Note:** `l2` / full `symworx-core` builds pull OpenBLAS via stats `linalg`.

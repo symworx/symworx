@@ -6,18 +6,28 @@ use ndarray::{
 };
 use numpy::PyArray2;
 use pyo3::{
+    exceptions::PyValueError,
     prelude::*,
+    types::PyDict,
     wrap_pyfunction,
 };
 use symworx_core::stats::{
     // autocorrelation
     acf,
+    // classification metrics
+    accuracy as rust_accuracy,
+    classification_report as rust_classification_report,
     correlation_matrix_from_vec,
     // distance
     euclidean,
+    // naive bayes
+    gaussian_nb as rust_gaussian_nb,
     // linreg
     l1,
     l2,
+    // logistic
+    logistic_regression as rust_logistic_regression,
+    logistic_regression_ovr as rust_logistic_ovr,
     // basic
     mad,
     // errors
@@ -28,12 +38,52 @@ use symworx_core::stats::{
     mse,
     pearson_correlation,
     percentile,
+    // preprocess
+    StandardScaler as RustStandardScaler,
+    // split
+    SplitConfig,
+    // types
+    GaussianNbConfig,
+    LogisticConfig,
+    LogisticModel as RustLogisticModel,
+    MulticlassLogisticModel as RustMulticlassLogistic,
     rmse,
     rmssd,
+    roc_auc as rust_roc_auc,
+    roc_auc_ovr as rust_roc_auc_ovr,
     sd_successive_differences,
     // variability
     successive_differences,
+    train_test_split as rust_train_test_split,
+    GaussianNb as RustGaussianNb,
 };
+
+// ==========================================================
+// Helpers
+// ==========================================================
+
+fn array2_from_rows(x: Vec<Vec<f64>>) -> PyResult<Array2<f64>> {
+    if x.is_empty() {
+        return Err(PyValueError::new_err("X must be non-empty"));
+    }
+    let ncols = x[0].len();
+    if ncols == 0 {
+        return Err(PyValueError::new_err("X must have at least one feature"));
+    }
+    if x.iter().any(|row| row.len() != ncols) {
+        return Err(PyValueError::new_err("All rows of X must have the same length"));
+    }
+    let nrows = x.len();
+    let flat: Vec<f64> = x.into_iter().flatten().collect();
+    Array2::from_shape_vec((nrows, ncols), flat)
+        .map_err(|e| PyValueError::new_err(format!("Invalid X shape: {e}")))
+}
+
+fn array2_to_vec(a: &Array2<f64>) -> Vec<Vec<f64>> {
+    (0..a.nrows())
+        .map(|i| (0..a.ncols()).map(|j| a[[i, j]]).collect())
+        .collect()
+}
 
 // ==========================================================
 // Autocorrelation
@@ -150,6 +200,7 @@ pub fn py_rmse(actual: Vec<f64>, predicted: Vec<f64>) -> f64 {
 // ==========================================================
 
 #[pyfunction(name = "l1")]
+#[pyo3(signature = (x, y, alpha=None, max_iter=None, tol=None))]
 pub fn py_l1(
     x: Vec<Vec<f64>>,
     y: Vec<f64>,
@@ -210,6 +261,466 @@ pub fn py_sd_successive_differences(data: Vec<f64>) -> f64 {
 }
 
 // ==========================================================
+// Train / test split (indices only)
+// ==========================================================
+
+/// Index-based train/test partition plan (does not copy data).
+#[pyclass(name = "TrainTestSplit")]
+#[derive(Clone)]
+pub struct PyTrainTestSplit {
+    #[pyo3(get)]
+    pub n: usize,
+    #[pyo3(get)]
+    pub train_idx: Vec<usize>,
+    #[pyo3(get)]
+    pub test_idx: Vec<usize>,
+    /// Optional training folds (original-space indices), or empty if none.
+    #[pyo3(get)]
+    pub folds: Vec<Vec<usize>>,
+    #[pyo3(get)]
+    pub shuffled: bool,
+}
+
+#[pymethods]
+impl PyTrainTestSplit {
+    fn __repr__(&self) -> String {
+        format!(
+            "TrainTestSplit(n={}, train={}, test={}, n_folds={})",
+            self.n,
+            self.train_idx.len(),
+            self.test_idx.len(),
+            self.folds.len()
+        )
+    }
+
+    /// Fit-set indices for fold `k` (all train except that fold).
+    fn fit_idx(&self, fold: usize) -> PyResult<Vec<usize>> {
+        if self.folds.is_empty() {
+            return Err(PyValueError::new_err("no folds on this split"));
+        }
+        if fold >= self.folds.len() {
+            return Err(PyValueError::new_err("fold out of range"));
+        }
+        let mut out = Vec::new();
+        for (i, f) in self.folds.iter().enumerate() {
+            if i != fold {
+                out.extend_from_slice(f);
+            }
+        }
+        Ok(out)
+    }
+
+    /// Validation indices for fold `k`.
+    fn val_idx(&self, fold: usize) -> PyResult<Vec<usize>> {
+        self.folds
+            .get(fold)
+            .cloned()
+            .ok_or_else(|| PyValueError::new_err("fold out of range or no folds"))
+    }
+}
+
+/// Build an index-only train/test plan for `n` rows.
+///
+/// Parameters
+/// ----------
+/// n : int
+/// test_ratio : float, default 0.3
+/// n_train_folds : int or None
+/// shuffle : bool, default True
+/// seed : int, default 42
+#[pyfunction(name = "train_test_split")]
+#[pyo3(signature = (n, test_ratio=0.3, n_train_folds=None, shuffle=true, seed=42))]
+pub fn py_train_test_split(
+    n: usize,
+    test_ratio: f64,
+    n_train_folds: Option<usize>,
+    shuffle: bool,
+    seed: u64,
+) -> PyResult<PyTrainTestSplit> {
+    let cfg = SplitConfig {
+        test_ratio,
+        n_train_folds,
+        shuffle,
+        seed,
+    };
+    let plan = rust_train_test_split(n, &cfg).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    Ok(PyTrainTestSplit {
+        n: plan.n,
+        train_idx: plan.train_idx,
+        test_idx: plan.test_idx,
+        folds: plan.folds.unwrap_or_default(),
+        shuffled: plan.shuffled,
+    })
+}
+
+// ==========================================================
+// Preprocess
+// ==========================================================
+
+#[pyclass(name = "StandardScaler")]
+#[derive(Clone)]
+pub struct PyStandardScaler {
+    inner: RustStandardScaler,
+}
+
+#[pymethods]
+impl PyStandardScaler {
+    #[getter]
+    fn mean(&self) -> Vec<f64> {
+        self.inner.mean.to_vec()
+    }
+
+    #[getter]
+    fn scale(&self) -> Vec<f64> {
+        self.inner.scale.to_vec()
+    }
+
+    fn n_features(&self) -> usize {
+        self.inner.n_features()
+    }
+
+    /// Transform rows: list of feature vectors → list of scaled vectors.
+    fn transform(&self, x: Vec<Vec<f64>>) -> PyResult<Vec<Vec<f64>>> {
+        let a = array2_from_rows(x)?;
+        if a.ncols() != self.inner.n_features() {
+            return Err(PyValueError::new_err("feature dimension mismatch"));
+        }
+        Ok(array2_to_vec(&self.inner.transform(&a)))
+    }
+
+    fn inverse_transform(&self, x: Vec<Vec<f64>>) -> PyResult<Vec<Vec<f64>>> {
+        let a = array2_from_rows(x)?;
+        Ok(array2_to_vec(&self.inner.inverse_transform(&a)))
+    }
+
+    fn __repr__(&self) -> String {
+        format!("StandardScaler(n_features={})", self.inner.n_features())
+    }
+}
+
+/// Fit a StandardScaler on X (list of rows). Returns (scaler, X_scaled).
+#[pyfunction(name = "standard_scaler_fit")]
+pub fn py_standard_scaler_fit(x: Vec<Vec<f64>>) -> PyResult<(PyStandardScaler, Vec<Vec<f64>>)> {
+    let a = array2_from_rows(x)?;
+    let (sc, z) = RustStandardScaler::fit_transform(&a);
+    Ok((PyStandardScaler { inner: sc }, array2_to_vec(&z)))
+}
+
+/// Fit StandardScaler only (no transform).
+#[pyfunction(name = "standard_scaler_fit_only")]
+pub fn py_standard_scaler_fit_only(x: Vec<Vec<f64>>) -> PyResult<PyStandardScaler> {
+    let a = array2_from_rows(x)?;
+    Ok(PyStandardScaler {
+        inner: RustStandardScaler::fit(&a),
+    })
+}
+
+// ==========================================================
+// Logistic (binary + multiclass OVR)
+// ==========================================================
+
+#[pyclass(name = "LogisticModel")]
+#[derive(Clone)]
+pub struct PyLogisticModel {
+    inner: RustLogisticModel,
+}
+
+#[pymethods]
+impl PyLogisticModel {
+    #[getter]
+    fn intercept(&self) -> f64 {
+        self.inner.intercept
+    }
+
+    #[getter]
+    fn coefficients(&self) -> Vec<f64> {
+        self.inner.coefficients.to_vec()
+    }
+
+    #[getter]
+    fn loss(&self) -> f64 {
+        self.inner.loss
+    }
+
+    #[getter]
+    fn iterations(&self) -> usize {
+        self.inner.iterations
+    }
+
+    #[getter]
+    fn converged(&self) -> bool {
+        self.inner.converged
+    }
+
+    /// P(y=1) for each row of X.
+    fn predict_proba(&self, x: Vec<Vec<f64>>) -> PyResult<Vec<f64>> {
+        let a = array2_from_rows(x)?;
+        Ok(self.inner.predict_proba(&a).to_vec())
+    }
+
+    /// Hard labels 0/1 with threshold (default 0.5).
+    #[pyo3(signature = (x, threshold=0.5))]
+    fn predict(&self, x: Vec<Vec<f64>>, threshold: f64) -> PyResult<Vec<f64>> {
+        let a = array2_from_rows(x)?;
+        Ok(self.inner.predict(&a, threshold).to_vec())
+    }
+
+    fn decision_function(&self, x: Vec<Vec<f64>>) -> PyResult<Vec<f64>> {
+        let a = array2_from_rows(x)?;
+        Ok(self.inner.decision_function(&a).to_vec())
+    }
+
+    #[pyo3(signature = (x, y, threshold=0.5))]
+    fn accuracy(&self, x: Vec<Vec<f64>>, y: Vec<f64>, threshold: f64) -> PyResult<f64> {
+        let a = array2_from_rows(x)?;
+        let y_arr = Array1::from(y);
+        Ok(self.inner.accuracy(&a, &y_arr, threshold))
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "LogisticModel(intercept={:.4}, n_features={}, converged={})",
+            self.inner.intercept,
+            self.inner.n_features(),
+            self.inner.converged
+        )
+    }
+}
+
+/// Fit binary logistic regression. y must be 0.0 / 1.0.
+#[pyfunction(name = "logistic_regression")]
+#[pyo3(signature = (x, y, max_iter=1000, learning_rate=0.1, l2=0.0, tol=1e-6, fit_intercept=true))]
+pub fn py_logistic_regression(
+    x: Vec<Vec<f64>>,
+    y: Vec<f64>,
+    max_iter: usize,
+    learning_rate: f64,
+    l2: f64,
+    tol: f64,
+    fit_intercept: bool,
+) -> PyResult<PyLogisticModel> {
+    let a = array2_from_rows(x)?;
+    let y_arr = Array1::from(y);
+    if a.nrows() != y_arr.len() {
+        return Err(PyValueError::new_err("X and y length mismatch"));
+    }
+    let cfg = LogisticConfig {
+        max_iter,
+        learning_rate,
+        l2,
+        tol,
+        fit_intercept,
+        threshold: 0.5,
+    };
+    // Rust panics on bad labels — catch via catch_unwind would be heavy; document.
+    let model = rust_logistic_regression(&a, &y_arr, &cfg);
+    Ok(PyLogisticModel { inner: model })
+}
+
+#[pyclass(name = "MulticlassLogisticModel")]
+#[derive(Clone)]
+pub struct PyMulticlassLogisticModel {
+    inner: RustMulticlassLogistic,
+}
+
+#[pymethods]
+impl PyMulticlassLogisticModel {
+    #[getter]
+    fn classes(&self) -> Vec<usize> {
+        self.inner.classes.clone()
+    }
+
+    fn n_classes(&self) -> usize {
+        self.inner.n_classes()
+    }
+
+    fn n_features(&self) -> usize {
+        self.inner.n_features()
+    }
+
+    fn converged(&self) -> bool {
+        self.inner.converged()
+    }
+
+    fn mean_loss(&self) -> f64 {
+        self.inner.mean_loss()
+    }
+
+    /// Class probabilities: list of rows, each length n_classes.
+    fn predict_proba(&self, x: Vec<Vec<f64>>) -> PyResult<Vec<Vec<f64>>> {
+        let a = array2_from_rows(x)?;
+        Ok(array2_to_vec(&self.inner.predict_proba(&a)))
+    }
+
+    fn predict(&self, x: Vec<Vec<f64>>) -> PyResult<Vec<usize>> {
+        let a = array2_from_rows(x)?;
+        Ok(self.inner.predict(&a))
+    }
+
+    fn accuracy(&self, x: Vec<Vec<f64>>, y: Vec<usize>) -> PyResult<f64> {
+        let a = array2_from_rows(x)?;
+        Ok(self.inner.accuracy(&a, &y))
+    }
+
+    /// Per-class binary models as LogisticModel objects.
+    fn models(&self) -> Vec<PyLogisticModel> {
+        self.inner
+            .models
+            .iter()
+            .cloned()
+            .map(|m| PyLogisticModel { inner: m })
+            .collect()
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "MulticlassLogisticModel(classes={:?}, converged={})",
+            self.inner.classes,
+            self.inner.converged()
+        )
+    }
+}
+
+/// Multiclass logistic via one-vs-rest. y = integer class labels.
+#[pyfunction(name = "logistic_regression_ovr")]
+#[pyo3(signature = (x, y, max_iter=1000, learning_rate=0.1, l2=0.0, tol=1e-6, fit_intercept=true))]
+pub fn py_logistic_regression_ovr(
+    x: Vec<Vec<f64>>,
+    y: Vec<usize>,
+    max_iter: usize,
+    learning_rate: f64,
+    l2: f64,
+    tol: f64,
+    fit_intercept: bool,
+) -> PyResult<PyMulticlassLogisticModel> {
+    let a = array2_from_rows(x)?;
+    if a.nrows() != y.len() {
+        return Err(PyValueError::new_err("X and y length mismatch"));
+    }
+    let cfg = LogisticConfig {
+        max_iter,
+        learning_rate,
+        l2,
+        tol,
+        fit_intercept,
+        threshold: 0.5,
+    };
+    let model = rust_logistic_ovr(&a, &y, &cfg);
+    Ok(PyMulticlassLogisticModel { inner: model })
+}
+
+// ==========================================================
+// Classification metrics + ROC
+// ==========================================================
+
+/// Accuracy for integer labels.
+#[pyfunction(name = "accuracy")]
+pub fn py_accuracy(y_true: Vec<usize>, y_pred: Vec<usize>) -> f64 {
+    rust_accuracy(&y_true, &y_pred)
+}
+
+/// Classification report as a dict (accuracy, macro_f1, confusion, …).
+#[pyfunction(name = "classification_report")]
+#[pyo3(signature = (y_true, y_pred, n_classes=None))]
+pub fn py_classification_report<'py>(
+    py: Python<'py>,
+    y_true: Vec<usize>,
+    y_pred: Vec<usize>,
+    n_classes: Option<usize>,
+) -> PyResult<Bound<'py, PyDict>> {
+    let rep = rust_classification_report(&y_true, &y_pred, n_classes);
+    let d = PyDict::new(py);
+    d.set_item("n", rep.n)?;
+    d.set_item("n_classes", rep.n_classes)?;
+    d.set_item("accuracy", rep.accuracy)?;
+    d.set_item("balanced_accuracy", rep.balanced_accuracy)?;
+    d.set_item("macro_precision", rep.macro_precision)?;
+    d.set_item("macro_recall", rep.macro_recall)?;
+    d.set_item("macro_f1", rep.macro_f1)?;
+    d.set_item("precision", rep.precision)?;
+    d.set_item("recall", rep.recall)?;
+    d.set_item("f1", rep.f1)?;
+    let cm: Vec<Vec<usize>> = (0..rep.confusion.nrows())
+        .map(|i| {
+            (0..rep.confusion.ncols())
+                .map(|j| rep.confusion[[i, j]])
+                .collect()
+        })
+        .collect();
+    d.set_item("confusion", cm)?;
+    Ok(d)
+}
+
+/// Binary ROC-AUC. y_true in {0,1}; higher scores ⇒ class 1.
+#[pyfunction(name = "roc_auc")]
+pub fn py_roc_auc(y_true: Vec<usize>, scores: Vec<f64>) -> f64 {
+    rust_roc_auc(&y_true, &scores)
+}
+
+/// Macro one-vs-rest ROC-AUC. scores = list of rows (n_classes each).
+#[pyfunction(name = "roc_auc_ovr")]
+#[pyo3(signature = (y_true, scores, classes=None))]
+pub fn py_roc_auc_ovr(
+    y_true: Vec<usize>,
+    scores: Vec<Vec<f64>>,
+    classes: Option<Vec<usize>>,
+) -> PyResult<f64> {
+    let a = array2_from_rows(scores)?;
+    let cls_ref = classes.as_deref();
+    Ok(rust_roc_auc_ovr(&y_true, &a, cls_ref))
+}
+
+// ==========================================================
+// Gaussian Naive Bayes
+// ==========================================================
+
+#[pyclass(name = "GaussianNb")]
+#[derive(Clone)]
+pub struct PyGaussianNb {
+    inner: RustGaussianNb,
+}
+
+#[pymethods]
+impl PyGaussianNb {
+    #[getter]
+    fn classes(&self) -> Vec<usize> {
+        self.inner.classes.clone()
+    }
+
+    fn predict(&self, x: Vec<Vec<f64>>) -> PyResult<Vec<usize>> {
+        let a = array2_from_rows(x)?;
+        Ok(self.inner.predict(&a))
+    }
+
+    fn predict_proba(&self, x: Vec<Vec<f64>>) -> PyResult<Vec<Vec<f64>>> {
+        let a = array2_from_rows(x)?;
+        Ok(array2_to_vec(&self.inner.predict_proba(&a)))
+    }
+
+    fn __repr__(&self) -> String {
+        format!("GaussianNb(classes={:?})", self.inner.classes)
+    }
+}
+
+/// Fit Gaussian Naive Bayes. y = integer class labels.
+#[pyfunction(name = "gaussian_nb")]
+#[pyo3(signature = (x, y, var_smoothing=1e-9))]
+pub fn py_gaussian_nb(
+    x: Vec<Vec<f64>>,
+    y: Vec<usize>,
+    var_smoothing: f64,
+) -> PyResult<PyGaussianNb> {
+    let a = array2_from_rows(x)?;
+    if a.nrows() != y.len() {
+        return Err(PyValueError::new_err("X and y length mismatch"));
+    }
+    let cfg = GaussianNbConfig { var_smoothing };
+    Ok(PyGaussianNb {
+        inner: rust_gaussian_nb(&a, &y, &cfg),
+    })
+}
+
+// ==========================================================
 // PYTHON REGISTER
 // ==========================================================
 
@@ -245,6 +756,23 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_mean_successive_differences, m)?)?;
     m.add_function(wrap_pyfunction!(py_rmssd, m)?)?;
     m.add_function(wrap_pyfunction!(py_sd_successive_differences, m)?)?;
+
+    // --- Split / preprocess / logistic / metrics (0.1 ML surface) ---
+    m.add_class::<PyTrainTestSplit>()?;
+    m.add_class::<PyStandardScaler>()?;
+    m.add_class::<PyLogisticModel>()?;
+    m.add_class::<PyMulticlassLogisticModel>()?;
+    m.add_class::<PyGaussianNb>()?;
+    m.add_function(wrap_pyfunction!(py_train_test_split, m)?)?;
+    m.add_function(wrap_pyfunction!(py_standard_scaler_fit, m)?)?;
+    m.add_function(wrap_pyfunction!(py_standard_scaler_fit_only, m)?)?;
+    m.add_function(wrap_pyfunction!(py_logistic_regression, m)?)?;
+    m.add_function(wrap_pyfunction!(py_logistic_regression_ovr, m)?)?;
+    m.add_function(wrap_pyfunction!(py_accuracy, m)?)?;
+    m.add_function(wrap_pyfunction!(py_classification_report, m)?)?;
+    m.add_function(wrap_pyfunction!(py_roc_auc, m)?)?;
+    m.add_function(wrap_pyfunction!(py_roc_auc_ovr, m)?)?;
+    m.add_function(wrap_pyfunction!(py_gaussian_nb, m)?)?;
 
     Ok(())
 }

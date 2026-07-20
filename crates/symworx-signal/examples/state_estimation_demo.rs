@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SymWorx
+// Licensed under the Apache License, Version 2.0.
+
 //! State estimation demo: linear Kalman helpers, EKF, and UKF.
 //!
 //! Highlights recent nonlinear filter work in `symworx-signal`.

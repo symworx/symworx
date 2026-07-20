@@ -36,5 +36,21 @@ openblas-build = { workspace = true }
 name = "predictive_metrics_demo"
 required-features = ["linalg"]
 
+[[example]]
+name = "linear_regression_demo"
+required-features = ["linalg"]
+
+[[example]]
+name = "linear_ml_pipeline_demo"
+required-features = ["linalg"]
+
+[[example]]
+name = "lda_demo"
+required-features = ["linalg"]
+
+[[example]]
+name = "polynomial_degree_search_demo"
+required-features = ["linalg"]
+
 [lints]
 workspace = true

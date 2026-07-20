@@ -7,35 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-<!-- Insert notes here -->
-
-
-## [0.1.0] - 2026-07-XX
-
 ### Added
-- NOTE: Future changelogs will contain crate-level sections for easier tracing and potential migrations. 
-- Initial public release of the SymWorx workspace.
-- Core mathematical and statistical primitives (`symworx-math`, `symworx-stats`).
-- Signal processing library with filtering, peak detection, and feature extraction (`symworx-signal`).
-- Nonlinear dynamics tools including RQA/CRQA, embedding, entropy, DMD, SINDy, and Koopman analysis (`symworx-dynamics`).
-- Biosignal modeling and simulation (PPG, respiration, gait, central pattern generators) in `symworx-biosym`.
-- Training load quantification and optimization tools (ACWR, monotony, strain, nutrition, FIT file support) in `symworx-loadsym`.
-- Interactive terminal UI (`symview`) for biosignal exploration, dynamics analysis, and load metrics (`symworx-tui`).
-- Python bindings via PyO3 for core, biosym, loadsym, and spatialsym functionality.
-- Spatial trajectory and decision-making analysis (`symworx-spatialsym`).
-- I/O layer supporting Parquet, CSV, FIT, and other physiological data formats (`symworx-io`).
+- **symworx-stats:** train/test splits (+ folds, repeated splits); binary and multiclass (OVR) logistic regression; Gaussian NB; LDA; k-NN; threshold rule lists + decision stump; classification metrics and ROC/AUC; StandardScaler / MinMaxScaler; polynomial degree search (with sample-size guards and optional residuals).
+- **symworx-stats:** model export guide for embedded C, iOS, Android, and web (`docs/model_export.md`).
+- **Python bindings:** `symworx.core.statistics` exposes train/test split, StandardScaler, binary + OVR logistic, Gaussian NB, classification_report, roc_auc / roc_auc_ovr (+ tests and `examples/stats_logistic.py`).
+- **symworx-embed:** host-side PPG JSON protocol, simulator/serial sources, ring buffers (`sid` subject naming).
+- Root README rewritten: persona quickstarts, supported vs experimental matrix, clean structure.
 
 ### Changed
-- Reorganized several modules during the transition to the unified workspace structure.
-- Consolidated former standalone `runsym` functionality into `symworx-biosym`.
-
-### Fixed
-- Multiple bugs fixed along the way during development. These will be tracked in a more meaningful way in the future. 
+- Polyreg warnings default to result-only (`print_warnings` opt-in); no library noise by default.
 
 ### Notes
-- This is the first public release (`v0.1.0`).
-- THis is a monorepo and all crates share a single version -- and a single CHANGELOG.md file.
-- The repository uses a `develop` / `staging` / `main` branching model with squash merges for releases.
+- Python bindings still expose a **subset** of Rust stats (expand before tagging 0.1).
+- Welch PSD remains a placeholder; do not rely on it for analysis.
+- Workspace remains a monorepo with a shared version and single changelog.
+
+## [0.1.0] - TBD
+
+### Added
+- Initial public-oriented layout of the SymWorx workspace (math, stats, signal, dynamics, biosym, loadsym, io, spatialsym, tui, Python bindings).
+- Core primitives and domain crates as described in crate READMEs.
+
+### Notes
+- Target first tagged release after onboarding cleanup, stub honesty, and Python stats subset are complete (see release readiness notes).
+- Branching model: `develop` / `staging` / `main` with squash merges for releases.
 
 ---
 

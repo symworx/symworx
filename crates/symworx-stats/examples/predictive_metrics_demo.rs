@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SymWorx
+// Licensed under the Apache License, Version 2.0.
+
 //! Predictive analytics demo: regression family, k-means, and predicted-vs-expected scoring.
 //!
 //! Highlights recent Phase A/C work in `symworx-stats`:

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SymWorx
+// Licensed under the Apache License, Version 2.0.
+
 //! Sparse / compressed sensing demo: OMP, ISTA, DCT basis, Gaussian Φ.
 //!
 //! Highlights `symworx-signal::processing::sparse_sensing` (Brunton & Kutz style).

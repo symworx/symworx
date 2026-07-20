@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SymWorx
+// Licensed under the Apache License, Version 2.0.
+
 //! Data-driven dynamics demo: DMD, EDMD, SINDy, SINDYc, and LTI + PID.
 //!
 //! Highlights recent Phase B work in `symworx-dynamics`, scored with

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SymWorx
+// Licensed under the Apache License, Version 2.0.
+
 //! Pulse-response (fitness–fatigue) + multi-day load plan demo.
 //!
 //! Run with:

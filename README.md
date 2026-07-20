@@ -1,106 +1,170 @@
 # SymWorx
 
-**SymWorx** is a multi‑use computational framework designed for broad applicability across embedded systems, scientific computing, web applications, and educational environments.
-At its core, **SymWorx** provides a **Rust kernel** with **Python bindings**, ensuring consistency, safety, and performance across platforms.
+**SymWorx** is an open-source computational stack for **biosignal analysis**, **training load**, **nonlinear dynamics**, and **classical ML** — with a **Rust kernel**, **Python bindings**, and a keyboard-driven TUI (`symview`).
 
-**SymWorx** is an open source platform that provides an isolated environment for modeling, analysis, and simulation. 
-│  A0: (  0.0,  0.0)  CL:Expansion    conf=0.30  spd=0.0  fwd=+0.00  ball=N  near=1.0  free=2.7  dfoc=4.5                                                                                                       │
-│  A1: (  3.6,  2.5)  CL:Pressure     conf=0.62  spd=4.0  fwd=+1.00  ball=Y  near=3.7  free=4.0  v2f=+3.79  dfoc=0.2                                                                                            │
-│  A2: (  1.0, -0.1)  CL:Denial       conf=0.70  spd=5.2  fwd=-0.64  ball=N  near=1.0  free=2.3  v2f=+5.17  dfoc=3.8  
-## Philosophy
+It is aimed at research, education, and portable inference (workstation today; embedded/mobile recipes for exported models).
 
-Our philosophy emphasizes:
+**License:** [Apache License 2.0](LICENSE)  
+**Version:** workspace `0.1.0` (monorepo; see [CHANGELOG.md](CHANGELOG.md))
 
-i) **security** by minimizing unafe code, reducing unintended execution paths, and lowering supply‑chain risk,
+---
 
-ii) **robustness** through predictable behavior, strong typing, and explicit error handling, and 
+## Quick start (by role)
 
-iii) **scalability** via consistent APIs across embedded, desktop, and cloud environments.
+### Desktop / biosignals (TUI)
 
-Much of the original work was developed in Python, but is now being rewritten in Rust.
-This shift was motivated by both a desire to deeply learn Rust and the opportunity to build a portable, high‑assurance computational engine that can 
-i) run on microcontrollers and bare‑metal systems,
-ii) integrate seamlessly with Python for education, data science, and rapid prototyping,
-iii) serve as a stable foundation for higher‑level simulation frameworks
-
-**License:**
-This project is licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
-
-**Versioning Issues:**
-If you encounter Python versioning issues, you can set environment variables to specify the Python version:
+```bash
+# Optional: demo files already under ./data
+cargo run -p symworx-tui --bin symview
 ```
+
+In **Import**: browse `./data`, or `Ctrl+G` to generate demo signals. **Explore** for stats/sparkline; **Dynamics** for RQA.
+
+### Classical ML / stats (Rust, no OpenBLAS required for many APIs)
+
+```bash
+cargo run -p symworx-stats --example logistic_regression_demo
+cargo run -p symworx-stats --example multiclass_logistic_demo
+cargo run -p symworx-stats --example rule_list_demo
+cargo run -p symworx-stats --example train_test_split_demo
+# OLS / LDA / polyreg need the linalg feature:
+cargo run -p symworx-stats --example linear_regression_demo --features linalg
+```
+
+Model export (C / iOS / Android / web): [crates/symworx-stats/docs/model_export.md](crates/symworx-stats/docs/model_export.md)
+
+### Training load (CLI)
+
+```bash
+cargo run -p symworx-loadsym --features "fit,sqlite" -- stats ride.fit --ftp 280
+```
+
+TUI: `symview` → Home → **LoadSym** (2). Personal DB layout: [crates/symworx-loadsym-db/docs/loadsym-personal-starter.md](crates/symworx-loadsym-db/docs/loadsym-personal-starter.md)
+
+### Python (education / data science)
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install "maturin>=1.5,<2.0" pytest
+maturin develop --manifest-path bindings/python/Cargo.toml
+pytest bindings/python/tests/ -q
+```
+
+```python
+from symworx import biosym, loadsym, core
+```
+
+If PyO3 cannot find Python:
+
+```bash
 export PYO3_PYTHON=python3.12
 export PYTHON_SYS_EXECUTABLE=python3.12
 ```
 
-## Repository Structure
+**Note (0.1):** Python exposes biosym, loadsym, and a growing **core.statistics** subset (splits, scaler, logistic binary/OVR, NB, metrics, ROC-AUC). Rule lists, k-NN, LDA, polyreg remain Rust-first for now.
 
-This **SymWorx** repository is a monorepo that contains a variety of `Rust` crates and `Python` packages; additional details can be found below.
+---
 
+## Who is this for?
 
-### [Core](crates/symworx-core/README.md)
+| Audience | Start here |
+|----------|------------|
+| Educator / student | Stats examples + Python install |
+| Biosignal researcher | `symview` + `symworx-signal` / dynamics |
+| Coach / sport scientist | LoadSym TUI + `symload` |
+| Spatial / team analyst | SpatialSym TUI workflow |
+| Embedded / mobile / web | [model_export.md](crates/symworx-stats/docs/model_export.md) (train in Rust, infer elsewhere) |
+| Contributor | [DEVELOPMENT.md](DEVELOPMENT.md), [AGENTS.md](AGENTS.md), [CONTRIBUTING.md](CONTRIBUTING.md) |
 
-**Overview**: The `symworx-core` crate contains a variety of resources used across the subsequent simulation focused crates.
-This includes backend resources, io, filters, processing, nonlinear dynamics, and statistics.
+---
 
+## Philosophy
 
-### [BioSym](crates/symworx-biosym/README.md)
+1. **Security** — minimize unsafe code and reduce unintended execution paths  
+2. **Robustness** — strong typing, explicit errors where the API is mature  
+3. **Scalability** — one kernel for analysis, simulation, and portable inference  
 
-**Overview**: The `symworx-biosym` crate contains modeling and simulation tools for biological signals and responses. 
-Specifically, `symworx-biosym` contains physiological (ppg and respiratory) and biomechanical (gait). 
-It also contains a central pattern generator (cpg) that integrates these signals.
+Much of the original work lived in Python; the long-term engine is **Rust**, with Python for teaching and rapid prototyping.
 
-#### RunSym (integrated)
+---
 
-**Note**: The former standalone `symworx-runsym` crate has been removed. Its functionality (modeling physiological and biomechanical responses to running, including runner/shoe interactions, fatigue, intensity, and performance simulation) is now being built out directly inside `symworx-biosym` under the biomechanics area (as discussed in the reorganization).
+## Supported vs experimental (0.1)
 
-See `crates/symworx-biosym/src/` (particularly the `gait` module and future `running`-related modules under the `biomechanics` grouping) for the in-progress implementation. Legacy Python code lives at the external `~/worx/symworx/runsym` for reference during the port.
+| Surface | Status |
+|---------|--------|
+| I/O via `symworx-io` (CSV, Parquet, IBI, activity/FIT) | **Supported** |
+| Signal filters, peaks, many processing tools | **Supported** |
+| RQA, embedding, entropy, DMD/SINDy (dynamics) | **Supported** |
+| Stats: basic, splits, logistic (binary + OVR), NB, k-NN, rules, metrics, ROC/AUC | **Supported** (pure Rust paths) |
+| Stats OLS/Ridge/PCA/SVD/LDA/polyreg (`linalg` + OpenBLAS) | **Supported** with native build deps |
+| TUI Import / Explore / Dynamics (RQA) / LoadSym / Spatial | **Supported** (early UX) |
+| Host embed streaming (`symworx-embed`) | **Supported** (simulate default) |
+| Welch PSD (`stats::spectral`) | **Experimental** (placeholder) |
+| CRQA full API | **Planned** |
+| `symworx-backend` server | **Experimental** (stubs) |
+| R bindings | **Stub** |
+| Python modern ML API (logistic, splits, …) | **Partial** — expand for release |
 
+---
 
-### [LoadSym](crates/symworx-loadsym/README.md)
+## Repository structure (crates)
 
-**Overview**: The `symworx-loadsym` crate contains resources for quantifying and optimizing (exercise programming) training load (physiological and mechanical). Includes ACLi (acute-to-chronic load), monotony/strain, SEPi/TSLi/SRIi for power meter rides (.fit from SRM PC8, Garmin, Polar), plus nutrition (BMR/TDEE/weightloss).
+| Crate | Role |
+|-------|------|
+| [symworx-core](crates/symworx-core/README.md) | Re-exports + convenience |
+| [symworx-math](crates/symworx-math/README.md) | Series, integrate, optimize, distributions |
+| [symworx-stats](crates/symworx-stats/README.md) | Statistics + classical ML |
+| [symworx-signal](crates/symworx-signal/README.md) | Filters, peaks, sparse sensing, Kalman |
+| [symworx-dynamics](crates/symworx-dynamics/README.md) | RQA, embedding, DMD, SINDy, control |
+| [symworx-io](crates/symworx-io/README.md) | **Canonical** signal file I/O |
+| [symworx-biosym](crates/symworx-biosym/README.md) | PPG, respiration, gait, CPG |
+| [symworx-loadsym](crates/symworx-loadsym/README.md) | ACWR, monotony, FIT, nutrition, `symload` |
+| [symworx-loadsym-db](crates/symworx-loadsym-db/) | SQL schema only (no personal data) |
+| [symworx-spatialsym](crates/symworx-spatialsym/README.md) | Trajectories, space metrics, decisions |
+| [symworx-embed](crates/symworx-embed/README.md) | Host PPG streaming / simulator |
+| [symworx-tui](crates/symworx-tui/README.md) | **`symview`** terminal UI |
+| [symworx-backend](crates/symworx-backend/README.md) | Process/server utilities (early) |
+| [symworx-error](crates/symworx-error/README.md) | Shared errors |
+| [bindings/python](bindings/python/README.md) | PyO3 package `symworx` |
 
-TUI (symview) has a first-class **LoadSym** workflow (Home → 2) with Workout analysis, Calendar trends, and Optimization recommendations. Press `i`/`a` to load the newest `.fit` from `$VELOFIT_HOME` (default `~/velofit`) or `./data`.
+Former **RunSym** lives inside **biosym** (gait / run performance), not as a separate crate.
 
-See `crates/symworx-loadsym-db/docs/loadsym-personal-starter.md` for personal archive + SQLite catalog layout (data stays outside this repo).
+---
 
-### symload (headless)
+## Dependencies & heavy features
+
+- **`ndarray-linalg` / OpenBLAS** — heavy. Opt-in on `symworx-stats` via `features = ["linalg"]`. **Unconditional** on `symworx-signal` (deconvolution, etc.).
+- **`polars`** — optional in TUI for in-memory frames only; **never** for signal file I/O.
+- **I/O rule:** all on-disk signal formats go through **`symworx-io`** only.
+
+Details: [AGENTS.md](AGENTS.md), [DEVELOPMENT.md](DEVELOPMENT.md).
+
+### System deps (when using `linalg` or signal LA)
+
+Linux (Fedora/Debian-style): install OpenBLAS development packages (CI uses system OpenBLAS).  
+Without OpenBLAS, prefer pure-Rust stats examples (logistic, rules, splits, k-NN, NB).
+
+---
+
+## Development
 
 ```bash
-cargo run -p symworx-loadsym --features "fit,email,sqlite" -- stats ride.fit --ftp 280
-cargo run -p symworx-loadsym --features sqlite -- db init
-cargo run -p symworx-loadsym --features sqlite -- ingest --ftp 280
+cargo check --workspace
+cargo test -p symworx-stats
+cargo +nightly fmt -- --check
 ```
 
-Features: `fit`, `email`, `db` (print-schema), `sqlite` (init + ingest). Personal DB default: `$VELOFIT_HOME/db/loadsym.sqlite`.
+See [DEVELOPMENT.md](DEVELOPMENT.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
 
-### symworx-loadsym-db
+Agent / AI contributors: read [AGENTS.md](AGENTS.md) and own all submitted code.
 
-Zero-dep SQL schema (Postgres + SQLite). No sample data. Consumable via the `db` / `sqlite` features of `symworx-loadsym`.
+---
 
-### Email / SRM ingestion
+## Documentation map
 
-IMAP MIME extraction behind `email`. Credentials only via `SYMLOAD_USER` / `SYMLOAD_APP_PASSWORD` (or `$VELOFIT_HOME/.env`). Optional: `SYMLOAD_IMAP_HOST` / `PORT` / `MAILBOX` (defaults: Gmail `imap.gmail.com:993` / `INBOX`). Default drop zone: `$VELOFIT_HOME/inbox`. Host-side only — no AI/MCP dependency.
-
-### [SpatialSym](crates/symworx-spatialsym/README.md)
-
-**Overview**: The `symworx-spatialsym` crate provides sport-agnostic tools for 2D trajectory analysis and post-hoc interpretation of agent decision-making based on movement and use of space (expansion/penetration/denial/pressure). Analyses use historical and future context. Initial migration of legacy Python `spatialsystems` functionality with major fixes (no hardcoded FPS, proper vectors/atan2, typed data, etc.).
-
-## Dependencies & Heavy/Optional Features
-
-The workspace deliberately keeps heavy native dependencies minimal and opt-in where possible:
-
-- `ndarray-linalg` (with OpenBLAS backend) is considered heavy (transitive cost: cauchy, LAPACK, native builds).
-  - Gated behind an opt-in `linalg` feature in `symworx-stats` (off by default in the crate; `symworx-core` enables it for most users).
-  - `symworx-signal` has a **direct unconditional dependency** because advanced linear algebra (deconvolution, NNLS, etc.) is core to its signal processing functionality.
-- See `AGENTS.md` ("Crate Responsibilities & Dependency Hygiene") and the comments in the root `Cargo.toml` for the full rationale and rules.
-- Workspace `Cargo.toml` pins `ndarray-linalg = { ..., features = ["openblas"] }` and the matching `openblas-build` build dependency.
-
-### I/O Principle
-- `symworx-io` is the canonical layer for all signal file I/O (Parquet, CSV, IBI, etc.).
-- No other crate (including the TUI or analysis code) should bypass it by depending directly on `parquet`, `polars/parquet`, or similar for reading/writing signal data. This avoids pulling duplicate and incompatible transitive stacks (e.g. multiple versions of Arrow, brotli, zstd, and their allocator crates).
-- Keep the core I/O layer stable and independent of heavy optional analysis libraries.
-- The TUI follows this rule: it depends on `symworx-io` for loading and keeps any Polars usage strictly for in-memory exploration (never for I/O).
-
-
+| Doc | Content |
+|-----|---------|
+| [DEVELOPMENT.md](DEVELOPMENT.md) | Build, test, format |
+| [AGENTS.md](AGENTS.md) | Crate boundaries, TUI keys, dependency hygiene |
+| [crates/symworx-stats/docs/model_export.md](crates/symworx-stats/docs/model_export.md) | Export models to C / iOS / Android / web |
+| [publications/joss/2026/](publications/joss/2026/) | JOSS paper draft + tracking notes |

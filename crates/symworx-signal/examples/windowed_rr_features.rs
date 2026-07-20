@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SymWorx
+// Licensed under the Apache License, Version 2.0.
+
 //! Minimal demo of the new windowing + robust interpolation ("dynamics interpolation")
 //! + RR-to-tachogram pipeline for 30/60 s feature work (autonomic adaptability research).
 //!

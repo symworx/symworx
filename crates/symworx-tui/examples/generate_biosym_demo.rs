@@ -1,3 +1,6 @@
+// Copyright (c) 2026 SymWorx
+// Licensed under the Apache License, Version 2.0.
+
 // Generate realistic synthetic physiological data using symworx-biosym
 // Run with: cargo run -p symworx-tui --example generate_biosym_demo
 

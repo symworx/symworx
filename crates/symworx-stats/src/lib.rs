@@ -29,8 +29,10 @@
 //! convenience, so most users of the ecosystem get regression, SVD, and PCA
 //! without extra configuration.
 //!
-//! Lasso / Elastic Net (`l1`, `lasso`, `elastic_net`) and k-means clustering
-//! do **not** require `linalg`.
+//! Lasso / Elastic Net, logistic (binary + OVR), Gaussian NB, k-NN, rule lists,
+//! classification metrics (incl. ROC/AUC), preprocessing, and k-means do
+//! **not** require `linalg`. LDA fit and polynomial degree search require
+//! `linalg`.
 
 #![allow(unused_imports)]
 #![warn(missing_docs)]
@@ -42,6 +44,9 @@ pub mod autocorrelation;
 
 /// Basic statistics, including mean, median, mad.
 pub mod basic;
+
+/// Classification metrics (accuracy, confusion matrix, F1, …).
+pub mod classification_metrics;
 
 /// Clustering (k-means). Does not require the `linalg` feature.
 pub mod cluster;
@@ -55,14 +60,35 @@ pub mod distance;
 /// Predicted-vs-expected error metrics (MAE, RMSE, R², regression report).
 pub mod error_metrics;
 
+/// Feature preprocessing (standardize, min–max). Fit on train only.
+pub mod preprocess;
+
 /// Linear regression models (OLS, Ridge, Lasso, Elastic Net).
 ///
 /// Closed-form `l2` / `ols` / `ridge` require the `linalg` feature.
 /// Coordinate-descent `l1` / `lasso` / `elastic_net` do not.
 pub mod linreg;
 
+/// Binary logistic regression (gradient descent; no LAPACK).
+pub mod logistic;
+
+/// Linear Discriminant Analysis (fit needs `linalg`; predict is pure linear).
+pub mod lda;
+
+/// Gaussian Naive Bayes (pure Rust).
+pub mod naive_bayes;
+
+/// k-nearest neighbors multiclass classifier (stores training data).
+pub mod knn;
+
+/// Threshold rules and ordered rule-list classifiers (embed-friendly).
+pub mod rules;
+
 /// Nonlinear least-squares regression (gradient descent; no LAPACK).
 pub mod nlinreg;
+
+/// Univariate polynomial regression and degree search (`linalg` for fits).
+pub mod polyreg;
 
 #[cfg(feature = "linalg")]
 /// Principal component analysis (requires `linalg` feature).
@@ -71,6 +97,9 @@ pub mod pca;
 #[cfg(feature = "linalg")]
 /// Singular value decomposition (requires `linalg` feature).
 pub mod svd;
+
+/// Index-based train/test splits and optional training folds.
+pub mod split;
 
 /// Variability measurements (e.g., ibi, rmssd, sdnn)
 pub mod variability;
@@ -85,6 +114,25 @@ pub use basic::{
     percentile,
     std_dev,
     std_dev_sample,
+};
+pub use classification_metrics::{
+    ClassificationReport,
+    RocCurve,
+    accuracy,
+    balanced_accuracy,
+    binary_precision_recall_f1,
+    classification_report,
+    classification_report_binary_f64,
+    confusion_matrix,
+    f1_per_class,
+    labels_from_binary_f64,
+    macro_average,
+    n_classes_from_labels,
+    precision_per_class,
+    recall_per_class,
+    roc_auc,
+    roc_auc_ovr,
+    roc_curve,
 };
 pub use cluster::{
     KMeansConfig,
@@ -129,10 +177,74 @@ pub use linreg::{
     ols,
     ridge,
 };
+pub use logistic::{
+    LogisticConfig,
+    LogisticModel,
+    MulticlassLogisticModel,
+    logistic,
+    logistic_ovr,
+    logistic_regression,
+    logistic_regression_ovr,
+    sigmoid,
+};
+pub use lda::{
+    LdaModel,
+    lda,
+};
+pub use knn::{
+    KnnClassifier,
+    KnnConfig,
+    KnnMetric,
+    knn_classify,
+};
+pub use rules::{
+    ClassificationRule,
+    Comparison,
+    DecisionStump,
+    RuleHit,
+    RuleListClassifier,
+    ThresholdCondition,
+    fit_decision_stump,
+};
+pub use naive_bayes::{
+    GaussianNb,
+    GaussianNbConfig,
+    gaussian_nb,
+    gaussian_nb_default,
+};
 pub use nlinreg::{
     NonlinearFitResult,
     nonlinear_least_squares,
     nonlinear_least_squares_design,
+};
+pub use polyreg::{
+    PolyRegError,
+    PolynomialDegreeFit,
+    PolynomialDegreeSearch,
+    PolynomialSearchConfig,
+    fit_polynomial_degrees,
+    fit_polynomial_degrees_with,
+    max_feasible_degree,
+    polynomial_design,
+    soft_min_samples_for_degree,
+};
+pub use preprocess::{
+    MinMaxScaler,
+    StandardScaler,
+};
+pub use split::{
+    MIN_SPLIT_FRACTION,
+    MIN_SPLIT_SAMPLES,
+    SplitConfig,
+    SplitError,
+    SplitPart,
+    TrainTestSplit,
+    max_train_folds,
+    min_split_size,
+    repeated_train_test_split,
+    take_indices,
+    take_indices_cloned,
+    train_test_split,
 };
 pub use variability::{
     mean_successive_differences,
