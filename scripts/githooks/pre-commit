@@ -12,13 +12,6 @@
 # Bypass for a single commit (use sparingly):
 #   git commit --no-verify
 #
-# Goal: catch nightly rustfmt failures before CI. Keep this hook fast —
-# clippy / tests stay in CI (OpenBLAS-heavy workspace).
-#
-# Cargo resolution (first match wins):
-#   1. cargo on PATH (or $CARGO_HOME/bin / $HOME/.cargo/bin)
-#   2. toolbox run -c $SYMWORX_RUST_TOOLBOX (default: dev-rust)
-#      — needed on Fedora Atomic / toolbox hosts where Rust lives in a container
 
 set -euo pipefail
 
