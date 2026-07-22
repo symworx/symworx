@@ -101,7 +101,7 @@ We follow a branch-based workflow with a single shared version across the worksp
 4. **Release**:
    - Merge the PR to `main`.
    - Create a git tag `vX.Y.Z`.
-   - CI (triggered by the tag) runs the full test matrix + `cargo +nightly fmt -- --check`, then publishes.
+   - CI (triggered by the tag) runs the full release validation matrix (`release.yml`). Publishing to crates.io / PyPI is disabled until explicitly re-enabled.
 
 ### Publishing Order
 
@@ -124,12 +124,14 @@ The `symview` binary (from `symworx-tui`) can be installed with `cargo install s
 
 ### CI / Release Automation Notes
 
-- Every PR and push to `develop` / `staging` / `main` runs formatting (`cargo +nightly fmt --check` on library crates), clippy, library unit tests, and Python bindings (`maturin` + pytest). The TUI smoke build is currently **disabled** in CI (too slow / OpenBLAS-heavy); run `cargo build -p symworx-tui --bin symview` locally when touching the TUI.
-- On tag `vX.Y.Z` (or push to a `release/` branch), a release workflow:
-  - Runs the full test + format + clippy matrix.
-  - Publishes Rust crates in the correct dependency order using trusted publishing (no long-lived tokens).
-  - Builds and publishes the corresponding Python wheels using trusted publishing for PyPI.
+- Every PR and push to `develop` / `staging` / `main` runs formatting (`cargo +nightly fmt --check` on library crates), clippy, library unit tests, and Python bindings (`maturin` + pytest) via [`.github/workflows/ci.yml`](.github/workflows/ci.yml). The TUI smoke build is currently **disabled** in CI (too slow / OpenBLAS-heavy); run `cargo build -p symworx-tui --bin symview` locally when touching the TUI.
+- The release path is gated by [`.github/workflows/release.yml`](.github/workflows/release.yml):
+  - **Checks only** on PRs into `main`, pushes to `main` / `release/**`, and tags `v*`:
+    - Release metadata (workspace version matches `release/vX.Y.Z` branch name and/or tag; `CHANGELOG.md` has a `## [X.Y.Z]` section).
+    - Nightly `cargo fmt --check`, a broader clippy + unit-test package set than day-to-day CI, and Python bindings (`maturin develop` + pytest + wheel smoke build).
+  - **Publish is disabled** until a public release is approved. Scaffolded crates.io / PyPI / GitHub Release jobs live commented out at the bottom of `release.yml` (re-enable after trusted publishers and packaging are ready).
 - Use of `cargo +nightly fmt -- --check` is required in the release workflow to enforce the full formatting rules defined in `rustfmt.toml`.
+- Until `main` exists, validation still runs on `release/**` pushes and on tags (with a soft warning if the tag is not yet on `main`).
 
 ### Native / Heavy Dependencies
 

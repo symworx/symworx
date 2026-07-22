@@ -1,0 +1,398 @@
+# Release validation for the staging → main path.
+#
+# Branch model (see DEVELOPMENT.md):
+#   develop  →  staging  →  release/vX.Y.Z  →  main  (+ tag vX.Y.Z)
+#
+# This workflow gates releases harder than day-to-day CI:
+#   - PRs into main (especially release/* → main)
+#   - Pushes to release/* and main
+#   - Version tags v* (final + pre-release)
+#
+# Publishing to crates.io / PyPI / GitHub Releases is DISABLED.
+# Scaffolded publish jobs are commented out at the bottom of this file.
+# Do not uncomment until a public release is explicitly approved.
+
+name: Release
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - main
+      - "release/**"
+    tags:
+      - "v*"
+  # Manual re-run of checks on a branch (does not publish).
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  CARGO_PROFILE_DEV_DEBUG: "0"
+  CARGO_PROFILE_TEST_DEBUG: "0"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Metadata: version / changelog / branch conventions for the release path
+  # ---------------------------------------------------------------------------
+  release-meta:
+    name: Release metadata
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      is_tag: ${{ steps.meta.outputs.is_tag }}
+      is_prerelease: ${{ steps.meta.outputs.is_prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release metadata
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          WORKSPACE_VERSION=$(
+            awk '
+              $0 ~ /^\[workspace\.package\]/ { in_pkg=1; next }
+              in_pkg && $0 ~ /^\[/ { in_pkg=0 }
+              in_pkg && $0 ~ /^version/ {
+                if (match($0, /"[^"]+"/)) {
+                  print substr($0, RSTART+1, RLENGTH-2)
+                  exit
+                }
+              }
+            ' Cargo.toml
+          )
+          if [[ -z "${WORKSPACE_VERSION}" ]]; then
+            echo "::error::Could not read [workspace.package] version from Cargo.toml"
+            exit 1
+          fi
+          echo "workspace_version=${WORKSPACE_VERSION}"
+
+          IS_TAG=false
+          IS_PRERELEASE=false
+          TAG_VERSION=""
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            IS_TAG=true
+            TAG_VERSION="${GITHUB_REF_NAME#v}"
+            if [[ "${TAG_VERSION}" == *-* ]]; then
+              IS_PRERELEASE=true
+            fi
+          fi
+
+          # release/vX.Y.Z branch naming (push or PR head)
+          BRANCH_REF="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+          if [[ "${BRANCH_REF}" == release/* ]]; then
+            BRANCH_VERSION="${BRANCH_REF#release/}"
+            BRANCH_VERSION="${BRANCH_VERSION#v}"
+            if [[ "${BRANCH_VERSION}" != "${WORKSPACE_VERSION}" ]]; then
+              echo "::error::release branch '${BRANCH_REF}' version (${BRANCH_VERSION}) does not match Cargo.toml workspace version (${WORKSPACE_VERSION})"
+              exit 1
+            fi
+          fi
+
+          if [[ "${IS_TAG}" == "true" ]]; then
+            if [[ "${TAG_VERSION}" != "${WORKSPACE_VERSION}" ]]; then
+              echo "::error::Tag v${TAG_VERSION} does not match Cargo.toml workspace version ${WORKSPACE_VERSION}"
+              exit 1
+            fi
+            # Final releases should land on main; pre-releases may come from staging.
+            if [[ "${IS_PRERELEASE}" != "true" ]]; then
+              git fetch --no-tags origin main:refs/remotes/origin/main 2>/dev/null || true
+              if git rev-parse --verify origin/main >/dev/null 2>&1; then
+                if git merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
+                  echo "Tag commit is on main (or an ancestor of main)."
+                else
+                  echo "::warning::Tag v${TAG_VERSION} is not an ancestor of main. Final releases should be cut after merging release/* → main."
+                fi
+              else
+                echo "::warning::Branch 'main' does not exist yet; skipping main-ancestor check for tag v${TAG_VERSION}."
+              fi
+            fi
+          fi
+
+          # CHANGELOG: require a heading for this version (final and pre-release tags,
+          # and release/* branches). Keep Unreleased PRs to main flexible.
+          if [[ "${IS_TAG}" == "true" || "${BRANCH_REF}" == release/* ]]; then
+            if ! grep -Eq "^## \[${WORKSPACE_VERSION}\]" CHANGELOG.md; then
+              echo "::error::CHANGELOG.md missing '## [${WORKSPACE_VERSION}]' section for this release"
+              exit 1
+            fi
+          fi
+
+          {
+            echo "version=${WORKSPACE_VERSION}"
+            echo "is_tag=${IS_TAG}"
+            echo "is_prerelease=${IS_PRERELEASE}"
+          } >> "${GITHUB_OUTPUT}"
+
+          echo "Release metadata: version=${WORKSPACE_VERSION} is_tag=${IS_TAG} is_prerelease=${IS_PRERELEASE}"
+          echo "Publishing is DISABLED — validation only."
+
+  # ---------------------------------------------------------------------------
+  # Full validation matrix (stricter than day-to-day CI package coverage)
+  # ---------------------------------------------------------------------------
+  fmt:
+    name: Format (nightly rustfmt)
+    runs-on: ubuntu-latest
+    needs: release-meta
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install nightly Rust (rustfmt)
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
+
+      # Workspace members only (symworx-error is a path dep, not a member yet).
+      # TUI remains excluded (fmt cost / OpenBLAS-heavy graph), same as CI.
+      - name: Format check (library + bindings, no TUI)
+        run: |
+          cargo +nightly fmt --check \
+            -p symworx-math \
+            -p symworx-io \
+            -p symworx-stats \
+            -p symworx-dynamics \
+            -p symworx-backend \
+            -p symworx-signal \
+            -p symworx-embed \
+            -p symworx-core \
+            -p symworx-biosym \
+            -p symworx-loadsym \
+            -p symworx-loadsym-db \
+            -p symworx-spatialsym \
+            -p symworx-python
+
+  rust-checks:
+    name: Clippy + unit tests
+    runs-on: ubuntu-latest
+    needs: release-meta
+    # System OpenBLAS linking (same policy as ci.yml — keep math free of OpenBLAS deps).
+    env:
+      RUSTFLAGS: "-C link-arg=-lopenblas"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Install system OpenBLAS + Fortran
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            gfortran pkg-config libopenblas-dev
+
+      - name: Prefer system OpenBLAS (skip source compile)
+        run: |
+          sed -i 's/features = \["openblas"\]/features = ["openblas-system"]/' Cargo.toml
+          grep -n 'ndarray-linalg' Cargo.toml
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: v1-sys-openblas-release
+
+      # Broader package set than day-to-day CI: stats, signal, embed, backend, core.
+      # symworx-error is still typechecked as a path dependency of io/core.
+      - name: Clippy + unit tests (release science set)
+        run: |
+          set -euo pipefail
+          PKGS=(
+            -p symworx-math
+            -p symworx-io
+            -p symworx-stats
+            -p symworx-signal
+            -p symworx-dynamics
+            -p symworx-backend
+            -p symworx-embed
+            -p symworx-biosym
+            -p symworx-loadsym
+            -p symworx-loadsym-db
+            -p symworx-spatialsym
+            -p symworx-core
+          )
+          cargo clippy --lib --no-deps "${PKGS[@]}" -- -D warnings
+          cargo test --lib "${PKGS[@]}" -- --quiet
+
+  python-bindings:
+    name: Python bindings
+    runs-on: ubuntu-latest
+    needs: release-meta
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install stable Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install system OpenBLAS + Fortran
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            gfortran pkg-config libopenblas-dev
+
+      - name: Prefer system OpenBLAS (skip source compile)
+        run: |
+          sed -i 's/features = \["openblas"\]/features = ["openblas-system"]/' Cargo.toml
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: v1-sys-openblas-release
+          workspaces: |
+            . -> target
+            bindings/python -> target
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Create venv and install tools
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install --upgrade pip
+          .venv/bin/pip install "maturin>=1.5,<2.0" pytest
+
+      - name: Build Python bindings in development mode
+        env:
+          VIRTUAL_ENV: ${{ github.workspace }}/.venv
+        run: |
+          .venv/bin/maturin develop --manifest-path bindings/python/Cargo.toml
+
+      - name: Run Python tests
+        env:
+          VIRTUAL_ENV: ${{ github.workspace }}/.venv
+          PATH: ${{ github.workspace }}/.venv/bin:${{ env.PATH }}
+        run: .venv/bin/pytest bindings/python/tests/ -q --tb=line
+
+      # Local wheel smoke only — does NOT upload to PyPI.
+      - name: Build release wheels (smoke, no upload)
+        env:
+          VIRTUAL_ENV: ${{ github.workspace }}/.venv
+        run: |
+          .venv/bin/maturin build --release --manifest-path bindings/python/Cargo.toml \
+            -o dist/wheels
+          ls -la dist/wheels
+
+  # Aggregate gate used by branch protection / required checks
+  release-ready:
+    name: Release checks passed
+    runs-on: ubuntu-latest
+    needs: [release-meta, fmt, rust-checks, python-bindings]
+    if: always()
+    steps:
+      - name: Require all validation jobs
+        run: |
+          set -euo pipefail
+          echo "release-meta: ${{ needs.release-meta.result }}"
+          echo "fmt: ${{ needs.fmt.result }}"
+          echo "rust-checks: ${{ needs.rust-checks.result }}"
+          echo "python-bindings: ${{ needs.python-bindings.result }}"
+          test "${{ needs.release-meta.result }}" = "success"
+          test "${{ needs.fmt.result }}" = "success"
+          test "${{ needs.rust-checks.result }}" = "success"
+          test "${{ needs.python-bindings.result }}" = "success"
+          echo "All release validation jobs passed for v${{ needs.release-meta.outputs.version }}"
+          echo "Publishing remains DISABLED (no crates.io / PyPI / GitHub Release jobs)."
+
+  # ===========================================================================
+  # PUBLISH — DISABLED until a public release is approved
+  #
+  # The following jobs are intentionally commented out so GitHub Actions will
+  # never run them. Uncomment only when crates.io / PyPI trusted publishers
+  # are configured and a public release is explicitly approved.
+  # ===========================================================================
+  #
+  # publish-crates:
+  #   name: Publish crates.io
+  #   runs-on: ubuntu-latest
+  #   needs: [release-meta, release-ready]
+  #   if: needs.release-meta.outputs.is_tag == 'true' && needs.release-ready.result == 'success'
+  #   environment: crates-io
+  #   permissions:
+  #     id-token: write
+  #     contents: read
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: dtolnay/rust-toolchain@stable
+  #     - name: Publish workspace crates in dependency order
+  #       env:
+  #         CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+  #       run: |
+  #         set -euo pipefail
+  #         publish_one() {
+  #           local pkg="$1"
+  #           echo "::group::cargo publish -p ${pkg}"
+  #           cargo publish -p "${pkg}" --no-verify
+  #           echo "::endgroup::"
+  #           sleep 5
+  #         }
+  #         # Order from DEVELOPMENT.md (foundation → mid-layer → products)
+  #         publish_one symworx-math
+  #         publish_one symworx-io
+  #         publish_one symworx-stats
+  #         publish_one symworx-signal
+  #         publish_one symworx-dynamics
+  #         publish_one symworx-backend
+  #         publish_one symworx-embed
+  #         publish_one symworx-loadsym-db
+  #         publish_one symworx-core
+  #         publish_one symworx-biosym
+  #         publish_one symworx-loadsym
+  #         publish_one symworx-spatialsym
+  #         publish_one symworx-tui
+  #
+  # publish-python:
+  #   name: Publish PyPI
+  #   runs-on: ubuntu-latest
+  #   needs: [release-meta, release-ready]
+  #   if: needs.release-meta.outputs.is_tag == 'true' && needs.release-ready.result == 'success'
+  #   environment: pypi
+  #   permissions:
+  #     id-token: write
+  #     contents: read
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: dtolnay/rust-toolchain@stable
+  #     - name: Install system OpenBLAS + Fortran
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y --no-install-recommends \
+  #           gfortran pkg-config libopenblas-dev
+  #     - name: Prefer system OpenBLAS (skip source compile)
+  #       run: sed -i 's/features = \["openblas"\]/features = ["openblas-system"]/' Cargo.toml
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.12"
+  #     - name: Build and publish symworx wheel (trusted publishing)
+  #       uses: PyO3/maturin-action@v1
+  #       with:
+  #         command: publish
+  #         args: --manifest-path bindings/python/Cargo.toml --skip-existing
+  #         manylinux: auto
+  #
+  # github-release:
+  #   name: GitHub Release
+  #   runs-on: ubuntu-latest
+  #   needs: [release-meta, release-ready]
+  #   if: needs.release-meta.outputs.is_tag == 'true' && needs.release-ready.result == 'success'
+  #   permissions:
+  #     contents: write
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Create GitHub Release
+  #       uses: softprops/action-gh-release@v2
+  #       with:
+  #         tag_name: v${{ needs.release-meta.outputs.version }}
+  #         name: v${{ needs.release-meta.outputs.version }}
+  #         prerelease: ${{ needs.release-meta.outputs.is_prerelease == 'true' }}
+  #         generate_release_notes: true
