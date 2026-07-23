@@ -9,8 +9,9 @@
 /// Schema version for migrations / `schema_migrations` table.
 ///
 /// v1 — initial catalog  
-/// v2 — expanded `ftp_history` + `activities.ftp_history_id` for time-varying FTP scoring
-pub const SCHEMA_VERSION: i32 = 2;
+/// v2 — expanded `ftp_history` + `activities.ftp_history_id` for time-varying FTP scoring  
+/// v3 — `catalog_meta` key/value (e.g. last ingest watermark)
+pub const SCHEMA_VERSION: i32 = 3;
 
 /// PostgreSQL schema (shared / multi-user deployments).
 pub const POSTGRES_SCHEMA: &str = include_str!("../sql/schema.sql");

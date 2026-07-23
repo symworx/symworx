@@ -30,12 +30,14 @@ The main active work is on **`crates/symworx-tui`** (the `symview` TUI).
 
 **Keybindings (finalized after multiple iterations):**
 - `Ctrl+G` → Open Generate demo data menu (in Import tab)
-- `Ctrl+L` → Start/restart **live simulator** stream (Explore; host path via `symworx-embed`, `sid=S001`). Bare `l`/`L` remains Explore pan — do not reuse.
+- `Ctrl+L` → Start/restart **live simulator** stream (**BioSym only** — Explore; host path via `symworx-embed`, `sid=S001`). Ignore / no-op outside BioSym. Bare `l`/`L` remains Explore pan — do not reuse.
 - `Ctrl+R` or `F5` → Refresh file list (must be reliable even while typing)
 - `Ctrl+Left` / `Ctrl+Right` → Tab navigation (kept for convenience)
 - Bare `Ctrl+1/2/3` still exist but are **not** the primary method
-- `q` → Hard quit (always works)
-- `Esc` → Stop live stream if active · cancel current sub-mode (column picker, generate menu, filter) **or** quit if nothing active
+- `Esc` → Stop live / cancel sub-mode / back one view · at a **root** screen: first Esc arms quit, second Esc exits (`esc_quit_pending`)
+- `Ctrl+Q` → Hard quit anytime (keep alongside Esc-Esc; works mid-modal)
+- Bare `q` is **not** quit — free for future bindings / safe while typing filter or path fields
+- Help (`Alt-?` / `M-?`) is **page-specific** with airy sections; LoadSym help is view-aware (List / Workout / Calendar / Optimization)
 - In Import tab: `/` enters filter mode, `c` converts selected file
 
 **Critical Implementation Rules for TUI:**

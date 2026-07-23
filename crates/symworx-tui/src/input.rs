@@ -9,12 +9,22 @@ use crate::app::{
 };
 
 pub fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool {
-    if code == KeyCode::Char('q') {
+    // Hard quit: Ctrl+Q always. Esc-Esc at root screens (see esc_root_or_quit).
+    // Bare `q` is not quit — collides with typing.
+    if matches!(code, KeyCode::Char('q') | KeyCode::Char('Q'))
+        && modifiers.contains(KeyModifiers::CONTROL)
+    {
         return true;
+    }
+
+    // Any non-Esc key disarms double-Esc quit.
+    if code != KeyCode::Esc {
+        app.clear_esc_quit();
     }
 
     if code == KeyCode::Char('?') && modifiers.contains(KeyModifiers::ALT) {
         app.help_mode = !app.help_mode;
+        app.clear_esc_quit();
         return false;
     }
 
@@ -31,6 +41,7 @@ pub fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool
     if app.help_mode {
         if code == KeyCode::Esc {
             app.help_mode = false;
+            app.clear_esc_quit();
             return false;
         }
         // Still allow global home navigation from help dashboard
@@ -153,9 +164,15 @@ pub fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool
             app.ensure_status_for_current_tab();
             return false;
         }
-        // Live stream (simulator). Bare `l`/`L` is Explore pan — use Ctrl+L only.
+        // Live stream (simulator) — BioSym only. Bare `l`/`L` is Explore pan.
         KeyCode::Char('l') | KeyCode::Char('L') if modifiers.contains(KeyModifiers::CONTROL) => {
-            app.start_live_simulator();
+            if app.current_workflow == crate::app::Workflow::BioSym {
+                app.start_live_simulator();
+            } else {
+                app.status =
+                    "Ctrl+L live simulator is BioSym only — Home → 1 BioSym (or Explore), then Ctrl+L"
+                        .to_string();
+            }
             return false;
         }
         _ => {}
@@ -200,6 +217,7 @@ fn handle_spatial_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
             KeyCode::Char('v') | KeyCode::Char('V') | KeyCode::Esc => {
                 app.pending_spatial_import = false;
                 app.spatial_view = crate::app::SpatialView::Visualize;
+                app.clear_esc_quit();
                 app.status = "Spatial: back to visualize".to_string();
                 return false;
             }
@@ -425,10 +443,8 @@ fn handle_spatial_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                 }
             }
             KeyCode::Esc => {
-                app.current_tab = Tab::Dynamics;
-                app.status = "Back to Dynamics".to_string();
-                app.ensure_status_for_current_tab();
-                return false;
+                // SpatialSym root: Esc-Esc quits. (Legacy BioSym jump to Dynamics avoided.)
+                return app.esc_root_or_quit();
             }
             _ => {}
         }
@@ -491,6 +507,7 @@ fn handle_import_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) ->
             }
             KeyCode::Esc => {
                 app.pending_generate = false;
+                app.clear_esc_quit();
                 app.status = "BioSym generate cancelled".to_string();
                 return false;
             }
@@ -511,6 +528,7 @@ fn handle_import_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) ->
             }
             KeyCode::Enter | KeyCode::Esc => {
                 app.filter_mode = false;
+                app.clear_esc_quit();
             }
             _ => {}
         }
@@ -565,8 +583,11 @@ fn handle_import_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) ->
         KeyCode::Esc => {
             if !app.manual_path.is_empty() {
                 app.manual_path.clear();
+                app.clear_esc_quit();
                 return false;
             }
+            // Import root (no path / filter / generate): Esc-Esc quits.
+            return app.esc_root_or_quit();
         }
         _ => {}
     }
@@ -590,6 +611,7 @@ fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
         match code {
             KeyCode::Esc => {
                 app.stop_live_user();
+                app.clear_esc_quit();
                 return false;
             }
             // Allow pan-like keys to be no-ops with a hint; Ctrl+L restarts (handled globally).
@@ -606,6 +628,7 @@ fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
         match code {
             KeyCode::Esc => {
                 app.pending_peak_params = false;
+                app.clear_esc_quit();
                 app.status = "Peak params closed (overlays keep last detection).".to_string();
             }
             KeyCode::Up => {
@@ -761,6 +784,7 @@ fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
             }
             KeyCode::Esc => {
                 app.pending_process = false;
+                app.clear_esc_quit();
                 app.status = "Process cancelled.".to_string();
             }
             KeyCode::Left | KeyCode::Char('-') | KeyCode::Char('_') => {
@@ -783,11 +807,13 @@ fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
             // Live first (if peak/process already closed above)
             if app.is_live() {
                 app.stop_live_user();
+                app.clear_esc_quit();
                 return false;
             }
             // Back to Import (BioSym file list / generate)
             app.pending_process = false;
             app.pending_peak_params = false;
+            app.clear_esc_quit();
             app.current_tab = Tab::Import;
             app.current_workflow = crate::app::Workflow::BioSym;
             app.status = "Import — file list / Ctrl+G generate".to_string();
@@ -1000,6 +1026,7 @@ fn handle_dynamics_keys(app: &mut App, code: KeyCode) -> bool {
             }
             KeyCode::Esc => {
                 app.pending_rqa = false;
+                app.clear_esc_quit();
                 app.status = "RQA param edit cancelled".to_string();
             }
             _ => {}
@@ -1077,6 +1104,15 @@ fn handle_dynamics_keys(app: &mut App, code: KeyCode) -> bool {
             } else {
                 app.status = "Compute RQA (c) or cRQA (x) first.".to_string();
             }
+            return false;
+        }
+        KeyCode::Esc => {
+            app.clear_esc_quit();
+            app.pending_rqa = false;
+            app.current_tab = Tab::Explore;
+            app.current_workflow = crate::app::Workflow::BioSym;
+            app.status = "Explore — waveform / peaks / live".to_string();
+            app.ensure_status_for_current_tab();
             return false;
         }
         _ => {}
@@ -1175,8 +1211,8 @@ fn handle_home_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -> b
             return false;
         }
         KeyCode::Esc => {
-            // On home, Esc does nothing special (or could quit but q is for that)
-            return false;
+            // Root: Esc-Esc quits (Ctrl+Q also works).
+            return app.esc_root_or_quit();
         }
         _ => {}
     }
@@ -1201,14 +1237,21 @@ fn calendar_status(app: &App) -> String {
     } else {
         "demo"
     };
-    let rides = app.daily_ride_counts.get(idx).copied().unwrap_or(0);
+    let day_rides = crate::processing::rides_for_focus_day(app);
+    let n_files = day_rides.len();
+    let ride_i = if n_files == 0 {
+        0
+    } else {
+        app.calendar_ride_sel.min(n_files - 1) + 1
+    };
     let widx = app.loadsym_week_scroll;
     format!(
-        "Calendar [{}] {}  TSS={:.0} n={}  day {}/{} week {}/{}  ↑↓ day ←→ week  r:reload",
+        "[{}] {} TSLi={:.0}  file {}/{}  day {}/{} week {}/{}  · n/p ride  Enter/o open  r reload",
         src,
         date,
         tss,
-        rides,
+        ride_i,
+        n_files,
         idx + 1,
         app.daily_loads.len(),
         if app.weekly_loads.is_empty() {
@@ -1221,6 +1264,11 @@ fn calendar_status(app: &App) -> String {
 }
 
 fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -> bool {
+    // Workout file-open modal swallows keys (same priority idea as Import modals).
+    if app.pending_workout_open {
+        return handle_workout_open_modal(app, code);
+    }
+
     // In list view: arrow/digit selection of sub view
     if app.loadsym_view == crate::app::LoadSymView::List {
         match code {
@@ -1231,7 +1279,7 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                 return false;
             }
             KeyCode::Down => {
-                if app.loadsym_selection < 2 {
+                if app.loadsym_selection < 3 {
                     app.loadsym_selection += 1;
                 }
                 return false;
@@ -1239,14 +1287,14 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
             KeyCode::Char('1') => {
                 app.loadsym_view = crate::app::LoadSymView::Workout;
                 app.status =
-                    "LoadSym: Workout Analysis (peaks, best efforts, threshold bars) — Esc back"
-                        .to_string();
+                    "Workout: o open file  i newest  1–5 streams  ←→ pan  Esc list".to_string();
                 return false;
             }
             KeyCode::Char('2') => {
                 app.loadsym_view = crate::app::LoadSymView::Calendar;
                 let _ = crate::processing::try_load_loadsym_catalog(app);
                 crate::processing::focus_calendar_most_recent(app);
+                crate::processing::clamp_calendar_ride_sel(app);
                 app.status = calendar_status(app);
                 return false;
             }
@@ -1254,22 +1302,33 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                 enter_loadsym_optimization(app);
                 return false;
             }
+            KeyCode::Char('4') => {
+                enter_loadsym_metrics(app);
+                return false;
+            }
             KeyCode::Enter => {
                 match app.loadsym_selection {
-                    0 => app.loadsym_view = crate::app::LoadSymView::Workout,
+                    0 => {
+                        app.loadsym_view = crate::app::LoadSymView::Workout;
+                        app.status =
+                            "Workout: o open file  i newest  1–5 streams  Esc list".to_string();
+                    }
                     1 => {
                         app.loadsym_view = crate::app::LoadSymView::Calendar;
                         let _ = crate::processing::try_load_loadsym_catalog(app);
                         crate::processing::focus_calendar_most_recent(app);
+                        crate::processing::clamp_calendar_ride_sel(app);
                         app.status = calendar_status(app);
                     }
                     2 => enter_loadsym_optimization(app),
+                    3 => enter_loadsym_metrics(app),
                     _ => {}
                 }
                 return false;
             }
             KeyCode::Char('g') | KeyCode::Char('G') => {
                 crate::processing::apply_demo_daily_loads(app, 14);
+                app.loadsym_goal_user_override = false;
                 app.status =
                     "LoadSym: synthetic demo daily loads (r: reload real catalog)".to_string();
                 return false;
@@ -1277,6 +1336,7 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
             KeyCode::Char('r') | KeyCode::Char('R') => {
                 match crate::processing::try_load_loadsym_catalog(app) {
                     Ok(true) => {
+                        app.loadsym_goal_user_override = false;
                         app.status = calendar_status(app);
                     }
                     Ok(false) => {
@@ -1292,28 +1352,50 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
             }
             KeyCode::Char('i') | KeyCode::Char('I') => {
                 if let Some(act) = crate::processing::find_newest_loadsym_activity(app) {
-                    let n = act.times_s.len();
-                    let src = act.source.clone();
-                    app.loaded_activity = Some(act);
-                    app.activity_scroll = 0;
-                    app.activity_series = 0;
-                    app.workout_user_thresh = 0.0;
-                    app.workout_user_min_dur = 3;
-                    app.loadsym_view = crate::app::LoadSymView::Workout;
-                    app.status = format!(
-                        "Loaded {} ({} samples). Roots: $VELOFIT_HOME + ./data",
-                        src, n
-                    );
+                    // Reuse shared loader path
+                    let path = std::path::PathBuf::from(&act.source);
+                    if let Ok(msg) = crate::processing::load_activity_into_app(app, &path) {
+                        app.loadsym_view = crate::app::LoadSymView::Workout;
+                        app.status = format!("{msg}. Roots: $VELOFIT_HOME + ./data");
+                    } else {
+                        // Activity already parsed — install directly
+                        let n = act.times_s.len();
+                        let src = act.source.clone();
+                        app.loaded_activity = Some(act);
+                        app.activity_scroll = 0;
+                        app.activity_series = 0;
+                        app.workout_user_thresh = 0.0;
+                        app.workout_user_min_dur = 3;
+                        app.loadsym_view = crate::app::LoadSymView::Workout;
+                        app.status = format!(
+                            "Loaded {} ({} samples). Roots: $VELOFIT_HOME + ./data",
+                            src, n
+                        );
+                    }
                 } else {
                     app.status =
-                        "No .fit/.csv in $VELOFIT_HOME/raw|inbox or ./data/. Drop a file and press i."
+                        "No .fit/.csv in $VELOFIT_HOME/raw|inbox or ./data/. Drop a file and press i or o."
                             .to_string();
                 }
                 return false;
             }
-            KeyCode::Esc => {
-                // already in list, perhaps switch workflow back? keep simple
+            KeyCode::Char('o') | KeyCode::Char('O') => {
+                crate::processing::refresh_workout_file_list(app);
+                app.pending_workout_open = true;
+                app.loadsym_view = crate::app::LoadSymView::Workout;
+                app.status = if app.workout_file_list.is_empty() {
+                    "No activity files found — check $VELOFIT_HOME/raw|inbox".to_string()
+                } else {
+                    format!(
+                        "Open file: {} candidates  ↑↓ select  Enter load  Esc cancel",
+                        app.workout_file_list.len()
+                    )
+                };
                 return false;
+            }
+            KeyCode::Esc => {
+                // LoadSym home list is a root: Esc-Esc quits.
+                return app.esc_root_or_quit();
             }
             _ => {}
         }
@@ -1342,47 +1424,68 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                     };
                     *scroll += 10;
                 }
+                KeyCode::Char('o') | KeyCode::Char('O') => {
+                    crate::processing::refresh_workout_file_list(app);
+                    app.pending_workout_open = true;
+                    app.status = if app.workout_file_list.is_empty() {
+                        "No activity files found — check $VELOFIT_HOME/raw|inbox".to_string()
+                    } else {
+                        format!(
+                            "Open file: {} candidates  ↑↓ select  Enter load  Esc cancel",
+                            app.workout_file_list.len()
+                        )
+                    };
+                }
                 KeyCode::Char('i')
                 | KeyCode::Char('I')
                 | KeyCode::Char('a')
                 | KeyCode::Char('A') => {
                     // Newest .fit under ~/velofit (raw/inbox) and project data dirs
                     if let Some(act) = crate::processing::find_newest_loadsym_activity(app) {
-                        let n = act.times_s.len();
-                        let src = act.source.clone();
-                        app.loaded_activity = Some(act);
-                        app.activity_scroll = 0;
-                        app.activity_series = 0;
-                        app.workout_user_thresh = 0.0;
-                        app.workout_user_min_dur = 3;
-                        app.status = format!(
-                            "Loaded {} — {} samples. 1/2/3=series  ←→ scroll  f/F=FTP",
-                            src, n
-                        );
+                        let path = std::path::PathBuf::from(&act.source);
+                        if let Ok(msg) = crate::processing::load_activity_into_app(app, &path) {
+                            app.status = format!("{msg}. 1/2/3=series  ←→ scroll  o=open  f/F=FTP");
+                        } else {
+                            let n = act.times_s.len();
+                            let src = act.source.clone();
+                            app.loaded_activity = Some(act);
+                            app.activity_scroll = 0;
+                            app.activity_series = 0;
+                            app.workout_user_thresh = 0.0;
+                            app.workout_user_min_dur = 3;
+                            app.status = format!(
+                                "Loaded {} — {} samples. 1/2/3=series  ←→ scroll  o=open  f/F=FTP",
+                                src, n
+                            );
+                        }
                     } else {
-                        app.status = "No .fit/.csv in ~/velofit/raw|inbox or ./data|rides. Import via symload email fetch.".to_string();
+                        app.status = "No .fit/.csv in ~/velofit/raw|inbox or ./data. Press o to browse, or import via symload.".to_string();
                     }
                 }
                 KeyCode::Char('r') | KeyCode::Char('R') => {
                     app.loaded_activity = None;
                     app.activity_scroll = 0;
                     app.activity_series = 0;
+                    app.workout_stream_on = [true, true, true, false, false];
                     app.workout_user_thresh = 0.0;
                     app.workout_user_min_dur = 3;
                     app.status =
-                        "Cleared loaded activity + user thresh. Using demo series.".to_string();
+                        "Cleared activity. Press o/i to load a file (no demo series).".to_string();
                 }
                 KeyCode::Char('1') => {
-                    app.activity_series = 0;
-                    app.status = "Switched to Power series (if available)".to_string();
+                    app.status = crate::processing::toggle_workout_panel(app, 0);
                 }
                 KeyCode::Char('2') => {
-                    app.activity_series = 1;
-                    app.status = "Switched to Heart Rate series (if available)".to_string();
+                    app.status = crate::processing::toggle_workout_panel(app, 1);
                 }
                 KeyCode::Char('3') => {
-                    app.activity_series = 2;
-                    app.status = "Switched to Speed series (if available)".to_string();
+                    app.status = crate::processing::toggle_workout_panel(app, 2);
+                }
+                KeyCode::Char('4') => {
+                    app.status = crate::processing::toggle_workout_panel(app, 3);
+                }
+                KeyCode::Char('5') => {
+                    app.status = crate::processing::toggle_workout_panel(app, 4);
                 }
                 KeyCode::Char('e') | KeyCode::Char('E') => {
                     app.status =
@@ -1430,6 +1533,7 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                 }
                 KeyCode::Esc => {
                     app.loadsym_view = crate::app::LoadSymView::List;
+                    app.clear_esc_quit();
                     app.status = "LoadSym — back to list".to_string();
                 }
                 _ => {}
@@ -1441,13 +1545,17 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                 KeyCode::Up | KeyCode::Char('k') => {
                     app.loadsym_scroll =
                         (app.loadsym_scroll + 1).min(app.daily_loads.len().saturating_sub(1));
+                    app.calendar_ride_sel = 0;
                     crate::processing::sync_week_scroll_from_daily(app);
+                    crate::processing::clamp_calendar_ride_sel(app);
                 }
                 KeyCode::Down | KeyCode::Char('j') => {
                     if app.loadsym_scroll > 0 {
                         app.loadsym_scroll -= 1;
                     }
+                    app.calendar_ride_sel = 0;
                     crate::processing::sync_week_scroll_from_daily(app);
+                    crate::processing::clamp_calendar_ride_sel(app);
                 }
                 // Weekly: ← older (past), → newer (future); list still newest-first
                 KeyCode::Left | KeyCode::Char('h') => {
@@ -1457,7 +1565,9 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                     if let Some(w) = app.weekly_loads.get(app.loadsym_week_scroll) {
                         app.loadsym_scroll = w.day_index_hi;
                         app.loadsym_scroll_from_week = true;
+                        app.calendar_ride_sel = 0;
                     }
+                    crate::processing::clamp_calendar_ride_sel(app);
                 }
                 KeyCode::Right | KeyCode::Char('l') => {
                     if !app.weekly_loads.is_empty() {
@@ -1467,29 +1577,59 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                     if let Some(w) = app.weekly_loads.get(app.loadsym_week_scroll) {
                         app.loadsym_scroll = w.day_index_hi;
                         app.loadsym_scroll_from_week = true;
+                        app.calendar_ride_sel = 0;
                     }
+                    crate::processing::clamp_calendar_ride_sel(app);
+                }
+                // Ride sub-selection on focused day
+                KeyCode::Char('n') | KeyCode::Char('N') => {
+                    let n = crate::processing::rides_for_focus_day(app).len();
+                    if n > 0 {
+                        app.calendar_ride_sel = (app.calendar_ride_sel + 1) % n;
+                    }
+                    crate::processing::clamp_calendar_ride_sel(app);
+                }
+                KeyCode::Char('p') | KeyCode::Char('P') => {
+                    let n = crate::processing::rides_for_focus_day(app).len();
+                    if n > 0 {
+                        app.calendar_ride_sel = if app.calendar_ride_sel == 0 {
+                            n - 1
+                        } else {
+                            app.calendar_ride_sel - 1
+                        };
+                    }
+                    crate::processing::clamp_calendar_ride_sel(app);
+                }
+                KeyCode::Enter | KeyCode::Char('o') | KeyCode::Char('O') => {
+                    let _ = crate::processing::open_calendar_ride_into_workout(app);
+                    return false;
                 }
                 KeyCode::Home => {
                     app.loadsym_scroll = 0;
+                    app.calendar_ride_sel = 0;
                     crate::processing::sync_week_scroll_from_daily(app);
                 }
                 KeyCode::End => {
                     app.loadsym_scroll = app.daily_loads.len().saturating_sub(1);
+                    app.calendar_ride_sel = 0;
                     crate::processing::sync_week_scroll_from_daily(app);
                 }
                 KeyCode::PageUp => {
                     app.loadsym_scroll = app.loadsym_scroll.saturating_sub(10);
+                    app.calendar_ride_sel = 0;
                     crate::processing::sync_week_scroll_from_daily(app);
                 }
                 KeyCode::PageDown => {
                     app.loadsym_scroll =
                         (app.loadsym_scroll + 10).min(app.daily_loads.len().saturating_sub(1));
+                    app.calendar_ride_sel = 0;
                     crate::processing::sync_week_scroll_from_daily(app);
                 }
                 KeyCode::Char('r') | KeyCode::Char('R') => {
                     match crate::processing::try_load_loadsym_catalog(app) {
                         Ok(true) => {
                             crate::processing::focus_calendar_most_recent(app);
+                            app.calendar_ride_sel = 0;
                             app.status = calendar_status(app);
                         }
                         Ok(false) => {
@@ -1501,17 +1641,20 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
                 }
                 KeyCode::Char('g') | KeyCode::Char('G') => {
                     crate::processing::apply_demo_daily_loads(app, 14);
+                    app.calendar_ride_sel = 0;
                     app.status = "Calendar: synthetic demo (r reloads catalog)".into();
                     return false;
                 }
                 KeyCode::Char('.') => {
                     // Jump to most recent day
                     crate::processing::focus_calendar_most_recent(app);
+                    app.calendar_ride_sel = 0;
                     app.status = calendar_status(app);
                     return false;
                 }
                 KeyCode::Esc => {
                     app.loadsym_view = crate::app::LoadSymView::List;
+                    app.clear_esc_quit();
                     app.status = "LoadSym — back to list".to_string();
                     return false;
                 }
@@ -1519,23 +1662,124 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
             }
             app.status = calendar_status(app);
         }
+        crate::app::LoadSymView::Metrics => match code {
+            KeyCode::Esc => {
+                app.loadsym_view = crate::app::LoadSymView::List;
+                app.clear_esc_quit();
+                app.status = "LoadSym — back to list".to_string();
+            }
+            KeyCode::Up | KeyCode::Char('k') => {
+                // Newest-first UI: ↑ = newer (higher storage index)
+                if !app.catalog_activity_metrics.is_empty() {
+                    app.metrics_scroll = (app.metrics_scroll + 1)
+                        .min(app.catalog_activity_metrics.len().saturating_sub(1));
+                }
+                app.status = metrics_status(app);
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                if app.metrics_scroll > 0 {
+                    app.metrics_scroll -= 1;
+                }
+                app.status = metrics_status(app);
+            }
+            KeyCode::Home => {
+                app.metrics_scroll = 0;
+                app.status = metrics_status(app);
+            }
+            KeyCode::End => {
+                app.metrics_scroll = app.catalog_activity_metrics.len().saturating_sub(1);
+                app.status = metrics_status(app);
+            }
+            KeyCode::PageUp => {
+                app.metrics_scroll = (app.metrics_scroll + 10)
+                    .min(app.catalog_activity_metrics.len().saturating_sub(1));
+                app.status = metrics_status(app);
+            }
+            KeyCode::PageDown => {
+                app.metrics_scroll = app.metrics_scroll.saturating_sub(10);
+                app.status = metrics_status(app);
+            }
+            KeyCode::Enter | KeyCode::Char('o') | KeyCode::Char('O') => {
+                let _ = crate::processing::open_metrics_row_into_workout(app);
+            }
+            KeyCode::Char('r') | KeyCode::Char('R') => {
+                match crate::processing::try_load_loadsym_catalog(app) {
+                    Ok(true) => app.status = metrics_status(app),
+                    Ok(false) => app.status = "No catalog — run symload db init && ingest".into(),
+                    Err(e) => app.status = format!("Catalog error: {e}"),
+                }
+            }
+            // v: toggle trend ↔ bi-plot
+            KeyCode::Char('v') | KeyCode::Char('V') => {
+                use crate::app::MetricsChartMode;
+                app.metrics_chart_mode = match app.metrics_chart_mode {
+                    MetricsChartMode::Trend => MetricsChartMode::Biplot,
+                    MetricsChartMode::Biplot => MetricsChartMode::Trend,
+                };
+                app.status = metrics_status(app);
+            }
+            // 1–8: set trend Y, or bi-plot Y
+            KeyCode::Char(c @ '1'..='8') => {
+                if let Some(f) = crate::app::MetricsField::from_digit(c) {
+                    match app.metrics_chart_mode {
+                        crate::app::MetricsChartMode::Trend => {
+                            app.metrics_trend_field = f;
+                        }
+                        crate::app::MetricsChartMode::Biplot => {
+                            app.metrics_biplot_y = f;
+                        }
+                    }
+                    app.status = metrics_status(app);
+                }
+            }
+            KeyCode::Char('x') => {
+                app.metrics_biplot_x = app.metrics_biplot_x.next();
+                app.metrics_chart_mode = crate::app::MetricsChartMode::Biplot;
+                app.status = metrics_status(app);
+            }
+            KeyCode::Char('X') => {
+                // reverse cycle: next seven times = previous in 8-element ring
+                for _ in 0..7 {
+                    app.metrics_biplot_x = app.metrics_biplot_x.next();
+                }
+                app.metrics_chart_mode = crate::app::MetricsChartMode::Biplot;
+                app.status = metrics_status(app);
+            }
+            KeyCode::Char('y') => {
+                app.metrics_biplot_y = app.metrics_biplot_y.next();
+                app.metrics_chart_mode = crate::app::MetricsChartMode::Biplot;
+                app.status = metrics_status(app);
+            }
+            KeyCode::Char('Y') => {
+                for _ in 0..7 {
+                    app.metrics_biplot_y = app.metrics_biplot_y.next();
+                }
+                app.metrics_chart_mode = crate::app::MetricsChartMode::Biplot;
+                app.status = metrics_status(app);
+            }
+            _ => {}
+        },
         crate::app::LoadSymView::Optimization => match code {
             KeyCode::Esc => {
                 app.loadsym_view = crate::app::LoadSymView::List;
+                app.clear_esc_quit();
                 app.status = "LoadSym — back to list".to_string();
             }
             KeyCode::Char('1') => {
                 app.loadsym_plan_goal = symworx_loadsym::load::LoadGoal::Recovery;
+                app.loadsym_goal_user_override = true;
                 crate::processing::ensure_loadsym_plan(app);
                 app.status = opt_status(app);
             }
             KeyCode::Char('2') => {
                 app.loadsym_plan_goal = symworx_loadsym::load::LoadGoal::Maintenance;
+                app.loadsym_goal_user_override = true;
                 crate::processing::ensure_loadsym_plan(app);
                 app.status = opt_status(app);
             }
             KeyCode::Char('3') => {
                 app.loadsym_plan_goal = symworx_loadsym::load::LoadGoal::Overload;
+                app.loadsym_goal_user_override = true;
                 crate::processing::ensure_loadsym_plan(app);
                 app.status = opt_status(app);
             }
@@ -1562,12 +1806,16 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
             }
             KeyCode::Char('g') | KeyCode::Char('G') => {
                 crate::processing::apply_demo_daily_loads(app, 28);
+                app.loadsym_goal_user_override = false;
+                crate::processing::apply_suggested_load_goal(app, true);
                 crate::processing::ensure_loadsym_plan(app);
                 app.status = format!("Demo loads (28d). {}", opt_status(app));
             }
             KeyCode::Char('r') | KeyCode::Char('R') => {
                 match crate::processing::try_load_loadsym_catalog(app) {
                     Ok(true) => {
+                        // Re-suggest only if user has not overridden goal.
+                        crate::processing::apply_suggested_load_goal(app, false);
                         crate::processing::ensure_loadsym_plan(app);
                         app.status = format!("Catalog reloaded. {}", opt_status(app));
                     }
@@ -1585,27 +1833,127 @@ fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -
     false
 }
 
+/// Handle keys while the Workout "open file" modal is active.
+fn handle_workout_open_modal(app: &mut App, code: KeyCode) -> bool {
+    match code {
+        KeyCode::Esc => {
+            app.pending_workout_open = false;
+            app.clear_esc_quit();
+            app.status = "Open cancelled".to_string();
+        }
+        KeyCode::Up | KeyCode::Char('k') | KeyCode::Char('K') => {
+            if app.workout_file_sel > 0 {
+                app.workout_file_sel -= 1;
+            }
+        }
+        KeyCode::Down | KeyCode::Char('j') | KeyCode::Char('J') => {
+            if !app.workout_file_list.is_empty() {
+                app.workout_file_sel =
+                    (app.workout_file_sel + 1).min(app.workout_file_list.len().saturating_sub(1));
+            }
+        }
+        KeyCode::Home => {
+            app.workout_file_sel = 0;
+        }
+        KeyCode::End => {
+            app.workout_file_sel = app.workout_file_list.len().saturating_sub(1);
+        }
+        KeyCode::PageUp => {
+            app.workout_file_sel = app.workout_file_sel.saturating_sub(10);
+        }
+        KeyCode::PageDown => {
+            if !app.workout_file_list.is_empty() {
+                app.workout_file_sel =
+                    (app.workout_file_sel + 10).min(app.workout_file_list.len().saturating_sub(1));
+            }
+        }
+        KeyCode::Enter => {
+            let _ = crate::processing::open_selected_workout_file(app);
+        }
+        // Swallow all other keys so they do not leak into parent handlers.
+        _ => {}
+    }
+    false
+}
+
 fn enter_loadsym_optimization(app: &mut App) {
     app.loadsym_view = crate::app::LoadSymView::Optimization;
     if app.daily_loads.is_empty() {
         let _ = crate::processing::try_load_loadsym_catalog(app);
     }
     if app.daily_loads.is_empty() {
+        app.loadsym_goal_suggest_note.clear();
         app.status =
             "Optimization — no loads. r catalog / g demo · set H with −/+ · Enter recompute"
                 .to_string();
     } else {
+        // Fresh enter: re-suggest goal from form/fatigue/ACLi (user can override with 1/2/3).
+        crate::processing::apply_suggested_load_goal(app, true);
         crate::processing::ensure_loadsym_plan(app);
         app.status = opt_status(app);
     }
 }
 
-fn opt_status(app: &App) -> String {
+fn enter_loadsym_metrics(app: &mut App) {
+    app.loadsym_view = crate::app::LoadSymView::Metrics;
+    if app.catalog_activity_metrics.is_empty() {
+        let _ = crate::processing::try_load_loadsym_catalog(app);
+    }
+    if app.catalog_activity_metrics.is_empty() {
+        app.status =
+            "Metrics — empty. r catalog after symload ingest · Enter opens ride in Workout"
+                .to_string();
+    } else {
+        app.metrics_scroll = app.catalog_activity_metrics.len().saturating_sub(1);
+        app.status = metrics_status(app);
+    }
+}
+
+fn metrics_status(app: &App) -> String {
+    let n = app.catalog_activity_metrics.len();
+    if n == 0 {
+        return "Metrics empty — r reload catalog".into();
+    }
+    let i = app.metrics_scroll.min(n - 1);
+    let r = &app.catalog_activity_metrics[i];
+    let name = r.source_file.rsplit('/').next().unwrap_or(&r.source_file);
+    let chart = match app.metrics_chart_mode {
+        crate::app::MetricsChartMode::Trend => {
+            format!("trend Y={}", app.metrics_trend_field.label())
+        }
+        crate::app::MetricsChartMode::Biplot => format!(
+            "biplot {} vs {}",
+            app.metrics_biplot_y.label(),
+            app.metrics_biplot_x.label()
+        ),
+    };
     format!(
-        "Plan goal={}  H={}d (max {})  · 1/2/3  −/+ days  Enter recompute  r/g  Esc",
+        "Metrics {}/{}  {}  {}  TSLi={}  ·  {}  ·  v toggle  Enter open",
+        i + 1,
+        n,
+        r.ride_date,
+        name,
+        r.tss
+            .map(|v| format!("{:.0}", v))
+            .unwrap_or_else(|| "-".into()),
+        chart,
+    )
+}
+
+fn opt_status(app: &App) -> String {
+    let note = if app.loadsym_goal_suggest_note.is_empty() {
+        String::new()
+    } else if app.loadsym_goal_user_override {
+        format!("  · override · was: {}", app.loadsym_goal_suggest_note)
+    } else {
+        format!("  · {}", app.loadsym_goal_suggest_note)
+    };
+    format!(
+        "Plan goal={}  H={}d (max {}){}  · 1/2/3  −/+  Enter  r/g  Esc",
         app.loadsym_plan_goal.as_str(),
         app.loadsym_plan_horizon,
         symworx_loadsym::load::MAX_HORIZON_DAYS,
+        note,
     )
 }
 

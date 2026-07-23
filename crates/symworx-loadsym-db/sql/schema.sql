@@ -16,6 +16,13 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
     applied_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Lightweight key/value for pipeline state (last ingest time, etc.).
+CREATE TABLE IF NOT EXISTS catalog_meta (
+    key         TEXT PRIMARY KEY,
+    value       TEXT NOT NULL,
+    updated_at  TIMESTAMPTZ DEFAULT now()
+);
+
 CREATE TABLE activities (
     id              BIGSERIAL PRIMARY KEY,
     source_file     TEXT UNIQUE NOT NULL,           -- original path or stable key (for dedup)

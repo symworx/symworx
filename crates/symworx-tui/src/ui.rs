@@ -111,12 +111,12 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
 
     // Lower legend / footer bar:
     // - Left: status + [Esc] when relevant (for subdir/analysis pages / sub-modes)
-    // - Right: q: Quit (right-aligned)
+    // - Right: Ctrl+Q Quit (right-aligned)
     // No tab name here (shown in top-right chrome)
     let footer_area = main_layout[3];
     let footer_chunks = Layout::horizontal([
         Constraint::Fill(1),
-        Constraint::Min(10), // room for "q: Quit"
+        Constraint::Min(18), // room for "Esc Esc · Ctrl+Q"
     ])
     .split(footer_area);
 
@@ -155,7 +155,13 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
 
     let left_legend = Paragraph::new(left_text).dim();
 
-    let right_quit = Paragraph::new("q: Quit").alignment(Alignment::Right).dim();
+    let right_quit = Paragraph::new(if app.esc_quit_pending {
+        "Esc again quit"
+    } else {
+        "Esc Esc · Ctrl+Q"
+    })
+    .alignment(Alignment::Right)
+    .dim();
 
     // Single top border across the whole bottom area
     let border_block = Block::new().borders(Borders::TOP);
@@ -168,7 +174,7 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
 pub fn render_action_bar(app: &App) -> Paragraph<'_> {
     // Lower legend / action bar.
     // Show [Esc] when relevant for sub-modes / analysis pages (back/cancel).
-    // q: Quit is right-aligned in the footer below.
+    // Ctrl+Q Quit is right-aligned in the footer below.
 
     if app.pending_generate {
         return Paragraph::new("  BioSym: [1] PPG   [2] Respiration   [3] Stride   [Esc] Cancel")
@@ -195,9 +201,13 @@ pub fn render_action_bar(app: &App) -> Paragraph<'_> {
     } else if app.is_live() {
         "  [Esc] stop live"
     } else if app.current_workflow == crate::app::Workflow::LoadSym {
-        match app.loadsym_view {
-            crate::app::LoadSymView::List => "",
-            _ => "  [Esc] back to list",
+        if app.pending_workout_open {
+            "  [Esc] cancel open"
+        } else {
+            match app.loadsym_view {
+                crate::app::LoadSymView::List => "",
+                _ => "  [Esc] back to list",
+            }
         }
     } else if app.current_workflow == crate::app::Workflow::SpatialSym && app.pending_spatial_import
     {
@@ -211,9 +221,11 @@ pub fn render_action_bar(app: &App) -> Paragraph<'_> {
     };
 
     let base = if app.is_live() {
-        "  Ctrl+L restart live   •   Ctrl+H Home   •   M-? help   •   q Quit"
+        "  Ctrl+L restart live   •   Ctrl+H Home   •   Alt-? help   •   Esc Esc / Ctrl+Q quit"
+    } else if app.current_workflow == crate::app::Workflow::BioSym {
+        "  ↑↓   ←→ (Ctrl+arrows)   •   Enter   •   Ctrl+L live   •   Ctrl+H Home   •   Alt-? help"
     } else {
-        "  ↑↓   ←→ (Ctrl+arrows)   •   Enter   •   Ctrl+L live   •   Ctrl+H Home   •   M-? help"
+        "  ↑↓   ←→ (Ctrl+arrows)   •   Enter   •   Ctrl+H Home   •   Alt-? help"
     };
 
     let text = if esc.is_empty() {

@@ -56,12 +56,16 @@ export VELOFIT_HOME="$HOME/velofit"   # optional if using default
 export SYMLOAD_DB="$HOME/velofit/db/loadsym.sqlite"  # optional
 
 cargo run -p symworx-loadsym --features sqlite -- ingest --ftp 280
+# Incremental by default: only files with mtime >= catalog_meta.last_ingest_at
+# Full recheck (still skips known file_hash unless --force):
+cargo run -p symworx-loadsym --features sqlite -- ingest --all --ftp 280
 # or: ingest /path/to/one.fit --db /path/to/loadsym.sqlite
 
 cargo run -p symworx-loadsym --features sqlite -- db status
+# shows activities + last_ingest_at watermark
 ```
 
-Ingest stores **relative** keys when files live under `$VELOFIT_HOME` (e.g. `raw/ride.fit`), not absolute home paths. Dedup uses `file_hash` (SHA-256) and `source_file` UNIQUE.
+Ingest stores **relative** keys when files live under `$VELOFIT_HOME` (e.g. `raw/ride.fit`), not absolute home paths. Dedup uses `file_hash` (SHA-256) and `source_file` UNIQUE — re-runs do **not** create duplicate activity rows. A `last_ingest_at` watermark in `catalog_meta` (schema v3) limits which files are considered; use `--all` to recheck the whole archive.
 
 ## Email → inbox (optional)
 

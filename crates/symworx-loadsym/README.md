@@ -70,6 +70,10 @@ cargo run -p symworx-loadsym --features fit -- stats path/to/ride.fit --ftp 280
 export VELOFIT_HOME="$HOME/velofit"   # optional default
 cargo run -p symworx-loadsym --features sqlite -- db init
 cargo run -p symworx-loadsym --features sqlite -- ingest --ftp 280
+# Only files with mtime >= last_ingest_at (watermark in catalog_meta). Full recheck:
+cargo run -p symworx-loadsym --features sqlite -- ingest --all --ftp 280
+# Re-score everything (ignores watermark + hash skip):
+cargo run -p symworx-loadsym --features sqlite -- ingest --force --ftp 280
 cargo run -p symworx-loadsym --features sqlite -- db status
 
 # Schema only (no driver)

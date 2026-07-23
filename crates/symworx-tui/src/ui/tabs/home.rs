@@ -26,12 +26,22 @@ use crate::app::App;
 pub fn render_home_tab(frame: &mut Frame, app: &App, area: Rect) {
     if app.help_mode {
         let help = Paragraph::new(
-            "Home / Path Selector help (Alt-? or Esc to close)\n\n\
-             • 1 or ↑/↓+Enter : BioSym (Import → Explore → Dynamics RQA)\n\
-             • 2 : LoadSym (training load / ACWR / nutrition template)\n\
-             • 3 : SpatialSym (synthetic trajectories + import + viz)\n\n\
-             From anywhere: Ctrl+H returns here.\n\
-             q: quit • ? (Alt): this help",
+            "Home — path selector\n\
+             Close help:  Esc  or  Alt-?\n\n\
+             \n\
+             CHOOSE A WORKFLOW\n\n\
+               1  or  ↑↓ + Enter     BioSym\n\
+                                     Import → Explore → Dynamics (RQA)\n\n\
+               2  or  ↑↓ + Enter     LoadSym\n\
+                                     Workout · Calendar · Optimization\n\n\
+               3  or  ↑↓ + Enter     SpatialSym\n\
+                                     Trajectories · decisions · space\n\n\
+             \n\
+             GLOBAL\n\n\
+               Ctrl+H                return Home from anywhere\n\
+               Alt-?                 toggle this help\n\
+               Esc  Esc              quit (second Esc at a root screen)\n\
+               Ctrl+Q                quit anytime\n",
         )
         .block(Block::new().borders(Borders::ALL).title(" Help — Home "));
         frame.render_widget(help, area);

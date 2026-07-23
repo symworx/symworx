@@ -83,6 +83,98 @@ pub enum LoadSymView {
     Workout,
     Calendar,
     Optimization,
+    /// Catalog library: per-ride LOADsym metrics table.
+    Metrics,
+}
+
+/// Workout analyzer data streams (FIT/CSV channels).
+/// Toggle with keys `1`–`5`; open panels share height equally.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(u8)]
+pub enum WorkoutStream {
+    Power = 0,
+    HeartRate = 1,
+    Speed = 2,
+    Cadence = 3,
+    Elevation = 4,
+}
+
+impl WorkoutStream {
+    pub const ALL: [WorkoutStream; 5] = [
+        WorkoutStream::Power,
+        WorkoutStream::HeartRate,
+        WorkoutStream::Speed,
+        WorkoutStream::Cadence,
+        WorkoutStream::Elevation,
+    ];
+    pub const COUNT: usize = 5;
+
+    pub fn from_index(i: usize) -> Option<Self> {
+        match i {
+            0 => Some(Self::Power),
+            1 => Some(Self::HeartRate),
+            2 => Some(Self::Speed),
+            3 => Some(Self::Cadence),
+            4 => Some(Self::Elevation),
+            _ => None,
+        }
+    }
+
+    pub fn index(self) -> usize {
+        self as usize
+    }
+
+    pub fn key_digit(self) -> char {
+        match self {
+            Self::Power => '1',
+            Self::HeartRate => '2',
+            Self::Speed => '3',
+            Self::Cadence => '4',
+            Self::Elevation => '5',
+        }
+    }
+
+    pub fn short_label(self) -> &'static str {
+        match self {
+            Self::Power => "power",
+            Self::HeartRate => "hr",
+            Self::Speed => "speed",
+            Self::Cadence => "cad",
+            Self::Elevation => "elev",
+        }
+    }
+
+    pub fn chart_title(self) -> &'static str {
+        match self {
+            Self::Power => "Power (W)",
+            Self::HeartRate => "Heart rate (bpm)",
+            Self::Speed => "Speed (km/h)",
+            Self::Cadence => "Cadence (rpm)",
+            Self::Elevation => "Elevation (m)",
+        }
+    }
+
+    /// Whether this channel has usable samples on the activity.
+    pub fn present_on(self, act: &symworx_io::ActivityData) -> bool {
+        match self {
+            Self::Power => act.has_power(),
+            Self::HeartRate => act.has_hr(),
+            Self::Speed => act.has_speed(),
+            Self::Cadence => act.has_cadence(),
+            Self::Elevation => act.has_altitude(),
+        }
+    }
+
+    /// Series values for charting (display units).
+    pub fn series(self, act: &symworx_io::ActivityData) -> Vec<f64> {
+        match self {
+            Self::Power => act.power_series(),
+            Self::HeartRate => act.hr_series(),
+            Self::Speed => act.speed_kmh_series(),
+            Self::Cadence => act.cadence_series(),
+            Self::Elevation => act.altitude_series_m(),
+        }
+    }
 }
 
 /// One ride file for calendar daily list.
@@ -93,6 +185,138 @@ pub struct CatalogRideRow {
     pub tss: f64,
     pub duration_s: f64,
     pub np_w: Option<f64>,
+}
+
+/// One activity row for Metrics / Library table (from catalog).
+#[derive(Debug, Clone)]
+pub struct ActivityMetricsUiRow {
+    pub id: i64,
+    pub ride_date: String,
+    pub source_file: String,
+    pub duration_s: f64,
+    pub sport: Option<String>,
+    pub avg_power_w: Option<f64>,
+    pub max_power_w: Option<f64>,
+    pub np_w: Option<f64>,
+    pub intensity_factor: Option<f64>,
+    pub tss: Option<f64>,
+    pub total_work_kj: Option<f64>,
+    pub avg_hr_bpm: Option<f64>,
+    pub max_hr_bpm: Option<f64>,
+    pub ftp_used_w: Option<f64>,
+}
+
+/// Numeric fields plottable on Metrics trends / bi-plots.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MetricsField {
+    Tss,
+    Np,
+    AvgPower,
+    DurationMin,
+    AvgHr,
+    If,
+    WorkKj,
+    MaxPower,
+}
+
+impl MetricsField {
+    pub const ALL: [MetricsField; 8] = [
+        MetricsField::Tss,
+        MetricsField::Np,
+        MetricsField::AvgPower,
+        MetricsField::DurationMin,
+        MetricsField::AvgHr,
+        MetricsField::If,
+        MetricsField::WorkKj,
+        MetricsField::MaxPower,
+    ];
+
+    /// Short label (status / compact UI).
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Tss => "TSLi",
+            Self::Np => "SEPi",
+            Self::AvgPower => "avg W",
+            Self::DurationMin => "dur min",
+            Self::AvgHr => "avg HR",
+            Self::If => "SRIi",
+            Self::WorkKj => "work kJ",
+            Self::MaxPower => "max W",
+        }
+    }
+
+    /// Axis / chart title: full name with LOADsym acronym when applicable.
+    pub fn axis_label(self) -> &'static str {
+        match self {
+            Self::Tss => "Training stress (TSLi)",
+            Self::Np => "Normalized power (SEPi)",
+            Self::AvgPower => "Average power (W)",
+            Self::DurationMin => "Duration (min)",
+            Self::AvgHr => "Average heart rate (bpm)",
+            Self::If => "Intensity factor (SRIi)",
+            Self::WorkKj => "Total work (kJ)",
+            Self::MaxPower => "Max power (W)",
+        }
+    }
+
+    pub fn short_key(self) -> char {
+        match self {
+            Self::Tss => '1',
+            Self::Np => '2',
+            Self::AvgPower => '3',
+            Self::DurationMin => '4',
+            Self::AvgHr => '5',
+            Self::If => '6',
+            Self::WorkKj => '7',
+            Self::MaxPower => '8',
+        }
+    }
+
+    pub fn from_digit(d: char) -> Option<Self> {
+        match d {
+            '1' => Some(Self::Tss),
+            '2' => Some(Self::Np),
+            '3' => Some(Self::AvgPower),
+            '4' => Some(Self::DurationMin),
+            '5' => Some(Self::AvgHr),
+            '6' => Some(Self::If),
+            '7' => Some(Self::WorkKj),
+            '8' => Some(Self::MaxPower),
+            _ => None,
+        }
+    }
+
+    pub fn next(self) -> Self {
+        let all = Self::ALL;
+        let i = all.iter().position(|&f| f == self).unwrap_or(0);
+        all[(i + 1) % all.len()]
+    }
+
+    pub fn value(self, row: &ActivityMetricsUiRow) -> Option<f64> {
+        let v = match self {
+            Self::Tss => row.tss,
+            Self::Np => row.np_w,
+            Self::AvgPower => row.avg_power_w,
+            Self::DurationMin => Some(row.duration_s / 60.0),
+            Self::AvgHr => row.avg_hr_bpm,
+            Self::If => row.intensity_factor,
+            Self::WorkKj => row.total_work_kj,
+            Self::MaxPower => row.max_power_w,
+        }?;
+        if !v.is_finite() {
+            return None;
+        }
+        // LOADsym metrics are non-negative for plotting; floor noise / bad signs.
+        Some(v.max(0.0))
+    }
+}
+
+/// Chart mode inside Metrics view.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum MetricsChartMode {
+    #[default]
+    Trend,
+    Biplot,
 }
 
 /// One ISO-ish week aggregate for calendar weekly list.
@@ -620,6 +844,8 @@ pub struct App {
     pub peak_params: PeakDetectParams,
     pub peak_param_selection: usize,
     pub help_mode: bool,
+    /// First Esc at a root screen arms quit; second Esc exits (also Ctrl+Q).
+    pub esc_quit_pending: bool,
     // New workflow / path support
     pub current_workflow: Workflow,
     pub spatial_view: SpatialView,
@@ -656,6 +882,18 @@ pub struct App {
     pub loadsym_scroll_from_week: bool,
     /// Per-ride rows from catalog (for daily file list).
     pub catalog_rides: Vec<CatalogRideRow>,
+    /// Full activity metrics for Metrics table (oldest → newest in load; UI may reverse).
+    pub catalog_activity_metrics: Vec<ActivityMetricsUiRow>,
+    /// Focused row index into `catalog_activity_metrics` (0 = oldest).
+    pub metrics_scroll: usize,
+    /// Trend vs bi-plot under the Metrics table.
+    pub metrics_chart_mode: MetricsChartMode,
+    /// Y metric for trend chart (vs ride index / time).
+    pub metrics_trend_field: MetricsField,
+    /// Bi-plot X axis field.
+    pub metrics_biplot_x: MetricsField,
+    /// Bi-plot Y axis field.
+    pub metrics_biplot_y: MetricsField,
     /// Weekly aggregates derived from daily series (oldest → newest).
     pub weekly_loads: Vec<WeeklyLoadRow>,
     /// Path of catalog last loaded into calendar (status only; may be None).
@@ -672,11 +910,19 @@ pub struct App {
     pub loadsym_cached_plan_err: Option<String>,
     /// Fingerprint of (goal, horizon, loads) used for the cache.
     pub loadsym_plan_cache_key: u64,
+    /// True when the user explicitly set goal with 1/2/3 (do not re-suggest until re-enter).
+    pub loadsym_goal_user_override: bool,
+    /// Last auto-suggestion summary for Optimization banner (empty if none).
+    pub loadsym_goal_suggest_note: String,
 
     // Loaded activity (from .fit or activity CSV) — used by LoadSym Workout
     pub loaded_activity: Option<symworx_io::ActivityData>,
     pub activity_scroll: usize,
-    pub activity_series: usize, // 0=power, 1=hr, 2=speed (fallback if not present)
+    /// Focused stream for summary/thresh stats (`WorkoutStream` index).
+    pub activity_series: usize,
+    /// Which workout streams are shown as chart panels (`WorkoutStream::COUNT`).
+    /// Closed panels redistribute height among remaining open ones.
+    pub workout_stream_on: [bool; WorkoutStream::COUNT],
     // Scrolling for BioSym Explore tab (long signals / tachogram x-axis)
     pub explore_scroll: usize,
     /// Waveform vs tachogram (interval) chart.
@@ -689,6 +935,15 @@ pub struct App {
     pub ftp: f64,
     // Directories to scan for .fit / activity files (in addition to ./data)
     pub loadsym_archive_dirs: Vec<PathBuf>,
+
+    /// Workout file-open modal active.
+    pub pending_workout_open: bool,
+    /// Discovered activity files for the open modal (newest first).
+    pub workout_file_list: Vec<PathBuf>,
+    /// Selection index into `workout_file_list`.
+    pub workout_file_sel: usize,
+    /// Selected ride index within the focused calendar day (`rides_for_focus_day`).
+    pub calendar_ride_sel: usize,
 
     /// Live host stream (simulator / future serial). When set, Explore shows live UI.
     pub live: Option<crate::live::LiveSession>,
@@ -721,6 +976,7 @@ impl App {
             spatial_decisions: None,
             spatial_events: vec![],
             help_mode: false,
+            esc_quit_pending: false,
             // workflow defaults
             current_workflow: Workflow::Home,
             spatial_view: SpatialView::Visualize,
@@ -745,6 +1001,12 @@ impl App {
             loadsym_week_scroll: 0,
             loadsym_scroll_from_week: false,
             catalog_rides: vec![],
+            catalog_activity_metrics: vec![],
+            metrics_scroll: 0,
+            metrics_chart_mode: MetricsChartMode::Trend,
+            metrics_trend_field: MetricsField::Tss,
+            metrics_biplot_x: MetricsField::DurationMin,
+            metrics_biplot_y: MetricsField::Tss,
             weekly_loads: vec![],
             loadsym_catalog_path: None,
             loadsym_from_catalog: false,
@@ -753,9 +1015,12 @@ impl App {
             loadsym_cached_plan: None,
             loadsym_cached_plan_err: None,
             loadsym_plan_cache_key: 0,
+            loadsym_goal_user_override: false,
+            loadsym_goal_suggest_note: String::new(),
             loaded_activity: None,
             activity_scroll: 0,
             activity_series: 0,
+            workout_stream_on: [true, true, true, false, false],
             explore_scroll: 0,
             explore_view: ExploreView::Waveform,
             workout_user_thresh: 0.0,
@@ -763,6 +1028,10 @@ impl App {
             ftp: 300.0,
             // Prefer personal velofit archive, then project-relative folders.
             loadsym_archive_dirs: symworx_io::default_activity_search_dirs(),
+            pending_workout_open: false,
+            workout_file_list: Vec::new(),
+            workout_file_sel: 0,
+            calendar_ride_sel: 0,
             live: None,
         };
         app.refresh_file_list();
@@ -777,8 +1046,27 @@ impl App {
         app
     }
 
+    /// Clear double-Esc quit arming (any successful Esc cancel or non-Esc key).
+    pub fn clear_esc_quit(&mut self) {
+        self.esc_quit_pending = false;
+    }
+
+    /// At a root screen with nothing left to cancel: first Esc arms, second quits.
+    /// Returns `true` when the process should exit.
+    pub fn esc_root_or_quit(&mut self) -> bool {
+        if self.esc_quit_pending {
+            self.esc_quit_pending = false;
+            true
+        } else {
+            self.esc_quit_pending = true;
+            self.status = "Esc again to quit  ·  Ctrl+Q also quits".to_string();
+            false
+        }
+    }
+
     pub fn clear_submodes(&mut self) {
         self.help_mode = false;
+        self.esc_quit_pending = false;
         self.pending_generate = false;
         self.filter_mode = false;
         self.pending_process = false;
@@ -796,9 +1084,16 @@ impl App {
         self.loaded_activity = None;
         self.activity_scroll = 0;
         self.activity_series = 0;
+        self.workout_stream_on = [true, true, true, false, false];
         self.explore_scroll = 0;
         self.workout_user_thresh = 0.0;
         self.workout_user_min_dur = 3;
+        self.pending_workout_open = false;
+        self.workout_file_list.clear();
+        self.workout_file_sel = 0;
+        self.calendar_ride_sel = 0;
+        self.loadsym_goal_user_override = false;
+        self.loadsym_goal_suggest_note.clear();
         // Live is a modal stream — stop when clearing modes / switching home.
         self.stop_live();
     }

@@ -21,21 +21,29 @@ use crate::app::App;
 pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
     if app.help_mode {
         let help = Paragraph::new(
-            "Spatial tab help (M-? or Esc to close)\n\n\
-             Generate / Import:\n\
-             • g     : generate synthetic demo (immediate)\n\
-             • i     : open import menu (load CSV from ./data)\n\
-             • v     : back to visualize\n\n\
-             Frame navigation:\n\
-             • ← →   : step frames\n\
-             • n / p : next / previous frame\n\
-             • < / > : jump to previous / next event tag\n\
-             • 1-9   : direct jump to event N\n\n\
-             Actions (with data loaded):\n\
-             • b     : infer ball carrier at current frame\n\
-             • e     : export CSV + JSON\n\
-             • l     : refresh status/legend\n\n\
-             Sections: frame details, event tags, per-player summaries.",
+            "SpatialSym — trajectories, decisions, space\n\
+             Close help:  Esc  or  Alt-?\n\n\
+             \n\
+             DATA\n\n\
+               g                   generate synthetic demo\n\
+               i                   import menu (CSV under ./data)\n\
+               v  /  Esc           leave import menu → visualize\n\n\
+             \n\
+             FRAMES\n\n\
+               ← →                 step frame\n\
+               n / p               next / previous frame\n\
+               < / >               previous / next event tag\n\
+               1–9                 jump to event N\n\n\
+             \n\
+             ACTIONS  (batch loaded)\n\n\
+               b                   infer ball carrier (current frame)\n\
+               e                   export CSV + JSON + meta → data/\n\
+               l                   refresh status / legend\n\n\
+             Panels: frame details · event tags · per-player summaries.\n\n\
+             \n\
+             GLOBAL\n\n\
+               Ctrl+H              Home\n\
+               Esc Esc / Ctrl+Q    quit (Esc-Esc at roots only)\n",
         )
         .block(Block::new().borders(Borders::ALL).title(" Help — Spatial "));
         frame.render_widget(help, area);

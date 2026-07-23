@@ -35,39 +35,50 @@ pub const TACHO_VIEW_LEN: usize = 80;
 pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
     if app.help_mode {
         let help = Paragraph::new(
-            "Explore help (M-? or Esc to close)\n\n\
-             WORKFLOW\n\
-             1. Import: Ctrl+G Resting PPG / Respiration — biosym ground-truth peaks kept\n\
-             2. Waveform: cyan series · green known primary · yellow secondary · red detected\n\
-             3. k peak detect  ·  K peak params (live)  ·  p process (incl. 1st/2nd derivative)\n\
-             4. Peak–peak intervals rebuild as a tachogram after each detect\n\
-             5. i toggle tachogram view  ·  o source (detected vs known)  ·  e export CSV\n\
-             6. Compare known vs detected (match count in status)\n\
-             7. Ctrl+L live dual stream: PPG + respiration split charts (Esc stop)\n\
-                Rolling window (~15 s / 300 pts) drops oldest once full\n\n\
-             BINDINGS\n\
-             • Ctrl+L  start/restart LIVE simulator (sid=S001, dual PPG+resp); Esc stops\n\
-             • p       process menu (1–5 ops; ←→ window for MA/median)\n\
-             • k       run peak detection (current params) + rebuild tachogram\n\
-             • K       peak parameter editor (chart stays visible; Enter applies)\n\
-             • i       toggle waveform ↔ tachogram (interval series)\n\
-             • o       tachogram source: detected peaks ↔ known primary\n\
-             • e       export tachogram CSV → data/tachogram_*.csv\n\
-             • t / T   toggle known / detected peak overlays (waveform)\n\
-             • r       reset original (clears detected peaks + tachogram)\n\
-             • ← → h l pan viewport (waveform samples / tachogram intervals)\n\
-             • Esc     stop live if active · else back to Import (or close submode)\n\n\
-             TACHOGRAM\n\
-             • Y = peak–peak interval (sec when fs known, else samples)\n\
-             • X = interval index (beat n → n+1)\n\
-             • Rates (events/min) in export column when fs known\n\
-             • Uses successive differences (symworx-math) on peak times\n\n\
-             PEAK PARAMS (K)\n\
-             • height_frac / prom_frac / min_interval_sec / match_tol\n\
-             • ↑↓ field  ←→/± live  1–4 jump  d defaults\n\
-             • k re-run (stay open)  ·  Enter apply + close  ·  Esc close\n\
-             • Waveform chart stays visible under the editor so overlays update live\n\n\
-             TIP: PPG → k → i (tachogram) → o (known vs detected IBI) → e export.",
+            "Explore — BioSym waveform, peaks, live\n\
+             Close help:  Esc  or  Alt-?\n\n\
+             \n\
+             CHART COLORS\n\n\
+               cyan                signal\n\
+               green               known primary peaks\n\
+               yellow              known secondary peaks\n\
+               red                 detected peaks\n\n\
+             \n\
+             BINDINGS\n\n\
+               ← →  h l            pan viewport\n\
+               p                   process menu (MA, median, detrend, derivatives)\n\
+               k                   peak detect (current params) + tachogram\n\
+               K                   peak param editor (live re-detect; chart stays)\n\
+               i                   waveform ↔ tachogram\n\
+               o                   tachogram source: detected ↔ known primary\n\
+               e                   export tachogram CSV → data/\n\
+               t / T               toggle known / detected overlays\n\
+               r                   reset to original series\n\
+               Esc                 stop live · close submode · else → Import\n\n\
+             \n\
+             LIVE  (BioSym only)\n\n\
+               Ctrl+L              start / restart simulator (sid=S001)\n\
+               Esc                 stop stream\n\
+                                   dual PPG + respiration · rolling ~15 s window\n\n\
+             \n\
+             PEAK PARAMS (K)\n\n\
+               ↑ ↓                 field\n\
+               ← → / ±             nudge (live re-run)\n\
+               1–4                 jump field\n\
+               d                   defaults\n\
+               k                   re-run, stay open\n\
+               Enter               apply + close\n\
+               Esc                 close\n\n\
+             \n\
+             TACHOGRAM\n\n\
+               Y                   peak–peak interval (s if fs known)\n\
+               X                   interval index\n\
+               Export              includes rate column when fs known\n\n\
+             Tip:  Ctrl+G PPG → k → i → o → e\n\n\
+             \n\
+             GLOBAL\n\n\
+               Ctrl+H              Home\n\
+               Esc Esc / Ctrl+Q    quit (Esc-Esc at roots only)\n",
         )
         .block(
             Block::new()

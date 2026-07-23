@@ -24,27 +24,34 @@ use crate::app::App;
 pub fn render_import_tab(frame: &mut Frame, app: &mut App, area: Rect) {
     if app.help_mode {
         let help = Paragraph::new(
-            "Import help (M-? or Esc to close)\n\n\
-             FILES\n\
-             • / : enter filter mode (type to narrow file list)\n\
-             • Esc/Enter (in filter): exit filter (keeps active filter)\n\
-             • ↑ ↓ : navigate list\n\
-             • Enter : load selected (or manual path)\n\
-             • c : convert selected (parquet/ibi → csv)\n\
-             • Ctrl+R / F5 : refresh file list\n\n\
-             GENERATE (Ctrl+G)\n\
-             • 1 Resting PPG — synthetic waveform + systolic/diastolic ground-truth peaks\n\
-             • 2 Respiration — volume series + inhalation/exhalation known peaks\n\
-             • 3 Stride intervals — no waveform peaks (event series)\n\
-             • Multi-waveform demo — several variants for multi-file experiments\n\
-             Peaks are saved as sidecar `*.peaks.csv` and loaded with the CSV.\n\n\
-             AFTER LOAD → Explore (Ctrl+2)\n\
-             • p process (filters + 1st/2nd derivative)\n\
-             • k peak detect · K peak params (live) · t/T overlays · r reset\n\
-             • i tachogram (peak–peak IBI) · o source · e export CSV\n\
-             • M-? on Explore for the full BioSym peak / tachogram workflow\n\n\
-             Files from ./data and . (csv/txt/dat etc) are discovered.\n\
-             Multi-column CSVs prompt for signal column.",
+            "Import — BioSym file list & generate\n\
+             Close help:  Esc  or  Alt-?\n\n\
+             \n\
+             FILES\n\n\
+               ↑ ↓                 navigate list\n\
+               Enter               load selected (or typed path)\n\
+               /                   filter mode (type to narrow)\n\
+               Esc / Enter         leave filter (filter text kept)\n\
+               c                   convert selected → CSV\n\
+               Ctrl+R  /  F5       refresh discovery\n\
+               type…               manual path (Esc clears)\n\n\
+             Multi-column CSVs open a column picker (number keys).\n\
+             Discovered under ./data and the project root.\n\n\
+             \n\
+             GENERATE  (Ctrl+G)\n\n\
+               1                   Resting PPG + ground-truth peaks\n\
+               2                   Respiration + known peaks\n\
+               3                   Stride intervals (event series)\n\
+               Esc                 cancel generate menu\n\n\
+             Peaks land in sidecar *.peaks.csv when applicable.\n\n\
+             \n\
+             NEXT\n\n\
+               Ctrl+2              Explore (peaks, process, live)\n\
+               Alt-? on Explore    full BioSym analysis help\n\n\
+             \n\
+             GLOBAL\n\n\
+               Ctrl+H              Home\n\
+               Esc Esc / Ctrl+Q    quit (Esc-Esc only at roots)\n",
         )
         .block(
             Block::new()

@@ -174,9 +174,17 @@ fn handle_db_command(args: &[String]) -> Result<(), String> {
                 let ftp_n: i64 = conn
                     .query_row("SELECT COUNT(*) FROM ftp_history", [], |r| r.get(0))
                     .unwrap_or(0);
+                let last = symworx_loadsym::catalog::meta_get(
+                    &conn,
+                    symworx_loadsym::catalog::META_LAST_INGEST_AT,
+                )?;
                 println!("db: {}", db.display());
                 println!("activities: {}", n);
                 println!("ftp_history rows: {}", ftp_n);
+                match last {
+                    Some(t) => println!("last_ingest_at: {}", t),
+                    None => println!("last_ingest_at: (none — next ingest scans all files once)"),
+                }
                 Ok(())
             }
             #[cfg(not(feature = "sqlite"))]
@@ -302,7 +310,13 @@ fn parse_ingest_target(args: &[String]) -> PathBuf {
     let mut i = 2usize;
     while i < args.len() {
         let a = &args[i];
-        if a == "--force" || a == "-F" {
+        if a == "--force"
+            || a == "-F"
+            || a == "--all"
+            || a == "-a"
+            || a == "--since-all"
+            || a == "--no-watermark"
+        {
             i += 1;
             continue;
         }
@@ -318,6 +332,7 @@ fn parse_ingest_target(args: &[String]) -> PathBuf {
                 | "--source"
                 | "--notes"
                 | "--until"
+                | "--since"
         ) {
             i += 2;
             continue;
@@ -331,18 +346,31 @@ fn parse_ingest_target(args: &[String]) -> PathBuf {
     default_velofit_raw()
 }
 
+/// `ingest --all` / `-a`: ignore last_ingest_at watermark (still skip known hashes unless --force).
+fn ingest_scan_all(args: &[String]) -> bool {
+    args.iter()
+        .any(|a| a == "--all" || a == "-a" || a == "--since-all" || a == "--no-watermark")
+}
+
 #[cfg(feature = "sqlite")]
 fn handle_ingest(args: &[String], force: bool) -> Result<(), String> {
     use symworx_loadsym::catalog::{
         IngestOutcome,
+        META_LAST_INGEST_AT,
+        filter_paths_since_mtime,
         ingest_one,
+        meta_get,
+        meta_set,
         open_catalog,
+        parse_meta_timestamp,
         recompute_load_metrics,
     };
 
     let db = parse_db_path(args);
     let ftp = parse_ftp(args);
     let target = parse_ingest_target(args);
+    // --force reprocess implies full scan; --all also full scan without re-score.
+    let scan_all = force || ingest_scan_all(args);
 
     if !db.exists() {
         symworx_loadsym::catalog::init_catalog(&db)?;
@@ -351,28 +379,70 @@ fn handle_ingest(args: &[String], force: bool) -> Result<(), String> {
     let conn = open_catalog(&db)?;
     let archive_root = default_velofit_root();
 
-    let paths = if target.is_dir() {
+    let all_paths = if target.is_dir() {
         find_fit_files(target.to_str().unwrap_or("."))
     } else {
-        vec![target]
+        vec![target.clone()]
     };
 
-    if paths.is_empty() {
+    if all_paths.is_empty() {
         return Err("No .fit files found for ingest/reprocess".into());
     }
 
+    let watermark = meta_get(&conn, META_LAST_INGEST_AT)?;
+    let since_unix = if scan_all {
+        None
+    } else {
+        watermark.as_deref().and_then(parse_meta_timestamp)
+    };
+
+    let total_on_disk = all_paths.len();
+    let paths = filter_paths_since_mtime(all_paths, since_unix);
+    let filtered_out = total_on_disk.saturating_sub(paths.len());
+
     if force {
         println!(
-            "reprocess mode: re-scoring with ftp_history (fallback FTP={:.0})",
+            "reprocess mode: re-scoring ALL candidates with ftp_history (fallback FTP={:.0})",
             ftp
         );
+    } else if scan_all {
+        println!(
+            "full scan (--all): checking {} file(s); known file_hash still skipped",
+            paths.len()
+        );
+    } else if let Some(ref wm) = watermark {
+        println!(
+            "incremental: last_ingest_at={}  candidates={}  skipped_by_mtime={} (use --all to recheck everything)",
+            wm,
+            paths.len(),
+            filtered_out
+        );
+    } else {
+        println!(
+            "first watermark run: scanning all {} file(s); will set last_ingest_at when done",
+            paths.len()
+        );
+    }
+
+    if paths.is_empty() {
+        println!(
+            "ingest done: nothing newer than watermark ({} on disk; use --all to recheck)",
+            total_on_disk
+        );
+        println!("db: {}", db.display());
+        return Ok(());
     }
 
     let mut inserted = 0usize;
     let mut skipped = 0usize;
     let mut failed = 0usize;
+    let n_paths = paths.len();
 
-    for p in &paths {
+    for (i, p) in paths.iter().enumerate() {
+        let n = i + 1;
+        if n == 1 || n == n_paths || n % 100 == 0 {
+            eprintln!("ingest progress {n}/{n_paths}  (+{inserted} ={skipped} !{failed})");
+        }
         match ingest_one(&conn, p, ftp, Some(&archive_root), force) {
             IngestOutcome::Inserted {
                 source_key,
@@ -402,12 +472,57 @@ fn handle_ingest(args: &[String], force: bool) -> Result<(), String> {
     // Rebuild daily rollups from activities (drops stale mtime-pile days after re-dating).
     let days_n = symworx_loadsym::catalog::recompute_all_daily_loads(&conn)?;
     let metrics_n = recompute_load_metrics(&conn)?;
+
+    // Advance watermark only on non-force incremental/full success (failures still advance;
+    // failed files can be retried with --all). Use UTC-ish sqlite now.
+    if !force {
+        meta_set(&conn, META_LAST_INGEST_AT, &sqlite_utcnow()?)?;
+    }
+
+    let wm_now = meta_get(&conn, META_LAST_INGEST_AT)?;
     println!(
-        "ingest done: inserted/updated={} skipped={} failed={}  daily_days={}  load_metrics_rows={}",
-        inserted, skipped, failed, days_n, metrics_n
+        "ingest done: inserted/updated={} skipped={} failed={}  mtime_filtered={}  daily_days={}  load_metrics_rows={}",
+        inserted, skipped, failed, filtered_out, days_n, metrics_n
     );
+    if let Some(w) = wm_now {
+        println!("last_ingest_at: {}", w);
+    }
     println!("db: {}", db.display());
     Ok(())
+}
+
+/// Current UTC time as `YYYY-MM-DD HH:MM:SS` (SQLite-friendly).
+fn sqlite_utcnow() -> Result<String, String> {
+    use std::time::{
+        SystemTime,
+        UNIX_EPOCH,
+    };
+    let secs = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| e.to_string())?
+        .as_secs() as i64;
+    // Format without chrono: decompose unix → UTC civil (inverse of civil_to_unix days)
+    Ok(unix_to_sqlite_utc(secs))
+}
+
+fn unix_to_sqlite_utc(secs: i64) -> String {
+    let days = secs.div_euclid(86400);
+    let sod = secs.rem_euclid(86400);
+    let h = sod / 3600;
+    let mi = (sod % 3600) / 60;
+    let se = sod % 60;
+    // days → civil (Howard Hinnant)
+    let z = days + 719468;
+    let era = if z >= 0 { z } else { z - 146096 } / 146097;
+    let doe = z - era * 146097;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+    let y = yoe + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = if m <= 2 { y + 1 } else { y };
+    format!("{:04}-{:02}-{:02} {:02}:{:02}:{:02}", y, m, d, h, mi, se)
 }
 
 fn parse_db_path(args: &[String]) -> PathBuf {
@@ -756,7 +871,10 @@ Commands:
   symload db print-schema [--sqlite|--postgres]
   symload db init [--db PATH]          (needs --features sqlite)
   symload db status [--db PATH]
-  symload ingest [path|dir] [--db PATH] [--ftp 280] [--force]
+  symload ingest [path|dir] [--db PATH] [--ftp 280] [--all] [--force]
+      Default: only files with mtime >= last_ingest_at (catalog_meta watermark).
+      --all / -a     recheck every file (hash skip still applies)
+      --force / -F   re-score all candidates (implies full scan; ignores watermark)
       FTP for each ride comes from ftp_history when set; --ftp is fallback only.
   symload reprocess [path|dir] [--ftp 280]   same as ingest --force (re-score loads)
   symload ftp list

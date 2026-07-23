@@ -372,6 +372,7 @@ pub fn derive_load_from_current_activity(app: &App) -> Option<f64> {
 }
 
 use crate::app::{
+    ActivityMetricsUiRow,
     CatalogRideRow,
     WeeklyLoadRow,
 };
@@ -385,6 +386,8 @@ pub fn try_load_loadsym_catalog(app: &mut App) -> Result<bool, String> {
                 app.loadsym_catalog_path = Some(path);
                 app.loadsym_from_catalog = false;
                 app.catalog_rides.clear();
+                app.catalog_activity_metrics.clear();
+                app.metrics_scroll = 0;
                 app.weekly_loads.clear();
                 return Ok(false);
             }
@@ -410,9 +413,71 @@ pub fn try_load_loadsym_catalog(app: &mut App) -> Result<bool, String> {
             );
             app.loadsym_catalog_path = Some(path);
             app.loadsym_from_catalog = true;
+            // Metrics table (best-effort; empty if query fails)
+            if let Ok(Some((_, metrics))) =
+                symworx_loadsym::catalog::try_load_default_activity_metrics()
+            {
+                app.catalog_activity_metrics = metrics
+                    .into_iter()
+                    .map(|r| ActivityMetricsUiRow {
+                        id: r.id,
+                        ride_date: r.ride_date,
+                        source_file: r.source_file,
+                        duration_s: r.duration_s,
+                        sport: r.sport,
+                        avg_power_w: r.avg_power_w,
+                        max_power_w: r.max_power_w,
+                        np_w: r.np_w,
+                        intensity_factor: r.intensity_factor,
+                        tss: r.tss,
+                        total_work_kj: r.total_work_kj,
+                        avg_hr_bpm: r.avg_hr_bpm,
+                        max_hr_bpm: r.max_hr_bpm,
+                        ftp_used_w: r.ftp_used_w,
+                    })
+                    .collect();
+                app.metrics_scroll = app.catalog_activity_metrics.len().saturating_sub(1);
+            } else {
+                app.catalog_activity_metrics.clear();
+                app.metrics_scroll = 0;
+            }
             invalidate_loadsym_plan_cache(app);
             focus_calendar_most_recent(app);
             Ok(true)
+        }
+    }
+}
+
+/// Open the focused Metrics-table ride in Workout Analysis.
+pub fn open_metrics_row_into_workout(app: &mut App) -> bool {
+    if app.catalog_activity_metrics.is_empty() {
+        app.status = "No activity metrics — r to reload catalog".to_string();
+        return false;
+    }
+    let idx = app
+        .metrics_scroll
+        .min(app.catalog_activity_metrics.len().saturating_sub(1));
+    let row = app.catalog_activity_metrics[idx].clone();
+    let Some(path) = resolve_activity_path(&row.source_file, &app.loadsym_archive_dirs) else {
+        app.status = format!("Cannot resolve {} ({})", row.ride_date, row.source_file);
+        return false;
+    };
+    match load_activity_into_app(app, &path) {
+        Ok(msg) => {
+            app.loadsym_view = crate::app::LoadSymView::Workout;
+            app.status = format!(
+                "{} · from metrics {} TSLi={}",
+                msg,
+                row.ride_date,
+                row.tss
+                    .map(|t| format!("{:.0}", t))
+                    .unwrap_or_else(|| "-".into())
+            );
+            true
+        }
+        Err(e) => {
+            app.status = e;
+            false
         }
     }
 }
@@ -427,6 +492,8 @@ pub fn apply_demo_daily_loads(app: &mut App, days: usize) {
     app.daily_risk.clear();
     app.daily_ride_counts = vec![1; app.daily_loads.len()];
     app.catalog_rides.clear();
+    app.catalog_activity_metrics.clear();
+    app.metrics_scroll = 0;
     app.weekly_loads = build_weekly_loads(
         &app.daily_load_dates,
         &app.daily_loads,
@@ -516,6 +583,7 @@ pub fn focus_calendar_most_recent(app: &mut App) {
         app.loadsym_scroll = app.weekly_loads[app.loadsym_week_scroll].day_index_hi;
     }
     app.loadsym_scroll_from_week = false;
+    app.calendar_ride_sel = 0;
 }
 
 /// Build Mon–Sun weeks from daily series.
@@ -658,4 +726,294 @@ pub fn rides_for_focus_day(app: &App) -> Vec<&CatalogRideRow> {
         .iter()
         .filter(|r| r.ride_date == date)
         .collect()
+}
+
+/// Clamp `calendar_ride_sel` to the rides available on the focused day.
+pub fn clamp_calendar_ride_sel(app: &mut App) {
+    let n = rides_for_focus_day(app).len();
+    if n == 0 {
+        app.calendar_ride_sel = 0;
+    } else {
+        app.calendar_ride_sel = app.calendar_ride_sel.min(n - 1);
+    }
+}
+
+/// Resolve a catalog `source_file` key (absolute, relative to VELOFIT, or basename search).
+pub fn resolve_activity_path(
+    source_key: &str,
+    search_dirs: &[std::path::PathBuf],
+) -> Option<std::path::PathBuf> {
+    use std::path::{
+        Path,
+        PathBuf,
+    };
+    let key = source_key.trim();
+    if key.is_empty() {
+        return None;
+    }
+    let as_path = PathBuf::from(key);
+    if as_path.is_absolute() && as_path.is_file() {
+        return Some(as_path);
+    }
+    if as_path.is_file() {
+        return Some(as_path);
+    }
+
+    let root = symworx_io::default_velofit_root();
+    let candidates = [
+        root.join(key),
+        symworx_io::default_velofit_raw().join(key),
+        symworx_io::default_velofit_inbox().join(key),
+        root.join("raw").join(key),
+        root.join("inbox").join(key),
+    ];
+    for c in candidates {
+        if c.is_file() {
+            return Some(c);
+        }
+    }
+
+    // Basename-only match under search dirs (non-recursive + one recursive pass on velofit)
+    let base = Path::new(key)
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or(key);
+    let entries = symworx_io::discover_activity_files(search_dirs, false);
+    for e in &entries {
+        if e.path.file_name().and_then(|n| n.to_str()) == Some(base) {
+            return Some(e.path.clone());
+        }
+    }
+    // Recursive under velofit root if present (S3 layouts can nest)
+    if root.is_dir() {
+        let nested = symworx_io::discover_activity_files(&[root], true);
+        for e in nested {
+            if e.path.file_name().and_then(|n| n.to_str()) == Some(base) {
+                return Some(e.path);
+            }
+        }
+    }
+    None
+}
+
+/// Load an activity file into the Workout analyzer state.
+///
+/// **Panel visibility:** if an activity is already loaded (reload via `i` / `o` /
+/// calendar), keep the user’s current `workout_stream_on` selection. Only the
+/// first open of a session (no prior activity) defaults to “all present streams”.
+pub fn load_activity_into_app(app: &mut App, path: &std::path::Path) -> Result<String, String> {
+    let path_str = path.to_string_lossy();
+    let act = symworx_io::load_activity(&path_str).map_err(|e| format!("load failed: {e}"))?;
+    if act.is_empty() {
+        return Err(format!("no samples in {}", path.display()));
+    }
+    let n = act.len();
+    let src = act.source.clone();
+    use crate::app::WorkoutStream;
+
+    // Preserve user panel layout when reloading (e.g. `i` after closing elevation).
+    let preserve_panels = app.loaded_activity.is_some();
+    let mut on = if preserve_panels {
+        app.workout_stream_on
+    } else {
+        // First load: open every channel that has data.
+        let mut on = [false; WorkoutStream::COUNT];
+        for s in WorkoutStream::ALL {
+            on[s.index()] = s.present_on(&act);
+        }
+        on
+    };
+    // Always keep at least one panel open.
+    if !on.iter().any(|&v| v) {
+        // Prefer a present stream, else power.
+        let fallback = WorkoutStream::ALL
+            .iter()
+            .find(|s| s.present_on(&act))
+            .copied()
+            .unwrap_or(WorkoutStream::Power);
+        on[fallback.index()] = true;
+    }
+
+    // Focus stats: keep previous focus on reload if still open; else first present stream.
+    let series = if preserve_panels {
+        let prev = WorkoutStream::from_index(app.activity_series).unwrap_or(WorkoutStream::Power);
+        if on[prev.index()] {
+            prev
+        } else {
+            WorkoutStream::ALL
+                .iter()
+                .copied()
+                .find(|s| on[s.index()])
+                .unwrap_or(WorkoutStream::Power)
+        }
+    } else if act.has_power() {
+        WorkoutStream::Power
+    } else if act.has_hr() {
+        WorkoutStream::HeartRate
+    } else if act.has_speed() {
+        WorkoutStream::Speed
+    } else if act.has_cadence() {
+        WorkoutStream::Cadence
+    } else {
+        WorkoutStream::Elevation
+    };
+
+    app.loaded_activity = Some(act);
+    app.activity_scroll = 0;
+    app.activity_series = series.index();
+    app.workout_stream_on = on;
+    // Keep thresh/dur on reload so exploration state survives `i`.
+    if !preserve_panels {
+        app.workout_user_thresh = 0.0;
+        app.workout_user_min_dur = 3;
+    }
+    app.pending_workout_open = false;
+    let open_n = on.iter().filter(|&&v| v).count();
+    Ok(format!(
+        "Loaded {} ({} samples) · {} panel(s) kept  1–5 toggle",
+        src, n, open_n
+    ))
+}
+
+/// Toggle a workout chart panel; refuses to close the last open panel.
+/// Returns a status string.
+pub fn toggle_workout_panel(app: &mut App, which: u8) -> String {
+    use crate::app::WorkoutStream;
+    let Some(stream) = WorkoutStream::from_index(which as usize) else {
+        return "Unknown stream (use 1–5)".into();
+    };
+    let idx = stream.index();
+    let open_count = app.workout_stream_on.iter().filter(|&&v| v).count();
+    let currently = app.workout_stream_on[idx];
+    let name = stream.short_label();
+
+    if currently && open_count <= 1 {
+        return format!("Keep at least one panel open ({name})");
+    }
+
+    // Optional: warn if enabling a channel with no data (still allowed so user can see empty).
+    let has_data = app
+        .loaded_activity
+        .as_ref()
+        .map(|a| stream.present_on(a))
+        .unwrap_or(false);
+
+    app.workout_stream_on[idx] = !currently;
+    app.activity_series = idx;
+    let now = app.workout_stream_on[idx];
+    if now && !has_data {
+        format!("Panel {name}: shown (no data in file)  ·  1–5 toggle · height redistributes")
+    } else {
+        format!(
+            "Panel {name}: {}  ·  1–5 toggle · remaining fill height",
+            if now { "shown" } else { "hidden" }
+        )
+    }
+}
+
+/// Open the currently selected calendar ride into Workout Analysis.
+/// Returns true if navigation to Workout succeeded.
+pub fn open_calendar_ride_into_workout(app: &mut App) -> bool {
+    clamp_calendar_ride_sel(app);
+    let rides: Vec<CatalogRideRow> = rides_for_focus_day(app).into_iter().cloned().collect();
+    if rides.is_empty() {
+        app.status =
+            "No ride files on this day (demo days have none — use catalog + Enter/o)".to_string();
+        return false;
+    }
+    let ride = &rides[app.calendar_ride_sel];
+    let Some(path) = resolve_activity_path(&ride.source_file, &app.loadsym_archive_dirs) else {
+        app.status = format!(
+            "Cannot resolve file for {} ({})",
+            ride.ride_date, ride.source_file
+        );
+        return false;
+    };
+    match load_activity_into_app(app, &path) {
+        Ok(msg) => {
+            app.loadsym_view = crate::app::LoadSymView::Workout;
+            app.status = format!(
+                "{} · from calendar {} TSLi={:.1}",
+                msg, ride.ride_date, ride.tss
+            );
+            true
+        }
+        Err(e) => {
+            app.status = e;
+            false
+        }
+    }
+}
+
+/// Populate the workout open-file modal list (newest first).
+pub fn refresh_workout_file_list(app: &mut App) {
+    let entries = symworx_io::discover_activity_files(&app.loadsym_archive_dirs, false);
+    app.workout_file_list = entries.into_iter().map(|e| e.path).collect();
+    app.workout_file_sel = 0;
+}
+
+/// Open selected path from the workout file browser.
+pub fn open_selected_workout_file(app: &mut App) -> bool {
+    if app.workout_file_list.is_empty() {
+        app.status = "No activity files in $VELOFIT_HOME/raw|inbox or ./data".to_string();
+        app.pending_workout_open = false;
+        return false;
+    }
+    let idx = app
+        .workout_file_sel
+        .min(app.workout_file_list.len().saturating_sub(1));
+    let path = app.workout_file_list[idx].clone();
+    match load_activity_into_app(app, &path) {
+        Ok(msg) => {
+            app.status = msg;
+            true
+        }
+        Err(e) => {
+            app.status = e;
+            false
+        }
+    }
+}
+
+/// Suggest planning goal from form/fatigue/ACLi when the user has not overridden.
+///
+/// `force` ignores `loadsym_goal_user_override` (used on first enter).
+pub fn apply_suggested_load_goal(app: &mut App, force: bool) {
+    use symworx_loadsym::load::{
+        compute_acute_chronic,
+        simulate_pulse_response,
+        suggest_load_goal,
+        GoalSuggestParams,
+        PulseResponseParams,
+    };
+    if app.daily_loads.is_empty() {
+        app.loadsym_goal_suggest_note.clear();
+        return;
+    }
+    if !force && app.loadsym_goal_user_override {
+        return;
+    }
+    let params = PulseResponseParams::pmc_defaults();
+    let Ok(series) = simulate_pulse_response(&app.daily_loads, &params, None) else {
+        app.loadsym_goal_suggest_note = "suggest: pulse-response failed".into();
+        return;
+    };
+    let Some(state) = series.last_state() else {
+        return;
+    };
+    let acwr = compute_acute_chronic(&app.daily_loads, 7, 28)
+        .ok()
+        .map(|s| s.acwr);
+    let suggestion = suggest_load_goal(&state, acwr, &GoalSuggestParams::default());
+    app.loadsym_plan_goal = suggestion.goal;
+    app.loadsym_goal_suggest_note = format!(
+        "suggested {} ({:.0}% conf) · form {:+.0} · 1/2/3 override",
+        suggestion.goal.as_str(),
+        suggestion.confidence * 100.0,
+        state.form
+    );
+    if force {
+        app.loadsym_goal_user_override = false;
+    }
+    invalidate_loadsym_plan_cache(app);
 }
