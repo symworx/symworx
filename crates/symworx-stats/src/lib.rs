@@ -60,6 +60,9 @@ pub mod distance;
 /// Predicted-vs-expected error metrics (MAE, RMSE, R², regression report).
 pub mod error_metrics;
 
+/// Model comparison / selection (AIC, BIC, nested χ² / F, adjusted R²).
+pub mod model_select;
+
 /// Feature preprocessing (standardize, min–max). Fit on train only.
 pub mod preprocess;
 
@@ -100,6 +103,9 @@ pub mod svd;
 
 /// Index-based train/test splits and optional training folds.
 pub mod split;
+
+/// Teaching / demo synthetic tabular generators (StatsSym).
+pub mod synthetic;
 
 /// Variability measurements (e.g., ibi, rmssd, sdnn)
 pub mod variability;
@@ -197,6 +203,17 @@ pub use logistic::{
     logistic_regression_ovr,
     sigmoid,
 };
+pub use model_select::{
+    ModelFitScores,
+    NestedModelTest,
+    adjusted_r2,
+    aic_gaussian,
+    bic_gaussian,
+    chi2_sf,
+    nested_f_stat,
+    nested_lr_chi2,
+    rss,
+};
 pub use naive_bayes::{
     GaussianNb,
     GaussianNbConfig,
@@ -245,6 +262,14 @@ pub use split::{
     take_indices,
     take_indices_cloned,
     train_test_split,
+};
+pub use synthetic::{
+    SyntheticError,
+    SyntheticPreset,
+    SyntheticSpec,
+    SyntheticTable,
+    generate as generate_synthetic,
+    generate_default as generate_synthetic_default,
 };
 pub use variability::{
     mean_successive_differences,

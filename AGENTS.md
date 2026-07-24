@@ -26,6 +26,10 @@ The main active work is on **`crates/symworx-tui`** (the `symview` TUI).
 - **Explore** (Tab 2): Statistics, simple visualization (Sparkline), future filtering/processing/edim/fnn
 - **Dynamics** (Tab 3): RQA, recurrence plots, nonlinear tools (future)
 
+**Home workflows (order):** `1` BioSym · `2` StatsSym · `3` LoadSym · `4` SpatialSym.
+
+**LoadSym sub-views (order):** `1` Workout · `2` Metrics · `3` Calendar · `4` Optimization.
+
 ### Key TUI Conventions (Important — Do Not Break)
 
 **Keybindings (finalized after multiple iterations):**

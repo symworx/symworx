@@ -13,26 +13,36 @@ use symworx_spatialsym::{
     Vec2,
 };
 
-/// Top-level tabs for the application
+/// Top-level tabs for the application.
+/// BioSym order (footer): Import · Explore · Dynamics · Generate
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Tab {
     Import,
     Explore,
     Dynamics,
+    /// BioSym synthetic demo generator (Ctrl+G; also a module tab).
+    Generate,
     Spatial,
     LoadSym,
+    /// StatsSym workflow surface (internal sub-views; not BioSym tab bar).
+    Stats,
     // Home is special: when active (via workflow) we render a full landing instead of the bar+content
     Home,
 }
 
 impl Tab {
+    /// BioSym sub-tabs in footer / Ctrl+←→ order.
+    pub const BIOSYM_TABS: [Tab; 4] = [Tab::Import, Tab::Explore, Tab::Dynamics, Tab::Generate];
+
     pub fn title(self) -> &'static str {
         match self {
             Tab::Import => "Import",
             Tab::Explore => "Explore",
             Tab::Dynamics => "Dynamics",
+            Tab::Generate => "Generate",
             Tab::Spatial => "Spatial",
             Tab::LoadSym => "LoadSym",
+            Tab::Stats => "StatsSym",
             Tab::Home => "Home",
         }
     }
@@ -42,15 +52,39 @@ impl Tab {
             Tab::Import => 0,
             Tab::Explore => 1,
             Tab::Dynamics => 2,
-            Tab::Spatial => 3,
-            Tab::LoadSym => 4,
-            Tab::Home => 0, // not used in main 4-tab bar
+            Tab::Generate => 3,
+            Tab::Spatial => 4,
+            Tab::LoadSym => 5,
+            Tab::Stats => 6,
+            Tab::Home => 0,
         }
+    }
+
+    /// Previous BioSym tab (clamped).
+    pub fn biosym_prev(self) -> Tab {
+        let i = Self::BIOSYM_TABS
+            .iter()
+            .position(|&t| t == self)
+            .unwrap_or(0);
+        if i == 0 {
+            Tab::Import
+        } else {
+            Self::BIOSYM_TABS[i - 1]
+        }
+    }
+
+    /// Next BioSym tab (clamped).
+    pub fn biosym_next(self) -> Tab {
+        let i = Self::BIOSYM_TABS
+            .iter()
+            .position(|&t| t == self)
+            .unwrap_or(0);
+        Self::BIOSYM_TABS[(i + 1).min(Self::BIOSYM_TABS.len() - 1)]
     }
 }
 
 pub fn tab_titles() -> Vec<ratatui::text::Span<'static>> {
-    vec!["1: Import", "2: Explore", "3: Dynamics", "4: Spatial"]
+    vec!["1: Import", "2: Explore", "3: Dynamics", "G: Generate"]
         .into_iter()
         .map(ratatui::text::Span::from)
         .collect()
@@ -64,6 +98,265 @@ pub enum Workflow {
     BioSym,
     SpatialSym,
     LoadSym,
+    /// Tabular statistics lab (students + research).
+    StatsSym,
+}
+
+/// StatsSym sub-tabs (parallel to BioSym Import · Explore · Dynamics).
+/// Order is left→right for Ctrl+arrows and the footer tab strip.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum StatsView {
+    /// File discovery + path load (entry point, like BioSym Import).
+    #[default]
+    Import,
+    /// Analysis workspace (like BioSym Explore).
+    Lab,
+    /// Synthetic teaching presets (also via Ctrl+G).
+    Generate,
+}
+
+impl StatsView {
+    pub const ALL: [StatsView; 3] = [StatsView::Import, StatsView::Lab, StatsView::Generate];
+
+    pub fn title(self) -> &'static str {
+        match self {
+            Self::Import => "Import",
+            Self::Lab => "Lab",
+            Self::Generate => "Generate",
+        }
+    }
+
+    pub fn index(self) -> usize {
+        match self {
+            Self::Import => 0,
+            Self::Lab => 1,
+            Self::Generate => 2,
+        }
+    }
+
+    pub fn from_index(i: usize) -> Self {
+        Self::ALL[i.min(Self::ALL.len() - 1)]
+    }
+
+    pub fn prev(self) -> Self {
+        let i = self.index();
+        if i == 0 {
+            self
+        } else {
+            Self::from_index(i - 1)
+        }
+    }
+
+    pub fn next(self) -> Self {
+        Self::from_index(self.index().saturating_add(1).min(Self::ALL.len() - 1))
+    }
+}
+
+/// Guided Lab tasks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum StatsLabTask {
+    #[default]
+    Describe,
+    Correlate,
+    /// OLS regression + fit / residual plots (single X).
+    Regress,
+    /// Univariate polynomial degree search (Fit · Poly).
+    Poly,
+    /// Logistic classification (binary or multiclass OVR).
+    Classify,
+    /// Train/test + k-fold evaluation (OLS multi-X for now).
+    Pipeline,
+}
+
+impl StatsLabTask {
+    pub const ALL: [StatsLabTask; 6] = [
+        StatsLabTask::Describe,
+        StatsLabTask::Correlate,
+        StatsLabTask::Regress,
+        StatsLabTask::Poly,
+        StatsLabTask::Classify,
+        StatsLabTask::Pipeline,
+    ];
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Describe => "Describe",
+            Self::Correlate => "Correlate",
+            Self::Regress => "Fit OLS",
+            Self::Poly => "Fit Poly",
+            Self::Classify => "Classify",
+            Self::Pipeline => "Pipeline",
+        }
+    }
+}
+
+/// Bottom residual panel mode.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ResidualPanelMode {
+    #[default]
+    BlandAltman,
+    Histogram,
+}
+
+/// Kind of metrics shown in the Pipeline splits table.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum SplitMetricKind {
+    #[default]
+    Regression,
+    Classification,
+}
+
+/// Pipeline evaluation model (what Pipeline fits on each split).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum PipelineModel {
+    #[default]
+    Ols,
+    /// Logistic: binary if 2 classes, OVR if 3+.
+    Logistic,
+}
+
+impl PipelineModel {
+    pub const ALL: [PipelineModel; 2] = [PipelineModel::Ols, PipelineModel::Logistic];
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Ols => "OLS",
+            Self::Logistic => "Logistic",
+        }
+    }
+
+    pub fn next(self) -> Self {
+        match self {
+            Self::Ols => Self::Logistic,
+            Self::Logistic => Self::Ols,
+        }
+    }
+}
+
+/// One row in a Lab metrics table (Pipeline splits **or** Poly degrees).
+#[derive(Debug, Clone, Default)]
+pub struct SplitMetricsRow {
+    /// Display label: "Full", "Train", "d=2", …
+    pub label: String,
+    pub n: usize,
+    /// Regression: R². Classification: accuracy.
+    pub r2: f64,
+    /// Regression: RMSE. Classification: balanced accuracy.
+    pub rmse: f64,
+    /// Regression: MAE. Classification: macro-F1.
+    pub mae: f64,
+    pub metric_kind: SplitMetricKind,
+    /// Short note (e.g. "hold-out", "CV val", "β₀=…").
+    pub note: String,
+    /// True for the recommended / best-by-R² row (Poly, etc.).
+    pub is_best: bool,
+    /// Plot: X series (ŷ for multi-feature, or predictor for simple).
+    pub plot_x: Vec<f64>,
+    /// Plot: observed y.
+    pub plot_y: Vec<f64>,
+    /// Optional fit overlay X (identity line endpoints or sorted fit).
+    pub fit_line_x: Vec<f64>,
+    pub fit_line_y: Vec<f64>,
+    pub ba_mean: Vec<f64>,
+    pub residuals: Vec<f64>,
+    pub scatter_x_label: String,
+    pub scatter_y_label: String,
+    pub is_pred_vs_obs: bool,
+}
+
+/// Result of a Lab run (for metrics text + charts).
+#[derive(Debug, Clone, Default)]
+pub struct StatsLabResult {
+    pub task: StatsLabTask,
+    pub summary: String,
+    pub interpretation: String,
+    /// Model name shown in pipeline header (e.g. "OLS").
+    pub model_label: String,
+    /// Scatter X (predictor or ŷ for multi-feature). Active plot when no split focus.
+    pub scatter_x: Vec<f64>,
+    /// Observed y.
+    pub scatter_y: Vec<f64>,
+    /// Fitted line X (sorted) for overlay; empty if N/A.
+    pub fit_line_x: Vec<f64>,
+    /// Fitted line Y.
+    pub fit_line_y: Vec<f64>,
+    /// Mean of (y, ŷ) for Bland–Altman X.
+    pub ba_mean: Vec<f64>,
+    /// Residuals e = y − ŷ for Bland–Altman Y / histogram.
+    pub residuals: Vec<f64>,
+    /// Axis title for scatter X.
+    pub scatter_x_label: String,
+    pub scatter_y_label: String,
+    /// True when scatter is ŷ vs y (identity line preferred).
+    pub is_pred_vs_obs: bool,
+    /// Pipeline splits or Poly degrees; plots follow [`Self::focused_row`].
+    pub metrics_rows: Vec<SplitMetricsRow>,
+    /// Index into [`Self::metrics_rows`] for highlighted row / active plot.
+    pub focused_row: usize,
+    /// Index of best / recommended row (e.g. Poly best R²); shown under the table.
+    pub best_row: Option<usize>,
+    /// Extra blurb under the metrics table (best model coeffs, etc.).
+    pub table_footer: String,
+    /// Left-panel table title: "Splits" | "Degrees" | …
+    pub metrics_table_title: String,
+}
+
+impl StatsLabResult {
+    /// Series used by the fit / residual panels (focused split when present).
+    pub fn active_plot(
+        &self,
+    ) -> (
+        &[f64],
+        &[f64],
+        &[f64],
+        &[f64],
+        &[f64],
+        &[f64],
+        &str,
+        &str,
+        bool,
+    ) {
+        if let Some(row) = self.metrics_rows.get(self.focused_row) {
+            (
+                &row.plot_x,
+                &row.plot_y,
+                &row.fit_line_x,
+                &row.fit_line_y,
+                &row.ba_mean,
+                &row.residuals,
+                row.scatter_x_label.as_str(),
+                row.scatter_y_label.as_str(),
+                row.is_pred_vs_obs,
+            )
+        } else {
+            (
+                &self.scatter_x,
+                &self.scatter_y,
+                &self.fit_line_x,
+                &self.fit_line_y,
+                &self.ba_mean,
+                &self.residuals,
+                self.scatter_x_label.as_str(),
+                self.scatter_y_label.as_str(),
+                self.is_pred_vs_obs,
+            )
+        }
+    }
+
+    pub fn focus_next(&mut self) {
+        if self.metrics_rows.is_empty() {
+            return;
+        }
+        self.focused_row = (self.focused_row + 1) % self.metrics_rows.len();
+    }
+
+    pub fn focus_prev(&mut self) {
+        if self.metrics_rows.is_empty() {
+            return;
+        }
+        let n = self.metrics_rows.len();
+        self.focused_row = (self.focused_row + n - 1) % n;
+    }
 }
 
 /// Spatial sub-view (equivalent of sub-tabs inside the Spatial tab)
@@ -835,7 +1128,12 @@ pub struct App {
     pub spatial_events: Vec<(usize, String)>,
     pub file_filter: String,
     pub filter_mode: bool,
+    /// Import: file delete confirmation (`x` arm · `y` confirm · `n`/Esc cancel).
+    pub pending_delete: Option<PathBuf>,
+    /// Legacy overlay flag (prefer `Tab::Generate`); cleared on cancel/nav.
     pub pending_generate: bool,
+    /// BioSym Generate tab: which demo preset is highlighted (0..2).
+    pub bio_gen_preset: usize,
     pub pending_process: bool,
     pub process_selection: usize,
     pub process_window: usize,
@@ -894,6 +1192,39 @@ pub struct App {
     pub metrics_biplot_x: MetricsField,
     /// Bi-plot Y axis field.
     pub metrics_biplot_y: MetricsField,
+    // StatsSym
+    pub stats_view: StatsView,
+    pub stats_selection: usize,
+    /// Loaded numeric table for StatsSym (CSV via symworx-io).
+    pub stats_table: Option<symworx_io::TableData>,
+    /// Focused column index in Import/Lab preview.
+    pub stats_col_focus: usize,
+    /// Generate menu: which teaching preset is highlighted.
+    pub stats_gen_preset: usize,
+    /// Generate: sample size.
+    pub stats_gen_n: usize,
+    /// Generate: RNG seed.
+    pub stats_gen_seed: u64,
+    /// Generate: noise / softness scale.
+    pub stats_gen_noise: f64,
+    /// Last generate notes (ground truth) for status / Lab.
+    pub stats_gen_notes: String,
+    /// Lab: selected task index into [`StatsLabTask::ALL`].
+    pub stats_lab_task: usize,
+    /// Lab: feature / X column index.
+    pub stats_lab_x_col: usize,
+    /// Lab: target / Y column index.
+    pub stats_lab_y_col: usize,
+    /// Lab: residual panel Bland–Altman vs histogram.
+    pub stats_residual_mode: ResidualPanelMode,
+    /// Lab: last analysis result (charts + text).
+    pub stats_lab_result: Option<StatsLabResult>,
+    /// Pipeline: requested k-fold count on the train set (clamped at run time).
+    pub stats_pipeline_k: usize,
+    /// Poly: max degree to search (`0..=max`, subject to sample size).
+    pub stats_poly_max_degree: usize,
+    /// Pipeline: OLS vs Logistic evaluation model (`m` to cycle).
+    pub stats_pipeline_model: PipelineModel,
     /// Weekly aggregates derived from daily series (oldest → newest).
     pub weekly_loads: Vec<WeeklyLoadRow>,
     /// Path of catalog last loaded into calendar (status only; may be None).
@@ -956,13 +1287,14 @@ impl App {
             file_list: Vec::new(),
             list_state: ListState::default(),
             manual_path: String::new(),
-            status: "Home — Select path: 1=BioSym  2=LoadSym  3=SpatialSym  • Ctrl+H home"
-                .to_string(),
+            status: "Home — 1=BioSym  2=StatsSym  3=LoadSym  4=Spatial  • Ctrl+H home".to_string(),
             loaded_signal: None,
             pending_load: None,
             file_filter: String::new(),
             filter_mode: false,
+            pending_delete: None,
             pending_generate: false,
+            bio_gen_preset: 0,
             pending_process: false,
             process_selection: 0,
             process_window: 5,
@@ -1007,6 +1339,23 @@ impl App {
             metrics_trend_field: MetricsField::Tss,
             metrics_biplot_x: MetricsField::DurationMin,
             metrics_biplot_y: MetricsField::Tss,
+            stats_view: StatsView::Import,
+            stats_selection: 0,
+            stats_table: None,
+            stats_col_focus: 0,
+            stats_gen_preset: 0,
+            stats_gen_n: 200,
+            stats_gen_seed: 42,
+            stats_gen_noise: 0.5,
+            stats_gen_notes: String::new(),
+            stats_lab_task: 2, // default Regress for charting demos
+            stats_lab_x_col: 0,
+            stats_lab_y_col: 1,
+            stats_residual_mode: ResidualPanelMode::BlandAltman,
+            stats_lab_result: None,
+            stats_pipeline_k: 5,
+            stats_poly_max_degree: 3,
+            stats_pipeline_model: PipelineModel::Ols,
             weekly_loads: vec![],
             loadsym_catalog_path: None,
             loadsym_from_catalog: false,
@@ -1068,6 +1417,7 @@ impl App {
         self.help_mode = false;
         self.esc_quit_pending = false;
         self.pending_generate = false;
+        self.pending_delete = None;
         self.filter_mode = false;
         self.pending_process = false;
         self.pending_peak_params = false;
@@ -1506,6 +1856,87 @@ impl App {
         }
     }
 
+    /// Default X/Y Lab columns after acquire.
+    ///
+    /// Y prefers a header named like `y` / `target` / `label` / `response` /
+    /// `outcome` / `class` (case-insensitive, also `_suffix` / `prefix_`); else
+    /// the last column. X is the first column that is not Y.
+    pub fn smart_stats_lab_cols(table: &symworx_io::TableData) -> (usize, usize) {
+        let n = table.n_cols();
+        if n == 0 {
+            return (0, 0);
+        }
+        if n == 1 {
+            return (0, 0);
+        }
+        const Y_KEYS: &[&str] = &["y", "target", "label", "response", "outcome", "class"];
+        let y = table
+            .headers
+            .iter()
+            .enumerate()
+            .find(|(_, h)| {
+                let lower = h.to_ascii_lowercase();
+                Y_KEYS.iter().any(|k| {
+                    lower == *k
+                        || lower.ends_with(&format!("_{k}"))
+                        || lower.starts_with(&format!("{k}_"))
+                })
+            })
+            .map(|(i, _)| i)
+            .unwrap_or(n - 1);
+        let x = (0..n).find(|&i| i != y).unwrap_or(0);
+        (x, y)
+    }
+
+    /// Header name for a Lab column (or `?` / `col{i}`).
+    pub fn stats_col_name(table: &symworx_io::TableData, col: usize) -> String {
+        table
+            .headers
+            .get(col)
+            .cloned()
+            .unwrap_or_else(|| format!("col{col}"))
+    }
+
+    /// After successful Import or Generate: load table into Lab with smart X/Y.
+    /// Does **not** auto-run analysis — user presses Enter.
+    pub fn enter_stats_lab_with_table(
+        &mut self,
+        table: symworx_io::TableData,
+        source_msg: impl Into<String>,
+        task_hint: Option<StatsLabTask>,
+    ) {
+        let (x, y) = Self::smart_stats_lab_cols(&table);
+        let xname = Self::stats_col_name(&table, x);
+        let yname = Self::stats_col_name(&table, y);
+        let nrows = table.n_rows();
+        let ncols = table.n_cols();
+
+        if let Some(t) = task_hint {
+            if let Some(i) = StatsLabTask::ALL.iter().position(|&a| a == t) {
+                self.stats_lab_task = i;
+            }
+        }
+
+        self.stats_lab_x_col = x;
+        self.stats_lab_y_col = y;
+        self.stats_lab_result = None;
+        self.stats_col_focus = 0;
+        self.stats_table = Some(table);
+        self.stats_view = StatsView::Lab;
+
+        let task_label =
+            StatsLabTask::ALL[self.stats_lab_task.min(StatsLabTask::ALL.len() - 1)].label();
+        self.status = format!(
+            "{} · {}×{} · X={} Y={} · {} · Enter to run",
+            source_msg.into(),
+            nrows,
+            ncols,
+            xname,
+            yname,
+            task_label
+        );
+    }
+
     /// Switch workflow and set a sensible entry tab + status.
     pub fn switch_workflow(&mut self, wf: Workflow) {
         self.current_workflow = wf;
@@ -1513,7 +1944,7 @@ impl App {
             Workflow::Home => {
                 self.current_tab = Tab::Home;
                 self.status =
-                    "Home — 1/Enter=BioSym  2=LoadSym  3=SpatialSym  • Ctrl+H here".to_string();
+                    "Home — 1 BioSym  2 StatsSym  3 LoadSym  4 Spatial  • Ctrl+H here".to_string();
             }
             Workflow::BioSym => {
                 self.current_tab = if self.loaded_signal.is_some() {
@@ -1521,9 +1952,11 @@ impl App {
                 } else {
                     Tab::Import
                 };
-                self.status =
-                    "BioSym — Import / Explore / Dynamics (RQA + cRQA + multiscale entropy)"
-                        .to_string();
+                self.status = if self.loaded_signal.is_some() {
+                    "BioSym Explore — Ctrl+←→ tabs  ·  Ctrl+G generate  ·  Ctrl+L live".into()
+                } else {
+                    "BioSym Import — ↑↓ files  Enter load  Ctrl+G generate  ·  Ctrl+←→ tabs".into()
+                };
             }
             Workflow::SpatialSym => {
                 self.current_tab = Tab::Spatial;
@@ -1542,9 +1975,34 @@ impl App {
                     "no catalog (g=demo, or symload ingest)".to_string()
                 };
                 self.status = format!(
-                    "LoadSym — 1 Workout  2 Calendar  3 Optimization  • {}  • Ctrl+H home",
+                    "LoadSym — 1 Workout  2 Metrics  3 Calendar  4 Optimization  • {}  • Ctrl+H home",
                     cat
                 );
+            }
+            Workflow::StatsSym => {
+                self.current_tab = Tab::Stats;
+                // Like BioSym: go to workspace if data already loaded, else Import.
+                self.stats_view = if self.stats_table.is_some() {
+                    StatsView::Lab
+                } else {
+                    StatsView::Import
+                };
+                self.stats_selection = 0;
+                self.status = match self.stats_view {
+                    StatsView::Lab => {
+                        if let Some(ref tab) = self.stats_table {
+                            format!(
+                                "StatsSym Lab — {}×{}  ·  1–4 task  x/y cols  Enter run  ·  Ctrl+←→ tabs",
+                                tab.n_rows(),
+                                tab.n_cols()
+                            )
+                        } else {
+                            "StatsSym Lab — load a table first (Import or Ctrl+G)".into()
+                        }
+                    }
+                    _ => "StatsSym Import — ↑↓ files  Enter load  / filter  Ctrl+G generate  ·  Ctrl+←→ tabs"
+                        .into(),
+                };
             }
         }
         self.ensure_status_for_current_tab();
@@ -1554,8 +2012,7 @@ impl App {
     pub fn ensure_status_for_current_tab(&mut self) {
         if self.current_workflow == Workflow::Home {
             if !self.status.starts_with("Home") {
-                self.status =
-                    "Home — Select analysis path (1=BioSym, 2=LoadSym, 3=SpatialSym)".to_string();
+                self.status = "Home — 1=BioSym  2=StatsSym  3=LoadSym  4=Spatial".to_string();
             }
             return;
         }
@@ -1570,6 +2027,9 @@ impl App {
                         .to_string()
                 }
                 Tab::Dynamics => "Dynamics (RQA/cRQA + MSE)".to_string(),
+                Tab::Generate => {
+                    "Generate — ↑↓ preset  Enter → Explore  ·  1/2/3 quick".to_string()
+                }
                 _ => "Symview".to_string(),
             };
         } else if self.current_tab == Tab::Spatial && !self.status.starts_with("Spatial") {
@@ -1582,7 +2042,7 @@ impl App {
         } else if self.current_tab == Tab::LoadSym {
             if self.loadsym_view == LoadSymView::List {
                 self.status =
-                    "LoadSym — ↑↓ 1/2/3 select view (Workout / Calendar / Optimization) • Esc back"
+                    "LoadSym — ↑↓ 1–4 Workout · Metrics · Calendar · Optimization  • Esc back"
                         .to_string();
             }
         }

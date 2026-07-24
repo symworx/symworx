@@ -14,6 +14,7 @@ use ratatui::{
         Borders,
         List,
         ListItem,
+        Padding,
         Paragraph,
     },
     Frame,
@@ -33,20 +34,20 @@ pub fn render_import_tab(frame: &mut Frame, app: &mut App, area: Rect) {
                /                   filter mode (type to narrow)\n\
                Esc / Enter         leave filter (filter text kept)\n\
                c                   convert selected → CSV\n\
+               x                   delete selected (y confirm / n Esc cancel)\n\
                Ctrl+R  /  F5       refresh discovery\n\
                type…               manual path (Esc clears)\n\n\
              Multi-column CSVs open a column picker (number keys).\n\
              Discovered under ./data and the project root.\n\n\
              \n\
-             GENERATE  (Ctrl+G)\n\n\
-               1                   Resting PPG + ground-truth peaks\n\
-               2                   Respiration + known peaks\n\
-               3                   Stride intervals (event series)\n\
-               Esc                 cancel generate menu\n\n\
+             GENERATE\n\n\
+               Ctrl+G              open Generate tab\n\
+               (or Ctrl+→ to Dynamics then Generate)\n\n\
              Peaks land in sidecar *.peaks.csv when applicable.\n\n\
              \n\
-             NEXT\n\n\
-               Ctrl+2              Explore (peaks, process, live)\n\
+             TABS  (Ctrl+←→)\n\n\
+               Import · Explore · Dynamics · Generate\n\
+               Ctrl+2              Explore\n\
                Alt-? on Explore    full BioSym analysis help\n\n\
              \n\
              GLOBAL\n\n\
@@ -56,6 +57,7 @@ pub fn render_import_tab(frame: &mut Frame, app: &mut App, area: Rect) {
         .block(
             Block::new()
                 .borders(Borders::ALL)
+                .padding(Padding::horizontal(1))
                 .title(" Help — Import (BioSym) "),
         );
         frame.render_widget(help, area);
@@ -80,8 +82,12 @@ pub fn render_import_tab(frame: &mut Frame, app: &mut App, area: Rect) {
             }
         }
 
-        let content = Paragraph::new(lines.join(""))
-            .block(Block::new().borders(Borders::ALL).title(" Column Picker "));
+        let content = Paragraph::new(lines.join("")).block(
+            Block::new()
+                .borders(Borders::ALL)
+                .padding(Padding::horizontal(1))
+                .title(" Column Picker "),
+        );
         frame.render_widget(content, area);
         return;
     }
@@ -122,6 +128,7 @@ pub fn render_import_tab(frame: &mut Frame, app: &mut App, area: Rect) {
     let block = Block::new()
         .title(title)
         .borders(Borders::ALL)
+        .padding(Padding::horizontal(1))
         .border_style(Color::Blue);
 
     let items: Vec<ListItem> = vis

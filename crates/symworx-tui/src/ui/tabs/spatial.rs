@@ -11,6 +11,7 @@ use ratatui::{
     widgets::{
         Block,
         Borders,
+        Padding,
         Paragraph,
     },
     Frame,
@@ -45,7 +46,12 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
                Ctrl+H              Home\n\
                Esc Esc / Ctrl+Q    quit (Esc-Esc at roots only)\n",
         )
-        .block(Block::new().borders(Borders::ALL).title(" Help — Spatial "));
+        .block(
+            Block::new()
+                .borders(Borders::ALL)
+                .padding(Padding::horizontal(1))
+                .title(" Help — Spatial "),
+        );
         frame.render_widget(help, area);
         return;
     }
@@ -53,6 +59,7 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
     let outer = Block::new()
         .title(" SpatialSym (trajectories, decisions, space use) ")
         .borders(Borders::ALL)
+        .padding(Padding::horizontal(1))
         .border_style(Color::Cyan);
 
     let inner = outer.inner(area);
@@ -365,6 +372,7 @@ fn render_spatial_import_menu(frame: &mut Frame, app: &App, area: Rect) {
     let p = Paragraph::new(import_text).block(
         Block::new()
             .borders(Borders::ALL)
+            .padding(Padding::horizontal(1))
             .title(" Import / Generate "),
     );
     frame.render_widget(p, chunks[1]);

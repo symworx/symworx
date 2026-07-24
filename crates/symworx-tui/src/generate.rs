@@ -39,12 +39,30 @@ pub enum DemoPreset {
 }
 
 impl DemoPreset {
+    /// Presets shown in the BioSym Generate tab / Ctrl+G menu.
+    pub const MENU: [DemoPreset; 3] = [
+        DemoPreset::RestingPPG,
+        DemoPreset::LightRespiration,
+        DemoPreset::SimpleStride,
+    ];
+
     pub fn name(self) -> &'static str {
         match self {
             DemoPreset::RestingPPG => "Resting PPG",
             DemoPreset::LightRespiration => "Light activity respiration",
             DemoPreset::SimpleStride => "Simple stride intervals",
             DemoPreset::MultiWaveformDemo => "Multi-waveform demo (PPG x3 + resp x2 + stride x2)",
+        }
+    }
+
+    pub fn description(self) -> &'static str {
+        match self {
+            DemoPreset::RestingPPG => "Photoplethysmogram + ground-truth systolic/diastolic peaks",
+            DemoPreset::LightRespiration => "Respiration waveform + known inhalation peaks",
+            DemoPreset::SimpleStride => "Stride-interval series (event / gait demo)",
+            DemoPreset::MultiWaveformDemo => {
+                "Multiple PPG / resp / stride variants for multi-wave testing"
+            }
         }
     }
 }

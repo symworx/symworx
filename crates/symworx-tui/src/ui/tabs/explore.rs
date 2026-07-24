@@ -17,6 +17,7 @@ use ratatui::{
         Chart,
         Dataset,
         GraphType,
+        Padding,
         Paragraph,
     },
     Frame,
@@ -83,6 +84,7 @@ pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
         .block(
             Block::new()
                 .borders(Borders::ALL)
+                .padding(Padding::horizontal(1))
                 .title(" Help — Explore (BioSym) "),
         );
         frame.render_widget(help, area);
@@ -136,8 +138,12 @@ pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
              After apply, peak detection re-runs with current K params so you can compare overlays.\n"
                 .to_string(),
         );
-        let content = Paragraph::new(lines.join(""))
-            .block(Block::new().borders(Borders::ALL).title(" Process "));
+        let content = Paragraph::new(lines.join("")).block(
+            Block::new()
+                .borders(Borders::ALL)
+                .padding(Padding::horizontal(1))
+                .title(" Process "),
+        );
         frame.render_widget(content, area);
         return;
     }
@@ -146,6 +152,7 @@ pub fn render_explore_tab(frame: &mut Frame, app: &App, area: Rect) {
         let block = Block::new()
             .title(" Explore — BioSym ")
             .borders(Borders::ALL)
+            .padding(Padding::horizontal(1))
             .border_style(Color::Magenta);
         let content = Paragraph::new(
             "Load or Generate BioSym signal (Import or Ctrl+G presets)\n\n\
@@ -190,6 +197,7 @@ fn render_live_stream(frame: &mut Frame, app: &App, area: Rect) {
             roll
         ))
         .borders(Borders::ALL)
+        .padding(Padding::horizontal(1))
         .border_style(status_color);
 
     let bpm_s = live
@@ -301,6 +309,7 @@ fn render_live_channel_chart(
         .block(
             Block::new()
                 .borders(Borders::ALL)
+                .padding(Padding::horizontal(1))
                 .title(title)
                 .border_style(color),
         )
@@ -326,6 +335,7 @@ fn render_waveform(frame: &mut Frame, app: &App, area: Rect) {
     let block = Block::new()
         .title(" Explore — Waveform ")
         .borders(Borders::ALL)
+        .padding(Padding::horizontal(1))
         .border_style(Color::Magenta);
 
     let stats = crate::app::compute_basic_stats(&signal.current);
@@ -497,6 +507,7 @@ fn render_tachogram(frame: &mut Frame, app: &App, area: Rect) {
             signal.tachogram_source.label()
         ))
         .borders(Borders::ALL)
+        .padding(Padding::horizontal(1))
         .border_style(Color::Yellow);
 
     let Some(tacho) = signal.tachogram.as_ref() else {
@@ -714,6 +725,7 @@ fn render_peak_params_panel(frame: &mut Frame, app: &App, area: Rect) {
     let content = Paragraph::new(lines.join("")).block(
         Block::new()
             .borders(Borders::ALL)
+            .padding(Padding::horizontal(1))
             .title(" Peak detection parameters ")
             .border_style(Color::Yellow),
     );

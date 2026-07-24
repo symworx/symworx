@@ -23,6 +23,7 @@ use ratatui::{
         Chart,
         Dataset,
         GraphType,
+        Padding,
         Paragraph,
         Row,
         Sparkline,
@@ -62,12 +63,12 @@ pub fn render_loadsym_tab(frame: &mut Frame, app: &App, area: Rect) {
                  Close help:  Esc  or  Alt-?\n\n\
                  \n\
                  VIEWS\n\n\
-                   ↑ ↓  or  1 / 2 / 3     select\n\
+                   ↑ ↓  or  1–4           select\n\
                    Enter                  open selected view\n\n\
                    1  Workout Analysis    single ride · charts · SEPi/TSLi\n\
-                   2  Calendar            daily/weekly load · catalog\n\
-                   3  Optimization        multi-day plan · form/fatigue\n\
-                   4  Metrics / Library   per-ride LOADsym table\n\n\
+                   2  Metrics / Library   per-ride table · trends · bi-plots\n\
+                   3  Calendar            daily/weekly load · catalog\n\
+                   4  Optimization        multi-day plan · form/fatigue\n\n\
                  \n\
                  SHORTCUTS ON THIS LIST\n\n\
                    o                      open activity file browser\n\
@@ -177,6 +178,7 @@ pub fn render_loadsym_tab(frame: &mut Frame, app: &App, area: Rect) {
         let help = Paragraph::new(format!("{body}{global}")).block(
             Block::new()
                 .borders(Borders::ALL)
+                .padding(Padding::horizontal(1))
                 .title(match app.loadsym_view {
                     LoadSymView::List => " Help — LoadSym ",
                     LoadSymView::Workout => " Help — LoadSym · Workout ",
@@ -192,6 +194,7 @@ pub fn render_loadsym_tab(frame: &mut Frame, app: &App, area: Rect) {
     let outer = Block::new()
         .title(" LoadSym — Training Load, ACLi, Optimization ")
         .borders(Borders::ALL)
+        .padding(Padding::horizontal(1))
         .border_style(Color::Yellow);
 
     let inner = outer.inner(area);
@@ -241,8 +244,17 @@ fn render_loadsym_list(frame: &mut Frame, app: &App, area: Rect) {
         )),
         Line::from(""),
         Line::from(format!(
-            "{}2. Calendar View",
+            "{}2. Metrics / Library",
             if sel == 1 { "▶ " } else { "  " }
+        )),
+        Line::from(Span::styled(
+            "   Table + trend / bi-plot · 1–8 metrics · Enter open workout",
+            Style::default().fg(Color::DarkGray),
+        )),
+        Line::from(""),
+        Line::from(format!(
+            "{}3. Calendar View",
+            if sel == 2 { "▶ " } else { "  " }
         )),
         Line::from(Span::styled(
             if app.loadsym_from_catalog {
@@ -257,20 +269,11 @@ fn render_loadsym_list(frame: &mut Frame, app: &App, area: Rect) {
         )),
         Line::from(""),
         Line::from(format!(
-            "{}3. Programming Optimization",
-            if sel == 2 { "▶ " } else { "  " }
-        )),
-        Line::from(Span::styled(
-            "   Default goal from form/fatigue/ACLi · 1/2/3 override · chronic load bands",
-            Style::default().fg(Color::DarkGray),
-        )),
-        Line::from(""),
-        Line::from(format!(
-            "{}4. Metrics / Library",
+            "{}4. Programming Optimization",
             if sel == 3 { "▶ " } else { "  " }
         )),
         Line::from(Span::styled(
-            "   Table + trend / bi-plot · 1–8 metrics · Enter open workout",
+            "   Default goal from form/fatigue/ACLi · 1/2/3 override · chronic load bands",
             Style::default().fg(Color::DarkGray),
         )),
         Line::from(""),
@@ -280,8 +283,12 @@ fn render_loadsym_list(frame: &mut Frame, app: &App, area: Rect) {
         )),
     ];
 
-    let p =
-        Paragraph::new(lines).block(Block::new().borders(Borders::ALL).title(" LoadSym — Home "));
+    let p = Paragraph::new(lines).block(
+        Block::new()
+            .borders(Borders::ALL)
+            .padding(Padding::horizontal(1))
+            .title(" LoadSym — Home "),
+    );
     frame.render_widget(p, area);
 }
 
@@ -340,6 +347,7 @@ fn render_workout_open_modal(frame: &mut Frame, app: &App, area: Rect) {
     let p = Paragraph::new(lines).block(
         Block::new()
             .borders(Borders::ALL)
+            .padding(Padding::horizontal(1))
             .title(" Open workout file ")
             .border_style(Style::default().fg(Color::Cyan)),
     );
@@ -392,6 +400,7 @@ fn render_workout_view(frame: &mut Frame, app: &App, area: Rect) {
         .block(
             Block::new()
                 .borders(Borders::ALL)
+                .padding(Padding::horizontal(1))
                 .title(" 1. Workout Analysis "),
         );
         frame.render_widget(empty, area);
@@ -511,16 +520,21 @@ fn render_workout_view(frame: &mut Frame, app: &App, area: Rect) {
         vec![Row::new(header_row), Row::new(value_row)],
         vec![Constraint::Ratio(1, 9); 9],
     )
-    .block(Block::new().borders(Borders::ALL).title(format!(
-        "Workout — {}  focus={}{}  FTP={:.0}W  pan {}..{}/{}",
-        label,
-        series_name,
-        if series_present { "" } else { "∅" },
-        app.ftp,
-        start,
-        end,
-        n
-    )));
+    .block(
+        Block::new()
+            .borders(Borders::ALL)
+            .padding(Padding::horizontal(1))
+            .title(format!(
+                "Workout — {}  focus={}{}  FTP={:.0}W  pan {}..{}/{}",
+                label,
+                series_name,
+                if series_present { "" } else { "∅" },
+                app.ftp,
+                start,
+                end,
+                n
+            )),
+    );
 
     let mut info_bits = Vec::new();
     if let Some(m) = &act.manufacturer {
@@ -541,7 +555,12 @@ fn render_workout_view(frame: &mut Frame, app: &App, area: Rect) {
         info_bits.join(" · "),
         panel_hint
     ))
-    .block(Block::new().borders(Borders::ALL).title(" Ride "));
+    .block(
+        Block::new()
+            .borders(Borders::ALL)
+            .padding(Padding::horizontal(1))
+            .title(" Ride "),
+    );
 
     // Visible panels in stream order (closed streams omitted → equal height share).
     let mut panels: Vec<(WorkoutStream, Vec<f64>, bool)> = Vec::new();
@@ -659,6 +678,7 @@ fn render_workout_line_chart(
         .block(
             Block::new()
                 .borders(Borders::ALL)
+                .padding(Padding::horizontal(1))
                 .title(title.to_string())
                 .border_style(style),
         )
@@ -699,6 +719,7 @@ fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
         .block(
             Block::new()
                 .borders(Borders::ALL)
+                .padding(Padding::horizontal(1))
                 .title(" 2. Calendar View — empty "),
         );
         frame.render_widget(empty, area);
@@ -802,7 +823,12 @@ fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
                 .add_modifier(Modifier::BOLD),
         )),
     ])
-    .block(Block::new().borders(Borders::ALL).title(" 2. Calendar "));
+    .block(
+        Block::new()
+            .borders(Borders::ALL)
+            .padding(Padding::horizontal(1))
+            .title(" 2. Calendar "),
+    );
     frame.render_widget(header, outer[0]);
 
     // Dual columns: daily (left) + weekly (right), both fill remaining height
@@ -907,6 +933,7 @@ fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
     let daily_p = Paragraph::new(daily_lines).block(
         Block::new()
             .borders(Borders::ALL)
+            .padding(Padding::horizontal(1))
             .title(" Daily ")
             .border_style(if !app.loadsym_scroll_from_week {
                 Style::default().fg(Color::Cyan)
@@ -955,6 +982,7 @@ fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
     let week_p = Paragraph::new(week_lines).block(
         Block::new()
             .borders(Borders::ALL)
+            .padding(Padding::horizontal(1))
             .title(" Weekly ")
             .border_style(if app.loadsym_scroll_from_week {
                 Style::default().fg(Color::Yellow)
@@ -983,6 +1011,7 @@ fn render_weekly_tsli_bar(frame: &mut Frame, app: &App, area: Rect, week_i: usiz
     };
     let block = Block::new()
         .borders(Borders::ALL)
+        .padding(Padding::horizontal(1))
         .border_style(Style::default().fg(Color::Yellow))
         .title(title);
     let inner = block.inner(area);
@@ -1074,6 +1103,7 @@ fn render_metrics_view(frame: &mut Frame, app: &App, area: Rect) {
         .block(
             Block::new()
                 .borders(Borders::ALL)
+                .padding(Padding::horizontal(1))
                 .title(" 4. Metrics / Library — empty "),
         );
         frame.render_widget(empty, area);
@@ -1131,7 +1161,12 @@ fn render_metrics_view(frame: &mut Frame, app: &App, area: Rect) {
                 .add_modifier(Modifier::BOLD),
         )),
     ])
-    .block(Block::new().borders(Borders::ALL).title(" 4. Metrics "));
+    .block(
+        Block::new()
+            .borders(Borders::ALL)
+            .padding(Padding::horizontal(1))
+            .title(" 4. Metrics "),
+    );
     frame.render_widget(hdr, outer[0]);
 
     // --- Table (compact) ---
@@ -1193,6 +1228,7 @@ fn render_metrics_view(frame: &mut Frame, app: &App, area: Rect) {
     let table = Paragraph::new(lines).block(
         Block::new()
             .borders(Borders::ALL)
+            .padding(Padding::horizontal(1))
             .title(" activities (newest first) "),
     );
     frame.render_widget(table, outer[1]);
@@ -1289,6 +1325,7 @@ fn render_metrics_trend_chart(
             Paragraph::new(format!("No finite values for {}", field.label())).block(
                 Block::new()
                     .borders(Borders::ALL)
+                    .padding(Padding::horizontal(1))
                     .title(format!(" Trend · {} vs ride # ", field.label())),
             ),
             area,
@@ -1323,6 +1360,7 @@ fn render_metrics_trend_chart(
         .block(
             Block::new()
                 .borders(Borders::ALL)
+                .padding(Padding::horizontal(1))
                 .title(format!(
                     " Trend · {} vs ride order (old→new) · cyan = focus ",
                     field.axis_label()
@@ -1379,7 +1417,12 @@ fn render_metrics_biplot(
                 x_field.label(),
                 y_field.label()
             ))
-            .block(Block::new().borders(Borders::ALL).title(" Bi-plot ")),
+            .block(
+                Block::new()
+                    .borders(Borders::ALL)
+                    .padding(Padding::horizontal(1))
+                    .title(" Bi-plot "),
+            ),
             area,
         );
         return;
@@ -1410,6 +1453,7 @@ fn render_metrics_biplot(
         .block(
             Block::new()
                 .borders(Borders::ALL)
+                .padding(Padding::horizontal(1))
                 .title(format!(
                     " Bi-plot · {}  ×  {} · cyan = focus ",
                     y_field.axis_label(),
@@ -1497,6 +1541,7 @@ fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect) {
             .block(
                 Block::new()
                     .borders(Borders::ALL)
+                    .padding(Padding::horizontal(1))
                     .border_style(if selected {
                         Style::default().fg(Color::Cyan)
                     } else {
@@ -1521,6 +1566,7 @@ fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect) {
             Paragraph::new(metric_lines).block(
                 Block::new()
                     .borders(Borders::ALL)
+                    .padding(Padding::horizontal(1))
                     .title(" Daily summary input "),
             ),
             outer[1],
@@ -1624,6 +1670,7 @@ fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect) {
         Paragraph::new(metric_lines).block(
             Block::new()
                 .borders(Borders::ALL)
+                .padding(Padding::horizontal(1))
                 .title(" Daily summary → planner input (same TSLi series as Calendar) "),
         ),
         outer[1],
@@ -1736,6 +1783,7 @@ fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect) {
         Paragraph::new(lines).block(
             Block::new()
                 .borders(Borders::ALL)
+                .padding(Padding::horizontal(1))
                 .title(" Recommended load (next days) "),
         ),
         outer[2],
@@ -1759,6 +1807,7 @@ fn render_empty_opt_charts(frame: &mut Frame, area: Rect) {
     frame.render_widget(
         Block::new()
             .borders(Borders::ALL)
+            .padding(Padding::horizontal(1))
             .border_style(Style::default().fg(Color::LightYellow))
             .title(" Load (TSLi)  ·  yellow=history | purple=projected "),
         rows[0],
@@ -1766,6 +1815,7 @@ fn render_empty_opt_charts(frame: &mut Frame, area: Rect) {
     frame.render_widget(
         Block::new()
             .borders(Borders::ALL)
+            .padding(Padding::horizontal(1))
             .border_style(Style::default().fg(Color::LightYellow))
             .title(" Readiness (SLBi)  ·  yellow=history | purple=projected "),
         rows[1],
@@ -1840,6 +1890,7 @@ fn render_hist_proj_bar<F>(
 
     let block = Block::new()
         .borders(Borders::ALL)
+        .padding(Padding::horizontal(1))
         .border_style(Style::default().fg(Color::LightYellow))
         .title(format!(
             "{} · yellow=history ({}d) | purple=projected ({}d) ",

@@ -30,6 +30,7 @@ classical ML live here unless they are dynamical operators or signal sensing.
 | `svd` | SVD, rank-k truncate/reconstruct | **Yes** |
 | `pca` | PCA fit/transform/whiten (uses SVD) | **Yes** |
 | `spectral` | Welch PSD (stub → full implementation planned) | No |
+| `synthetic` | Teaching presets (Normal1D, bivariate, linear, class blobs, clusters) | No |
 
 ### Feature flag
 

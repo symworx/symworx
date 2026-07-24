@@ -11,6 +11,7 @@ use ratatui::{
     widgets::{
         Block,
         Borders,
+        Padding,
         Paragraph,
     },
     Frame,
@@ -48,6 +49,7 @@ pub fn render_dynamics_tab(frame: &mut Frame, app: &App, area: Rect) {
         .block(
             Block::new()
                 .borders(Borders::ALL)
+                .padding(Padding::horizontal(1))
                 .title(" Help — Dynamics "),
         );
         frame.render_widget(help, area);
@@ -57,6 +59,7 @@ pub fn render_dynamics_tab(frame: &mut Frame, app: &App, area: Rect) {
     let block = Block::new()
         .title(" Dynamics — RQA (Recurrence Quantification Analysis) ")
         .borders(Borders::ALL)
+        .padding(Padding::horizontal(1))
         .border_style(Color::Green);
 
     if app.pending_rqa {
