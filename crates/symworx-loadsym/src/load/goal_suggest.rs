@@ -94,19 +94,19 @@ pub fn suggest_load_goal(
     }
 
     // ACLi soft terms — elevated ACLi hard-caps overload even when form is fresh.
-    if let Some(a) = acwr {
-        if a.is_finite() {
-            if a >= params.acwr_high {
-                let excess = (a - params.acwr_high).min(0.8);
-                rec += 0.55 + 0.6 * excess;
-                // Strong penalty: form-based overload peak is ~1.0–1.35; wipe it.
-                ovr -= 1.10 + 0.9 * excess;
-                mnt += 0.25 + 0.2 * excess;
-            } else if a <= params.acwr_low {
-                let slack = (params.acwr_low - a).min(0.5);
-                ovr += 0.25 + 0.35 * slack;
-                rec -= 0.10;
-            }
+    if let Some(a) = acwr
+        && a.is_finite()
+    {
+        if a >= params.acwr_high {
+            let excess = (a - params.acwr_high).min(0.8);
+            rec += 0.55 + 0.6 * excess;
+            // Strong penalty: form-based overload peak is ~1.0–1.35; wipe it.
+            ovr -= 1.10 + 0.9 * excess;
+            mnt += 0.25 + 0.2 * excess;
+        } else if a <= params.acwr_low {
+            let slack = (params.acwr_low - a).min(0.5);
+            ovr += 0.25 + 0.35 * slack;
+            rec -= 0.10;
         }
     }
 
