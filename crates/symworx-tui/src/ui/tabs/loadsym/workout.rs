@@ -40,7 +40,7 @@ use crate::app::{
     WorkoutStream,
 };
 
-pub(crate) fn stream_color(s: WorkoutStream) -> Color {
+pub fn stream_color(s: WorkoutStream) -> Color {
     match s {
         WorkoutStream::Power => Color::LightGreen,
         WorkoutStream::HeartRate => Color::LightRed,
@@ -50,7 +50,7 @@ pub(crate) fn stream_color(s: WorkoutStream) -> Color {
     }
 }
 
-pub(crate) fn stream_series(
+pub fn stream_series(
     act: &symworx_io::ActivityData,
     s: WorkoutStream,
 ) -> (Vec<f64>, &'static str, bool) {
@@ -60,7 +60,7 @@ pub(crate) fn stream_series(
 /// Visible sample window for workout line charts (shared pan across panels).
 const WORKOUT_VIEW_LEN: usize = 240;
 
-pub(crate) fn render_workout_view(frame: &mut Frame, app: &App, area: Rect) {
+pub fn render_workout_view(frame: &mut Frame, app: &App, area: Rect) {
     let Some(act) = app.loaded_activity.as_ref() else {
         let empty = Paragraph::new(vec![
             Line::from(Span::styled(
@@ -302,7 +302,7 @@ pub(crate) fn render_workout_view(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 /// BioSym-style line chart for one workout channel (viewport [start, end)).
-pub(crate) fn render_workout_line_chart(
+pub fn render_workout_line_chart(
     frame: &mut Frame,
     area: Rect,
     series: &[f64],

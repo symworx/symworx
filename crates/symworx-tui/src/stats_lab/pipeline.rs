@@ -42,7 +42,7 @@ use crate::app::{
     StatsLabTask,
 };
 
-pub(crate) fn run_pipeline(
+pub fn run_pipeline(
     table: &TableData,
     y_col: usize,
     pipeline_k: usize,
@@ -120,7 +120,7 @@ pub(crate) fn run_pipeline(
     }
 }
 
-pub(crate) fn run_pipeline_ols(
+pub fn run_pipeline_ols(
     x: &Array2<f64>,
     y_col: &[f64],
     y_name: &str,
@@ -229,7 +229,7 @@ pub(crate) fn run_pipeline_ols(
     Ok(r)
 }
 
-pub(crate) fn run_pipeline_logistic(
+pub fn run_pipeline_logistic(
     x: &Array2<f64>,
     labels: &[usize],
     class_values: &[f64],
@@ -349,7 +349,7 @@ pub(crate) fn run_pipeline_logistic(
 }
 
 /// Fit classifier on full x_fit/y_fit, score the same indices (for Full/Train in-sample).
-pub(crate) fn fit_predict_clf_row(
+pub fn fit_predict_clf_row(
     label: &str,
     note: &str,
     x: &Array2<f64>,
@@ -373,7 +373,7 @@ pub(crate) fn fit_predict_clf_row(
     )
 }
 
-pub(crate) fn fit_on_train_score_val_clf(
+pub fn fit_on_train_score_val_clf(
     label: &str,
     note: &str,
     x_fit: &Array2<f64>,

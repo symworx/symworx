@@ -26,7 +26,7 @@ use crate::app::{
     StatsLabTask,
 };
 
-pub(crate) fn run_regress(
+pub fn run_regress(
     table: &TableData,
     x_col: usize,
     y_col: usize,

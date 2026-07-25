@@ -10,8 +10,9 @@
 ///
 /// v1 — initial catalog  
 /// v2 — expanded `ftp_history` + `activities.ftp_history_id` for time-varying FTP scoring  
-/// v3 — `catalog_meta` key/value (e.g. last ingest watermark)
-pub const SCHEMA_VERSION: i32 = 3;
+/// v3 — `catalog_meta` key/value (e.g. last ingest watermark)  
+/// v4 — multi-source session linking (`counts_for_load`, `session_groups`, pipeline provenance)
+pub const SCHEMA_VERSION: i32 = 4;
 
 /// PostgreSQL schema (shared / multi-user deployments).
 pub const POSTGRES_SCHEMA: &str = include_str!("../sql/schema.sql");
@@ -46,6 +47,9 @@ mod tests {
         assert!(SCHEMA_VERSION >= 1);
         assert!(SQLITE_SCHEMA.contains("CREATE TABLE IF NOT EXISTS activities"));
         assert!(SQLITE_SCHEMA.contains("INTEGER PRIMARY KEY AUTOINCREMENT"));
+        assert!(SQLITE_SCHEMA.contains("counts_for_load"));
+        assert!(SQLITE_SCHEMA.contains("session_groups"));
+        assert!(SCHEMA_VERSION >= 4);
     }
 
     #[test]

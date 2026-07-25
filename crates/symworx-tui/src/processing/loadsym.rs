@@ -76,6 +76,10 @@ pub fn try_load_loadsym_catalog(app: &mut App) -> Result<bool, String> {
                     tss: r.tss,
                     duration_s: r.duration_s,
                     np_w: r.np_w,
+                    ingest_pipeline: r.ingest_pipeline,
+                    source_platform: r.source_platform,
+                    counts_for_load: r.counts_for_load,
+                    is_primary: r.is_primary,
                 })
                 .collect();
             app.weekly_loads = build_weekly_loads(

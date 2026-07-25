@@ -1,5 +1,8 @@
--- LoadSym Personal Ride Database Schema (PostgreSQL recommended, SQLite compatible with small changes)
+-- LoadSym Personal Ride Database Schema (PostgreSQL)
 -- Focused on power meter rides (SRM, Garmin, Polar .fit) + periodization
+-- Schema version: 4 (see symworx_loadsym_db::SCHEMA_VERSION)
+--   v2 ftp_history · v3 catalog_meta · v4 multi-source session linking
+-- Personal SQLite default: schema.sqlite.sql · docs: docs/loadsym-personal-starter.md
 --
 -- Informed by:
 --   * TrainingPeaks / WKO: TSS, CTL (42d EWMA), ATL (7d), TSB/Form, planned workouts, daily metrics (weight, HRV, stress, sleep)
@@ -8,7 +11,7 @@
 --   * General (TRIMP, sRPE, ACWR from symworx-loadsym)
 --
 -- This file lives inside the `symworx-loadsym-db` crate so it can be embedded via `include_str!`.
--- Apply against a personal database outside this repository (e.g. $VELOFIT_HOME/db/ for SQLite — see schema.sqlite.sql).
+-- Apply against a database outside this repository (personal SQLite: schema.sqlite.sql under $VELOFIT_HOME/db/).
 
 -- Schema version for migrations
 CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -36,6 +39,8 @@ CREATE TABLE activities (
     manufacturer    TEXT,
     product         TEXT,
     source_platform TEXT,                           -- e.g. "srm-pc8", "garmin", "intervals.icu"
+    ingest_pipeline TEXT,                           -- email | polar | manual | unknown
+    external_id     TEXT,                           -- provider exercise id when known
 
     -- Core load (TSS family - TrainingPeaks style)
     avg_power_w     DOUBLE PRECISION,
@@ -62,6 +67,12 @@ CREATE TABLE activities (
     workout_type    TEXT,                           -- endurance, threshold, vo2, sprint, race, recovery...
     tags            TEXT[],                         -- flexible labels
 
+    -- Multi-source session linking: keep all copies, count only one for load
+    session_group_id BIGINT,
+    counts_for_load  INTEGER NOT NULL DEFAULT 1,
+    is_primary       INTEGER NOT NULL DEFAULT 1,
+    match_reason     TEXT,
+
     -- Metadata
     file_size       BIGINT,
     imported_at     TIMESTAMPTZ DEFAULT now(),
@@ -70,6 +81,15 @@ CREATE TABLE activities (
 
 CREATE INDEX idx_activities_date ON activities(ride_date);
 CREATE INDEX idx_activities_tss ON activities(tss);
+CREATE INDEX idx_activities_session_group ON activities(session_group_id);
+CREATE INDEX idx_activities_counts ON activities(ride_date, counts_for_load);
+
+CREATE TABLE session_groups (
+    id                   BIGSERIAL PRIMARY KEY,
+    primary_activity_id  BIGINT,
+    match_method         TEXT,
+    created_at           TIMESTAMPTZ DEFAULT now()
+);
 
 -- Daily rollups (one row per day, even if multiple rides)
 CREATE TABLE daily_loads (

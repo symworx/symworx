@@ -32,7 +32,7 @@ use symworx_loadsym::load::{
 use super::util::truncate_str;
 use crate::app::App;
 
-pub(crate) fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
+pub fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
     let loads = &app.daily_loads;
     if loads.is_empty() {
         let empty = Paragraph::new(
@@ -216,6 +216,13 @@ pub(crate) fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
         )));
     } else {
         let ride_sel = app.calendar_ride_sel.min(day_rides.len().saturating_sub(1));
+        let n_secondary = day_rides.iter().filter(|r| !r.counts_for_load).count();
+        if n_secondary > 0 {
+            daily_lines.push(Line::from(Span::styled(
+                format!("  ● load primary  ○ archive/dup  (+{n_secondary} not counted)"),
+                Style::default().fg(Color::DarkGray),
+            )));
+        }
         for (k, r) in day_rides
             .iter()
             .take(ride_lines_budget.saturating_sub(1))
@@ -224,19 +231,24 @@ pub(crate) fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
             let name = r.source_file.rsplit('/').next().unwrap_or(&r.source_file);
             let mins = r.duration_s / 60.0;
             let marker = if k == ride_sel { "▶" } else { " " };
+            let badge = if r.counts_for_load { "●" } else { "○" };
+            let src = ride_source_label(r);
             let style = if k == ride_sel {
                 Style::default()
                     .fg(Color::Black)
                     .bg(Color::Cyan)
                     .add_modifier(Modifier::BOLD)
+            } else if !r.counts_for_load {
+                Style::default().fg(Color::DarkGray)
             } else {
                 Style::default()
             };
             daily_lines.push(Line::from(Span::styled(
                 format!(
-                    "{marker}{:>2}. {:<24}  {:>7.1}  {:>5.0}m",
+                    "{marker}{badge} {:>2}. {:<8} {:<14} {:>6.1} {:>4.0}m",
                     k + 1,
-                    truncate_str(name, 24),
+                    truncate_str(&src, 8),
+                    truncate_str(name, 14),
                     r.tss,
                     mins
                 ),
@@ -322,8 +334,31 @@ pub(crate) fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
     render_weekly_tsli_bar(frame, app, outer[2], week_i);
 }
 
+/// Short pipeline/platform label for calendar ride rows.
+fn ride_source_label(r: &crate::app::CatalogRideRow) -> String {
+    let pipe = r
+        .ingest_pipeline
+        .as_deref()
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    let plat = r
+        .source_platform
+        .as_deref()
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    match (pipe.as_str(), plat.as_str()) {
+        ("email", p) if !p.is_empty() => format!("email/{p}"),
+        ("polar", _) => "polar".into(),
+        ("email", _) => "email".into(),
+        ("manual", p) if !p.is_empty() => p.into(),
+        (_, p) if !p.is_empty() => p.into(),
+        (p, _) if !p.is_empty() => p.into(),
+        _ => "file".into(),
+    }
+}
+
 /// Weekly TSLi sparkline across the bottom; `*` marks the focused week (above + below).
-pub(crate) fn render_weekly_tsli_bar(frame: &mut Frame, app: &App, area: Rect, week_i: usize) {
+pub fn render_weekly_tsli_bar(frame: &mut Frame, app: &App, area: Rect, week_i: usize) {
     let n_weeks = app.weekly_loads.len();
     let title = if n_weeks == 0 {
         " weekly TSLi — no weeks loaded (r to reload catalog) ".to_string()
@@ -392,7 +427,7 @@ pub(crate) fn render_weekly_tsli_bar(frame: &mut Frame, app: &App, area: Rect, w
 }
 
 /// Build a line of spaces with `*` under the focused week column (and `·` ticks if sparse).
-pub(crate) fn weekly_focus_marker_line(n_weeks: usize, week_i: usize, width: usize) -> String {
+pub fn weekly_focus_marker_line(n_weeks: usize, week_i: usize, width: usize) -> String {
     if width == 0 {
         return String::new();
     }

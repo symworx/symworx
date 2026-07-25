@@ -5,8 +5,10 @@ name = "symworx-loadsym-db"
 version = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
-description = "Reusable SQL schema and helpers for initializing training load databases (Postgres/SQLite)"
-keywords = ["database", "schema", "periodization", "training-load"]
+description = "Reusable SQL schema for personal training-load catalogs (Postgres/SQLite; schema v4 multi-source)"
+documentation = "https://docs.rs/symworx-loadsym-db"
+readme = "README.md"
+keywords = ["database", "schema", "periodization", "training-load", "loadsym"]
 categories = ["science"]
 
 [lib]

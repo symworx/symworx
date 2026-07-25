@@ -25,7 +25,7 @@ use ratatui::{
 
 use crate::app::App;
 
-pub(crate) fn render_import(frame: &mut Frame, app: &mut App, area: Rect) {
+pub fn render_import(frame: &mut Frame, app: &mut App, area: Rect) {
     let show_header = app.filter_mode || !app.file_filter.is_empty() || !app.manual_path.is_empty();
 
     let chunks = Layout::vertical([

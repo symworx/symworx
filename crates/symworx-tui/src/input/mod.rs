@@ -173,8 +173,14 @@ pub fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool
                         app.stats_view.title()
                     );
                 }
-                crate::app::Workflow::LoadSym | crate::app::Workflow::SpatialSym => {
-                    // Sub-views use in-workflow keys for now; footer still labels them.
+                crate::app::Workflow::LoadSym => {
+                    // Cancel open modal so strip navigation is never trapped.
+                    app.pending_workout_open = false;
+                    let next = app.loadsym_view.strip_prev();
+                    loadsym::apply_loadsym_strip_view(app, next);
+                }
+                crate::app::Workflow::SpatialSym => {
+                    // Single Spatial strip item today — no-op (reserved).
                 }
                 crate::app::Workflow::Home => {}
             }
@@ -201,7 +207,12 @@ pub fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool
                         app.stats_view.title()
                     );
                 }
-                crate::app::Workflow::LoadSym | crate::app::Workflow::SpatialSym => {}
+                crate::app::Workflow::LoadSym => {
+                    app.pending_workout_open = false;
+                    let next = app.loadsym_view.strip_next();
+                    loadsym::apply_loadsym_strip_view(app, next);
+                }
+                crate::app::Workflow::SpatialSym => {}
                 crate::app::Workflow::Home => {}
             }
             return false;

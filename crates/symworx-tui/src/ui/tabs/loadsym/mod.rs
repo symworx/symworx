@@ -31,7 +31,8 @@ pub fn render_loadsym_tab(frame: &mut Frame, app: &App, area: Rect) {
                  \n\
                  VIEWS\n\n\
                    ↑ ↓  or  1–4           select\n\
-                   Enter                  open selected view\n\n\
+                   Enter                  open selected view\n\
+                   Ctrl+← / Ctrl+→        cycle strip views\n\n\
                    1  Workout Analysis    single ride · charts · SEPi/TSLi\n\
                    2  Metrics / Library   per-ride table · trends · bi-plots\n\
                    3  Calendar            daily/weekly load · catalog\n\
@@ -139,6 +140,7 @@ pub fn render_loadsym_tab(frame: &mut Frame, app: &App, area: Rect) {
         };
         let global = "\n\
              GLOBAL\n\n\
+               Ctrl+← / Ctrl+→     Workout · Metrics · Calendar · Optimization\n\
                Ctrl+H              Home\n\
                Esc Esc / Ctrl+Q    quit (Esc-Esc at roots only)\n\
                Alt-?               help\n";

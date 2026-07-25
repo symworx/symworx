@@ -2,6 +2,10 @@
 -- Intended for a local file under $VELOFIT_HOME/db/ (never commit the data file).
 -- Schema only — no sample rows, no personal identifiers.
 --
+-- Schema version: 4 (see symworx_loadsym_db::SCHEMA_VERSION)
+--   v2 ftp_history · v3 catalog_meta · v4 multi-source session linking
+-- Operator docs: docs/loadsym-personal-starter.md · crate README.md
+--
 -- Dialect notes vs Postgres schema.sql:
 --   INTEGER PRIMARY KEY AUTOINCREMENT instead of BIGSERIAL/SERIAL
 --   REAL instead of DOUBLE PRECISION
@@ -34,7 +38,10 @@ CREATE TABLE IF NOT EXISTS activities (
 
     manufacturer    TEXT,
     product         TEXT,
-    source_platform TEXT,
+    source_platform TEXT,                           -- device family: srm, polar, garmin, …
+    -- How the file was obtained (pipeline), distinct from device platform.
+    ingest_pipeline TEXT,                           -- email | polar | manual | unknown
+    external_id     TEXT,                           -- provider id (e.g. Polar exercise hash id)
 
     avg_power_w     REAL,
     max_power_w     REAL,
@@ -58,6 +65,12 @@ CREATE TABLE IF NOT EXISTS activities (
     workout_type    TEXT,
     tags            TEXT,                           -- JSON array of strings, optional
 
+    -- Multi-source session linking: keep all copies, count only one for load.
+    session_group_id INTEGER,                       -- FK → session_groups.id
+    counts_for_load  INTEGER NOT NULL DEFAULT 1,    -- 1 = included in daily_loads / PMC
+    is_primary       INTEGER NOT NULL DEFAULT 1,    -- 1 = load primary within session group
+    match_reason     TEXT,                          -- time_window | file_hash | manual | sole
+
     file_size       INTEGER,
     imported_at     TEXT DEFAULT (datetime('now')),
     notes           TEXT
@@ -66,6 +79,20 @@ CREATE TABLE IF NOT EXISTS activities (
 CREATE INDEX IF NOT EXISTS idx_activities_date ON activities(ride_date);
 CREATE INDEX IF NOT EXISTS idx_activities_tss ON activities(tss);
 CREATE INDEX IF NOT EXISTS idx_activities_hash ON activities(file_hash);
+CREATE INDEX IF NOT EXISTS idx_activities_session_group ON activities(session_group_id);
+CREATE INDEX IF NOT EXISTS idx_activities_start ON activities(ride_date, start_time);
+CREATE INDEX IF NOT EXISTS idx_activities_counts ON activities(ride_date, counts_for_load);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_activities_external
+    ON activities(ingest_pipeline, external_id)
+    WHERE external_id IS NOT NULL;
+
+-- Groups of linked multi-pipeline copies of the same real-world session.
+CREATE TABLE IF NOT EXISTS session_groups (
+    id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+    primary_activity_id  INTEGER,                   -- activities.id of load primary
+    match_method         TEXT,                      -- time_window | manual | file_hash
+    created_at           TEXT DEFAULT (datetime('now'))
+);
 
 CREATE TABLE IF NOT EXISTS daily_loads (
     ride_date       TEXT PRIMARY KEY,               -- YYYY-MM-DD

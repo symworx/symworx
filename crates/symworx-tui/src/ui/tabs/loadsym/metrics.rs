@@ -35,7 +35,7 @@ use crate::app::{
     MetricsField,
 };
 
-pub(crate) fn render_metrics_view(frame: &mut Frame, app: &App, area: Rect) {
+pub fn render_metrics_view(frame: &mut Frame, app: &App, area: Rect) {
     let rows = &app.catalog_activity_metrics;
     if rows.is_empty() {
         let empty = Paragraph::new(
@@ -210,7 +210,7 @@ pub(crate) fn render_metrics_view(frame: &mut Frame, app: &App, area: Rect) {
 
 /// Clamp catalog metric values to non-negative (negatives are noise / N/A for LOADsym).
 #[inline]
-pub(crate) fn clamp_metric_nonneg(v: f64) -> f64 {
+pub fn clamp_metric_nonneg(v: f64) -> f64 {
     if v.is_finite() {
         v.max(0.0)
     } else {
@@ -219,7 +219,7 @@ pub(crate) fn clamp_metric_nonneg(v: f64) -> f64 {
 }
 
 /// Axis max with small headroom; floor at least 1 so a lone 0 still shows a scale.
-pub(crate) fn axis_max_from(values: impl Iterator<Item = f64>) -> f64 {
+pub fn axis_max_from(values: impl Iterator<Item = f64>) -> f64 {
     let mut m = 0.0_f64;
     for v in values {
         if v.is_finite() {
@@ -234,7 +234,7 @@ pub(crate) fn axis_max_from(values: impl Iterator<Item = f64>) -> f64 {
 }
 
 /// Tick labels at 0, mid, max for a [0, max] axis.
-pub(crate) fn axis_ticks_0_max(max: f64) -> Vec<Line<'static>> {
+pub fn axis_ticks_0_max(max: f64) -> Vec<Line<'static>> {
     let mid = max / 2.0;
     vec![
         Line::from("0"),
@@ -244,7 +244,7 @@ pub(crate) fn axis_ticks_0_max(max: f64) -> Vec<Line<'static>> {
 }
 
 /// Trend: Y = selected field (≥0), X = ride index from 0 (oldest → newest).
-pub(crate) fn render_metrics_trend_chart(
+pub fn render_metrics_trend_chart(
     frame: &mut Frame,
     area: Rect,
     rows: &[ActivityMetricsUiRow],
@@ -333,7 +333,7 @@ pub(crate) fn render_metrics_trend_chart(
 }
 
 /// Bi-plot: scatter of X field vs Y field; axes from 0; negatives clamped.
-pub(crate) fn render_metrics_biplot(
+pub fn render_metrics_biplot(
     frame: &mut Frame,
     area: Rect,
     rows: &[ActivityMetricsUiRow],

@@ -9,7 +9,7 @@ use super::common::{
 };
 use crate::app::App;
 
-pub(crate) fn try_load_stats_table(app: &mut App, path: &str) {
+pub fn try_load_stats_table(app: &mut App, path: &str) {
     match symworx_io::load_numeric_table(path) {
         Ok(t) => {
             let skipped = if t.skipped_headers.is_empty() {
@@ -28,7 +28,7 @@ pub(crate) fn try_load_stats_table(app: &mut App, path: &str) {
     }
 }
 
-pub(crate) fn handle_stats_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -> bool {
+pub fn handle_stats_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -> bool {
     use crate::app::StatsView;
 
     match app.stats_view {
@@ -346,7 +346,7 @@ pub(crate) fn handle_stats_keys(app: &mut App, code: KeyCode, _modifiers: KeyMod
     false
 }
 
-pub(crate) fn run_stats_generate(app: &mut App) {
+pub fn run_stats_generate(app: &mut App) {
     use symworx_stats::{
         generate_synthetic,
         SyntheticPreset,

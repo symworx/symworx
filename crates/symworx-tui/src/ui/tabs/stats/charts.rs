@@ -27,7 +27,7 @@ use crate::app::{
     StatsLabResult,
 };
 
-pub(crate) fn render_fit_panel(frame: &mut Frame, area: Rect, r: &StatsLabResult) {
+pub fn render_fit_panel(frame: &mut Frame, area: Rect, r: &StatsLabResult) {
     let (sx, sy, flx, fly, _ba, _res, x_lab, y_lab, is_pred) = r.active_plot();
     if sx.is_empty() || sy.is_empty() {
         frame.render_widget(
@@ -138,7 +138,7 @@ pub(crate) fn render_fit_panel(frame: &mut Frame, area: Rect, r: &StatsLabResult
     frame.render_widget(chart, area);
 }
 
-pub(crate) fn render_residual_panel(
+pub fn render_residual_panel(
     frame: &mut Frame,
     area: Rect,
     r: &StatsLabResult,
@@ -182,7 +182,7 @@ pub(crate) fn render_residual_panel(
     }
 }
 
-pub(crate) fn render_ba_chart(
+pub fn render_ba_chart(
     frame: &mut Frame,
     area: Rect,
     pts: &[(f64, f64)],
@@ -278,7 +278,7 @@ pub(crate) fn render_ba_chart(
     frame.render_widget(chart, area);
 }
 
-pub(crate) fn render_residual_hist(frame: &mut Frame, area: Rect, residuals_data: &[f64]) {
+pub fn render_residual_hist(frame: &mut Frame, area: Rect, residuals_data: &[f64]) {
     use symworx_stats::{
         hist_kde_with,
         HistogramConfig,

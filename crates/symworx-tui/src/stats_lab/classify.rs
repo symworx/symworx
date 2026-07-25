@@ -24,7 +24,7 @@ use crate::app::{
     StatsLabTask,
 };
 
-pub(crate) fn run_classify(
+pub fn run_classify(
     table: &TableData,
     x_col: usize,
     y_col: usize,
@@ -239,7 +239,7 @@ pub(crate) fn run_classify(
 }
 
 /// Round continuous labels to nearest integer class levels (stable order).
-pub(crate) fn encode_class_labels(y: &[f64]) -> Result<(Vec<usize>, Vec<f64>), String> {
+pub fn encode_class_labels(y: &[f64]) -> Result<(Vec<usize>, Vec<f64>), String> {
     if y.is_empty() {
         return Err("empty labels".into());
     }
@@ -270,7 +270,7 @@ pub(crate) fn encode_class_labels(y: &[f64]) -> Result<(Vec<usize>, Vec<f64>), S
     Ok((labels, class_values))
 }
 
-pub(crate) fn format_conf_mat(cm: &ndarray::Array2<usize>, class_values: &[f64]) -> String {
+pub fn format_conf_mat(cm: &ndarray::Array2<usize>, class_values: &[f64]) -> String {
     let k = cm.nrows().min(cm.ncols()).min(class_values.len());
     if k == 0 {
         return "cm: —".into();
@@ -291,7 +291,7 @@ pub(crate) fn format_conf_mat(cm: &ndarray::Array2<usize>, class_values: &[f64])
     s
 }
 
-pub(crate) fn format_per_class_prf(
+pub fn format_per_class_prf(
     rep: &symworx_stats::ClassificationReport,
     class_values: &[f64],
 ) -> String {
@@ -314,7 +314,7 @@ pub(crate) fn format_per_class_prf(
     s
 }
 
-pub(crate) fn logistic_config() -> LogisticConfig {
+pub fn logistic_config() -> LogisticConfig {
     LogisticConfig {
         max_iter: 4000,
         learning_rate: 0.25,

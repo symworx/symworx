@@ -22,7 +22,7 @@ use crate::app::{
     StatsLabTask,
 };
 
-pub(crate) fn run_poly(
+pub fn run_poly(
     table: &TableData,
     x_col: usize,
     y_col: usize,
@@ -145,7 +145,7 @@ pub(crate) fn run_poly(
     let best_footer = format!(
         "★ best by AIC: {}  R²={:.4}  adjR²={:.4}  AIC={:.2}\n  {}\n  \
          ☆ max R² = d={}  ·  min BIC = d={}  ·  tiny R² gains often fail χ² / AIC",
-        best.label.replace('★', "").replace('☆', ""),
+        best.label.replace(['★', '☆'], ""),
         best.r2,
         best.rmse,
         best.mae,
@@ -161,10 +161,9 @@ pub(crate) fn run_poly(
          ★ = min AIC (preferred)  ·  ☆ = max R² if different  ·  χ²Δ = LR vs d−1",
         rows.len()
     );
-    r.interpretation = format!(
-        "In-sample R² always rises with degree; use AIC/BIC and nested χ². \
+    r.interpretation = "In-sample R² always rises with degree; use AIC/BIC and nested χ². \
          If χ²Δ p ≫ 0.05, the extra term is not justified. ↑↓/f focus · d/D max degree."
-    );
+        .to_string();
     if !search.warnings.is_empty() {
         r.interpretation.push_str(" · ");
         r.interpretation.push_str(&search.warnings[0]);

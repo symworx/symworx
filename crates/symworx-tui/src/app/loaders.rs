@@ -76,11 +76,9 @@ impl App {
                 continue;
             }
 
-            if !has_header {
-                if trimmed.contains(',') || trimmed.parse::<f64>().is_err() {
-                    has_header = true;
-                    continue;
-                }
+            if !has_header && (trimmed.contains(',') || trimmed.parse::<f64>().is_err()) {
+                has_header = true;
+                continue;
             }
 
             // Take last column as signal value (supports "time,signal" generated files + headers)

@@ -19,7 +19,7 @@ use crate::app::{
     StatsLabTask,
 };
 
-pub(crate) fn run_describe(table: &TableData, col: usize) -> Result<StatsLabResult, String> {
+pub fn run_describe(table: &TableData, col: usize) -> Result<StatsLabResult, String> {
     let c = &table.columns[col];
     let name = col_name(table, col);
     let m = mean(c);
@@ -44,7 +44,7 @@ pub(crate) fn run_describe(table: &TableData, col: usize) -> Result<StatsLabResu
     Ok(r)
 }
 
-pub(crate) fn run_correlate(
+pub fn run_correlate(
     table: &TableData,
     x_col: usize,
     y_col: usize,

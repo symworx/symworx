@@ -27,7 +27,7 @@ use ratatui::{
 
 use crate::app::App;
 
-pub(crate) fn render_generate(frame: &mut Frame, app: &App, area: Rect) {
+pub fn render_generate(frame: &mut Frame, app: &App, area: Rect) {
     use symworx_stats::SyntheticPreset;
 
     let presets = SyntheticPreset::ALL;
