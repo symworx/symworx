@@ -46,6 +46,12 @@ use crate::{
         LinearModel,
         ols,
     },
+    model_select::{
+        ModelFitScores,
+        NestedModelTest,
+        nested_lr_chi2,
+        rss,
+    },
 };
 
 /// Options for [`fit_polynomial_degrees_with`].
@@ -93,6 +99,20 @@ pub struct PolynomialDegreeFit {
     /// In-sample residuals `eᵢ = yᵢ − ŷᵢ`, only if
     /// [`PolynomialSearchConfig::return_residuals`] was set; otherwise `None`.
     pub residuals: Option<Vec<f64>>,
+    /// AIC / BIC / adj-R² / RSS for selection (always filled when fit succeeds).
+    pub scores: ModelFitScores,
+    /// Nested LR χ² vs the previous fitted degree (`d−1` when present).
+    pub chi2_vs_prev: Option<f64>,
+    /// df for [`Self::chi2_vs_prev`] (usually 1).
+    pub chi2_vs_prev_df: usize,
+    /// Approximate p-value for [`Self::chi2_vs_prev`].
+    pub chi2_vs_prev_p: Option<f64>,
+    /// Nested LR χ² vs degree-0 (intercept-only), if that fit exists.
+    pub chi2_vs_null: Option<f64>,
+    /// Degrees of freedom for [`Self::chi2_vs_null`].
+    pub chi2_vs_null_df: usize,
+    /// Approximate p-value for [`Self::chi2_vs_null`].
+    pub chi2_vs_null_p: Option<f64>,
 }
 
 impl PolynomialDegreeFit {
@@ -130,18 +150,50 @@ pub struct PolynomialDegreeSearch {
 
 impl PolynomialDegreeSearch {
     /// Degree with highest in-sample R² among successful fits (ties → lower degree).
+    ///
+    /// **Prefer [`Self::best_degree_by_aic`] or [`Self::best_degree_by_bic`] for
+    /// selection** — R² alone almost always favors the highest degree.
     pub fn best_degree_by_r2(&self) -> Option<usize> {
+        self.best_by(|f| f.report.r2, true)
+    }
+
+    /// Degree with **lowest AIC** (ties → lower degree).
+    pub fn best_degree_by_aic(&self) -> Option<usize> {
+        self.best_by(|f| f.scores.aic, false)
+    }
+
+    /// Degree with **lowest BIC** (ties → lower degree). Stronger penalty than AIC.
+    pub fn best_degree_by_bic(&self) -> Option<usize> {
+        self.best_by(|f| f.scores.bic, false)
+    }
+
+    /// Degree with highest adjusted R² (ties → lower degree).
+    pub fn best_degree_by_adj_r2(&self) -> Option<usize> {
+        self.best_by(|f| f.scores.adj_r2, true)
+    }
+
+    fn best_by(
+        &self,
+        score: impl Fn(&PolynomialDegreeFit) -> f64,
+        maximize: bool,
+    ) -> Option<usize> {
         let mut best: Option<&PolynomialDegreeFit> = None;
         for f in &self.fits {
-            if !f.report.r2.is_finite() {
+            let s = score(f);
+            if !s.is_finite() {
                 continue;
             }
             best = Some(match best {
                 None => f,
                 Some(b) => {
-                    if f.report.r2 > b.report.r2 + 1e-15 {
-                        f
-                    } else if (f.report.r2 - b.report.r2).abs() <= 1e-15 && f.degree < b.degree {
+                    let sb = score(b);
+                    let better = if maximize {
+                        s > sb + 1e-15
+                    } else {
+                        s < sb - 1e-15
+                    };
+                    let tie = (s - sb).abs() <= 1e-15;
+                    if better || (tie && f.degree < b.degree) {
                         f
                     } else {
                         b
@@ -155,6 +207,25 @@ impl PolynomialDegreeSearch {
     /// Fit for a specific degree, if present.
     pub fn fit_for_degree(&self, degree: usize) -> Option<&PolynomialDegreeFit> {
         self.fits.iter().find(|f| f.degree == degree)
+    }
+
+    /// Nested test of `degree_alt` vs `degree_null` (must both be fitted; alt > null).
+    pub fn nested_test(&self, degree_null: usize, degree_alt: usize) -> Option<NestedModelTest> {
+        if degree_alt <= degree_null {
+            return None;
+        }
+        let n = self.n_samples;
+        let a = self.fit_for_degree(degree_null)?;
+        let b = self.fit_for_degree(degree_alt)?;
+        Some(NestedModelTest::from_rss(
+            n,
+            a.scores.rss,
+            a.n_params,
+            a.report.r2,
+            b.scores.rss,
+            b.n_params,
+            b.report.r2,
+        ))
     }
 }
 
@@ -376,6 +447,8 @@ pub fn fit_polynomial_degrees_with(
         let yhat = model.predict(&design);
         let yhat_vec = yhat.to_vec();
         let report = regression_report(y, &yhat_vec);
+        let rss_v = rss(y, &yhat_vec);
+        let scores = ModelFitScores::from_rss(n, n_params, rss_v, report.r2);
         let res = if config.return_residuals {
             Some(residuals(y, &yhat_vec))
         } else {
@@ -387,6 +460,13 @@ pub fn fit_polynomial_degrees_with(
             model,
             report,
             residuals: res,
+            scores,
+            chi2_vs_prev: None,
+            chi2_vs_prev_df: 0,
+            chi2_vs_prev_p: None,
+            chi2_vs_null: None,
+            chi2_vs_null_df: 0,
+            chi2_vs_null_p: None,
         });
     }
 
@@ -397,6 +477,9 @@ pub fn fit_polynomial_degrees_with(
         });
     }
 
+    // Fill nested χ² comparisons (vs previous degree and vs intercept-only).
+    fill_nested_chi2(&mut fits, n);
+
     Ok(PolynomialDegreeSearch {
         n_samples: n,
         max_degree_requested: max_degree,
@@ -404,6 +487,48 @@ pub fn fit_polynomial_degrees_with(
         fits,
         warnings,
     })
+}
+
+#[cfg(feature = "linalg")]
+fn fill_nested_chi2(fits: &mut [PolynomialDegreeFit], n: usize) {
+    use crate::model_select::chi2_sf;
+
+    let null_rss = fits.first().map(|f| f.scores.rss);
+    let null_k = fits.first().map(|f| f.n_params);
+    let null_deg = fits.first().map(|f| f.degree);
+
+    for i in 0..fits.len() {
+        // vs previous degree in the sweep
+        if i > 0 {
+            let prev = &fits[i - 1];
+            let cur = &fits[i];
+            let df = cur.n_params.saturating_sub(prev.n_params);
+            let chi = nested_lr_chi2(prev.scores.rss, cur.scores.rss, n);
+            let p = if df > 0 && chi.is_finite() {
+                Some(chi2_sf(chi, df as f64))
+            } else {
+                None
+            };
+            fits[i].chi2_vs_prev = Some(chi);
+            fits[i].chi2_vs_prev_df = df;
+            fits[i].chi2_vs_prev_p = p;
+        }
+        // vs degree-0 / first fit when this is richer
+        if let (Some(r0), Some(k0), Some(d0)) = (null_rss, null_k, null_deg) {
+            if fits[i].degree > d0 {
+                let df = fits[i].n_params.saturating_sub(k0);
+                let chi = nested_lr_chi2(r0, fits[i].scores.rss, n);
+                let p = if df > 0 && chi.is_finite() {
+                    Some(chi2_sf(chi, df as f64))
+                } else {
+                    None
+                };
+                fits[i].chi2_vs_null = Some(chi);
+                fits[i].chi2_vs_null_df = df;
+                fits[i].chi2_vs_null_p = p;
+            }
+        }
+    }
 }
 
 /// Stub without `linalg`.

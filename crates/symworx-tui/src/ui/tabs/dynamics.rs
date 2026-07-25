@@ -11,6 +11,7 @@ use ratatui::{
     widgets::{
         Block,
         Borders,
+        Padding,
         Paragraph,
     },
     Frame,
@@ -21,23 +22,34 @@ use crate::app::App;
 pub fn render_dynamics_tab(frame: &mut Frame, app: &App, area: Rect) {
     if app.help_mode {
         let help = Paragraph::new(
-            "Dynamics help (M-? or Esc to close)\n\n\
-             PREP IN EXPLORE (BioSym)\n\
-             • Load/generate signal → optional p process (filter/derivative)\n\
-             • k / K peak detect + params if you care about event series later\n\
-             • Current Explore series is what RQA/cRQA/MSE use here\n\n\
-             RQA / cRQA\n\
-             • c : open RQA/cRQA param editor (m/tau/radius)\n\
-             • r : reset RQA params\n\
-             • x : compute cRQA (needs reference or uses current vs reversed)\n\
-             • p : pin current signal as reference for cRQA\n\
-             • e : export last RQA/cRQA metrics\n\
-             • (editor) ←→ radius   m/t cycle   Enter=compute   Esc=cancel\n\n\
-             MSE shown automatically. Uses symworx-dynamics (RQA + cRQA + multiscale entropy).",
+            "Dynamics — RQA, cRQA, multiscale entropy\n\
+             Close help:  Esc  or  Alt-?\n\n\
+             \n\
+             INPUT\n\n\
+               Uses the current Explore series (process / peaks there first).\n\
+               MSE is shown automatically from that series.\n\n\
+             \n\
+             RQA  /  cRQA\n\n\
+               c                   open param editor (m, τ, radius)\n\
+               Enter (in editor)   compute RQA + recurrence plot\n\
+               ← → / ±             nudge radius\n\
+               m / t               cycle embedding dim / delay\n\
+               Esc (in editor)     cancel editor\n\
+               r                   reset params + results (pin kept)\n\n\
+               p                   pin current series as cRQA reference\n\
+               x                   compute cRQA\n\
+                                   (pinned ref vs current, or current vs reverse)\n\
+               e                   export last RQA/cRQA metrics → data/\n\n\
+             \n\
+             NAV\n\n\
+               Esc                 back to Explore\n\
+               Ctrl+H              Home\n\
+               Esc Esc / Ctrl+Q    quit (Esc-Esc at roots only)\n",
         )
         .block(
             Block::new()
                 .borders(Borders::ALL)
+                .padding(Padding::horizontal(1))
                 .title(" Help — Dynamics "),
         );
         frame.render_widget(help, area);
@@ -47,6 +59,7 @@ pub fn render_dynamics_tab(frame: &mut Frame, app: &App, area: Rect) {
     let block = Block::new()
         .title(" Dynamics — RQA (Recurrence Quantification Analysis) ")
         .borders(Borders::ALL)
+        .padding(Padding::horizontal(1))
         .border_style(Color::Green);
 
     if app.pending_rqa {

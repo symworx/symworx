@@ -26,6 +26,9 @@ pub mod parquet;
 /// Enabled via `fit` feature (and future `gpx` etc).
 pub mod activity;
 
+/// Tabular numeric CSV for StatsSym and general analysis.
+pub mod table;
+
 /// Email input support (IMAP fetching of .fit files, e.g. from SRM PC8 emails).
 /// Enabled via the `email` feature.
 #[cfg(feature = "email")]
@@ -80,6 +83,12 @@ pub use paths::{
     find_newest_activity_path,
 };
 use symworx_error::SymError;
+pub use table::{
+    TableData,
+    load_numeric_table,
+    write_columns_csv,
+    write_numeric_table,
+};
 use traits::SymReader;
 
 /// Parent load function.

@@ -115,6 +115,9 @@ fn set_schema_version(conn: &Connection, version: i32) -> Result<(), String> {
     Ok(())
 }
 
+/// Meta key: ISO-8601 / SQLite datetime of last successful ingest watermark.
+pub const META_LAST_INGEST_AT: &str = "last_ingest_at";
+
 /// Apply schema upgrades up to [`SCHEMA_VERSION`].
 pub fn migrate_catalog(conn: &Connection) -> Result<(), String> {
     let ver = schema_version(conn)?;
@@ -123,10 +126,136 @@ pub fn migrate_catalog(conn: &Connection) -> Result<(), String> {
         set_schema_version(conn, 2)?;
     }
     let ver = schema_version(conn)?;
+    if ver < 3 {
+        migrate_v3_catalog_meta(conn)?;
+        set_schema_version(conn, 3)?;
+    }
+    let ver = schema_version(conn)?;
     if ver < SCHEMA_VERSION {
         set_schema_version(conn, SCHEMA_VERSION)?;
     }
     Ok(())
+}
+
+fn migrate_v3_catalog_meta(conn: &Connection) -> Result<(), String> {
+    conn.execute_batch(
+        "
+        CREATE TABLE IF NOT EXISTS catalog_meta (
+            key         TEXT PRIMARY KEY,
+            value       TEXT NOT NULL,
+            updated_at  TEXT DEFAULT (datetime('now'))
+        );
+        ",
+    )
+    .map_err(|e| format!("create catalog_meta: {}", e))?;
+    Ok(())
+}
+
+/// Read a `catalog_meta` value (None if missing).
+pub fn meta_get(conn: &Connection, key: &str) -> Result<Option<String>, String> {
+    conn.query_row(
+        "SELECT value FROM catalog_meta WHERE key = ?1",
+        params![key],
+        |r| r.get::<_, String>(0),
+    )
+    .optional()
+    .map_err(|e| format!("meta_get: {}", e))
+}
+
+/// Upsert a `catalog_meta` value.
+pub fn meta_set(conn: &Connection, key: &str, value: &str) -> Result<(), String> {
+    conn.execute(
+        "INSERT INTO catalog_meta (key, value, updated_at) VALUES (?1, ?2, datetime('now'))
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')",
+        params![key, value],
+    )
+    .map_err(|e| format!("meta_set: {}", e))?;
+    Ok(())
+}
+
+/// Parse SQLite/ISO-ish timestamps into UNIX seconds for mtime comparisons.
+/// Accepts `YYYY-MM-DD HH:MM:SS`, `YYYY-MM-DDTHH:MM:SS`, optional trailing `Z`.
+pub fn parse_meta_timestamp(s: &str) -> Option<i64> {
+    let s = s.trim().trim_end_matches('Z');
+    let normalized = s.replace('T', " ");
+    // Manual parse to avoid extra deps: "YYYY-MM-DD HH:MM:SS"
+    let parts: Vec<&str> = normalized.split_whitespace().collect();
+    if parts.is_empty() {
+        return None;
+    }
+    let date = parts[0];
+    let time = parts.get(1).copied().unwrap_or("00:00:00");
+    let dp: Vec<_> = date.split('-').collect();
+    let tp: Vec<_> = time.split(':').collect();
+    if dp.len() != 3 || tp.len() < 2 {
+        return None;
+    }
+    let y: i32 = dp[0].parse().ok()?;
+    let mo: u32 = dp[1].parse().ok()?;
+    let d: u32 = dp[2].parse().ok()?;
+    let h: u32 = tp[0].parse().ok()?;
+    let mi: u32 = tp[1].parse().ok()?;
+    let se: u32 = tp.get(2).and_then(|x| x.parse().ok()).unwrap_or(0);
+    // UTC approx via time crate free path: use chrono-free algorithm
+    Some(civil_to_unix(y, mo, d, h, mi, se)?)
+}
+
+/// Days from civil date → UNIX seconds (UTC), no external time crate.
+fn civil_to_unix(y: i32, mo: u32, d: u32, h: u32, mi: u32, se: u32) -> Option<i64> {
+    if !(1..=12).contains(&mo) || d == 0 || d > 31 || h > 23 || mi > 59 || se > 60 {
+        return None;
+    }
+    // Howard Hinnant civil_from_days inverse (days since 1970-01-01)
+    let y = y as i64;
+    let m = mo as i64;
+    let d = d as i64;
+    let y = if m <= 2 { y - 1 } else { y };
+    let era = if y >= 0 { y } else { y - 399 } / 400;
+    let yoe = y - era * 400;
+    let doy = (153 * (if m > 2 { m - 3 } else { m + 9 }) + 2) / 5 + d - 1;
+    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    let days = era * 146097 + doe - 719468;
+    Some(days * 86400 + (h as i64) * 3600 + (mi as i64) * 60 + se as i64)
+}
+
+/// Filter FIT paths by filesystem mtime when a watermark is set.
+///
+/// Files with `mtime >= since_unix` are kept. Files with unreadable metadata are kept
+/// (safe default). When `since_unix` is None, all paths are returned.
+pub fn filter_paths_since_mtime(paths: Vec<PathBuf>, since_unix: Option<i64>) -> Vec<PathBuf> {
+    let Some(since) = since_unix else {
+        return paths;
+    };
+    paths
+        .into_iter()
+        .filter(|p| match fs::metadata(p).and_then(|m| m.modified()) {
+            Ok(t) => t
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs() as i64 >= since)
+                .unwrap_or(true),
+            Err(_) => true,
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod meta_tests {
+    use super::*;
+
+    #[test]
+    fn parse_meta_timestamp_basic() {
+        let t = parse_meta_timestamp("2026-07-22 12:00:00").expect("parse");
+        // 2026-07-22 12:00:00 UTC
+        assert!(t > 1_700_000_000);
+        let t2 = parse_meta_timestamp("2026-07-22T12:00:00Z").expect("parse T/Z");
+        assert_eq!(t, t2);
+    }
+
+    #[test]
+    fn filter_paths_none_keeps_all() {
+        let p = vec![PathBuf::from("a.fit"), PathBuf::from("b.fit")];
+        assert_eq!(filter_paths_since_mtime(p.clone(), None).len(), 2);
+    }
 }
 
 fn table_has_column(conn: &Connection, table: &str, col: &str) -> Result<bool, String> {
@@ -898,6 +1027,28 @@ pub struct RideSummary {
     pub avg_power_w: Option<f64>,
 }
 
+/// Core LOADsym columns for the Metrics / Library table (one row per activity).
+#[derive(Debug, Clone)]
+pub struct ActivityMetricsRow {
+    pub id: i64,
+    pub ride_date: String,
+    pub source_file: String,
+    pub duration_s: f64,
+    pub sport: Option<String>,
+    pub avg_power_w: Option<f64>,
+    pub max_power_w: Option<f64>,
+    /// SEPi (normalized power).
+    pub np_w: Option<f64>,
+    /// SRIi (intensity factor).
+    pub intensity_factor: Option<f64>,
+    /// TSLi.
+    pub tss: Option<f64>,
+    pub total_work_kj: Option<f64>,
+    pub avg_hr_bpm: Option<f64>,
+    pub max_hr_bpm: Option<f64>,
+    pub ftp_used_w: Option<f64>,
+}
+
 /// Load ride rows ordered by date then file (for calendar file lists).
 pub fn load_ride_summaries(conn: &Connection) -> Result<Vec<RideSummary>, String> {
     let mut stmt = conn
@@ -918,6 +1069,42 @@ pub fn load_ride_summaries(conn: &Connection) -> Result<Vec<RideSummary>, String
                 duration_s: row.get(3)?,
                 np_w: row.get(4)?,
                 avg_power_w: row.get(5)?,
+            })
+        })
+        .map_err(|e| e.to_string())?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())?;
+    Ok(rows)
+}
+
+/// Load full activity metrics for the Metrics table (oldest → newest).
+pub fn load_activity_metrics(conn: &Connection) -> Result<Vec<ActivityMetricsRow>, String> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT id, ride_date, source_file, COALESCE(duration_s, 0), sport,
+                    avg_power_w, max_power_w, np_w, intensity_factor, tss,
+                    total_work_kj, avg_hr_bpm, max_hr_bpm, ftp_used_w
+             FROM activities
+             ORDER BY ride_date ASC, source_file ASC",
+        )
+        .map_err(|e| e.to_string())?;
+    let rows = stmt
+        .query_map([], |row| {
+            Ok(ActivityMetricsRow {
+                id: row.get(0)?,
+                ride_date: row.get(1)?,
+                source_file: row.get(2)?,
+                duration_s: row.get(3)?,
+                sport: row.get(4)?,
+                avg_power_w: row.get(5)?,
+                max_power_w: row.get(6)?,
+                np_w: row.get(7)?,
+                intensity_factor: row.get(8)?,
+                tss: row.get(9)?,
+                total_work_kj: row.get(10)?,
+                avg_hr_bpm: row.get(11)?,
+                max_hr_bpm: row.get(12)?,
+                ftp_used_w: row.get(13)?,
             })
         })
         .map_err(|e| e.to_string())?
@@ -990,6 +1177,19 @@ pub fn try_load_default_calendar()
     let rows = load_daily_snapshots(&conn)?;
     let rides = load_ride_summaries(&conn)?;
     Ok(Some((path, rows, rides)))
+}
+
+/// Convenience: default catalog + activity metrics rows for Metrics table.
+/// Returns `Ok(None)` if the DB file does not exist.
+pub fn try_load_default_activity_metrics()
+-> Result<Option<(PathBuf, Vec<ActivityMetricsRow>)>, String> {
+    let path = default_catalog_path();
+    if !path.exists() {
+        return Ok(None);
+    }
+    let conn = open_catalog(&path)?;
+    let rows = load_activity_metrics(&conn)?;
+    Ok(Some((path, rows)))
 }
 
 #[cfg(test)]

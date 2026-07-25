@@ -57,8 +57,14 @@ pub mod correlation;
 /// Distance metrics (e.g., Euclidean).
 pub mod distance;
 
-/// Predicted-vs-expected error metrics (MAE, RMSE, R², regression report).
+/// Predicted-vs-expected error metrics (MAE, RMSE, R², residuals, regression report).
 pub mod error_metrics;
+
+/// Univariate histogram and Gaussian KDE (for any 1-D sample, incl. residuals).
+pub mod density;
+
+/// Model comparison / selection (AIC, BIC, nested χ² / F, adjusted R²).
+pub mod model_select;
 
 /// Feature preprocessing (standardize, min–max). Fit on train only.
 pub mod preprocess;
@@ -100,6 +106,9 @@ pub mod svd;
 
 /// Index-based train/test splits and optional training folds.
 pub mod split;
+
+/// Teaching / demo synthetic tabular generators (StatsSym).
+pub mod synthetic;
 
 /// Variability measurements (e.g., ibi, rmssd, sdnn)
 pub mod variability;
@@ -147,6 +156,21 @@ pub use correlation::{
     correlation_matrix_from_vec,
     pearson_correlation,
 };
+pub use density::{
+    HistBin,
+    HistKde,
+    Histogram,
+    HistogramConfig,
+    KdeConfig,
+    KdeEstimate,
+    hist_kde,
+    hist_kde_with,
+    histogram,
+    histogram_default,
+    kde_gaussian,
+    kde_gaussian_default,
+    silverman_bandwidth,
+};
 pub use distance::{
     chebyshev,
     cosine_distance,
@@ -161,6 +185,7 @@ pub use error_metrics::{
     mse,
     r2,
     regression_report,
+    residual_errors,
     residuals,
     rmse,
 };
@@ -196,6 +221,17 @@ pub use logistic::{
     logistic_regression,
     logistic_regression_ovr,
     sigmoid,
+};
+pub use model_select::{
+    ModelFitScores,
+    NestedModelTest,
+    adjusted_r2,
+    aic_gaussian,
+    bic_gaussian,
+    chi2_sf,
+    nested_f_stat,
+    nested_lr_chi2,
+    rss,
 };
 pub use naive_bayes::{
     GaussianNb,
@@ -245,6 +281,14 @@ pub use split::{
     take_indices,
     take_indices_cloned,
     train_test_split,
+};
+pub use synthetic::{
+    SyntheticError,
+    SyntheticPreset,
+    SyntheticSpec,
+    SyntheticTable,
+    generate as generate_synthetic,
+    generate_default as generate_synthetic_default,
 };
 pub use variability::{
     mean_successive_differences,

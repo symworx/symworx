@@ -15,6 +15,14 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
     applied_at TEXT DEFAULT (datetime('now'))
 );
 
+-- Lightweight key/value for pipeline state (last ingest time, etc.).
+-- Not athlete PII — only operational timestamps and flags.
+CREATE TABLE IF NOT EXISTS catalog_meta (
+    key         TEXT PRIMARY KEY,
+    value       TEXT NOT NULL,
+    updated_at  TEXT DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS activities (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     source_file     TEXT UNIQUE NOT NULL,           -- stable key relative to archive root when possible

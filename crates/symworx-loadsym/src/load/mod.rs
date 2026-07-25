@@ -3,6 +3,8 @@
 
 /// Acute/Chronic work/load ratio
 pub mod acwr;
+/// Soft default planning goal from form / fatigue / ACLi
+pub mod goal_suggest;
 /// Mechanical load calculations
 pub mod mechanical;
 /// Exercise monotony and load
@@ -22,6 +24,11 @@ pub use acwr::{
     compute_acute_chronic,
     compute_acwr_series,
     compute_ewma_acute_chronic,
+};
+pub use goal_suggest::{
+    GoalSuggestParams,
+    GoalSuggestion,
+    suggest_load_goal,
 };
 pub use mechanical::{
     MovementLoadMetrics,

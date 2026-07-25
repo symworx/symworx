@@ -125,6 +125,9 @@ pub fn fetch_fit_attachments(
 
 /// Same as [`fetch_fit_attachments`] but with an explicit [`ImapConfig`]
 /// (useful for tests and non-env configuration).
+///
+/// Also skips writing when the basename already exists under `$VELOFIT_HOME/raw`
+/// (or `SYMLOAD_SKIP_IF_IN` colon-separated dirs) so re-fetch after promote is cheap.
 #[cfg(feature = "email")]
 pub fn fetch_fit_attachments_with_config(
     user: &str,
@@ -143,6 +146,8 @@ pub fn fetch_fit_attachments_with_config(
 
     std::fs::create_dir_all(target_dir)
         .map_err(|e| SymError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+
+    let skip_dirs = existing_archive_skip_dirs(target_dir);
 
     // ClientBuilder uses native-tls for port 993 (implicit TLS).
     let client = imap::ClientBuilder::new(&imap_cfg.host, imap_cfg.port)
@@ -188,15 +193,17 @@ pub fn fetch_fit_attachments_with_config(
 
     let mut saved = Vec::new();
     let mut skipped_existing = 0usize;
+    let mut skipped_archive = 0usize;
     let mut no_fit = 0usize;
 
     for (i, seq) in seqs.iter().enumerate() {
         let n = i + 1;
         if n == 1 || n == total || n % 10 == 0 {
             eprintln!(
-                "imap: progress {n}/{total}  (new={}, skipped_existing={}, no_fit={})",
+                "imap: progress {n}/{total}  (new={}, skip_inbox={}, skip_raw={}, no_fit={})",
                 saved.len(),
                 skipped_existing,
+                skipped_archive,
                 no_fit
             );
         }
@@ -236,10 +243,14 @@ pub fn fetch_fit_attachments_with_config(
                 }
 
                 got_fit_this_msg = true;
-                // Skip if this basename already exists (re-runs are safe).
+                // Skip if this basename already exists in inbox or archive (re-runs are safe).
                 let out_path = target_dir.join(&fname);
                 if out_path.exists() {
                     skipped_existing += 1;
+                    continue;
+                }
+                if basename_exists_in_dirs(&fname, &skip_dirs) {
+                    skipped_archive += 1;
                     continue;
                 }
                 let mut file = File::create(&out_path).map_err(SymError::Io)?;
@@ -257,9 +268,10 @@ pub fn fetch_fit_attachments_with_config(
     }
 
     eprintln!(
-        "imap: done — new={} skipped_existing={} messages_without_fit={} of {}",
+        "imap: done — new={} skip_inbox={} skip_raw={} messages_without_fit={} of {}",
         saved.len(),
         skipped_existing,
+        skipped_archive,
         no_fit,
         total
     );
@@ -267,6 +279,45 @@ pub fn fetch_fit_attachments_with_config(
     let _ = sess.logout();
 
     Ok(saved)
+}
+
+/// Directories whose existing basenames should not be re-downloaded.
+/// Defaults to `$VELOFIT_HOME/raw` (sibling of `inbox` when target is `…/inbox`).
+#[cfg(feature = "email")]
+fn existing_archive_skip_dirs(target_dir: &Path) -> Vec<PathBuf> {
+    let mut dirs = Vec::new();
+    if let Ok(extra) = std::env::var("SYMLOAD_SKIP_IF_IN") {
+        for part in extra.split(':') {
+            let p = PathBuf::from(part.trim());
+            if !p.as_os_str().is_empty() && p.is_dir() {
+                dirs.push(p);
+            }
+        }
+    }
+    // Common layout: $VELOFIT_HOME/inbox → also check $VELOFIT_HOME/raw
+    if let Some(parent) = target_dir.parent() {
+        let raw = parent.join("raw");
+        if raw.is_dir() && !dirs.iter().any(|d| d == &raw) {
+            dirs.push(raw);
+        }
+    }
+    if let Ok(home) = std::env::var("VELOFIT_HOME") {
+        let raw = PathBuf::from(home).join("raw");
+        if raw.is_dir() && !dirs.iter().any(|d| d == &raw) {
+            dirs.push(raw);
+        }
+    }
+    dirs
+}
+
+#[cfg(feature = "email")]
+fn basename_exists_in_dirs(fname: &str, dirs: &[PathBuf]) -> bool {
+    for d in dirs {
+        if d.join(fname).is_file() {
+            return true;
+        }
+    }
+    false
 }
 
 /// Walk a parsed MIME tree and collect (filename, decoded bytes) for .fit parts.

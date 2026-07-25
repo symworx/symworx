@@ -40,7 +40,9 @@ pub struct ActivityData {
     pub speed_mps: Vec<Option<f64>>,
     /// Cadence (rpm or spm)
     pub cadence: Vec<Option<f64>>,
-    // Future: position_lat/long (semicircles), altitude, etc.
+    /// Elevation / altitude in meters (from FIT altitude / enhanced_altitude).
+    pub altitude_m: Vec<Option<f64>>,
+    // Future: position_lat/long (semicircles), distance, temperature, etc.
 }
 
 impl ActivityData {
@@ -68,9 +70,69 @@ impl ActivityData {
         self.power_w.iter().map(|v| v.unwrap_or(0.0)).collect()
     }
 
+    /// Heart-rate series (bpm); missing → 0.0.
+    pub fn hr_series(&self) -> Vec<f64> {
+        self.heart_rate_bpm
+            .iter()
+            .map(|v| v.unwrap_or(0.0))
+            .collect()
+    }
+
+    /// Speed series in km/h; missing → 0.0.
+    pub fn speed_kmh_series(&self) -> Vec<f64> {
+        self.speed_mps
+            .iter()
+            .map(|v| v.unwrap_or(0.0) * 3.6)
+            .collect()
+    }
+
+    /// Cadence series; missing → 0.0.
+    pub fn cadence_series(&self) -> Vec<f64> {
+        self.cadence.iter().map(|v| v.unwrap_or(0.0)).collect()
+    }
+
+    /// Elevation series (m); missing → last-known or 0.0 for gaps at start.
+    pub fn altitude_series_m(&self) -> Vec<f64> {
+        let mut last = 0.0;
+        let mut out = Vec::with_capacity(self.altitude_m.len());
+        for v in &self.altitude_m {
+            if let Some(a) = *v {
+                last = a;
+                out.push(a);
+            } else {
+                out.push(last);
+            }
+        }
+        out
+    }
+
     /// Return whether this activity has any non-zero power samples.
     pub fn has_power(&self) -> bool {
         self.power_w.iter().any(|v| v.is_some_and(|p| p > 0.0))
+    }
+
+    /// Any positive heart-rate samples.
+    pub fn has_hr(&self) -> bool {
+        self.heart_rate_bpm
+            .iter()
+            .any(|v| v.is_some_and(|h| h > 0.0))
+    }
+
+    /// Any positive speed samples.
+    pub fn has_speed(&self) -> bool {
+        self.speed_mps.iter().any(|v| v.is_some_and(|s| s > 0.0))
+    }
+
+    /// Any positive cadence samples.
+    pub fn has_cadence(&self) -> bool {
+        self.cadence.iter().any(|v| v.is_some_and(|c| c > 0.0))
+    }
+
+    /// Any finite altitude samples.
+    pub fn has_altitude(&self) -> bool {
+        self.altitude_m
+            .iter()
+            .any(|v| v.is_some_and(|a| a.is_finite()))
     }
 
     /// Calendar date `YYYY-MM-DD` (UTC) from [`Self::start_time_unix`], if known.
@@ -138,7 +200,7 @@ fn fit_value_to_unix(v: &fitparser::Value) -> Option<i64> {
 
 /// Read a full ActivityData from a FIT file.
 ///
-/// Collects power, hr, speed, cadence when present.
+/// Collects power, hr, speed, cadence, altitude when present.
 /// Extracts basic file metadata (manufacturer/product) from file_id if available.
 /// Times are made relative (starting at 0).
 #[cfg(feature = "fit")]
@@ -166,6 +228,7 @@ pub fn load_fit_activity(path: &str) -> Result<ActivityData, SymError> {
     let mut hr: Vec<Option<f64>> = vec![];
     let mut speed: Vec<Option<f64>> = vec![];
     let mut cadence: Vec<Option<f64>> = vec![];
+    let mut altitude: Vec<Option<f64>> = vec![];
 
     // Absolute FIT-epoch or unix-normalized timestamps for deltas
     let mut last_abs_unix: Option<i64> = None;
@@ -216,6 +279,7 @@ pub fn load_fit_activity(path: &str) -> Result<ActivityData, SymError> {
             let mut h: Option<f64> = None;
             let mut s: Option<f64> = None;
             let mut c: Option<f64> = None;
+            let mut a: Option<f64> = None;
             let mut ts_unix: Option<i64> = None;
 
             for field in rec.fields() {
@@ -239,17 +303,28 @@ pub fn load_fit_activity(path: &str) -> Result<ActivityData, SymError> {
                             h = Some(*v as f64);
                         }
                     }
-                    "speed" => {
+                    "speed" | "enhanced_speed" => {
                         if let Value::UInt16(v) = field.value() {
                             // Common scaling in FIT: speed is m/s * 1000
                             s = Some(*v as f64 / 1000.0);
                         } else if let Value::Float64(v) = field.value() {
                             s = Some(*v);
+                        } else if let Value::Float32(v) = field.value() {
+                            s = Some(*v as f64);
                         }
                     }
                     "cadence" => {
                         if let Value::UInt8(v) = field.value() {
                             c = Some(*v as f64);
+                        }
+                    }
+                    // Prefer enhanced_altitude (meters float) over scaled altitude.
+                    "enhanced_altitude" => {
+                        a = fit_altitude_meters(field.value()).or(a);
+                    }
+                    "altitude" => {
+                        if a.is_none() {
+                            a = fit_altitude_meters(field.value());
                         }
                     }
                     _ => {}
@@ -278,6 +353,7 @@ pub fn load_fit_activity(path: &str) -> Result<ActivityData, SymError> {
             hr.push(h);
             speed.push(s);
             cadence.push(c);
+            altitude.push(a);
         }
     }
 
@@ -303,7 +379,32 @@ pub fn load_fit_activity(path: &str) -> Result<ActivityData, SymError> {
         heart_rate_bpm: hr,
         speed_mps: speed,
         cadence,
+        altitude_m: altitude,
     })
+}
+
+/// Parse FIT altitude field values into meters.
+#[cfg(feature = "fit")]
+fn fit_altitude_meters(v: &fitparser::Value) -> Option<f64> {
+    use fitparser::Value;
+    match v {
+        Value::Float64(x) if x.is_finite() => Some(*x),
+        Value::Float32(x) if x.is_finite() => Some(*x as f64),
+        // Classic FIT altitude: scale 5, offset 500 → meters = raw/5 − 500
+        Value::UInt16(raw) => {
+            let m = *raw as f64 / 5.0 - 500.0;
+            if m.is_finite() { Some(m) } else { None }
+        }
+        Value::SInt16(raw) => {
+            let m = *raw as f64 / 5.0 - 500.0;
+            if m.is_finite() { Some(m) } else { None }
+        }
+        Value::UInt32(raw) => {
+            let m = *raw as f64 / 5.0 - 500.0;
+            if m.is_finite() { Some(m) } else { None }
+        }
+        _ => None,
+    }
 }
 
 /// Fallback / non-fit: try to read a simple power CSV (time,power or just power).
@@ -394,7 +495,8 @@ pub fn load_activity_power_series(path: &str) -> Result<(Vec<f64>, Vec<f64>), Sy
     Ok((data.times_s, p))
 }
 
-/// Load generic activity CSV that may have headers like time,power,heart_rate,speed,cadence.
+/// Load generic activity CSV that may have headers like
+/// time,power,heart_rate,speed,cadence,altitude/elevation.
 fn load_activity_from_csv(path: &str) -> Result<ActivityData, SymError> {
     let mut rdr = csv::ReaderBuilder::new()
         .has_headers(true)
@@ -413,12 +515,17 @@ fn load_activity_from_csv(path: &str) -> Result<ActivityData, SymError> {
     let col_hr = find("heart_rate").or_else(|| find("hr"));
     let col_speed = find("speed");
     let col_cad = find("cadence");
+    let col_alt = find("altitude")
+        .or_else(|| find("elevation"))
+        .or_else(|| find("altitude_m"))
+        .or_else(|| find("elev"));
 
     let mut times = Vec::new();
     let mut power = Vec::new();
     let mut hr = Vec::new();
     let mut spd = Vec::new();
     let mut cad = Vec::new();
+    let mut alt = Vec::new();
 
     let mut t = 0.0;
 
@@ -441,6 +548,7 @@ fn load_activity_from_csv(path: &str) -> Result<ActivityData, SymError> {
         hr.push(get_f64(col_hr));
         spd.push(get_f64(col_speed));
         cad.push(get_f64(col_cad));
+        alt.push(get_f64(col_alt));
 
         if col_time.is_none() {
             t += 1.0;
@@ -466,6 +574,7 @@ fn load_activity_from_csv(path: &str) -> Result<ActivityData, SymError> {
         heart_rate_bpm: hr,
         speed_mps: spd,
         cadence: cad,
+        altitude_m: alt,
     })
 }
 

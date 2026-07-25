@@ -56,9 +56,26 @@ pub fn rmse(actual: &[f64], predicted: &[f64]) -> f64 {
     mse(actual, predicted).sqrt()
 }
 
-/// Pointwise residuals `eᵢ = actualᵢ − predictedᵢ`.
+/// Pointwise residuals `eᵢ = actualᵢ − predictedᵢ` (observed − fitted).
+///
+/// This is the **canonical** residual helper for model diagnostics. Feed the
+/// result into [`crate::histogram`] / [`crate::kde_gaussian`] / Bland–Altman
+/// plots, or summarize with [`mae`] / [`rmse`] / [`bias`] on
+/// `(actual, predicted)` directly.
 ///
 /// Returns an empty vector if lengths differ.
+///
+/// # Example
+/// ```
+/// use symworx_stats::{residuals, histogram_default, kde_gaussian_default};
+///
+/// let y = [1.0, 2.0, 3.0, 4.0];
+/// let yhat = [1.1, 1.9, 3.2, 3.8];
+/// let e = residuals(&y, &yhat);
+/// assert_eq!(e.len(), 4);
+/// let _hist = histogram_default(&e);
+/// let _kde = kde_gaussian_default(&e);
+/// ```
 pub fn residuals(actual: &[f64], predicted: &[f64]) -> Vec<f64> {
     if actual.len() != predicted.len() {
         return Vec::new();
@@ -68,6 +85,12 @@ pub fn residuals(actual: &[f64], predicted: &[f64]) -> Vec<f64> {
         .zip(predicted.iter())
         .map(|(a, p)| a - p)
         .collect()
+}
+
+/// Alias for [`residuals`] — same convention `y − ŷ`.
+#[inline]
+pub fn residual_errors(actual: &[f64], predicted: &[f64]) -> Vec<f64> {
+    residuals(actual, predicted)
 }
 
 /// Mean residual (bias): `mean(actual − predicted)`.

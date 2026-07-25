@@ -26,6 +26,7 @@ linalg = ["dep:ndarray-linalg", "dep:openblas-build"]
 ndarray        = { workspace = true }
 ndarray-linalg = { workspace = true, optional = true }
 openblas-build = { workspace = true, optional = true }
+rand           = { workspace = true }
 
 symworx-math   = { path = "../symworx-math" }
 

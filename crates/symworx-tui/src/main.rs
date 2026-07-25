@@ -16,6 +16,7 @@ mod generate;
 mod input;
 mod live;
 mod processing;
+mod stats_lab;
 mod ui;
 
 use app::App;
