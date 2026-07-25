@@ -6,14 +6,8 @@
 use std::path::PathBuf;
 
 use symworx_spatialsym::{
-    decision::{
-        AgentDecision,
-        SpaceAction,
-    },
     synthetic,
-    AgentTrajectories,
     PlayingDimensions,
-    Point2,
     Vec2,
 };
 

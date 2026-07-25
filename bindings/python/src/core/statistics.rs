@@ -15,6 +15,11 @@ use symworx_core::stats::{
     GaussianNb as RustGaussianNb,
     // types
     GaussianNbConfig,
+    // density
+    Histogram as RustHistogram,
+    HistogramConfig,
+    KdeConfig,
+    KdeEstimate as RustKde,
     LogisticConfig,
     LogisticModel as RustLogisticModel,
     MulticlassLogisticModel as RustMulticlassLogistic,
@@ -26,12 +31,19 @@ use symworx_core::stats::{
     accuracy as rust_accuracy,
     // autocorrelation
     acf,
+    // model selection (light surface)
+    adjusted_r2 as rust_adjusted_r2,
+    aic_gaussian as rust_aic_gaussian,
+    bic_gaussian as rust_bic_gaussian,
     classification_report as rust_classification_report,
     correlation_matrix_from_vec,
     // distance
     euclidean,
     // naive bayes
     gaussian_nb as rust_gaussian_nb,
+    hist_kde_with as rust_hist_kde_with,
+    histogram as rust_histogram,
+    kde_gaussian as rust_kde_gaussian,
     // linreg
     l1,
     l2,
@@ -46,13 +58,19 @@ use symworx_core::stats::{
     mean_successive_differences,
     median,
     mse,
+    nested_lr_chi2 as rust_nested_lr_chi2,
     pearson_correlation,
     percentile,
+    r2 as rust_r2,
+    residual_errors as rust_residual_errors,
+    residuals as rust_residuals,
     rmse,
     rmssd,
     roc_auc as rust_roc_auc,
     roc_auc_ovr as rust_roc_auc_ovr,
+    rss as rust_rss,
     sd_successive_differences,
+    silverman_bandwidth as rust_silverman_bandwidth,
     // variability
     successive_differences,
     train_test_split as rust_train_test_split,
@@ -195,6 +213,279 @@ pub fn py_mse(actual: Vec<f64>, predicted: Vec<f64>) -> f64 {
 #[pyfunction(name = "rmse")]
 pub fn py_rmse(actual: Vec<f64>, predicted: Vec<f64>) -> f64 {
     rmse(&actual, &predicted)
+}
+
+/// Pointwise residuals `e = actual − predicted` (observed − fitted).
+#[pyfunction(name = "residuals")]
+pub fn py_residuals(actual: Vec<f64>, predicted: Vec<f64>) -> Vec<f64> {
+    rust_residuals(&actual, &predicted)
+}
+
+/// Alias for [`py_residuals`].
+#[pyfunction(name = "residual_errors")]
+pub fn py_residual_errors(actual: Vec<f64>, predicted: Vec<f64>) -> Vec<f64> {
+    rust_residual_errors(&actual, &predicted)
+}
+
+/// Coefficient of determination R².
+#[pyfunction(name = "r2")]
+pub fn py_r2(actual: Vec<f64>, predicted: Vec<f64>) -> f64 {
+    rust_r2(&actual, &predicted)
+}
+
+/// Residual sum of squares Σ(y − ŷ)².
+#[pyfunction(name = "rss")]
+pub fn py_rss(actual: Vec<f64>, predicted: Vec<f64>) -> f64 {
+    rust_rss(&actual, &predicted)
+}
+
+// ==========================================================
+// Density: histogram + Gaussian KDE (any 1-D sample)
+// ==========================================================
+
+/// Equal-width histogram of a 1-D sample.
+#[pyclass(name = "Histogram")]
+#[derive(Clone)]
+pub struct PyHistogram {
+    #[pyo3(get)]
+    pub n: usize,
+    #[pyo3(get)]
+    pub data_min: f64,
+    #[pyo3(get)]
+    pub data_max: f64,
+    /// Bin left edges.
+    #[pyo3(get)]
+    pub left: Vec<f64>,
+    /// Bin right edges.
+    #[pyo3(get)]
+    pub right: Vec<f64>,
+    /// Bin centers.
+    #[pyo3(get)]
+    pub centers: Vec<f64>,
+    /// Counts per bin.
+    #[pyo3(get)]
+    pub counts: Vec<u64>,
+    /// Nominal bin width.
+    #[pyo3(get)]
+    pub bin_width: f64,
+}
+
+impl From<RustHistogram> for PyHistogram {
+    fn from(h: RustHistogram) -> Self {
+        let bin_width = h.bin_width();
+        Self {
+            n: h.n,
+            data_min: h.data_min,
+            data_max: h.data_max,
+            left: h.bins.iter().map(|b| b.left).collect(),
+            right: h.bins.iter().map(|b| b.right).collect(),
+            centers: h.bins.iter().map(|b| b.center).collect(),
+            counts: h.bins.iter().map(|b| b.count).collect(),
+            bin_width,
+        }
+    }
+}
+
+#[pymethods]
+impl PyHistogram {
+    /// List of `(center, count)` for plotting.
+    fn centers_counts(&self) -> Vec<(f64, f64)> {
+        self.centers
+            .iter()
+            .zip(self.counts.iter())
+            .map(|(&c, &n)| (c, n as f64))
+            .collect()
+    }
+
+    fn max_count(&self) -> u64 {
+        self.counts.iter().copied().max().unwrap_or(0)
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "Histogram(n={}, bins={}, min={:.4}, max={:.4})",
+            self.n,
+            self.centers.len(),
+            self.data_min,
+            self.data_max
+        )
+    }
+}
+
+/// Gaussian KDE on a uniform grid.
+#[pyclass(name = "KdeEstimate")]
+#[derive(Clone)]
+pub struct PyKdeEstimate {
+    #[pyo3(get)]
+    pub n: usize,
+    #[pyo3(get)]
+    pub bandwidth: f64,
+    /// Evaluation abscissae.
+    #[pyo3(get)]
+    pub x: Vec<f64>,
+    /// Density f̂(x) (integrates ≈ 1).
+    #[pyo3(get)]
+    pub density: Vec<f64>,
+}
+
+impl From<RustKde> for PyKdeEstimate {
+    fn from(k: RustKde) -> Self {
+        Self {
+            n: k.n,
+            bandwidth: k.bandwidth,
+            x: k.x,
+            density: k.density,
+        }
+    }
+}
+
+#[pymethods]
+impl PyKdeEstimate {
+    /// List of `(x, density)` pairs.
+    fn points(&self) -> Vec<(f64, f64)> {
+        self.x
+            .iter()
+            .zip(self.density.iter())
+            .map(|(&x, &d)| (x, d))
+            .collect()
+    }
+
+    /// Scale density to expected counts for a given histogram bin width:
+    /// `y = f̂(x) · n · bin_width`.
+    fn to_count_scale(&self, bin_width: f64) -> Vec<(f64, f64)> {
+        let s = self.n as f64 * bin_width;
+        self.x
+            .iter()
+            .zip(self.density.iter())
+            .map(|(&x, &d)| (x, d * s))
+            .collect()
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "KdeEstimate(n={}, bandwidth={:.6}, points={})",
+            self.n,
+            self.bandwidth,
+            self.x.len()
+        )
+    }
+}
+
+/// Combined histogram + KDE (ready for overlay plots).
+#[pyclass(name = "HistKde")]
+#[derive(Clone)]
+pub struct PyHistKde {
+    #[pyo3(get)]
+    pub hist: PyHistogram,
+    #[pyo3(get)]
+    pub kde: PyKdeEstimate,
+    /// KDE in count units (same scale as histogram counts).
+    #[pyo3(get)]
+    pub kde_counts: Vec<(f64, f64)>,
+}
+
+#[pymethods]
+impl PyHistKde {
+    fn __repr__(&self) -> String {
+        format!(
+            "HistKde(hist_bins={}, kde_points={})",
+            self.hist.centers.len(),
+            self.kde.x.len()
+        )
+    }
+}
+
+/// Equal-width histogram. Default `n_bins=24`.
+#[pyfunction(name = "histogram")]
+#[pyo3(signature = (data, n_bins=24))]
+pub fn py_histogram(data: Vec<f64>, n_bins: usize) -> PyHistogram {
+    rust_histogram(&data, &HistogramConfig { n_bins }).into()
+}
+
+/// Gaussian KDE with Silverman bandwidth by default.
+#[pyfunction(name = "kde_gaussian")]
+#[pyo3(signature = (data, n_points=80, bandwidth=None, pad_frac=0.05))]
+pub fn py_kde_gaussian(
+    data: Vec<f64>,
+    n_points: usize,
+    bandwidth: Option<f64>,
+    pad_frac: f64,
+) -> PyKdeEstimate {
+    rust_kde_gaussian(
+        &data,
+        &KdeConfig {
+            bandwidth,
+            n_points,
+            pad_frac,
+        },
+    )
+    .into()
+}
+
+/// Silverman's rule-of-thumb bandwidth for 1-D Gaussian KDE.
+#[pyfunction(name = "silverman_bandwidth")]
+pub fn py_silverman_bandwidth(data: Vec<f64>) -> f64 {
+    rust_silverman_bandwidth(&data)
+}
+
+/// Histogram + KDE together (default bins / grid). Convenience for residual plots.
+#[pyfunction(name = "hist_kde")]
+#[pyo3(signature = (data, n_bins=24, n_points=80, bandwidth=None, pad_frac=0.05))]
+pub fn py_hist_kde(
+    data: Vec<f64>,
+    n_bins: usize,
+    n_points: usize,
+    bandwidth: Option<f64>,
+    pad_frac: f64,
+) -> PyHistKde {
+    let combined = rust_hist_kde_with(
+        &data,
+        &HistogramConfig { n_bins },
+        &KdeConfig {
+            bandwidth,
+            n_points,
+            pad_frac,
+        },
+    );
+    let bin_w = combined.hist.bin_width();
+    let kde_counts = if bin_w.is_finite() && bin_w > 0.0 {
+        combined.kde.to_count_scale(bin_w)
+    } else {
+        combined.kde.points()
+    };
+    PyHistKde {
+        hist: combined.hist.into(),
+        kde: combined.kde.into(),
+        kde_counts,
+    }
+}
+
+// ==========================================================
+// Model selection (Gaussian linear)
+// ==========================================================
+
+/// Adjusted R² = `1 − (1−R²)·(n−1)/(n−k)` with `k = n_params` (incl. intercept).
+#[pyfunction(name = "adjusted_r2")]
+pub fn py_adjusted_r2(r2: f64, n: usize, n_params: usize) -> f64 {
+    rust_adjusted_r2(r2, n, n_params)
+}
+
+/// Gaussian AIC = `n·ln(RSS/n) + 2k` (lower is better).
+#[pyfunction(name = "aic_gaussian")]
+pub fn py_aic_gaussian(rss: f64, n: usize, n_params: usize) -> f64 {
+    rust_aic_gaussian(rss, n, n_params)
+}
+
+/// Gaussian BIC = `n·ln(RSS/n) + k·ln(n)` (lower is better).
+#[pyfunction(name = "bic_gaussian")]
+pub fn py_bic_gaussian(rss: f64, n: usize, n_params: usize) -> f64 {
+    rust_bic_gaussian(rss, n, n_params)
+}
+
+/// Nested LR χ² for Gaussian models: `n · ln(RSS_null / RSS_alt)`.
+#[pyfunction(name = "nested_lr_chi2")]
+pub fn py_nested_lr_chi2(rss_null: f64, rss_alt: f64, n: usize) -> f64 {
+    rust_nested_lr_chi2(rss_null, rss_alt, n)
 }
 
 // ==========================================================
@@ -744,10 +1035,29 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // --- Distance -----------------------------------------
     m.add_function(wrap_pyfunction!(py_euclidean, m)?)?;
 
-    // --- Errors -------------------------------------------
+    // --- Errors / residuals --------------------------------
     m.add_function(wrap_pyfunction!(py_mae, m)?)?;
     m.add_function(wrap_pyfunction!(py_mse, m)?)?;
     m.add_function(wrap_pyfunction!(py_rmse, m)?)?;
+    m.add_function(wrap_pyfunction!(py_r2, m)?)?;
+    m.add_function(wrap_pyfunction!(py_rss, m)?)?;
+    m.add_function(wrap_pyfunction!(py_residuals, m)?)?;
+    m.add_function(wrap_pyfunction!(py_residual_errors, m)?)?;
+
+    // --- Density: histogram + KDE --------------------------
+    m.add_class::<PyHistogram>()?;
+    m.add_class::<PyKdeEstimate>()?;
+    m.add_class::<PyHistKde>()?;
+    m.add_function(wrap_pyfunction!(py_histogram, m)?)?;
+    m.add_function(wrap_pyfunction!(py_kde_gaussian, m)?)?;
+    m.add_function(wrap_pyfunction!(py_silverman_bandwidth, m)?)?;
+    m.add_function(wrap_pyfunction!(py_hist_kde, m)?)?;
+
+    // --- Model selection (Gaussian linear) -----------------
+    m.add_function(wrap_pyfunction!(py_adjusted_r2, m)?)?;
+    m.add_function(wrap_pyfunction!(py_aic_gaussian, m)?)?;
+    m.add_function(wrap_pyfunction!(py_bic_gaussian, m)?)?;
+    m.add_function(wrap_pyfunction!(py_nested_lr_chi2, m)?)?;
 
     // --- Linear regression --------------------------------
     m.add_function(wrap_pyfunction!(py_l1, m)?)?;

@@ -226,6 +226,7 @@ impl PyGaitData {
         self.inner.calculate_stride_intervals().map(|a| a.to_vec())
     }
 
+    #[pyo3(signature = (walking_speed=None))]
     fn calculate_stride_length(&mut self, walking_speed: Option<f64>) -> Option<Vec<f64>> {
         self.inner
             .calculate_stride_length(walking_speed)
@@ -260,6 +261,7 @@ impl PyGaitData {
         self.inner.calculate_symmetry()
     }
 
+    #[pyo3(signature = (provided_speed=None))]
     fn to_gait_stats(&self, provided_speed: Option<f64>) -> PyGaitStats {
         PyGaitStats::from(self.inner.to_gait_stats(provided_speed))
     }

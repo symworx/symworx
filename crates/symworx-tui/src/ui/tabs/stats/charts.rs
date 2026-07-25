@@ -2,22 +2,13 @@
 // Licensed under the Apache License, Version 2.0.
 
 use ratatui::{
-    layout::{
-        Alignment,
-        Constraint,
-        Layout,
-        Rect,
-    },
+    layout::Rect,
     style::{
         Color,
-        Modifier,
         Style,
     },
     symbols,
-    text::{
-        Line,
-        Span,
-    },
+    text::Line,
     widgets::{
         Axis,
         Block,
@@ -25,8 +16,6 @@ use ratatui::{
         Chart,
         Dataset,
         GraphType,
-        List,
-        ListItem,
         Padding,
         Paragraph,
     },

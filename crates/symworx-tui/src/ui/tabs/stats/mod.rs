@@ -2,31 +2,11 @@
 // Licensed under the Apache License, Version 2.0.
 
 use ratatui::{
-    layout::{
-        Alignment,
-        Constraint,
-        Layout,
-        Rect,
-    },
-    style::{
-        Color,
-        Modifier,
-        Style,
-    },
-    symbols,
-    text::{
-        Line,
-        Span,
-    },
+    layout::Rect,
+    style::Color,
     widgets::{
-        Axis,
         Block,
         Borders,
-        Chart,
-        Dataset,
-        GraphType,
-        List,
-        ListItem,
         Padding,
         Paragraph,
     },

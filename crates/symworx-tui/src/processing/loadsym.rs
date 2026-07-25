@@ -14,7 +14,6 @@ use crate::app::{
     App,
     CatalogRideRow,
     WeeklyLoadRow,
-    WorkoutStream,
 };
 
 /// Count discoverable activity files under the app's archive dirs (paths only; no FIT parse).

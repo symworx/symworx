@@ -10,24 +10,16 @@ use ratatui::{
         Modifier,
         Style,
     },
-    symbols,
     text::{
         Line,
         Span,
     },
     widgets::{
-        Axis,
         Block,
         Borders,
-        Cell,
-        Chart,
-        Dataset,
-        GraphType,
         Padding,
         Paragraph,
-        Row,
         Sparkline,
-        Table,
     },
     Frame,
 };
@@ -35,10 +27,6 @@ use symworx_loadsym::load::{
     classify_acwr,
     compute_acute_chronic,
     compute_monotony,
-    compute_ride_metrics,
-    compute_strain,
-    find_exceedance_regions,
-    highest_rolling,
     simulate_pulse_response,
     LoadGoal,
     PulseResponseParams,
@@ -46,14 +34,7 @@ use symworx_loadsym::load::{
 };
 
 use super::util::truncate_str;
-use crate::app::{
-    ActivityMetricsUiRow,
-    App,
-    LoadSymView,
-    MetricsChartMode,
-    MetricsField,
-    WorkoutStream,
-};
+use crate::app::App;
 
 pub(crate) fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect) {
     let loads = &app.daily_loads;

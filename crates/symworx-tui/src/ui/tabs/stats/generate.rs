@@ -3,7 +3,6 @@
 
 use ratatui::{
     layout::{
-        Alignment,
         Constraint,
         Layout,
         Rect,
@@ -13,20 +12,13 @@ use ratatui::{
         Modifier,
         Style,
     },
-    symbols,
     text::{
         Line,
         Span,
     },
     widgets::{
-        Axis,
         Block,
         Borders,
-        Chart,
-        Dataset,
-        GraphType,
-        List,
-        ListItem,
         Padding,
         Paragraph,
     },
