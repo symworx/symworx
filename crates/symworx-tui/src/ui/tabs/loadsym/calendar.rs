@@ -219,9 +219,7 @@ pub(crate) fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
         let n_secondary = day_rides.iter().filter(|r| !r.counts_for_load).count();
         if n_secondary > 0 {
             daily_lines.push(Line::from(Span::styled(
-                format!(
-                    "  ● load primary  ○ archive/dup  (+{n_secondary} not counted)"
-                ),
+                format!("  ● load primary  ○ archive/dup  (+{n_secondary} not counted)"),
                 Style::default().fg(Color::DarkGray),
             )));
         }

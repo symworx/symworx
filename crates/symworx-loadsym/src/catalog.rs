@@ -847,9 +847,7 @@ pub fn ingest_one(
     let file_size = fs::metadata(path).map(|m| m.len() as i64).unwrap_or(0);
     let platform = guess_platform(&act);
     let pipeline = guess_ingest_pipeline(path, platform.as_deref());
-    let start_time = act
-        .start_time_unix
-        .and_then(|ts| unix_secs_to_iso8601(ts));
+    let start_time = act.start_time_unix.and_then(|ts| unix_secs_to_iso8601(ts));
 
     let res = conn.execute(
         "INSERT INTO activities (
@@ -978,7 +976,10 @@ fn guess_platform(act: &ActivityData) -> Option<String> {
 
 /// Infer ingest pipeline from path segments (and optionally device platform).
 pub fn guess_ingest_pipeline(path: &Path, platform: Option<&str>) -> String {
-    let s = path.to_string_lossy().replace('\\', "/").to_ascii_lowercase();
+    let s = path
+        .to_string_lossy()
+        .replace('\\', "/")
+        .to_ascii_lowercase();
     if s.contains("/email/") || s.contains("/inbox/") || s.starts_with("email/") {
         return "email".into();
     }
@@ -988,10 +989,16 @@ pub fn guess_ingest_pipeline(path: &Path, platform: Option<&str>) -> String {
     if s.contains("/manual/") || s.starts_with("manual/") {
         return "manual".into();
     }
-    if platform.map(|p| p.eq_ignore_ascii_case("polar")).unwrap_or(false) {
+    if platform
+        .map(|p| p.eq_ignore_ascii_case("polar"))
+        .unwrap_or(false)
+    {
         return "polar".into();
     }
-    if platform.map(|p| p.eq_ignore_ascii_case("srm")).unwrap_or(false) {
+    if platform
+        .map(|p| p.eq_ignore_ascii_case("srm"))
+        .unwrap_or(false)
+    {
         // SRM often arrives via email; without path hints stay manual/archive.
         return "manual".into();
     }
@@ -1130,7 +1137,12 @@ fn set_activity_group_flags(
             counts_for_load = ?2,
             match_reason = ?3
          WHERE id = ?4",
-        params![group_id, if is_primary { 1 } else { 0 }, reason, activity_id],
+        params![
+            group_id,
+            if is_primary { 1 } else { 0 },
+            reason,
+            activity_id
+        ],
     )
     .map_err(|e| e.to_string())?;
     Ok(())
@@ -1685,7 +1697,15 @@ mod tests {
 
     #[test]
     fn sessions_match_time_window() {
-        let a = link_row(1, "2026-07-01", Some(1_720_000_000), 3600.0, Some(200.0), "srm", "email");
+        let a = link_row(
+            1,
+            "2026-07-01",
+            Some(1_720_000_000),
+            3600.0,
+            Some(200.0),
+            "srm",
+            "email",
+        );
         let b = link_row(
             2,
             "2026-07-01",
@@ -1710,8 +1730,24 @@ mod tests {
 
     #[test]
     fn primary_prefers_power_meter() {
-        let srm = link_row(1, "2026-07-01", Some(1), 3600.0, Some(220.0), "srm", "email");
-        let polar = link_row(2, "2026-07-01", Some(1), 3600.0, Some(0.0), "polar", "polar");
+        let srm = link_row(
+            1,
+            "2026-07-01",
+            Some(1),
+            3600.0,
+            Some(220.0),
+            "srm",
+            "email",
+        );
+        let polar = link_row(
+            2,
+            "2026-07-01",
+            Some(1),
+            3600.0,
+            Some(0.0),
+            "polar",
+            "polar",
+        );
         let (pid, _) = pick_primary(&[&srm, &polar]);
         assert_eq!(pid, 1);
         let (pid2, _) = pick_primary(&[&polar, &srm]);

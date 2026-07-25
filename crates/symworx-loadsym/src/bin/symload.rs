@@ -218,7 +218,10 @@ fn handle_db_command(args: &[String]) -> Result<(), String> {
                     symworx_loadsym::catalog::META_LAST_INGEST_AT,
                 )?;
                 println!("db: {}", db.display());
-                println!("activities: {}  (load_primary={}  secondary/dup={})", n, primaries, secondaries);
+                println!(
+                    "activities: {}  (load_primary={}  secondary/dup={})",
+                    n, primaries, secondaries
+                );
                 println!("multi-source session groups: {}", multi_groups);
                 println!("ftp_history rows: {}", ftp_n);
                 match last {
