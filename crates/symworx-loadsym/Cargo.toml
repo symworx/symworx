@@ -41,6 +41,8 @@ default = []
 fit = ["symworx-io/fit"]
 # Enable email fetching support in the symload binary (implies fit for follow-on stats).
 email = ["symworx-io/email", "fit"]
+# Polar AccessLink OAuth + FIT fetch (implies fit for follow-on ingest).
+polar = ["symworx-io/polar", "fit"]
 # Enable db schema helpers (print-schema).
 db = ["dep:symworx-loadsym-db"]
 # Personal SQLite catalog: init + ingest (implies fit + db).

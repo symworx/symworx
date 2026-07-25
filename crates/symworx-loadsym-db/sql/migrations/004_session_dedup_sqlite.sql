@@ -1,6 +1,10 @@
 -- Migration 004: multi-source session linking + load dedup flags (SQLite)
 -- Applied by symload catalog migrate when schema_migrations.version < 4.
 -- Application code also uses ALTER TABLE guards; this file documents target DDL.
+--
+-- See: crate README.md, docs/loadsym-personal-starter.md (schema v4)
+-- Runtime: symworx-loadsym::catalog::migrate_catalog / recompute_daily_for_date
+--   (daily_loads uses counts_for_load = 1 only)
 
 PRAGMA foreign_keys = ON;
 

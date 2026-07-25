@@ -99,6 +99,9 @@ cargo run -p symworx-tui --example generate_biosym_demo
 - Conversion logic: `crates/symworx-tui/src/convert.rs`
 - RQA core (already implemented): `crates/symworx-dynamics/src/rqa/`
 - Low-level series / sequence primitives (canonical implementation): `crates/symworx-math/src/series.rs`
+- LoadSym catalog schema (SQL only, no personal data): `crates/symworx-loadsym-db/` — operator guide `docs/loadsym-personal-starter.md` (schema v4 multi-source)
+- LoadSym catalog runtime + `symload` CLI: `crates/symworx-loadsym/src/catalog.rs`, `src/bin/symload.rs`
+- IMAP / Polar AccessLink fetch: `crates/symworx-io/src/email.rs`, `polar.rs` (feature-gated)
 
 **Important:** Successive difference logic and other general sequence operations belong in `symworx-math`, **not** in `symworx-stats`, `symworx-signal`, or domain crates like `symworx-biosym`. Re-use via `symworx-core::math::series` (or direct `symworx-math`).
 

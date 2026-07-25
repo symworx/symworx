@@ -3,7 +3,7 @@
 
 //! # symworx-io
 //!
-//! I/O for biosignals and activity data (CSV, Parquet, IBI, FIT, optional email).
+//! I/O for biosignals and activity data (CSV, Parquet, IBI, FIT, optional email / Polar).
 //! Domain crates and the TUI load/save through this crate (see workspace I/O rule).
 
 #![warn(missing_docs)]
@@ -45,6 +45,37 @@ pub use email::{
     fetch_srm_fit_attachments,
 };
 
+/// Polar AccessLink (OAuth + exercise FIT download). Enabled via the `polar` feature.
+#[cfg(feature = "polar")]
+pub mod polar;
+
+#[cfg(feature = "polar")]
+pub use polar::{
+    DEFAULT_MEMBER_ID,
+    DEFAULT_REDIRECT_URI,
+    POLAR_ACCESS_TOKEN_ENV,
+    POLAR_CLIENT_ID_ENV,
+    POLAR_CLIENT_SECRET_ENV,
+    POLAR_MEMBER_ID_ENV,
+    POLAR_REDIRECT_URI_ENV,
+    POLAR_USER_ID_ENV,
+    PolarCredentials,
+    PolarExerciseSummary,
+    PolarFetchReport,
+    PolarTokenFile,
+    default_polar_raw_dir,
+    default_token_path,
+    download_exercise_fit,
+    external_id_from_polar_filename,
+    fetch_exercise_fits,
+    list_exercises,
+    load_token_file,
+    polar_fit_filename,
+    register_user,
+    run_oauth_flow,
+    save_token_file,
+};
+
 /// Personal archive path helpers (`~/velofit`) and activity file discovery.
 pub mod paths;
 
@@ -77,6 +108,7 @@ pub use paths::{
     default_activity_search_dirs,
     default_velofit_db,
     default_velofit_inbox,
+    default_velofit_polar,
     default_velofit_raw,
     default_velofit_root,
     discover_activity_files,

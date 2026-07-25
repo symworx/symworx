@@ -159,7 +159,7 @@ They are built from the corresponding `pyproject-*.toml` files using maturin. Tr
 
 ## Other Notes
 
-- The `docs/` directory contains higher-level guides (e.g. the personal loadsym starter). These are not part of the generated `cargo doc` output.
+- The `docs/` directory contains higher-level guides. The LoadSym personal catalog starter **redirects** to the canonical copy under `crates/symworx-loadsym-db/docs/` (schema v4, multi-source ingest). These are not part of the generated `cargo doc` output.
 - Internal agent guidelines live in `AGENTS.md`.
 - Feel free to open issues or discussions for anything unclear in this document.
 
@@ -168,4 +168,6 @@ They are built from the corresponding `pyproject-*.toml` files using maturin. Tr
 **Quick links**
 - [AGENTS.md](AGENTS.md) – guidelines for agentic development
 - [CONTRIBUTING.md](CONTRIBUTING.md)
+- [LoadSym personal catalog](crates/symworx-loadsym-db/docs/loadsym-personal-starter.md) – `$VELOFIT_HOME`, ingest, Polar, sync
+- [symworx-loadsym-db README](crates/symworx-loadsym-db/README.md) – schema versions / API
 - Root `Cargo.toml` for the full list of workspace members and shared dependencies

@@ -2,6 +2,10 @@
 -- Intended for a local file under $VELOFIT_HOME/db/ (never commit the data file).
 -- Schema only — no sample rows, no personal identifiers.
 --
+-- Schema version: 4 (see symworx_loadsym_db::SCHEMA_VERSION)
+--   v2 ftp_history · v3 catalog_meta · v4 multi-source session linking
+-- Operator docs: docs/loadsym-personal-starter.md · crate README.md
+--
 -- Dialect notes vs Postgres schema.sql:
 --   INTEGER PRIMARY KEY AUTOINCREMENT instead of BIGSERIAL/SERIAL
 --   REAL instead of DOUBLE PRECISION

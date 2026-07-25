@@ -39,6 +39,11 @@ pub fn default_velofit_raw() -> PathBuf {
     default_velofit_root().join("raw")
 }
 
+/// Polar AccessLink FIT drop zone: `$VELOFIT_HOME/raw/polar`.
+pub fn default_velofit_polar() -> PathBuf {
+    default_velofit_raw().join("polar")
+}
+
 /// Default SQLite catalog path: `$VELOFIT_HOME/db/loadsym.sqlite`.
 ///
 /// Override with `SYMLOAD_DB` when set. The data file is personal — never commit it.

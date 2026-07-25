@@ -92,6 +92,14 @@ cargo run -p symworx-loadsym --features "fit,email" -- email fetch
 # Optional custom IMAP SEARCH (default: SUBJECT SRM)
 cargo run -p symworx-loadsym --features "fit,email" -- email fetch --query "OR SUBJECT SRM SUBJECT Polar"
 cargo run -p symworx-loadsym --features fit -- inbox promote
+
+# Polar AccessLink (client id/secret in $VELOFIT_HOME/.env)
+cargo run -p symworx-loadsym --features polar -- polar auth
+cargo run -p symworx-loadsym --features polar -- polar fetch
+cargo run -p symworx-loadsym --features sqlite -- ingest --ftp 280
+
+# Unified multi-source (build with the features you need):
+cargo run -p symworx-loadsym --features "email,polar,sqlite" -- sync --ftp 280
 ```
 
 ### Features
@@ -100,6 +108,7 @@ cargo run -p symworx-loadsym --features fit -- inbox promote
 |---------|---------|
 | `fit` | Load `.fit` for `stats` |
 | `email` | IMAP fetch of `.fit` attachments (implies `fit`) |
+| `polar` | Polar AccessLink OAuth + exercise FIT download (implies `fit`) |
 | `db` | `db print-schema` from `symworx-loadsym-db` |
 | `sqlite` | Personal catalog init + ingest (`rusqlite` + `fit` + `db`) |
 
@@ -113,12 +122,22 @@ cargo run -p symworx-loadsym --features fit -- inbox promote
 | `SYMLOAD_IMAP_HOST` | IMAP host (default `imap.gmail.com`) |
 | `SYMLOAD_IMAP_PORT` | IMAP TLS port (default `993`) |
 | `SYMLOAD_IMAP_MAILBOX` | Mailbox to search (default `INBOX`) |
+| `POLAR_CLIENT_ID` / `POLAR_CLIENT_SECRET` | AccessLink OAuth client |
+| `POLAR_REDIRECT_URI` | Default `http://127.0.0.1:8765/callback` |
+| `POLAR_ACCESS_TOKEN` / `POLAR_USER_ID` | Usually from `polar_token.json` after `polar auth` |
 
-`email fetch` also loads `$VELOFIT_HOME/.env` when present (process env wins).
+`email fetch` and `polar *` also load `$VELOFIT_HOME/.env` when present (process env wins).
 
-**Privacy:** catalog + FIT files stay under `$VELOFIT_HOME`. Do not commit `*.sqlite`, `.env`, or ride archives into SymWorx.
+**Privacy:** catalog + FIT files stay under `$VELOFIT_HOME`. Do not commit `*.sqlite`, `.env`, `polar_token.json`, or ride archives into SymWorx.
 
-See `crates/symworx-loadsym-db/docs/loadsym-personal-starter.md`.
+### Personal catalog (schema)
+
+Schema-only crate: **`symworx-loadsym-db`** (current **SCHEMA_VERSION = 4**).
+
+- Crate overview: [../symworx-loadsym-db/README.md](../symworx-loadsym-db/README.md)
+- Operator guide (layout, multi-source, Polar, sync, timers): [../symworx-loadsym-db/docs/loadsym-personal-starter.md](../symworx-loadsym-db/docs/loadsym-personal-starter.md)
+
+Multi-source sessions keep all FIT copies but only **`counts_for_load = 1`** rows feed `daily_loads` / ACWR / PMC. Prefer power-meter / email over Polar when both match (`relink` / end of `ingest`).
 
 ## Power ride metrics
 

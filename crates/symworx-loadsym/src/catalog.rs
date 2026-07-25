@@ -847,23 +847,24 @@ pub fn ingest_one(
     let file_size = fs::metadata(path).map(|m| m.len() as i64).unwrap_or(0);
     let platform = guess_platform(&act);
     let pipeline = guess_ingest_pipeline(path, platform.as_deref());
+    let external_id = external_id_from_path(path, &pipeline);
     let start_time = act.start_time_unix.and_then(|ts| unix_secs_to_iso8601(ts));
 
     let res = conn.execute(
         "INSERT INTO activities (
             source_file, file_hash, ride_date, start_time, duration_s, sport,
-            manufacturer, product, source_platform, ingest_pipeline,
+            manufacturer, product, source_platform, ingest_pipeline, external_id,
             avg_power_w, max_power_w, np_w, tss, intensity_factor, ftp_used_w, ftp_history_id, total_work_kj,
             avg_hr_bpm, max_hr_bpm, avg_cadence, max_cadence, avg_speed_kmh, max_speed_kmh,
             counts_for_load, is_primary, match_reason,
             file_size, imported_at
         ) VALUES (
             ?1, ?2, ?3, ?4, ?5, ?6,
-            ?7, ?8, ?9, ?10,
-            ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18,
-            ?19, ?20, ?21, ?22, ?23, ?24,
+            ?7, ?8, ?9, ?10, ?11,
+            ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19,
+            ?20, ?21, ?22, ?23, ?24, ?25,
             1, 1, 'sole',
-            ?25, datetime('now')
+            ?26, datetime('now')
         )
         ON CONFLICT(source_file) DO UPDATE SET
             file_hash=excluded.file_hash,
@@ -882,6 +883,7 @@ pub fn ingest_one(
             product=excluded.product,
             source_platform=excluded.source_platform,
             ingest_pipeline=COALESCE(activities.ingest_pipeline, excluded.ingest_pipeline),
+            external_id=COALESCE(activities.external_id, excluded.external_id),
             imported_at=datetime('now')
         ",
         params![
@@ -895,6 +897,7 @@ pub fn ingest_one(
             act.product,
             platform,
             pipeline,
+            external_id,
             avg_p,
             max_p,
             metrics.np,
@@ -980,10 +983,15 @@ pub fn guess_ingest_pipeline(path: &Path, platform: Option<&str>) -> String {
         .to_string_lossy()
         .replace('\\', "/")
         .to_ascii_lowercase();
+    let name = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
     if s.contains("/email/") || s.contains("/inbox/") || s.starts_with("email/") {
         return "email".into();
     }
-    if s.contains("/polar/") || s.starts_with("polar/") {
+    if s.contains("/polar/") || s.starts_with("polar/") || name.starts_with("polar_") {
         return "polar".into();
     }
     if s.contains("/manual/") || s.starts_with("manual/") {
@@ -1003,6 +1011,23 @@ pub fn guess_ingest_pipeline(path: &Path, platform: Option<&str>) -> String {
         return "manual".into();
     }
     "manual".into()
+}
+
+/// Provider external id when encoded in the path (e.g. `polar_{id}.fit`).
+pub fn external_id_from_path(path: &Path, pipeline: &str) -> Option<String> {
+    if pipeline != "polar" {
+        return None;
+    }
+    let name = path.file_name()?.to_str()?;
+    let stem = name
+        .strip_suffix(".fit")
+        .or_else(|| name.strip_suffix(".FIT"))?;
+    let id = stem.strip_prefix("polar_")?;
+    if id.is_empty() {
+        None
+    } else {
+        Some(id.to_string())
+    }
 }
 
 /// ISO-8601 UTC from Unix seconds (`YYYY-MM-DDTHH:MM:SSZ`).

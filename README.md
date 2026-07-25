@@ -39,7 +39,7 @@ Model export (C / iOS / Android / web): [crates/symworx-stats/docs/model_export.
 cargo run -p symworx-loadsym --features "fit,sqlite" -- stats ride.fit --ftp 280
 ```
 
-TUI: `symview` → Home → **LoadSym** (2). Personal DB layout: [crates/symworx-loadsym-db/docs/loadsym-personal-starter.md](crates/symworx-loadsym-db/docs/loadsym-personal-starter.md)
+TUI: `symview` → Home → **LoadSym** (2). Personal catalog (schema v4, multi-source ingest): [crates/symworx-loadsym-db/docs/loadsym-personal-starter.md](crates/symworx-loadsym-db/docs/loadsym-personal-starter.md) · [crate README](crates/symworx-loadsym-db/README.md)
 
 ### Python (education / data science)
 
@@ -118,8 +118,8 @@ Much of the original work lived in Python; the long-term engine is **Rust**, wit
 | [symworx-dynamics](crates/symworx-dynamics/README.md) | RQA, embedding, DMD, SINDy, control |
 | [symworx-io](crates/symworx-io/README.md) | **Canonical** signal file I/O |
 | [symworx-biosym](crates/symworx-biosym/README.md) | PPG, respiration, gait, CPG |
-| [symworx-loadsym](crates/symworx-loadsym/README.md) | ACWR, monotony, FIT, nutrition, `symload` |
-| [symworx-loadsym-db](crates/symworx-loadsym-db/) | SQL schema only (no personal data) |
+| [symworx-loadsym](crates/symworx-loadsym/README.md) | ACWR, monotony, FIT, nutrition, `symload` (email/polar/sync) |
+| [symworx-loadsym-db](crates/symworx-loadsym-db/README.md) | SQL schema only (v4 multi-source; no personal data) |
 | [symworx-spatialsym](crates/symworx-spatialsym/README.md) | Trajectories, space metrics, decisions |
 | [symworx-embed](crates/symworx-embed/README.md) | Host PPG streaming / simulator |
 | [symworx-tui](crates/symworx-tui/README.md) | **`symview`** terminal UI |

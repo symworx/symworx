@@ -83,6 +83,26 @@ fn main() {
                 std::process::exit(5);
             }
         }
+        "polar" => {
+            #[cfg(feature = "polar")]
+            {
+                if let Err(e) = handle_polar(&args) {
+                    eprintln!("polar error: {}", e);
+                    std::process::exit(11);
+                }
+            }
+            #[cfg(not(feature = "polar"))]
+            {
+                eprintln!("Polar AccessLink requires --features polar");
+                std::process::exit(5);
+            }
+        }
+        "sync" => {
+            if let Err(e) = handle_sync(&args) {
+                eprintln!("sync error: {}", e);
+                std::process::exit(12);
+            }
+        }
         "email" | "fetch" => {
             #[cfg(feature = "email")]
             {
@@ -568,6 +588,386 @@ fn handle_relink(args: &[String]) -> Result<(), String> {
     Ok(())
 }
 
+#[cfg(feature = "polar")]
+fn polar_credentials_from_env_and_dotenv() -> Result<symworx_io::polar::PolarCredentials, String> {
+    use symworx_io::polar::{
+        POLAR_ACCESS_TOKEN_ENV,
+        POLAR_CLIENT_ID_ENV,
+        POLAR_CLIENT_SECRET_ENV,
+        POLAR_MEMBER_ID_ENV,
+        POLAR_REDIRECT_URI_ENV,
+        POLAR_USER_ID_ENV,
+        PolarCredentials,
+        default_token_path,
+        load_token_file,
+    };
+
+    let dotenv = parse_velofit_dotenv();
+    let client_id = env_or_dotenv(POLAR_CLIENT_ID_ENV, &dotenv).ok_or_else(|| {
+        format!(
+            "set {POLAR_CLIENT_ID_ENV} via env or $VELOFIT_HOME/.env (admin.polaraccesslink.com)"
+        )
+    })?;
+    let client_secret = env_or_dotenv(POLAR_CLIENT_SECRET_ENV, &dotenv)
+        .ok_or_else(|| format!("set {POLAR_CLIENT_SECRET_ENV} via env or $VELOFIT_HOME/.env"))?;
+    let mut creds = PolarCredentials::new(
+        client_id,
+        client_secret,
+        env_or_dotenv(POLAR_REDIRECT_URI_ENV, &dotenv),
+        env_or_dotenv(POLAR_MEMBER_ID_ENV, &dotenv),
+    );
+    if let Some(tok) = env_or_dotenv(POLAR_ACCESS_TOKEN_ENV, &dotenv) {
+        creds.access_token = Some(tok);
+    }
+    if let Some(uid) = env_or_dotenv(POLAR_USER_ID_ENV, &dotenv) {
+        if let Ok(n) = uid.parse::<i64>() {
+            creds.user_id = Some(n);
+        }
+    }
+    // Token file fills gaps (preferred after `polar auth`).
+    if let Ok(file) = load_token_file(&default_token_path()) {
+        if creds.access_token.is_none() {
+            creds.access_token = Some(file.access_token);
+        }
+        if creds.user_id.is_none() {
+            creds.user_id = Some(file.user_id);
+        }
+    }
+    Ok(creds)
+}
+
+#[cfg(feature = "polar")]
+fn handle_polar(args: &[String]) -> Result<(), String> {
+    use symworx_io::polar::{
+        default_polar_raw_dir,
+        default_token_path,
+        fetch_exercise_fits,
+        run_oauth_flow,
+    };
+
+    let sub = args.get(2).map(|s| s.as_str()).unwrap_or("help");
+
+    match sub {
+        "auth" | "login" => {
+            let no_browser = args.iter().any(|a| a == "--no-browser");
+            let creds = polar_credentials_from_env_and_dotenv()?;
+            let token_path = parse_flag_value(args, "--token-file")
+                .map(PathBuf::from)
+                .unwrap_or_else(default_token_path);
+            println!("polar: client_id={}", creds.client_id);
+            println!("polar: redirect_uri={}", creds.redirect_uri);
+            println!(
+                "polar: register this redirect URI at https://admin.polaraccesslink.com if needed"
+            );
+            let token =
+                run_oauth_flow(creds, &token_path, !no_browser).map_err(|e| e.to_string())?;
+            println!(
+                "polar auth OK — user_id={} token → {}",
+                token.user_id,
+                token_path.display()
+            );
+            println!("next: symload polar fetch   then   symload ingest --ftp <FTP>");
+            Ok(())
+        }
+        "fetch" => {
+            let dry = args.iter().any(|a| a == "--dry-run" || a == "-n");
+            let target = parse_flag_value(args, "--to")
+                .or_else(|| parse_flag_value(args, "--dir"))
+                .map(PathBuf::from)
+                .unwrap_or_else(default_polar_raw_dir);
+            // Positional dir after "polar fetch"
+            let target = args
+                .get(3)
+                .filter(|a| !a.starts_with('-'))
+                .map(PathBuf::from)
+                .unwrap_or(target);
+
+            let creds = polar_credentials_from_env_and_dotenv()?;
+            let token = creds.access_token.ok_or_else(|| {
+                format!(
+                    "no POLAR_ACCESS_TOKEN — run: symload polar auth\n  (or set token in {} )",
+                    default_token_path().display()
+                )
+            })?;
+            println!("polar fetch → {}", target.display());
+            let report = fetch_exercise_fits(&token, &target, dry).map_err(|e| e.to_string())?;
+            println!(
+                "polar fetch done: listed={} new={} skip={} failed={}",
+                report.listed,
+                report.saved.len(),
+                report.skipped_existing,
+                report.failed
+            );
+            if !report.saved.is_empty() && !dry {
+                println!(
+                    "next: cargo run -p symworx-loadsym --features sqlite -- ingest {} --ftp <FTP>",
+                    target.display()
+                );
+            }
+            Ok(())
+        }
+        "status" => {
+            let creds = polar_credentials_from_env_and_dotenv()?;
+            let tok_path = default_token_path();
+            println!("polar client_id: {}", creds.client_id);
+            println!("polar redirect_uri: {}", creds.redirect_uri);
+            println!("polar has_token: {}", creds.has_user_token());
+            if let Some(uid) = creds.user_id {
+                println!("polar user_id: {}", uid);
+            }
+            println!(
+                "polar token_file: {} ({})",
+                tok_path.display(),
+                if tok_path.exists() {
+                    "present"
+                } else {
+                    "missing"
+                }
+            );
+            let raw = default_polar_raw_dir();
+            let n_fit = if raw.is_dir() {
+                fs::read_dir(&raw)
+                    .map(|rd| {
+                        rd.filter_map(|e| e.ok())
+                            .filter(|e| {
+                                e.path()
+                                    .extension()
+                                    .and_then(|x| x.to_str())
+                                    .map(|x| x.eq_ignore_ascii_case("fit"))
+                                    .unwrap_or(false)
+                            })
+                            .count()
+                    })
+                    .unwrap_or(0)
+            } else {
+                0
+            };
+            println!("polar raw dir: {}  ({} .fit)", raw.display(), n_fit);
+            Ok(())
+        }
+        _ => {
+            eprintln!(
+                "Usage:\n  symload polar auth [--no-browser] [--token-file PATH]\n  \
+                 symload polar fetch [DIR] [--to DIR] [--dry-run]\n  \
+                 symload polar status"
+            );
+            Err("unknown polar subcommand".into())
+        }
+    }
+}
+
+/// Parse `--sources a,b,c` (or repeated `--source x`). Empty → all built-in pipelines.
+fn parse_sync_sources(args: &[String]) -> Vec<String> {
+    let mut out = Vec::new();
+    if let Some(s) =
+        parse_flag_value(args, "--sources").or_else(|| parse_flag_value(args, "--source"))
+    {
+        for part in s.split(|c| c == ',' || c == '+') {
+            let t = part.trim().to_ascii_lowercase();
+            if !t.is_empty() {
+                out.push(t);
+            }
+        }
+    }
+    // also accept bare words after "sync": symload sync email polar
+    for a in args.iter().skip(2) {
+        if a.starts_with('-') {
+            // skip flag and its value
+            continue;
+        }
+        // skip values of previous flags (best-effort: if previous was --ftp etc.)
+        let t = a.to_ascii_lowercase();
+        if matches!(t.as_str(), "email" | "polar" | "ingest" | "promote" | "all") {
+            if !out.contains(&t) {
+                out.push(t);
+            }
+        }
+    }
+    if out.is_empty() {
+        out.push("all".into());
+    }
+    out
+}
+
+fn sync_wants(sources: &[String], name: &str) -> bool {
+    sources.iter().any(|s| s == "all" || s == name)
+}
+
+/// Unified multi-pipeline sync: fetch → promote → ingest (feature-gated steps).
+///
+/// ```text
+/// symload sync [--sources email,polar,ingest] [--ftp 280] [--all] [--force]
+///              [--query "..."] [--dry-run] [--skip-ingest]
+/// ```
+fn handle_sync(args: &[String]) -> Result<(), String> {
+    let sources = parse_sync_sources(args);
+    let skip_ingest = args
+        .iter()
+        .any(|a| a == "--skip-ingest" || a == "--no-ingest");
+    let ftp = parse_ftp(args);
+
+    println!("sync: sources={:?}  ftp_fallback={:.0}", sources, ftp);
+    let mut steps_ok = 0usize;
+    let mut steps_skip = 0usize;
+    let mut steps_fail = 0usize;
+
+    // ── email ────────────────────────────────────────────────────────────
+    if sync_wants(&sources, "email") {
+        #[cfg(feature = "email")]
+        {
+            println!("── sync:email fetch ──");
+            match handle_email_fetch(args) {
+                Ok(()) => {
+                    steps_ok += 1;
+                    // Promote inbox → raw/email for pipeline tags
+                    if sync_wants(&sources, "promote") || sync_wants(&sources, "email") {
+                        let from = default_velofit_inbox();
+                        let to = default_velofit_raw().join("email");
+                        println!("── sync:email promote → {} ──", to.display());
+                        match promote_fit_dir(&from, &to) {
+                            Ok((m, s)) => {
+                                println!("promote: moved={} skipped={}", m, s);
+                                steps_ok += 1;
+                            }
+                            Err(e) => {
+                                // Empty inbox is fine
+                                if from.exists() {
+                                    eprintln!("promote warning: {}", e);
+                                    steps_fail += 1;
+                                } else {
+                                    println!("promote: no inbox yet ({})", from.display());
+                                    steps_skip += 1;
+                                }
+                            }
+                        }
+                    }
+                }
+                Err(e) => {
+                    eprintln!("email fetch failed: {}", e);
+                    steps_fail += 1;
+                }
+            }
+        }
+        #[cfg(not(feature = "email"))]
+        {
+            eprintln!("sync: skip email (rebuild with --features email)");
+            steps_skip += 1;
+        }
+    }
+
+    // ── polar ────────────────────────────────────────────────────────────
+    if sync_wants(&sources, "polar") {
+        #[cfg(feature = "polar")]
+        {
+            use symworx_io::polar::{
+                default_polar_raw_dir,
+                fetch_exercise_fits,
+            };
+            let dry = args.iter().any(|a| a == "--dry-run" || a == "-n");
+            println!("── sync:polar fetch ──");
+            match polar_credentials_from_env_and_dotenv() {
+                Ok(creds) => match creds.access_token {
+                    Some(token) => {
+                        let target = default_polar_raw_dir();
+                        match fetch_exercise_fits(&token, &target, dry) {
+                            Ok(report) => {
+                                println!(
+                                    "polar: listed={} new={} skip={} failed={}",
+                                    report.listed,
+                                    report.saved.len(),
+                                    report.skipped_existing,
+                                    report.failed
+                                );
+                                if report.failed > 0 {
+                                    steps_fail += 1;
+                                } else {
+                                    steps_ok += 1;
+                                }
+                            }
+                            Err(e) => {
+                                eprintln!("polar fetch failed: {}", e);
+                                steps_fail += 1;
+                            }
+                        }
+                    }
+                    None => {
+                        eprintln!(
+                            "polar: no token — run `symload polar auth` first (or skip polar)"
+                        );
+                        steps_fail += 1;
+                    }
+                },
+                Err(e) => {
+                    eprintln!("polar credentials: {}", e);
+                    steps_fail += 1;
+                }
+            }
+        }
+        #[cfg(not(feature = "polar"))]
+        {
+            eprintln!("sync: skip polar (rebuild with --features polar)");
+            steps_skip += 1;
+        }
+    }
+
+    // ── ingest ───────────────────────────────────────────────────────────
+    let do_ingest = !skip_ingest
+        && (sync_wants(&sources, "ingest")
+            || sync_wants(&sources, "all")
+            || sync_wants(&sources, "email")
+            || sync_wants(&sources, "polar"));
+
+    if do_ingest {
+        #[cfg(feature = "sqlite")]
+        {
+            println!("── sync:ingest ──");
+            // Build a minimal argv for handle_ingest so --ftp / --db / --all / --force apply.
+            let mut ingest_args: Vec<String> = vec![
+                args[0].clone(),
+                "ingest".into(),
+                default_velofit_raw().display().to_string(),
+            ];
+            for flag in ["--ftp", "-f", "--db", "-d"] {
+                if let Some(v) = parse_flag_value(args, flag) {
+                    ingest_args.push(flag.into());
+                    ingest_args.push(v);
+                }
+            }
+            if args.iter().any(|a| a == "--all" || a == "-a") {
+                ingest_args.push("--all".into());
+            }
+            let force = args.iter().any(|a| a == "--force" || a == "-F");
+            if force {
+                ingest_args.push("--force".into());
+            }
+            match handle_ingest(&ingest_args, force) {
+                Ok(()) => steps_ok += 1,
+                Err(e) => {
+                    eprintln!("ingest failed: {}", e);
+                    steps_fail += 1;
+                }
+            }
+        }
+        #[cfg(not(feature = "sqlite"))]
+        {
+            eprintln!("sync: skip ingest (rebuild with --features sqlite)");
+            steps_skip += 1;
+        }
+    } else if skip_ingest {
+        println!("sync: skip ingest (--skip-ingest)");
+        steps_skip += 1;
+    }
+
+    println!(
+        "sync done: ok={} skipped={} failed={}  sources={:?}",
+        steps_ok, steps_skip, steps_fail, sources
+    );
+    if steps_fail > 0 {
+        return Err(format!("{steps_fail} step(s) failed"));
+    }
+    Ok(())
+}
+
 /// Current UTC time as `YYYY-MM-DD HH:MM:SS` (SQLite-friendly).
 fn sqlite_utcnow() -> Result<String, String> {
     use std::time::{
@@ -622,7 +1022,7 @@ fn parse_db_path(args: &[String]) -> PathBuf {
 /// Shell/CI exports still take priority via [`env_or_dotenv`].
 /// Supports `#` comments, blanks, `export ` prefixes, and quoted values.
 /// Never prints secret values.
-#[cfg(feature = "email")]
+#[cfg(any(feature = "email", feature = "polar"))]
 fn parse_velofit_dotenv() -> std::collections::HashMap<String, String> {
     let mut out = std::collections::HashMap::new();
     let path = default_velofit_root().join(".env");
@@ -671,7 +1071,7 @@ fn parse_velofit_dotenv() -> std::collections::HashMap<String, String> {
 
 /// Prefer process environment; fall back to a key from the dotenv map.
 /// Password-like keys have whitespace stripped (Gmail app-password formatting).
-#[cfg(feature = "email")]
+#[cfg(any(feature = "email", feature = "polar"))]
 fn env_or_dotenv(key: &str, dotenv: &std::collections::HashMap<String, String>) -> Option<String> {
     let strip_ws = key.contains("PASSWORD") || key.contains("SECRET") || key.contains("TOKEN");
     let normalize = |s: String| -> String {
@@ -788,35 +1188,14 @@ fn handle_email_fetch(args: &[String]) -> Result<(), Box<dyn std::error::Error>>
     Ok(())
 }
 
-fn handle_inbox_promote(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
-    let mut from = default_velofit_inbox();
-    let mut to = default_velofit_raw();
-
-    let mut i = 3;
-    while i < args.len() {
-        match args[i].as_str() {
-            "--from" if i + 1 < args.len() => {
-                from = PathBuf::from(&args[i + 1]);
-                i += 2;
-            }
-            "--to" if i + 1 < args.len() => {
-                to = PathBuf::from(&args[i + 1]);
-                i += 2;
-            }
-            other => {
-                eprintln!("Unknown arg for inbox promote: {}", other);
-                std::process::exit(2);
-            }
-        }
-    }
-
-    fs::create_dir_all(&to)?;
+/// Move `.fit` files from `from` → `to` (skip identical basenames already present).
+fn promote_fit_dir(from: &Path, to: &Path) -> Result<(usize, usize), String> {
+    fs::create_dir_all(to).map_err(|e| format!("create {}: {}", to.display(), e))?;
     if !from.exists() {
-        eprintln!("inbox dir does not exist: {}", from.display());
-        std::process::exit(3);
+        return Err(format!("source dir does not exist: {}", from.display()));
     }
 
-    let entries = discover_activity_files(&[from.clone()], false);
+    let entries = discover_activity_files(&[from.to_path_buf()], false);
     let mut moved = 0usize;
     let mut skipped = 0usize;
 
@@ -848,13 +1227,44 @@ fn handle_inbox_promote(args: &[String]) -> Result<(), Box<dyn std::error::Error
             skipped += 1;
             continue;
         }
-        fs::rename(p, &dest).or_else(|_| fs::copy(p, &dest).and_then(|_| fs::remove_file(p)))?;
-        println!("promoted {}", dest.display());
+        fs::rename(p, &dest)
+            .map_err(|e| format!("move {} → {}: {}", p.display(), dest.display(), e))?;
         moved += 1;
+        println!("  {} → {}", name.to_string_lossy(), dest.display());
+    }
+    Ok((moved, skipped))
+}
+
+fn handle_inbox_promote(args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
+    let mut from = default_velofit_inbox();
+    // Prefer raw/email for pipeline provenance when that layout is in use;
+    // fall back to flat raw/ for older archives.
+    let mut to = default_velofit_raw().join("email");
+
+    let mut i = 3;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--from" if i + 1 < args.len() => {
+                from = PathBuf::from(&args[i + 1]);
+                i += 2;
+            }
+            "--to" if i + 1 < args.len() => {
+                to = PathBuf::from(&args[i + 1]);
+                i += 2;
+            }
+            other => {
+                eprintln!("Unknown arg for inbox promote: {}", other);
+                std::process::exit(2);
+            }
+        }
     }
 
+    // If user never created raw/email and flat raw already has FITs, keep promoting to flat raw
+    // only when --to was not set and raw/email does not exist yet and raw has top-level fits.
+    // Default remains raw/email (created on promote).
+    let (moved, skipped) = promote_fit_dir(&from, &to)?;
     println!(
-        "inbox promote: moved={} skipped={}  (from={} → to={})",
+        "inbox promote: moved={} skipped_existing={}  {} → {}",
         moved,
         skipped,
         from.display(),
@@ -874,8 +1284,9 @@ fn parse_ftp(args: &[String]) -> f64 {
     280.0
 }
 
+/// Discover `.fit` files under a directory (recursive — supports `raw/email/`, `raw/polar/`).
 fn find_fit_files(dir: &str) -> Vec<PathBuf> {
-    discover_activity_files(&[PathBuf::from(dir)], false)
+    discover_activity_files(&[PathBuf::from(dir)], true)
         .into_iter()
         .map(|e| e.path)
         .filter(|p| {
@@ -962,8 +1373,17 @@ Commands:
       default dir: $VELOFIT_HOME/inbox; default query matches SRM exports
       loads $VELOFIT_HOME/.env when present (does not override existing env)
   symload inbox promote [--from DIR] [--to DIR]
+  symload polar auth [--no-browser]    OAuth once → $VELOFIT_HOME/polar_token.json
+  symload polar fetch [DIR] [--dry-run]  download recent exercise FITs → raw/polar/
+  symload polar status
+  symload sync [--sources email,polar] [--ftp 280] [--all] [--force] [--skip-ingest]
+      Runs enabled pipelines then ingest under $VELOFIT_HOME/raw (recursive).
+      Default sources=all (email+polar when built-in features allow).
+      email: fetch → promote inbox → raw/email/
+      polar: fetch → raw/polar/
+      then: ingest + session relink (power-meter preferred)
 
-Environment (never commit secrets; email also reads $VELOFIT_HOME/.env):
+Environment (never commit secrets; email/polar also read $VELOFIT_HOME/.env):
   VELOFIT_HOME          archive root (default: ~/velofit)
   SYMLOAD_DB            SQLite path override
   SYMLOAD_USER          IMAP username for email fetch
@@ -972,6 +1392,9 @@ Environment (never commit secrets; email also reads $VELOFIT_HOME/.env):
   SYMLOAD_IMAP_PORT     IMAP TLS port (default: 993)
   SYMLOAD_IMAP_MAILBOX  mailbox to search (default: INBOX)
   SYMLOAD_INGEST_VERBOSE  set to log skipped files
+  POLAR_CLIENT_ID / POLAR_CLIENT_SECRET   AccessLink OAuth client
+  POLAR_REDIRECT_URI    default http://127.0.0.1:8765/callback
+  POLAR_ACCESS_TOKEN / POLAR_USER_ID      set by polar auth (or token file)
 
 Privacy: the catalog and FIT archive live under VELOFIT_HOME only — not in the SymWorx repo.
 "#

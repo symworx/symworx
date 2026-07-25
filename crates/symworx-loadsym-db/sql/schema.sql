@@ -1,5 +1,8 @@
--- LoadSym Personal Ride Database Schema (PostgreSQL recommended, SQLite compatible with small changes)
+-- LoadSym Personal Ride Database Schema (PostgreSQL)
 -- Focused on power meter rides (SRM, Garmin, Polar .fit) + periodization
+-- Schema version: 4 (see symworx_loadsym_db::SCHEMA_VERSION)
+--   v2 ftp_history · v3 catalog_meta · v4 multi-source session linking
+-- Personal SQLite default: schema.sqlite.sql · docs: docs/loadsym-personal-starter.md
 --
 -- Informed by:
 --   * TrainingPeaks / WKO: TSS, CTL (42d EWMA), ATL (7d), TSB/Form, planned workouts, daily metrics (weight, HRV, stress, sleep)
@@ -8,7 +11,7 @@
 --   * General (TRIMP, sRPE, ACWR from symworx-loadsym)
 --
 -- This file lives inside the `symworx-loadsym-db` crate so it can be embedded via `include_str!`.
--- Apply against a personal database outside this repository (e.g. $VELOFIT_HOME/db/ for SQLite — see schema.sqlite.sql).
+-- Apply against a database outside this repository (personal SQLite: schema.sqlite.sql under $VELOFIT_HOME/db/).
 
 -- Schema version for migrations
 CREATE TABLE IF NOT EXISTS schema_migrations (
