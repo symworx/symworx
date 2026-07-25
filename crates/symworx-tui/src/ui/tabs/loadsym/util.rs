@@ -3,7 +3,7 @@
 
 //! Small pure helpers shared across LoadSym views.
 
-pub(crate) fn truncate_str(s: &str, max: usize) -> String {
+pub fn truncate_str(s: &str, max: usize) -> String {
     if s.chars().count() <= max {
         return s.to_string();
     }

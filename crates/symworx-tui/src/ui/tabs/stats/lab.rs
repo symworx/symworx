@@ -40,7 +40,7 @@ use crate::app::{
     StatsLabTask,
 };
 
-pub(crate) fn render_lab(frame: &mut Frame, app: &App, area: Rect) {
+pub fn render_lab(frame: &mut Frame, app: &App, area: Rect) {
     let Some(ref table) = app.stats_table else {
         render_placeholder(
             frame,
@@ -226,7 +226,7 @@ pub(crate) fn render_lab(frame: &mut Frame, app: &App, area: Rect) {
     );
 }
 
-pub(crate) fn render_split_metrics_table(frame: &mut Frame, area: Rect, r: &StatsLabResult) {
+pub fn render_split_metrics_table(frame: &mut Frame, area: Rect, r: &StatsLabResult) {
     use crate::app::SplitMetricKind;
 
     let is_clf = r
@@ -356,7 +356,7 @@ pub(crate) fn render_split_metrics_table(frame: &mut Frame, area: Rect, r: &Stat
 }
 
 /// Block title with spaces from a dynamic string (leaked for 'static title API).
-pub(crate) fn return_static_title(s: &str) -> &'static str {
+pub fn return_static_title(s: &str) -> &'static str {
     // Prefer known titles without leak; fallback to Spaces-padded static-ish via match.
     match s {
         "Degrees" | "degrees" => " Degrees ",

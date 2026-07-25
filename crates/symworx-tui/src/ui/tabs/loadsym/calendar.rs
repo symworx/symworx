@@ -32,7 +32,7 @@ use symworx_loadsym::load::{
 use super::util::truncate_str;
 use crate::app::App;
 
-pub(crate) fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
+pub fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
     let loads = &app.daily_loads;
     if loads.is_empty() {
         let empty = Paragraph::new(
@@ -358,7 +358,7 @@ fn ride_source_label(r: &crate::app::CatalogRideRow) -> String {
 }
 
 /// Weekly TSLi sparkline across the bottom; `*` marks the focused week (above + below).
-pub(crate) fn render_weekly_tsli_bar(frame: &mut Frame, app: &App, area: Rect, week_i: usize) {
+pub fn render_weekly_tsli_bar(frame: &mut Frame, app: &App, area: Rect, week_i: usize) {
     let n_weeks = app.weekly_loads.len();
     let title = if n_weeks == 0 {
         " weekly TSLi — no weeks loaded (r to reload catalog) ".to_string()
@@ -427,7 +427,7 @@ pub(crate) fn render_weekly_tsli_bar(frame: &mut Frame, app: &App, area: Rect, w
 }
 
 /// Build a line of spaces with `*` under the focused week column (and `·` ticks if sparse).
-pub(crate) fn weekly_focus_marker_line(n_weeks: usize, week_i: usize, width: usize) -> String {
+pub fn weekly_focus_marker_line(n_weeks: usize, week_i: usize, width: usize) -> String {
     if width == 0 {
         return String::new();
     }

@@ -471,8 +471,7 @@ fn render_waveform(frame: &mut Frame, app: &App, area: Rect) {
         .map(|t| t.n_intervals())
         .unwrap_or(0);
     let pp = &app.peak_params;
-    let lines = vec![
-        format!(
+    let lines = [format!(
             "File: {}  |  {}  {}  |  samples {}..{} / {}{}  |  view: waveform (i=tacho)",
             signal.name, signal.kind.label(), fs_s, start, end, n, pan_hint
         ),
@@ -490,8 +489,7 @@ fn render_waveform(frame: &mut Frame, app: &App, area: Rect) {
         format!(
             "Peak params: h={:.2} prom={:.2} min_int={:.2}s tol=±{}  |  p k K  i tacho  e export  o source",
             pp.height_frac, pp.prom_frac, pp.min_interval_sec, pp.match_tol
-        ),
-    ];
+        )];
 
     let content = Paragraph::new(lines.join("\n")).block(block);
     let chunks = Layout::vertical([Constraint::Length(5), Constraint::Min(1)]).split(area);
@@ -606,8 +604,7 @@ fn render_tachogram(frame: &mut Frame, app: &App, area: Rect) {
     } else {
         String::new()
     };
-    let lines = vec![
-        format!(
+    let lines = [format!(
             "Source: {}  |  {} peaks → {} intervals{}  |  view: tachogram (i=wave)",
             tacho.source.label(),
             tacho.peak_indices.len(),
@@ -628,8 +625,7 @@ fn render_tachogram(frame: &mut Frame, app: &App, area: Rect) {
             "Peaks: det={}  known_primary={}  |  k re-detect  K params  e → data/tachogram_*.csv",
             signal.detected_peaks.len(),
             signal.known_peaks_primary.len()
-        ),
-    ];
+        )];
 
     let content = Paragraph::new(lines.join("\n")).block(block);
     let chunks = Layout::vertical([Constraint::Length(5), Constraint::Min(1)]).split(area);

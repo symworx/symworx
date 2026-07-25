@@ -2,7 +2,7 @@ use crossterm::event::KeyCode;
 
 use crate::app::App;
 
-pub(crate) fn arm_pending_delete(app: &mut App) {
+pub fn arm_pending_delete(app: &mut App) {
     match app.selected_path().cloned() {
         Some(path) if path.is_file() => {
             app.pending_delete = Some(path.clone());
@@ -19,7 +19,7 @@ pub(crate) fn arm_pending_delete(app: &mut App) {
 }
 
 /// Handle keys while `pending_delete` is armed. Returns true if the modal consumed the key.
-pub(crate) fn handle_pending_delete_keys(app: &mut App, code: KeyCode) -> bool {
+pub fn handle_pending_delete_keys(app: &mut App, code: KeyCode) -> bool {
     if app.pending_delete.is_none() {
         return false;
     }
@@ -38,7 +38,7 @@ pub(crate) fn handle_pending_delete_keys(app: &mut App, code: KeyCode) -> bool {
     true
 }
 
-pub(crate) fn confirm_pending_delete(app: &mut App) {
+pub fn confirm_pending_delete(app: &mut App) {
     let Some(path) = app.pending_delete.take() else {
         return;
     };

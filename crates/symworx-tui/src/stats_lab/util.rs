@@ -22,7 +22,7 @@ use crate::app::{
     StatsLabTask,
 };
 
-pub(crate) fn col_name(table: &TableData, i: usize) -> String {
+pub fn col_name(table: &TableData, i: usize) -> String {
     table
         .headers
         .get(i)
@@ -30,7 +30,7 @@ pub(crate) fn col_name(table: &TableData, i: usize) -> String {
         .unwrap_or_else(|| format!("col{i}"))
 }
 
-pub(crate) fn empty_result(task: StatsLabTask) -> StatsLabResult {
+pub fn empty_result(task: StatsLabTask) -> StatsLabResult {
     StatsLabResult {
         task,
         model_label: String::new(),
@@ -43,7 +43,7 @@ pub(crate) fn empty_result(task: StatsLabTask) -> StatsLabResult {
     }
 }
 
-pub(crate) fn fold_mean_sd(vals: &[f64], name: &str) -> String {
+pub fn fold_mean_sd(vals: &[f64], name: &str) -> String {
     if vals.is_empty() {
         return "no CV folds".into();
     }
@@ -56,7 +56,7 @@ pub(crate) fn fold_mean_sd(vals: &[f64], name: &str) -> String {
     )
 }
 
-pub(crate) fn seed_active_from_focus(r: &mut StatsLabResult) {
+pub fn seed_active_from_focus(r: &mut StatsLabResult) {
     if let Some(row) = r.metrics_rows.get(r.focused_row) {
         r.scatter_x = row.plot_x.clone();
         r.scatter_y = row.plot_y.clone();
@@ -70,7 +70,7 @@ pub(crate) fn seed_active_from_focus(r: &mut StatsLabResult) {
     }
 }
 
-pub(crate) fn metrics_row_reg(
+pub fn metrics_row_reg(
     label: &str,
     note: &str,
     y_obs: &[f64],
@@ -124,7 +124,7 @@ pub(crate) fn metrics_row_reg(
     }
 }
 
-pub(crate) fn rows_at(x: &Array2<f64>, idx: &[usize]) -> Array2<f64> {
+pub fn rows_at(x: &Array2<f64>, idx: &[usize]) -> Array2<f64> {
     let p = x.ncols();
     let mut out = Array2::zeros((idx.len(), p));
     for (r, &i) in idx.iter().enumerate() {
@@ -133,6 +133,6 @@ pub(crate) fn rows_at(x: &Array2<f64>, idx: &[usize]) -> Array2<f64> {
     out
 }
 
-pub(crate) fn array1_at(y: &Array1<f64>, idx: &[usize]) -> Array1<f64> {
+pub fn array1_at(y: &Array1<f64>, idx: &[usize]) -> Array1<f64> {
     Array1::from(idx.iter().map(|&i| y[i]).collect::<Vec<_>>())
 }

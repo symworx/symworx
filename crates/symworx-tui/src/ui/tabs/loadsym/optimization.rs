@@ -36,7 +36,7 @@ use symworx_loadsym::load::{
 use super::util::truncate_str;
 use crate::app::App;
 
-pub(crate) fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect) {
+pub fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect) {
     let loads = &app.daily_loads;
     let params = PulseResponseParams::pmc_defaults();
     let horizon = app.loadsym_plan_horizon.clamp(2, MAX_HORIZON_DAYS);
@@ -348,7 +348,7 @@ pub(crate) fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect)
 }
 
 /// Empty dual-chart placeholder (no loads yet).
-pub(crate) fn render_empty_opt_charts(frame: &mut Frame, area: Rect) {
+pub fn render_empty_opt_charts(frame: &mut Frame, area: Rect) {
     let rows = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
@@ -373,7 +373,7 @@ pub(crate) fn render_empty_opt_charts(frame: &mut Frame, area: Rect) {
 
 /// Two horizontal bars: Load TSLi and Readiness SLBi.
 /// Each bar is history (yellow, calendar-style) | projected (purple).
-pub(crate) fn render_opt_dual_charts(
+pub fn render_opt_dual_charts(
     frame: &mut Frame,
     area: Rect,
     load_hist: &[f64],
@@ -420,7 +420,7 @@ pub(crate) fn render_opt_dual_charts(
 }
 
 /// One metric row: [ history sparkline yellow | projected sparkline purple ].
-pub(crate) fn render_hist_proj_bar<F>(
+pub fn render_hist_proj_bar<F>(
     frame: &mut Frame,
     area: Rect,
     title: &str,
@@ -431,7 +431,7 @@ pub(crate) fn render_hist_proj_bar<F>(
     F: Fn(f64) -> u64,
 {
     let n_h = hist.len().max(1);
-    let n_p = proj.len().max(0);
+    let n_p = proj.len();
     let n_tot = (n_h + n_p.max(1)).max(1);
     // Proportional width; keep a visible projected pane even if empty.
     let hist_pct = ((n_h * 100) / n_tot).clamp(40, 85) as u16;
@@ -490,7 +490,7 @@ pub(crate) fn render_hist_proj_bar<F>(
 }
 
 /// Shift form so negatives display; returns continuous f64 for shared scaling.
-pub(crate) fn form_to_spark_f(form: f64) -> f64 {
+pub fn form_to_spark_f(form: f64) -> f64 {
     if !form.is_finite() {
         return 0.0;
     }

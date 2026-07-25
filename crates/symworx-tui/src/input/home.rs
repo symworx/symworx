@@ -5,7 +5,7 @@ use crossterm::event::{
 
 use crate::app::App;
 
-pub(crate) fn handle_home_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -> bool {
+pub fn handle_home_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -> bool {
     // Arrow and digit selection for paths on landing
     match code {
         KeyCode::Up => {

@@ -12,7 +12,7 @@ use crate::app::{
     Tab,
 };
 
-pub(crate) fn run_bio_generate(app: &mut App, preset: crate::generate::DemoPreset) {
+pub fn run_bio_generate(app: &mut App, preset: crate::generate::DemoPreset) {
     app.pending_generate = false;
     app.manual_path.clear();
     if let Err(e) = crate::processing::generate_demo_and_load(app, preset) {
@@ -20,7 +20,7 @@ pub(crate) fn run_bio_generate(app: &mut App, preset: crate::generate::DemoPrese
     }
 }
 
-pub(crate) fn handle_bio_generate_keys(app: &mut App, code: KeyCode) -> bool {
+pub fn handle_bio_generate_keys(app: &mut App, code: KeyCode) -> bool {
     use crate::generate::DemoPreset;
 
     let n = DemoPreset::MENU.len();
@@ -58,7 +58,7 @@ pub(crate) fn handle_bio_generate_keys(app: &mut App, code: KeyCode) -> bool {
     false
 }
 
-pub(crate) fn handle_import_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -> bool {
+pub fn handle_import_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -> bool {
     // Delete confirm modal — highest priority after generate overlay (Import only).
     if handle_pending_delete_keys(app, code) {
         return false;
@@ -156,7 +156,7 @@ const PROCESS_NAMES: [&str; 5] = [
     "2nd derivative",
 ];
 
-pub(crate) fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -> bool {
+pub fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -> bool {
     // Live stream mode: swallow most keys; Esc stops (before other Explore Esc).
     // Checked after peak/process? No — live is exclusive; check before those only if live
     // was started while they were closed. If user somehow had both, peak/process first.
@@ -529,7 +529,7 @@ pub(crate) fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyM
     false
 }
 
-pub(crate) fn handle_dynamics_keys(app: &mut App, code: KeyCode) -> bool {
+pub fn handle_dynamics_keys(app: &mut App, code: KeyCode) -> bool {
     if app.pending_rqa {
         match code {
             KeyCode::Left | KeyCode::Char('-') | KeyCode::Char('_') => {
@@ -673,7 +673,7 @@ pub(crate) fn handle_dynamics_keys(app: &mut App, code: KeyCode) -> bool {
     false
 }
 
-pub(crate) fn export_rqa_csv(
+pub fn export_rqa_csv(
     path: &str,
     r: &symworx_dynamics::RqaResult,
     params: &crate::app::RqaParams,

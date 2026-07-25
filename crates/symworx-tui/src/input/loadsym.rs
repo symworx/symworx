@@ -5,7 +5,7 @@ use crossterm::event::{
 
 use crate::app::App;
 
-pub(crate) fn calendar_status(app: &App) -> String {
+pub fn calendar_status(app: &App) -> String {
     if app.daily_loads.is_empty() {
         return "Calendar empty — r: reload catalog  g: demo".to_string();
     }
@@ -49,7 +49,7 @@ pub(crate) fn calendar_status(app: &App) -> String {
     )
 }
 
-pub(crate) fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -> bool {
+pub fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -> bool {
     // Workout file-open modal swallows keys (same priority idea as Import modals).
     if app.pending_workout_open {
         return handle_workout_open_modal(app, code);
@@ -620,7 +620,7 @@ pub(crate) fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyM
 }
 
 /// Handle keys while the Workout "open file" modal is active.
-pub(crate) fn handle_workout_open_modal(app: &mut App, code: KeyCode) -> bool {
+pub fn handle_workout_open_modal(app: &mut App, code: KeyCode) -> bool {
     match code {
         KeyCode::Esc => {
             app.pending_workout_open = false;
@@ -662,7 +662,7 @@ pub(crate) fn handle_workout_open_modal(app: &mut App, code: KeyCode) -> bool {
     false
 }
 
-pub(crate) fn enter_loadsym_optimization(app: &mut App) {
+pub fn enter_loadsym_optimization(app: &mut App) {
     app.loadsym_view = crate::app::LoadSymView::Optimization;
     if app.daily_loads.is_empty() {
         let _ = crate::processing::try_load_loadsym_catalog(app);
@@ -680,7 +680,7 @@ pub(crate) fn enter_loadsym_optimization(app: &mut App) {
     }
 }
 
-pub(crate) fn enter_loadsym_metrics(app: &mut App) {
+pub fn enter_loadsym_metrics(app: &mut App) {
     app.loadsym_view = crate::app::LoadSymView::Metrics;
     if app.catalog_activity_metrics.is_empty() {
         let _ = crate::processing::try_load_loadsym_catalog(app);
@@ -696,7 +696,7 @@ pub(crate) fn enter_loadsym_metrics(app: &mut App) {
 }
 
 /// Switch to a LoadSym footer-strip view (Ctrl+←→). Runs enter-side effects for catalog views.
-pub(crate) fn apply_loadsym_strip_view(app: &mut App, view: crate::app::LoadSymView) {
+pub fn apply_loadsym_strip_view(app: &mut App, view: crate::app::LoadSymView) {
     use crate::app::LoadSymView;
     // List is hub-only; strip cycle never targets it.
     let view = if view == LoadSymView::List {
@@ -724,7 +724,7 @@ pub(crate) fn apply_loadsym_strip_view(app: &mut App, view: crate::app::LoadSymV
     }
 }
 
-pub(crate) fn metrics_status(app: &App) -> String {
+pub fn metrics_status(app: &App) -> String {
     let n = app.catalog_activity_metrics.len();
     if n == 0 {
         return "Metrics empty — r reload catalog".into();
@@ -755,7 +755,7 @@ pub(crate) fn metrics_status(app: &App) -> String {
     )
 }
 
-pub(crate) fn opt_status(app: &App) -> String {
+pub fn opt_status(app: &App) -> String {
     let note = if app.loadsym_goal_suggest_note.is_empty() {
         String::new()
     } else if app.loadsym_goal_user_override {

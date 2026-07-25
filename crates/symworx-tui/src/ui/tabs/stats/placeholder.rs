@@ -12,7 +12,7 @@ use ratatui::{
     Frame,
 };
 
-pub(crate) fn render_placeholder(frame: &mut Frame, area: Rect, title: &str, body: &str) {
+pub fn render_placeholder(frame: &mut Frame, area: Rect, title: &str, body: &str) {
     frame.render_widget(
         Paragraph::new(body).block(
             Block::new()

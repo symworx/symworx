@@ -21,7 +21,7 @@ use ratatui::{
 use super::util::truncate_str;
 use crate::app::App;
 
-pub(crate) fn render_loadsym_list(frame: &mut Frame, app: &App, area: Rect) {
+pub fn render_loadsym_list(frame: &mut Frame, app: &App, area: Rect) {
     let sel = app.loadsym_selection;
 
     let lines = vec![
@@ -88,7 +88,7 @@ pub(crate) fn render_loadsym_list(frame: &mut Frame, app: &App, area: Rect) {
     frame.render_widget(p, area);
 }
 
-pub(crate) fn render_workout_open_modal(frame: &mut Frame, app: &App, area: Rect) {
+pub fn render_workout_open_modal(frame: &mut Frame, app: &App, area: Rect) {
     let n = app.workout_file_list.len();
     let mut lines: Vec<Line> = vec![
         Line::from(Span::styled(

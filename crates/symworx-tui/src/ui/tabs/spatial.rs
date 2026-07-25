@@ -130,7 +130,7 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
 
             if let Some(labels) = &app.spatial_labels {
                 if !labels.is_empty() {
-                    if let Some(row0) = labels.get(0) {
+                    if let Some(row0) = labels.first() {
                         if idx < row0.len() {
                             let g0 = &row0[idx];
                             let g1 = labels.get(1).and_then(|r| r.get(idx)).unwrap_or(g0);
@@ -149,7 +149,7 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
             let mut current_carriers = vec![];
             if let Some(decisions) = &app.spatial_decisions {
                 if !decisions.is_empty() {
-                    if let Some(row0) = decisions.get(0) {
+                    if let Some(row0) = decisions.first() {
                         if idx < row0.len() {
                             let d0 = &row0[idx];
                             let d1 = decisions.get(1).and_then(|r| r.get(idx)).unwrap_or(d0);

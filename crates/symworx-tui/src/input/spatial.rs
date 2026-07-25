@@ -5,7 +5,7 @@ use crossterm::event::{
 
 use crate::app::App;
 
-pub(crate) fn handle_spatial_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -> bool {
+pub fn handle_spatial_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) -> bool {
     // Import menu (full-screen) — must run before viz nav
     if app.pending_spatial_import || app.spatial_view == crate::app::SpatialView::ImportData {
         match code {
@@ -281,7 +281,7 @@ pub(crate) fn handle_spatial_keys(app: &mut App, code: KeyCode, _modifiers: KeyM
     false
 }
 
-pub(crate) fn try_load_first_spatial_csv(app: &mut App) -> bool {
+pub fn try_load_first_spatial_csv(app: &mut App) -> bool {
     let data_dir = std::path::Path::new("data");
     if !data_dir.exists() {
         return false;
@@ -314,12 +314,10 @@ pub(crate) fn try_load_first_spatial_csv(app: &mut App) -> bool {
                 if content
                     .lines()
                     .next()
-                    .map_or(false, |h| h.to_lowercase().contains("agent_id"))
-                {
-                    if app.load_spatial_csv(&p).is_ok() {
+                    .is_some_and(|h| h.to_lowercase().contains("agent_id"))
+                    && app.load_spatial_csv(&p).is_ok() {
                         return true;
                     }
-                }
             }
         }
     }
