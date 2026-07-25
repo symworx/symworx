@@ -65,7 +65,35 @@ cargo run -p symworx-loadsym --features sqlite -- db status
 # shows activities + last_ingest_at watermark
 ```
 
-Ingest stores **relative** keys when files live under `$VELOFIT_HOME` (e.g. `raw/ride.fit`), not absolute home paths. Dedup uses `file_hash` (SHA-256) and `source_file` UNIQUE — re-runs do **not** create duplicate activity rows. A `last_ingest_at` watermark in `catalog_meta` (schema v3) limits which files are considered; use `--all` to recheck the whole archive.
+Ingest stores **relative** keys when files live under `$VELOFIT_HOME` (e.g. `raw/ride.fit`), not absolute home paths. Content dedup uses `file_hash` (SHA-256) and `source_file` UNIQUE — re-runs do **not** create duplicate activity rows. A `last_ingest_at` watermark in `catalog_meta` limits which files are considered; use `--all` to recheck the whole archive.
+
+### Multi-source sessions (schema v4+)
+
+The same real-world workout may arrive from more than one pipeline (e.g. SRM email FIT + Polar AccessLink FIT). Both files can be stored as `activities` rows, but only one **counts for load**:
+
+| Concept | Behavior |
+|---------|----------|
+| `ingest_pipeline` | How the file was obtained: `email` / `polar` / `manual` |
+| `counts_for_load` | `1` = included in `daily_loads` / ACWR / PMC; `0` = archive copy |
+| Matching | Time-window (start ±10 min, similar duration, compatible sport) |
+| Primary preference | Power-meter / email over Polar watch when both match |
+
+```bash
+# After dual-pipeline ingest, or to recompute groups on an existing catalog:
+cargo run -p symworx-loadsym --features sqlite -- relink
+cargo run -p symworx-loadsym --features sqlite -- db status
+# status shows load_primary vs secondary/dup counts
+```
+
+Optional archive layout for clearer provenance (ingest walks all of `raw/`):
+
+```text
+$VELOFIT_HOME/raw/email/   # promoted IMAP
+$VELOFIT_HOME/raw/polar/   # future AccessLink downloads
+$VELOFIT_HOME/raw/manual/  # hand drops
+```
+
+Calendar (TUI LoadSym → Calendar) shows `●` for load primary and `○` for secondary copies, with a short pipeline/platform label.
 
 ## Email → inbox (optional)
 
@@ -124,4 +152,4 @@ Lookup rule: for ride date `D` and sport `S`, use the latest `ftp_history` row w
 `effective_from <= D` and (`effective_to` is null or `> D`). Store the applied value
 on the activity as `ftp_used_w` / `ftp_history_id`.
 
-See `sql/schema.sqlite.sql` and `sql/schema.sql` (schema version 2).
+See `sql/schema.sqlite.sql` and `sql/schema.sql` (schema version 4: multi-source session linking).

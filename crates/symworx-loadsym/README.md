@@ -74,6 +74,8 @@ cargo run -p symworx-loadsym --features sqlite -- ingest --ftp 280
 cargo run -p symworx-loadsym --features sqlite -- ingest --all --ftp 280
 # Re-score everything (ignores watermark + hash skip):
 cargo run -p symworx-loadsym --features sqlite -- ingest --force --ftp 280
+# Multi-source dedup: keep all copies, count one (power-meter preferred)
+cargo run -p symworx-loadsym --features sqlite -- relink
 cargo run -p symworx-loadsym --features sqlite -- db status
 
 # Schema only (no driver)

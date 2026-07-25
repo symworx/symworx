@@ -36,6 +36,8 @@ CREATE TABLE activities (
     manufacturer    TEXT,
     product         TEXT,
     source_platform TEXT,                           -- e.g. "srm-pc8", "garmin", "intervals.icu"
+    ingest_pipeline TEXT,                           -- email | polar | manual | unknown
+    external_id     TEXT,                           -- provider exercise id when known
 
     -- Core load (TSS family - TrainingPeaks style)
     avg_power_w     DOUBLE PRECISION,
@@ -62,6 +64,12 @@ CREATE TABLE activities (
     workout_type    TEXT,                           -- endurance, threshold, vo2, sprint, race, recovery...
     tags            TEXT[],                         -- flexible labels
 
+    -- Multi-source session linking: keep all copies, count only one for load
+    session_group_id BIGINT,
+    counts_for_load  INTEGER NOT NULL DEFAULT 1,
+    is_primary       INTEGER NOT NULL DEFAULT 1,
+    match_reason     TEXT,
+
     -- Metadata
     file_size       BIGINT,
     imported_at     TIMESTAMPTZ DEFAULT now(),
@@ -70,6 +78,15 @@ CREATE TABLE activities (
 
 CREATE INDEX idx_activities_date ON activities(ride_date);
 CREATE INDEX idx_activities_tss ON activities(tss);
+CREATE INDEX idx_activities_session_group ON activities(session_group_id);
+CREATE INDEX idx_activities_counts ON activities(ride_date, counts_for_load);
+
+CREATE TABLE session_groups (
+    id                   BIGSERIAL PRIMARY KEY,
+    primary_activity_id  BIGINT,
+    match_method         TEXT,
+    created_at           TIMESTAMPTZ DEFAULT now()
+);
 
 -- Daily rollups (one row per day, even if multiple rides)
 CREATE TABLE daily_loads (

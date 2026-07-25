@@ -113,6 +113,12 @@ pub struct CatalogRideRow {
     pub tss: f64,
     pub duration_s: f64,
     pub np_w: Option<f64>,
+    /// email | polar | manual | unknown
+    pub ingest_pipeline: Option<String>,
+    pub source_platform: Option<String>,
+    /// Whether this copy contributes to daily load (primary in multi-source group).
+    pub counts_for_load: bool,
+    pub is_primary: bool,
 }
 
 /// One activity row for Metrics / Library table (from catalog).

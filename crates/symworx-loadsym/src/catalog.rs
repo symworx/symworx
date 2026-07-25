@@ -131,6 +131,11 @@ pub fn migrate_catalog(conn: &Connection) -> Result<(), String> {
         set_schema_version(conn, 3)?;
     }
     let ver = schema_version(conn)?;
+    if ver < 4 {
+        migrate_v4_session_dedup(conn)?;
+        set_schema_version(conn, 4)?;
+    }
+    let ver = schema_version(conn)?;
     if ver < SCHEMA_VERSION {
         set_schema_version(conn, SCHEMA_VERSION)?;
     }
@@ -148,6 +153,88 @@ fn migrate_v3_catalog_meta(conn: &Connection) -> Result<(), String> {
         ",
     )
     .map_err(|e| format!("create catalog_meta: {}", e))?;
+    Ok(())
+}
+
+fn migrate_v4_session_dedup(conn: &Connection) -> Result<(), String> {
+    conn.execute_batch(
+        "
+        CREATE TABLE IF NOT EXISTS session_groups (
+            id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+            primary_activity_id  INTEGER,
+            match_method         TEXT,
+            created_at           TEXT DEFAULT (datetime('now'))
+        );
+        ",
+    )
+    .map_err(|e| format!("create session_groups: {}", e))?;
+
+    let cols = [
+        ("ingest_pipeline", "TEXT"),
+        ("external_id", "TEXT"),
+        ("session_group_id", "INTEGER"),
+        ("counts_for_load", "INTEGER NOT NULL DEFAULT 1"),
+        ("is_primary", "INTEGER NOT NULL DEFAULT 1"),
+        ("match_reason", "TEXT"),
+    ];
+    for (col, ty) in cols {
+        if !table_has_column(conn, "activities", col)? {
+            conn.execute(
+                &format!("ALTER TABLE activities ADD COLUMN {} {}", col, ty),
+                [],
+            )
+            .map_err(|e| format!("add activities.{}: {}", col, e))?;
+        }
+    }
+
+    // Existing rows count for load (backfill defaults for partial ALTERs without DEFAULT apply).
+    let _ = conn.execute(
+        "UPDATE activities SET counts_for_load = 1 WHERE counts_for_load IS NULL",
+        [],
+    );
+    let _ = conn.execute(
+        "UPDATE activities SET is_primary = 1 WHERE is_primary IS NULL",
+        [],
+    );
+
+    // Best-effort pipeline from path / platform for existing rows.
+    let _ = conn.execute(
+        "UPDATE activities SET ingest_pipeline = 'email'
+         WHERE ingest_pipeline IS NULL
+           AND (source_file LIKE '%/email/%' OR source_file LIKE 'email/%'
+                OR source_file LIKE '%inbox/%')",
+        [],
+    );
+    let _ = conn.execute(
+        "UPDATE activities SET ingest_pipeline = 'polar'
+         WHERE ingest_pipeline IS NULL
+           AND (source_file LIKE '%/polar/%' OR source_file LIKE 'polar/%'
+                OR lower(COALESCE(source_platform,'')) = 'polar'
+                OR lower(COALESCE(manufacturer,'')) LIKE '%polar%')",
+        [],
+    );
+    let _ = conn.execute(
+        "UPDATE activities SET ingest_pipeline = 'manual'
+         WHERE ingest_pipeline IS NULL",
+        [],
+    );
+
+    conn.execute_batch(
+        "
+        CREATE INDEX IF NOT EXISTS idx_activities_session_group ON activities(session_group_id);
+        CREATE INDEX IF NOT EXISTS idx_activities_start ON activities(ride_date, start_time);
+        CREATE INDEX IF NOT EXISTS idx_activities_counts ON activities(ride_date, counts_for_load);
+        ",
+    )
+    .map_err(|e| format!("v4 indexes: {}", e))?;
+
+    // Partial unique index for external ids (SQLite allows IF NOT EXISTS).
+    let _ = conn.execute_batch(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_activities_external
+         ON activities(ingest_pipeline, external_id)
+         WHERE external_id IS NOT NULL;",
+    );
+
     Ok(())
 }
 
@@ -759,24 +846,31 @@ pub fn ingest_one(
 
     let file_size = fs::metadata(path).map(|m| m.len() as i64).unwrap_or(0);
     let platform = guess_platform(&act);
+    let pipeline = guess_ingest_pipeline(path, platform.as_deref());
+    let start_time = act
+        .start_time_unix
+        .and_then(|ts| unix_secs_to_iso8601(ts));
 
     let res = conn.execute(
         "INSERT INTO activities (
-            source_file, file_hash, ride_date, duration_s, sport,
-            manufacturer, product, source_platform,
+            source_file, file_hash, ride_date, start_time, duration_s, sport,
+            manufacturer, product, source_platform, ingest_pipeline,
             avg_power_w, max_power_w, np_w, tss, intensity_factor, ftp_used_w, ftp_history_id, total_work_kj,
             avg_hr_bpm, max_hr_bpm, avg_cadence, max_cadence, avg_speed_kmh, max_speed_kmh,
+            counts_for_load, is_primary, match_reason,
             file_size, imported_at
         ) VALUES (
-            ?1, ?2, ?3, ?4, ?5,
-            ?6, ?7, ?8,
-            ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16,
-            ?17, ?18, ?19, ?20, ?21, ?22,
-            ?23, datetime('now')
+            ?1, ?2, ?3, ?4, ?5, ?6,
+            ?7, ?8, ?9, ?10,
+            ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18,
+            ?19, ?20, ?21, ?22, ?23, ?24,
+            1, 1, 'sole',
+            ?25, datetime('now')
         )
         ON CONFLICT(source_file) DO UPDATE SET
             file_hash=excluded.file_hash,
             ride_date=excluded.ride_date,
+            start_time=excluded.start_time,
             duration_s=excluded.duration_s,
             np_w=excluded.np_w,
             tss=excluded.tss,
@@ -786,17 +880,23 @@ pub fn ingest_one(
             avg_power_w=excluded.avg_power_w,
             max_power_w=excluded.max_power_w,
             total_work_kj=excluded.total_work_kj,
+            manufacturer=excluded.manufacturer,
+            product=excluded.product,
+            source_platform=excluded.source_platform,
+            ingest_pipeline=COALESCE(activities.ingest_pipeline, excluded.ingest_pipeline),
             imported_at=datetime('now')
         ",
         params![
             key,
             hash,
             ride_date,
+            start_time,
             act.duration_s(),
             act.sport,
             act.manufacturer,
             act.product,
             platform,
+            pipeline,
             avg_p,
             max_p,
             metrics.np,
@@ -817,6 +917,8 @@ pub fn ingest_one(
 
     match res {
         Ok(_) => {
+            // Per-date rollup uses counts_for_load; full session relink runs at end of
+            // bulk ingest / `symload relink` so multi-source groups stay consistent.
             if let Err(e) = recompute_daily_for_date(conn, &ride_date) {
                 return IngestOutcome::Failed {
                     path: path.display().to_string(),
@@ -874,6 +976,300 @@ fn guess_platform(act: &ActivityData) -> Option<String> {
     }
 }
 
+/// Infer ingest pipeline from path segments (and optionally device platform).
+pub fn guess_ingest_pipeline(path: &Path, platform: Option<&str>) -> String {
+    let s = path.to_string_lossy().replace('\\', "/").to_ascii_lowercase();
+    if s.contains("/email/") || s.contains("/inbox/") || s.starts_with("email/") {
+        return "email".into();
+    }
+    if s.contains("/polar/") || s.starts_with("polar/") {
+        return "polar".into();
+    }
+    if s.contains("/manual/") || s.starts_with("manual/") {
+        return "manual".into();
+    }
+    if platform.map(|p| p.eq_ignore_ascii_case("polar")).unwrap_or(false) {
+        return "polar".into();
+    }
+    if platform.map(|p| p.eq_ignore_ascii_case("srm")).unwrap_or(false) {
+        // SRM often arrives via email; without path hints stay manual/archive.
+        return "manual".into();
+    }
+    "manual".into()
+}
+
+/// ISO-8601 UTC from Unix seconds (`YYYY-MM-DDTHH:MM:SSZ`).
+fn unix_secs_to_iso8601(ts: i64) -> Option<String> {
+    if ts < 0 {
+        return None;
+    }
+    let days = (ts / 86400) as u64;
+    let rem = (ts % 86400) as u32;
+    let h = rem / 3600;
+    let mi = (rem % 3600) / 60;
+    let se = rem % 60;
+    let ymd = unix_days_to_ymd(days)?;
+    Some(format!("{}T{:02}:{:02}:{:02}Z", ymd, h, mi, se))
+}
+
+// ── Session linking (multi-pipeline dedup) ──────────────────────────────────
+
+/// Default start-time proximity for matching (seconds).
+pub const SESSION_MATCH_START_WINDOW_S: i64 = 10 * 60;
+/// Duration relative tolerance (fraction of the longer duration).
+pub const SESSION_MATCH_DURATION_FRAC: f64 = 0.15;
+/// Absolute duration slack (seconds) — helps short rides.
+pub const SESSION_MATCH_DURATION_ABS_S: f64 = 10.0 * 60.0;
+
+/// Lightweight activity fields used for multi-source session matching.
+#[derive(Debug, Clone)]
+pub struct ActivityLinkRow {
+    pub id: i64,
+    pub ride_date: String,
+    pub start_unix: Option<i64>,
+    pub duration_s: f64,
+    pub sport: Option<String>,
+    pub avg_power_w: Option<f64>,
+    pub source_platform: Option<String>,
+    pub ingest_pipeline: Option<String>,
+    pub session_group_id: Option<i64>,
+}
+
+/// Re-link all activities into session groups (time-window match) and refresh dailies.
+///
+/// Returns `(groups_with_multiple, secondary_rows)`.
+pub fn relink_all_sessions(conn: &Connection) -> Result<(usize, usize), String> {
+    // Clear groups so we rebuild cleanly.
+    conn.execute("UPDATE activities SET session_group_id = NULL, match_reason = 'sole', counts_for_load = 1, is_primary = 1", [])
+        .map_err(|e| e.to_string())?;
+    conn.execute("DELETE FROM session_groups", [])
+        .map_err(|e| e.to_string())?;
+
+    let mut rows = load_link_candidates(conn)?;
+    // Process chronologically by start (or date).
+    rows.sort_by(|a, b| {
+        a.start_unix
+            .unwrap_or(0)
+            .cmp(&b.start_unix.unwrap_or(0))
+            .then_with(|| a.ride_date.cmp(&b.ride_date))
+            .then_with(|| a.id.cmp(&b.id))
+    });
+
+    let mut multi_groups = 0usize;
+    let mut secondaries = 0usize;
+    let mut assigned: std::collections::HashSet<i64> = std::collections::HashSet::new();
+
+    for i in 0..rows.len() {
+        if assigned.contains(&rows[i].id) {
+            continue;
+        }
+        let mut members = vec![rows[i].id];
+        assigned.insert(rows[i].id);
+        for j in (i + 1)..rows.len() {
+            if assigned.contains(&rows[j].id) {
+                continue;
+            }
+            if sessions_match(&rows[i], &rows[j]) {
+                members.push(rows[j].id);
+                assigned.insert(rows[j].id);
+            }
+        }
+        let member_rows: Vec<&ActivityLinkRow> = members
+            .iter()
+            .filter_map(|id| rows.iter().find(|r| r.id == *id))
+            .collect();
+        let (primary_id, method) = pick_primary(&member_rows);
+        let gid = create_session_group(conn, primary_id, method)?;
+        for m in &member_rows {
+            let is_pri = m.id == primary_id;
+            if !is_pri {
+                secondaries += 1;
+            }
+            set_activity_group_flags(
+                conn,
+                m.id,
+                gid,
+                is_pri,
+                if is_pri && member_rows.len() == 1 {
+                    "sole"
+                } else {
+                    method
+                },
+            )?;
+        }
+        if member_rows.len() > 1 {
+            multi_groups += 1;
+        }
+    }
+
+    recompute_all_daily_loads(conn)?;
+    Ok((multi_groups, secondaries))
+}
+
+fn create_session_group(conn: &Connection, primary_id: i64, method: &str) -> Result<i64, String> {
+    conn.execute(
+        "INSERT INTO session_groups (primary_activity_id, match_method, created_at)
+         VALUES (?1, ?2, datetime('now'))",
+        params![primary_id, method],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(conn.last_insert_rowid())
+}
+
+fn set_activity_group_flags(
+    conn: &Connection,
+    activity_id: i64,
+    group_id: i64,
+    is_primary: bool,
+    reason: &str,
+) -> Result<(), String> {
+    conn.execute(
+        "UPDATE activities SET
+            session_group_id = ?1,
+            is_primary = ?2,
+            counts_for_load = ?2,
+            match_reason = ?3
+         WHERE id = ?4",
+        params![group_id, if is_primary { 1 } else { 0 }, reason, activity_id],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Load all activities as session-link candidates (chronological).
+fn load_link_candidates(conn: &Connection) -> Result<Vec<ActivityLinkRow>, String> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT id, ride_date, start_time, COALESCE(duration_s,0), sport,
+                    avg_power_w, source_platform, ingest_pipeline, session_group_id
+             FROM activities
+             ORDER BY ride_date, id",
+        )
+        .map_err(|e| e.to_string())?;
+    let rows = stmt
+        .query_map([], |r| {
+            let start_s: Option<String> = r.get(2)?;
+            Ok(ActivityLinkRow {
+                id: r.get(0)?,
+                ride_date: r.get(1)?,
+                start_unix: start_s.as_deref().and_then(parse_start_time_unix),
+                duration_s: r.get(3)?,
+                sport: r.get(4)?,
+                avg_power_w: r.get(5)?,
+                source_platform: r.get(6)?,
+                ingest_pipeline: r.get(7)?,
+                session_group_id: r.get(8)?,
+            })
+        })
+        .map_err(|e| e.to_string())?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())?;
+    Ok(rows)
+}
+
+/// Parse `start_time` text (ISO-8601 or SQLite datetime) to Unix seconds.
+pub fn parse_start_time_unix(s: &str) -> Option<i64> {
+    parse_meta_timestamp(s)
+}
+
+/// Whether two activities look like the same real-world session.
+pub fn sessions_match(a: &ActivityLinkRow, b: &ActivityLinkRow) -> bool {
+    // Sport compatibility: both set and equal (case-insensitive), or either missing.
+    if let (Some(sa), Some(sb)) = (&a.sport, &b.sport) {
+        if !sa.eq_ignore_ascii_case(sb) {
+            return false;
+        }
+    }
+
+    // Prefer start-time window when both known.
+    match (a.start_unix, b.start_unix) {
+        (Some(ta), Some(tb)) => {
+            if (ta - tb).abs() > SESSION_MATCH_START_WINDOW_S {
+                return false;
+            }
+        }
+        _ => {
+            // Fall back to same calendar day only.
+            if a.ride_date != b.ride_date {
+                return false;
+            }
+            // Without start times, only match if durations are very similar AND
+            // different pipelines (avoid collapsing two real doubles on same day).
+            let same_pipeline = a.ingest_pipeline.as_deref().unwrap_or("")
+                == b.ingest_pipeline.as_deref().unwrap_or("");
+            if same_pipeline {
+                return false;
+            }
+        }
+    }
+
+    // Duration similarity.
+    let da = a.duration_s.max(0.0);
+    let db = b.duration_s.max(0.0);
+    let longer = da.max(db);
+    let shorter = da.min(db);
+    if longer <= 0.0 {
+        return false;
+    }
+    let abs_ok = (longer - shorter) <= SESSION_MATCH_DURATION_ABS_S;
+    let frac_ok = (longer - shorter) <= longer * SESSION_MATCH_DURATION_FRAC;
+    abs_ok || frac_ok
+}
+
+/// Power-meter preferred primary: has power > no power; srm > other power > polar/watch.
+fn pick_primary(members: &[&ActivityLinkRow]) -> (i64, &'static str) {
+    assert!(!members.is_empty());
+    if members.len() == 1 {
+        return (members[0].id, "sole");
+    }
+    let mut best = members[0];
+    let mut best_score = primary_score(best);
+    for m in members.iter().skip(1) {
+        let s = primary_score(m);
+        if s > best_score {
+            best = m;
+            best_score = s;
+        }
+    }
+    (best.id, "time_window")
+}
+
+fn primary_score(a: &ActivityLinkRow) -> i64 {
+    let mut score: i64 = 0;
+    let power = a.avg_power_w.unwrap_or(0.0);
+    if power > 0.0 {
+        score += 1_000_000;
+        score += power.min(2000.0) as i64; // slight preference for higher mean power
+    }
+    let plat = a
+        .source_platform
+        .as_deref()
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    let pipe = a
+        .ingest_pipeline
+        .as_deref()
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    if plat.contains("srm") || pipe == "email" {
+        score += 50_000;
+    } else if plat.contains("quarq")
+        || plat.contains("powertap")
+        || plat.contains("stages")
+        || plat.contains("shimano")
+        || plat.contains("favero")
+        || plat.contains("garmin")
+        || plat.contains("wahoo")
+    {
+        score += 40_000;
+    } else if plat.contains("polar") || pipe == "polar" {
+        score += 10_000;
+    }
+    // Prefer longer recorded duration as a weak tie-break.
+    score += a.duration_s.min(86400.0) as i64;
+    score
+}
+
 /// Rebuild *all* `daily_loads` rows from `activities` (clears stale dates like bulk-mtime piles).
 pub fn recompute_all_daily_loads(conn: &Connection) -> Result<usize, String> {
     conn.execute("DELETE FROM daily_loads", [])
@@ -892,13 +1288,18 @@ pub fn recompute_all_daily_loads(conn: &Connection) -> Result<usize, String> {
     Ok(dates.len())
 }
 
-/// Recompute daily_loads row for one date from activities.
+/// Recompute daily_loads row for one date from activities that **count for load**.
+///
+/// Multi-source duplicates keep all `activities` rows, but only rows with
+/// `counts_for_load = 1` contribute to TSS / ride_count / PMC inputs.
 pub fn recompute_daily_for_date(conn: &Connection, ride_date: &str) -> Result<(), String> {
     let mut stmt = conn
         .prepare(
             "SELECT COALESCE(SUM(tss),0), COALESCE(SUM(duration_s),0), COUNT(*),
-                    (SELECT sport FROM activities WHERE ride_date = ?1 AND sport IS NOT NULL LIMIT 1)
-             FROM activities WHERE ride_date = ?1",
+                    (SELECT sport FROM activities
+                     WHERE ride_date = ?1 AND counts_for_load = 1 AND sport IS NOT NULL
+                     LIMIT 1)
+             FROM activities WHERE ride_date = ?1 AND counts_for_load = 1",
         )
         .map_err(|e| e.to_string())?;
     let (tss, dur, count, sport): (f64, f64, i64, Option<String>) = stmt
@@ -907,6 +1308,8 @@ pub fn recompute_daily_for_date(conn: &Connection, ride_date: &str) -> Result<()
         })
         .map_err(|e| e.to_string())?;
 
+    // Keep a daily_loads row only when at least one load-primary exists.
+    // (Secondary-only days are unexpected but would clear the day.)
     if count == 0 {
         conn.execute(
             "DELETE FROM daily_loads WHERE ride_date = ?1",
@@ -1025,6 +1428,14 @@ pub struct RideSummary {
     pub duration_s: f64,
     pub np_w: Option<f64>,
     pub avg_power_w: Option<f64>,
+    /// email | polar | manual | unknown
+    pub ingest_pipeline: Option<String>,
+    /// Device family (srm, polar, …)
+    pub source_platform: Option<String>,
+    /// 1 if this row contributes to daily load
+    pub counts_for_load: bool,
+    pub is_primary: bool,
+    pub match_reason: Option<String>,
 }
 
 /// Core LOADsym columns for the Metrics / Library table (one row per activity).
@@ -1050,18 +1461,27 @@ pub struct ActivityMetricsRow {
 }
 
 /// Load ride rows ordered by date then file (for calendar file lists).
+///
+/// Primaries first within a day, then secondaries (so load-counting rides lead the list).
 pub fn load_ride_summaries(conn: &Connection) -> Result<Vec<RideSummary>, String> {
     let mut stmt = conn
         .prepare(
             "SELECT ride_date, source_file,
                     COALESCE(tss, 0), COALESCE(duration_s, 0),
-                    np_w, avg_power_w
+                    np_w, avg_power_w,
+                    ingest_pipeline, source_platform,
+                    COALESCE(counts_for_load, 1), COALESCE(is_primary, 1), match_reason
              FROM activities
-             ORDER BY ride_date ASC, source_file ASC",
+             ORDER BY ride_date ASC,
+                      COALESCE(is_primary, 1) DESC,
+                      COALESCE(counts_for_load, 1) DESC,
+                      source_file ASC",
         )
         .map_err(|e| e.to_string())?;
     let rows = stmt
         .query_map([], |row| {
+            let cfl: i64 = row.get(8)?;
+            let ip: i64 = row.get(9)?;
             Ok(RideSummary {
                 ride_date: row.get(0)?,
                 source_file: row.get(1)?,
@@ -1069,6 +1489,11 @@ pub fn load_ride_summaries(conn: &Connection) -> Result<Vec<RideSummary>, String
                 duration_s: row.get(3)?,
                 np_w: row.get(4)?,
                 avg_power_w: row.get(5)?,
+                ingest_pipeline: row.get(6)?,
+                source_platform: row.get(7)?,
+                counts_for_load: cfl != 0,
+                is_primary: ip != 0,
+                match_reason: row.get(10)?,
             })
         })
         .map_err(|e| e.to_string())?
@@ -1218,5 +1643,104 @@ mod tests {
         let p = Path::new("/home/user/velofit/raw/ride.fit");
         assert_eq!(source_key(p, Some(root)), "raw/ride.fit");
         assert_eq!(source_key(p, None), "ride.fit");
+    }
+
+    #[test]
+    fn guess_pipeline_from_path() {
+        assert_eq!(
+            guess_ingest_pipeline(Path::new("raw/email/ride.fit"), None),
+            "email"
+        );
+        assert_eq!(
+            guess_ingest_pipeline(Path::new("raw/polar/abc.fit"), None),
+            "polar"
+        );
+        assert_eq!(
+            guess_ingest_pipeline(Path::new("raw/ride.fit"), Some("srm")),
+            "manual"
+        );
+    }
+
+    fn link_row(
+        id: i64,
+        date: &str,
+        start: Option<i64>,
+        dur: f64,
+        power: Option<f64>,
+        platform: &str,
+        pipeline: &str,
+    ) -> ActivityLinkRow {
+        ActivityLinkRow {
+            id,
+            ride_date: date.into(),
+            start_unix: start,
+            duration_s: dur,
+            sport: Some("cycling".into()),
+            avg_power_w: power,
+            source_platform: Some(platform.into()),
+            ingest_pipeline: Some(pipeline.into()),
+            session_group_id: None,
+        }
+    }
+
+    #[test]
+    fn sessions_match_time_window() {
+        let a = link_row(1, "2026-07-01", Some(1_720_000_000), 3600.0, Some(200.0), "srm", "email");
+        let b = link_row(
+            2,
+            "2026-07-01",
+            Some(1_720_000_000 + 300),
+            3500.0,
+            Some(0.0),
+            "polar",
+            "polar",
+        );
+        assert!(sessions_match(&a, &b));
+        let c = link_row(
+            3,
+            "2026-07-01",
+            Some(1_720_000_000 + 3600),
+            3500.0,
+            Some(0.0),
+            "polar",
+            "polar",
+        );
+        assert!(!sessions_match(&a, &c));
+    }
+
+    #[test]
+    fn primary_prefers_power_meter() {
+        let srm = link_row(1, "2026-07-01", Some(1), 3600.0, Some(220.0), "srm", "email");
+        let polar = link_row(2, "2026-07-01", Some(1), 3600.0, Some(0.0), "polar", "polar");
+        let (pid, _) = pick_primary(&[&srm, &polar]);
+        assert_eq!(pid, 1);
+        let (pid2, _) = pick_primary(&[&polar, &srm]);
+        assert_eq!(pid2, 1);
+    }
+
+    #[test]
+    fn daily_rollup_ignores_secondary() {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute_batch(get_schema("sqlite")).unwrap();
+        migrate_catalog(&conn).unwrap();
+        conn.execute(
+            "INSERT INTO activities (
+                source_file, ride_date, duration_s, tss, counts_for_load, is_primary
+             ) VALUES
+             ('a.fit', '2026-07-01', 3600, 100.0, 1, 1),
+             ('b.fit', '2026-07-01', 3600, 90.0, 0, 0)",
+            [],
+        )
+        .unwrap();
+        recompute_daily_for_date(&conn, "2026-07-01").unwrap();
+        let (tss, n): (f64, i64) = conn
+            .query_row(
+                "SELECT total_tss, ride_count FROM daily_loads WHERE ride_date='2026-07-01'",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert!((tss - 100.0).abs() < 1e-9);
+        assert_eq!(n, 1);
     }
 }

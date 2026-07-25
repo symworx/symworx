@@ -69,6 +69,20 @@ fn main() {
                 std::process::exit(5);
             }
         }
+        "relink" => {
+            #[cfg(feature = "sqlite")]
+            {
+                if let Err(e) = handle_relink(&args) {
+                    eprintln!("relink error: {}", e);
+                    std::process::exit(10);
+                }
+            }
+            #[cfg(not(feature = "sqlite"))]
+            {
+                eprintln!("relink requires --features sqlite");
+                std::process::exit(5);
+            }
+        }
         "email" | "fetch" => {
             #[cfg(feature = "email")]
             {
@@ -171,6 +185,31 @@ fn handle_db_command(args: &[String]) -> Result<(), String> {
                 let db = parse_db_path(args);
                 let conn = symworx_loadsym::catalog::open_catalog(&db)?;
                 let n = symworx_loadsym::catalog::count_activities(&conn)?;
+                let primaries: i64 = conn
+                    .query_row(
+                        "SELECT COUNT(*) FROM activities WHERE COALESCE(counts_for_load,1)=1",
+                        [],
+                        |r| r.get(0),
+                    )
+                    .unwrap_or(n);
+                let secondaries: i64 = conn
+                    .query_row(
+                        "SELECT COUNT(*) FROM activities WHERE COALESCE(counts_for_load,1)=0",
+                        [],
+                        |r| r.get(0),
+                    )
+                    .unwrap_or(0);
+                let multi_groups: i64 = conn
+                    .query_row(
+                        "SELECT COUNT(*) FROM (
+                            SELECT session_group_id FROM activities
+                            WHERE session_group_id IS NOT NULL
+                            GROUP BY session_group_id HAVING COUNT(*) > 1
+                         )",
+                        [],
+                        |r| r.get(0),
+                    )
+                    .unwrap_or(0);
                 let ftp_n: i64 = conn
                     .query_row("SELECT COUNT(*) FROM ftp_history", [], |r| r.get(0))
                     .unwrap_or(0);
@@ -179,7 +218,8 @@ fn handle_db_command(args: &[String]) -> Result<(), String> {
                     symworx_loadsym::catalog::META_LAST_INGEST_AT,
                 )?;
                 println!("db: {}", db.display());
-                println!("activities: {}", n);
+                println!("activities: {}  (load_primary={}  secondary/dup={})", n, primaries, secondaries);
+                println!("multi-source session groups: {}", multi_groups);
                 println!("ftp_history rows: {}", ftp_n);
                 match last {
                     Some(t) => println!("last_ingest_at: {}", t),
@@ -469,7 +509,14 @@ fn handle_ingest(args: &[String], force: bool) -> Result<(), String> {
         }
     }
 
-    // Rebuild daily rollups from activities (drops stale mtime-pile days after re-dating).
+    // Re-link multi-source duplicates (time-window), then rebuild dailies from load primaries.
+    let (multi, secs) = symworx_loadsym::catalog::relink_all_sessions(&conn)?;
+    if multi > 0 || secs > 0 {
+        println!(
+            "session link: multi-source groups={}  secondary copies={}",
+            multi, secs
+        );
+    }
     let days_n = symworx_loadsym::catalog::recompute_all_daily_loads(&conn)?;
     let metrics_n = recompute_load_metrics(&conn)?;
 
@@ -487,6 +534,33 @@ fn handle_ingest(args: &[String], force: bool) -> Result<(), String> {
     if let Some(w) = wm_now {
         println!("last_ingest_at: {}", w);
     }
+    println!("db: {}", db.display());
+    Ok(())
+}
+
+#[cfg(feature = "sqlite")]
+fn handle_relink(args: &[String]) -> Result<(), String> {
+    use symworx_loadsym::catalog::{
+        open_catalog,
+        recompute_load_metrics,
+        relink_all_sessions,
+    };
+
+    let db = parse_db_path(args);
+    if !db.exists() {
+        return Err(format!(
+            "database not found at {} — run: symload db init",
+            db.display()
+        ));
+    }
+    let conn = open_catalog(&db)?;
+    let (multi, secs) = relink_all_sessions(&conn)?;
+    let days_n = symworx_loadsym::catalog::recompute_all_daily_loads(&conn)?;
+    let metrics_n = recompute_load_metrics(&conn)?;
+    println!(
+        "relink done: multi-source groups={}  secondary copies={}  daily_days={}  load_metrics_rows={}",
+        multi, secs, days_n, metrics_n
+    );
     println!("db: {}", db.display());
     Ok(())
 }
@@ -877,6 +951,8 @@ Commands:
       --force / -F   re-score all candidates (implies full scan; ignores watermark)
       FTP for each ride comes from ftp_history when set; --ftp is fallback only.
   symload reprocess [path|dir] [--ftp 280]   same as ingest --force (re-score loads)
+  symload relink [--db PATH]                 re-match multi-source sessions (time window);
+      power-meter / email preferred as load primary; secondaries kept but not counted
   symload ftp list
   symload ftp set --date YYYY-MM-DD --ftp N [--sport cycling] [--source manual] [--until DATE]
   symload email fetch [target_dir] [--query "SUBJECT SRM"]

@@ -4,7 +4,7 @@
 
 It is aimed at research, education, and portable inference (workstation today; embedded/mobile recipes for exported models).
 
-**License:** [Apache License 2.0](LICENSE)  
+**License:** [Apache License 2.0](LICENSE)
 **Version:** workspace `0.1.0` (monorepo; see [CHANGELOG.md](CHANGELOG.md))
 
 ---
