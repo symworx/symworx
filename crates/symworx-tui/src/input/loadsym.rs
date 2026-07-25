@@ -695,6 +695,35 @@ pub(crate) fn enter_loadsym_metrics(app: &mut App) {
     }
 }
 
+/// Switch to a LoadSym footer-strip view (Ctrl+←→). Runs enter-side effects for catalog views.
+pub(crate) fn apply_loadsym_strip_view(app: &mut App, view: crate::app::LoadSymView) {
+    use crate::app::LoadSymView;
+    // List is hub-only; strip cycle never targets it.
+    let view = if view == LoadSymView::List {
+        LoadSymView::Workout
+    } else {
+        view
+    };
+    match view {
+        LoadSymView::Workout => {
+            app.loadsym_view = LoadSymView::Workout;
+            app.status =
+                "Workout: o open file  i newest  1–5 streams  ←→ pan  Esc list  ·  Ctrl+←→ views"
+                    .to_string();
+        }
+        LoadSymView::Metrics => enter_loadsym_metrics(app),
+        LoadSymView::Calendar => {
+            app.loadsym_view = LoadSymView::Calendar;
+            let _ = crate::processing::try_load_loadsym_catalog(app);
+            crate::processing::focus_calendar_most_recent(app);
+            crate::processing::clamp_calendar_ride_sel(app);
+            app.status = calendar_status(app);
+        }
+        LoadSymView::Optimization => enter_loadsym_optimization(app),
+        LoadSymView::List => unreachable!("mapped to Workout above"),
+    }
+}
+
 pub(crate) fn metrics_status(app: &App) -> String {
     let n = app.catalog_activity_metrics.len();
     if n == 0 {

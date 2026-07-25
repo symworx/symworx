@@ -3,16 +3,61 @@
 
 //! LoadSym view enums, catalog rows, metrics fields.
 
-/// LoadSym internal views (selector "home" inside the LoadSym workflow)
+/// LoadSym internal views (selector "home" inside the LoadSym workflow).
+///
+/// Footer strip / Ctrl+←→ order (AGENTS.md): Workout · Metrics · Calendar · Optimization.
+/// `List` is the hub (Esc from sub-views); not part of the strip cycle.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum LoadSymView {
     #[default]
     List,
     Workout,
-    Calendar,
-    Optimization,
     /// Catalog library: per-ride LOADsym metrics table.
     Metrics,
+    Calendar,
+    Optimization,
+}
+
+impl LoadSymView {
+    /// Sub-views shown in the footer strip (left→right for Ctrl+arrows).
+    pub const STRIP: [LoadSymView; 4] = [
+        LoadSymView::Workout,
+        LoadSymView::Metrics,
+        LoadSymView::Calendar,
+        LoadSymView::Optimization,
+    ];
+
+    pub fn title(self) -> &'static str {
+        match self {
+            Self::List => "List",
+            Self::Workout => "Workout",
+            Self::Metrics => "Metrics",
+            Self::Calendar => "Calendar",
+            Self::Optimization => "Optimization",
+        }
+    }
+
+    /// Index in [`Self::STRIP`], or `None` for [`Self::List`].
+    pub fn strip_index(self) -> Option<usize> {
+        Self::STRIP.iter().position(|&v| v == self)
+    }
+
+    /// Previous strip view; clamps at Workout. From List → Workout.
+    pub fn strip_prev(self) -> Self {
+        match self.strip_index() {
+            None | Some(0) => Self::Workout,
+            Some(i) => Self::STRIP[i - 1],
+        }
+    }
+
+    /// Next strip view; clamps at Optimization. From List → Workout.
+    pub fn strip_next(self) -> Self {
+        match self.strip_index() {
+            None => Self::Workout,
+            Some(i) if i + 1 >= Self::STRIP.len() => Self::Optimization,
+            Some(i) => Self::STRIP[i + 1],
+        }
+    }
 }
 
 /// Workout analyzer data streams (FIT/CSV channels).
