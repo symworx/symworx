@@ -604,7 +604,8 @@ fn render_tachogram(frame: &mut Frame, app: &App, area: Rect) {
     } else {
         String::new()
     };
-    let lines = [format!(
+    let lines = [
+        format!(
             "Source: {}  |  {} peaks → {} intervals{}  |  view: tachogram (i=wave)",
             tacho.source.label(),
             tacho.peak_indices.len(),
@@ -625,7 +626,8 @@ fn render_tachogram(frame: &mut Frame, app: &App, area: Rect) {
             "Peaks: det={}  known_primary={}  |  k re-detect  K params  e → data/tachogram_*.csv",
             signal.detected_peaks.len(),
             signal.known_peaks_primary.len()
-        )];
+        ),
+    ];
 
     let content = Paragraph::new(lines.join("\n")).block(block);
     let chunks = Layout::vertical([Constraint::Length(5), Constraint::Min(1)]).split(area);

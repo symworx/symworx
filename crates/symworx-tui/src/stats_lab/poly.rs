@@ -162,7 +162,8 @@ pub fn run_poly(
         rows.len()
     );
     r.interpretation = "In-sample R² always rises with degree; use AIC/BIC and nested χ². \
-         If χ²Δ p ≫ 0.05, the extra term is not justified. ↑↓/f focus · d/D max degree.".to_string();
+         If χ²Δ p ≫ 0.05, the extra term is not justified. ↑↓/f focus · d/D max degree."
+        .to_string();
     if !search.warnings.is_empty() {
         r.interpretation.push_str(" · ");
         r.interpretation.push_str(&search.warnings[0]);

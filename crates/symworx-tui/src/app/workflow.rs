@@ -112,11 +112,10 @@ impl App {
                 .map(|b| b.num_times().saturating_sub(1))
                 .unwrap_or(0);
             self.status = format!("Spatial: frame {}/{}", self.spatial_frame_idx, maxf);
-        } else if self.current_tab == Tab::LoadSym
-            && self.loadsym_view == LoadSymView::List {
-                self.status =
-                    "LoadSym — ↑↓ 1–4 Workout · Metrics · Calendar · Optimization  • Esc back"
-                        .to_string();
-            }
+        } else if self.current_tab == Tab::LoadSym && self.loadsym_view == LoadSymView::List {
+            self.status =
+                "LoadSym — ↑↓ 1–4 Workout · Metrics · Calendar · Optimization  • Esc back"
+                    .to_string();
+        }
     }
 }

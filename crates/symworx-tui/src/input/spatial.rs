@@ -315,9 +315,10 @@ pub fn try_load_first_spatial_csv(app: &mut App) -> bool {
                     .lines()
                     .next()
                     .is_some_and(|h| h.to_lowercase().contains("agent_id"))
-                    && app.load_spatial_csv(&p).is_ok() {
-                        return true;
-                    }
+                    && app.load_spatial_csv(&p).is_ok()
+                {
+                    return true;
+                }
             }
         }
     }
