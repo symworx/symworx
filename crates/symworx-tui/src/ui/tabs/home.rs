@@ -76,85 +76,22 @@ pub fn render_home_tab(frame: &mut Frame, app: &App, area: Rect) {
     .split(inner);
 
     // Large SymWorx built from \/| and similar symbols (no surrounding box)
+    #[rustfmt::skip]
     let logo_lines = vec![
-        Line::from(Span::styled(
-            r#"   .--.                                                         "#,
-            Style::default()
-                .fg(Color::Magenta)
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(Span::styled(
-            r#"  /    \                                                        "#,
-            Style::default()
-                .fg(Color::Magenta)
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(Span::styled(
-            r#" |  |\**--.  .--.    .-.             .-.      .--.__.-.    .-.  "#,
-            Style::default()
-                .fg(Color::Magenta)
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(Span::styled(
-            r#"  \  \ \   \/   /    \  \           /  /.---. |     \  \  /  /  "#,
-            Style::default()
-                .fg(Color::Magenta)
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(Span::styled(
-            r#"   \  \ \      /--.  .--.\         /  //     \|   __|\  \/  /   "#,
-            Style::default()
-                .fg(Color::Magenta)
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(Span::styled(
-            r#"    \  \ \    /|   \/   | \  ..   /  /|   *   |  |    \    /    "#,
-            Style::default()
-                .fg(Color::Magenta)
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(Span::styled(
-            r#"  .-.|  |/   / |        |  \/  \_/  / |  | |  |  |    /    \    "#,
-            Style::default()
-                .fg(Color::Magenta)
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(Span::styled(
-            r#"  \    //   /  |  |\/|  |\   /\    /  |   *   |  |   /  /\  \   "#,
-            Style::default()
-                .fg(Color::Magenta)
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(Span::styled(
-            r#"   ****/   /   |  |  |  | ***  ****    \     /***   /  /  \  \  "#,
-            Style::default()
-                .fg(Color::Magenta)
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(Span::styled(
-            r#"       ****    ***    ***               *****       ***    ***  "#,
-            Style::default()
-                .fg(Color::Magenta)
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(Span::styled(
-            r#"                                                                "#,
-            Style::default()
-                .fg(Color::Magenta)
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(Span::styled(
-            "        Secure • Robust • Scalable       ",
-            Style::default().fg(Color::Yellow),
-        )),
-        Line::from(Span::styled(
-            "-----------------------------------------",
-            Style::default().fg(Color::Yellow),
-        )),
-        Line::from(Span::styled(
-            "          Computational Dynamics         ",
-            Style::default().fg(Color::Yellow),
-        )),
+        Line::from(Span::styled(r#"   .--.                                                         "#, Style::default() .fg(Color::Magenta) .add_modifier(Modifier::BOLD),)),
+        Line::from(Span::styled(r#"  /    \                                                        "#, Style::default() .fg(Color::Magenta) .add_modifier(Modifier::BOLD),)),
+        Line::from(Span::styled(r#" |  |\**--.  .--.    .-.             .-.      .--.__.-.    .-.  "#, Style::default() .fg(Color::Magenta) .add_modifier(Modifier::BOLD),)),
+        Line::from(Span::styled(r#"  \  \ \   \/   /    \  \           /  /.---. |     \  \  /  /  "#, Style::default() .fg(Color::Magenta) .add_modifier(Modifier::BOLD),)),
+        Line::from(Span::styled(r#"   \  \ \      /--.  .--.\         /  //     \|   __|\  \/  /   "#, Style::default() .fg(Color::Magenta) .add_modifier(Modifier::BOLD),)),
+        Line::from(Span::styled(r#"    \  \ \    /|   \/   | \  ..   /  /|   .   |  |    \    /    "#, Style::default() .fg(Color::Magenta) .add_modifier(Modifier::BOLD),)),
+        Line::from(Span::styled(r#"  .-.|  |/   / |        |  \/  \_/  / |  | |  |  |    /    \    "#, Style::default() .fg(Color::Magenta) .add_modifier(Modifier::BOLD),)),
+        Line::from(Span::styled(r#"  \    //   /  |  |\/|  |\   /\    /  |   *   |  |   /  /\  \   "#, Style::default() .fg(Color::Magenta) .add_modifier(Modifier::BOLD),)),
+        Line::from(Span::styled(r#"   ****/   /   |  |  |  | ***  ****    \     /***   /  /  \  \  "#, Style::default() .fg(Color::Magenta) .add_modifier(Modifier::BOLD),)),
+        Line::from(Span::styled(r#"       ****    ***    ***               *****       ***    ***  "#, Style::default() .fg(Color::Magenta) .add_modifier(Modifier::BOLD),)),
+        Line::from(Span::styled(r#"                                                                "#, Style::default() .fg(Color::Magenta) .add_modifier(Modifier::BOLD),)),
+        Line::from(Span::styled("        Secure • Robust • Scalable       ", Style::default().fg(Color::Yellow),)),
+        Line::from(Span::styled("-----------------------------------------", Style::default().fg(Color::Yellow),)),
+        Line::from(Span::styled("          Computational Dynamics         ", Style::default().fg(Color::Yellow),)),
     ];
 
     let logo = Paragraph::new(logo_lines).alignment(ratatui::layout::Alignment::Center);

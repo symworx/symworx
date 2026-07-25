@@ -57,8 +57,11 @@ pub mod correlation;
 /// Distance metrics (e.g., Euclidean).
 pub mod distance;
 
-/// Predicted-vs-expected error metrics (MAE, RMSE, R², regression report).
+/// Predicted-vs-expected error metrics (MAE, RMSE, R², residuals, regression report).
 pub mod error_metrics;
+
+/// Univariate histogram and Gaussian KDE (for any 1-D sample, incl. residuals).
+pub mod density;
 
 /// Model comparison / selection (AIC, BIC, nested χ² / F, adjusted R²).
 pub mod model_select;
@@ -153,6 +156,21 @@ pub use correlation::{
     correlation_matrix_from_vec,
     pearson_correlation,
 };
+pub use density::{
+    HistBin,
+    HistKde,
+    Histogram,
+    HistogramConfig,
+    KdeConfig,
+    KdeEstimate,
+    hist_kde,
+    hist_kde_with,
+    histogram,
+    histogram_default,
+    kde_gaussian,
+    kde_gaussian_default,
+    silverman_bandwidth,
+};
 pub use distance::{
     chebyshev,
     cosine_distance,
@@ -167,6 +185,7 @@ pub use error_metrics::{
     mse,
     r2,
     regression_report,
+    residual_errors,
     residuals,
     rmse,
 };
