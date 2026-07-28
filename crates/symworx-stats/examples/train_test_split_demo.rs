@@ -74,10 +74,7 @@ fn main() {
         &train_ids[..3],
         &test_x[..3]
     );
-    println!(
-        "   original feature.len() still {} (untouched)\n",
-        feature.len()
-    );
+    println!("   original feature.len() still {} (untouched)\n", feature.len());
 
     // --- 2) 5 folds OK on n=100 (fold size 14 ≥ 10) ---
     println!("2) 70/30 + 5 training folds on n = 100");

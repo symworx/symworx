@@ -22,12 +22,7 @@ use crate::app::{
     StatsLabTask,
 };
 
-pub fn run_poly(
-    table: &TableData,
-    x_col: usize,
-    y_col: usize,
-    max_degree: usize,
-) -> Result<StatsLabResult, String> {
+pub fn run_poly(table: &TableData, x_col: usize, y_col: usize, max_degree: usize) -> Result<StatsLabResult, String> {
     let n = table.n_rows();
     let p = table.n_cols();
     if n < 5 {
@@ -78,17 +73,9 @@ pub fn run_poly(
         let y_hat = f.predict(&xv);
         let y_hat_v: Vec<f64> = y_hat.to_vec();
         let res = residuals(&yv, &y_hat_v);
-        let ba_mean: Vec<f64> = yv
-            .iter()
-            .zip(y_hat_v.iter())
-            .map(|(&a, &p)| (a + p) / 2.0)
-            .collect();
+        let ba_mean: Vec<f64> = yv.iter().zip(y_hat_v.iter()).map(|(&a, &p)| (a + p) / 2.0).collect();
         // Sorted curve for overlay (x vs ŷ)
-        let mut pairs: Vec<(f64, f64)> = xv
-            .iter()
-            .zip(y_hat_v.iter())
-            .map(|(&x, &yh)| (x, yh))
-            .collect();
+        let mut pairs: Vec<(f64, f64)> = xv.iter().zip(y_hat_v.iter()).map(|(&x, &yh)| (x, yh)).collect();
         pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
         let fit_x: Vec<f64> = pairs.iter().map(|p| p.0).collect();
         let fit_yh: Vec<f64> = pairs.iter().map(|p| p.1).collect();

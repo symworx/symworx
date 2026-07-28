@@ -111,12 +111,7 @@ mod tests {
 
     #[test]
     fn test_correlation_matrix_3_variables() {
-        let data = array![
-            [1.0, 2.0, 3.0],
-            [2.0, 4.0, 6.0],
-            [3.0, 6.0, 9.0],
-            [4.0, 8.0, 12.0]
-        ];
+        let data = array![[1.0, 2.0, 3.0], [2.0, 4.0, 6.0], [3.0, 6.0, 9.0], [4.0, 8.0, 12.0]];
 
         let matrix = correlation_matrix(&data);
         println!("Correlation Matrix (3 variables):\n{}", matrix);

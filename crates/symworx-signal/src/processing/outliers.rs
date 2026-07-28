@@ -127,11 +127,7 @@ pub fn detect_outliers(data: &[f64], crit: OutlierCriterion) -> Vec<usize> {
 /// using the chosen fill strategy. Returns a new vector of same length as `data`.
 ///
 /// Non-outlier values are copied unchanged. Outlier indices outside range are ignored.
-pub fn interpolate_outliers(
-    data: &[f64],
-    outlier_indices: &[usize],
-    strat: FillStrategy,
-) -> Vec<f64> {
+pub fn interpolate_outliers(data: &[f64], outlier_indices: &[usize], strat: FillStrategy) -> Vec<f64> {
     if data.is_empty() {
         return vec![];
     }
@@ -141,11 +137,7 @@ pub fn interpolate_outliers(
     }
 
     // Work on a sorted unique copy of indices for safety
-    let mut idxs: Vec<usize> = outlier_indices
-        .iter()
-        .copied()
-        .filter(|&i| i < data.len())
-        .collect();
+    let mut idxs: Vec<usize> = outlier_indices.iter().copied().filter(|&i| i < data.len()).collect();
     idxs.sort_unstable();
     idxs.dedup();
 
@@ -196,11 +188,7 @@ pub fn interpolate_outliers(
                 let first_good = good_y.first().copied().unwrap_or(0.0);
                 let last_good = good_y.last().copied().unwrap_or(0.0);
                 for &i in &idxs {
-                    out[i] = if i < good_x.len() {
-                        first_good
-                    } else {
-                        last_good
-                    };
+                    out[i] = if i < good_x.len() { first_good } else { last_good };
                 }
                 return out;
             }
@@ -283,8 +271,7 @@ pub fn robust_interpolate_with_times(
             let mut out = data.to_vec();
             let idxs = bad;
             match strat {
-                FillStrategy::LocalMedian { half_window }
-                | FillStrategy::LocalMean { half_window } => {
+                FillStrategy::LocalMedian { half_window } | FillStrategy::LocalMean { half_window } => {
                     let use_median = matches!(strat, FillStrategy::LocalMedian { .. });
                     for &i in &idxs {
                         let start = i.saturating_sub(half_window);
@@ -323,13 +310,7 @@ mod tests {
         // 10 normal + one big spike
         let mut d: Vec<f64> = (0..20).map(|i| 800.0 + (i as f64) * 0.1).collect();
         d[10] = 2000.0; // obvious outlier
-        let bad = detect_outliers(
-            &d,
-            OutlierCriterion::LocalMAD {
-                half_window: 3,
-                k: 4.0,
-            },
-        );
+        let bad = detect_outliers(&d, OutlierCriterion::LocalMAD { half_window: 3, k: 4.0 });
         assert!(bad.contains(&10));
     }
 
@@ -355,11 +336,7 @@ mod tests {
     #[test]
     fn test_linear_interp_replacement() {
         let d = vec![0.0, 10.0, 999.0, 30.0, 40.0];
-        let cleaned = robust_interpolate(
-            &d,
-            OutlierCriterion::Absolute(100.0),
-            FillStrategy::LinearInterp,
-        );
+        let cleaned = robust_interpolate(&d, OutlierCriterion::Absolute(100.0), FillStrategy::LinearInterp);
         // 999 should be replaced by linear interp between 10 and 30 → ~20
         assert!((cleaned[2] - 20.0).abs() < 1.0);
     }
@@ -368,12 +345,8 @@ mod tests {
     fn test_time_aware_linear() {
         let t = vec![0.0, 1.0, 2.0, 10.0, 11.0];
         let d = vec![0.0, 1.0, 999.0, 10.0, 11.0];
-        let cleaned = robust_interpolate_with_times(
-            &t,
-            &d,
-            OutlierCriterion::Absolute(100.0),
-            FillStrategy::LinearInterp,
-        );
+        let cleaned =
+            robust_interpolate_with_times(&t, &d, OutlierCriterion::Absolute(100.0), FillStrategy::LinearInterp);
         // The outlier at t=2 should be interpolated using real times
         assert!(cleaned[2].is_finite());
         assert!((cleaned[2] - 1.0).abs() < 5.0); // rough

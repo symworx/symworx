@@ -23,16 +23,10 @@ fn main() {
         .map(|&xi| 1.0 + 0.5 * xi - 0.2 * xi * xi + 0.05 * xi * xi * xi)
         .collect();
 
-    println!(
-        "1) n = {}, truth degree = 3, request max_degree = 6",
-        x.len()
-    );
+    println!("1) n = {}, truth degree = 3, request max_degree = 6", x.len());
     let search = fit_polynomial_degrees(&x, &y, 6).unwrap();
     print!("{search}");
-    println!(
-        "   best in-sample R² degree = {:?}",
-        search.best_degree_by_r2()
-    );
+    println!("   best in-sample R² degree = {:?}", search.best_degree_by_r2());
 
     // Hard stop demo: n = k−1
     println!("\n2) Hard stop: n = 4, request max_degree k = 5 (n = k−1)");

@@ -306,10 +306,7 @@ impl TachogramData {
         idxs.dedup();
 
         let (peak_times, unit_is_sec) = if let Some(fs) = fs.filter(|f| *f > 0.0) {
-            (
-                idxs.iter().map(|&i| i as f64 / fs).collect::<Vec<_>>(),
-                true,
-            )
+            (idxs.iter().map(|&i| i as f64 / fs).collect::<Vec<_>>(), true)
         } else {
             (idxs.iter().map(|&i| i as f64).collect::<Vec<_>>(), false)
         };
@@ -355,12 +352,7 @@ impl TachogramData {
     }
 
     pub fn mean_rate(&self) -> Option<f64> {
-        let valid: Vec<f64> = self
-            .rates_per_min
-            .iter()
-            .copied()
-            .filter(|r| r.is_finite())
-            .collect();
+        let valid: Vec<f64> = self.rates_per_min.iter().copied().filter(|r| r.is_finite()).collect();
         if valid.is_empty() {
             None
         } else {
@@ -449,11 +441,7 @@ impl LoadedSignal {
             self.tachogram = None;
             return;
         }
-        self.tachogram = Some(TachogramData::from_peak_indices(
-            idxs,
-            self.fs,
-            self.tachogram_source,
-        ));
+        self.tachogram = Some(TachogramData::from_peak_indices(idxs, self.fs, self.tachogram_source));
     }
 }
 

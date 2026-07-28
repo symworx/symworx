@@ -167,12 +167,7 @@ pub fn ista(theta: &Array2<f64>, y: &Array1<f64>, config: &IstaConfig) -> Sparse
 /// * `y` — measurements
 /// * `sparsity` — maximum number of non-zero coefficients (atoms)
 /// * `tol` — stop early if residual norm drops below this
-pub fn omp(
-    theta: &Array2<f64>,
-    y: &Array1<f64>,
-    sparsity: usize,
-    tol: f64,
-) -> SparseRecoveryResult {
+pub fn omp(theta: &Array2<f64>, y: &Array1<f64>, sparsity: usize, tol: f64) -> SparseRecoveryResult {
     let m = theta.nrows();
     let n = theta.ncols();
     assert_eq!(y.len(), m);
@@ -398,16 +393,8 @@ mod tests {
         let rec = omp(&phi, &y, 3, 1e-8);
 
         // Support should include the large atoms
-        assert!(
-            rec.coefficients[3].abs() > 0.5,
-            "coeff 3 = {}",
-            rec.coefficients[3]
-        );
-        assert!(
-            rec.coefficients[11].abs() > 0.5,
-            "coeff 11 = {}",
-            rec.coefficients[11]
-        );
+        assert!(rec.coefficients[3].abs() > 0.5, "coeff 3 = {}", rec.coefficients[3]);
+        assert!(rec.coefficients[11].abs() > 0.5, "coeff 11 = {}", rec.coefficients[11]);
         let err = (&rec.coefficients - &x_true).mapv(|v| v * v).sum().sqrt();
         assert!(err < 0.5, "recovery L2 error = {err}");
     }
@@ -420,11 +407,7 @@ mod tests {
         for i in 0..n {
             for j in 0..n {
                 let expected = if i == j { 1.0 } else { 0.0 };
-                assert!(
-                    (gram[[i, j]] - expected).abs() < 1e-10,
-                    "G[{i},{j}] = {}",
-                    gram[[i, j]]
-                );
+                assert!((gram[[i, j]] - expected).abs() < 1e-10, "G[{i},{j}] = {}", gram[[i, j]]);
             }
         }
     }

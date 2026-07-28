@@ -56,8 +56,7 @@ pub fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
     let week_i = if app.weekly_loads.is_empty() {
         0
     } else {
-        app.loadsym_week_scroll
-            .min(app.weekly_loads.len().saturating_sub(1))
+        app.loadsym_week_scroll.min(app.weekly_loads.len().saturating_sub(1))
     };
 
     let acwr_snap = compute_acute_chronic(loads, 7, 28).ok();
@@ -69,16 +68,12 @@ pub fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
         .and_then(|a| *a)
         .or_else(|| acwr_snap.as_ref().map(|s| s.acwr))
         .unwrap_or(0.0);
-    let risk_str = app
-        .daily_risk
-        .get(day_i)
-        .and_then(|r| r.clone())
-        .unwrap_or_else(|| {
-            acwr_snap
-                .as_ref()
-                .map(|s| classify_acwr(s.acwr).as_str().to_string())
-                .unwrap_or_else(|| "N/A".to_string())
-        });
+    let risk_str = app.daily_risk.get(day_i).and_then(|r| r.clone()).unwrap_or_else(|| {
+        acwr_snap
+            .as_ref()
+            .map(|s| classify_acwr(s.acwr).as_str().to_string())
+            .unwrap_or_else(|| "N/A".to_string())
+    });
     let focus_date = app
         .daily_load_dates
         .get(day_i)
@@ -94,22 +89,12 @@ pub fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
     ])
     .split(area);
 
-    let source = if app.loadsym_from_catalog {
-        "catalog"
-    } else {
-        "demo"
-    };
+    let source = if app.loadsym_from_catalog { "catalog" } else { "demo" };
     let week_focus = app.weekly_loads.get(week_i);
     let week_tss = week_focus.map(|w| w.total_tss).unwrap_or(0.0);
     let week_rides = week_focus.map(|w| w.ride_count).unwrap_or(0);
-    let week_label = week_focus
-        .map(|w| w.week_start.as_str())
-        .unwrap_or("----------");
-    let week_num = if app.weekly_loads.is_empty() {
-        0
-    } else {
-        week_i + 1
-    };
+    let week_label = week_focus.map(|w| w.week_start.as_str()).unwrap_or("----------");
+    let week_num = if app.weekly_loads.is_empty() { 0 } else { week_i + 1 };
     let week_total = app.weekly_loads.len();
 
     // Fixed-width columns so values don't jump while scrolling
@@ -144,9 +129,7 @@ pub fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
         Line::from(Span::styled(col_hdr, Style::default().fg(Color::DarkGray))),
         Line::from(Span::styled(
             col_vals,
-            Style::default()
-                .fg(Color::White)
-                .add_modifier(Modifier::BOLD),
+            Style::default().fg(Color::White).add_modifier(Modifier::BOLD),
         )),
     ])
     .block(
@@ -158,8 +141,7 @@ pub fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
     frame.render_widget(header, outer[0]);
 
     // Dual columns: daily (left) + weekly (right), both fill remaining height
-    let cols = Layout::horizontal([Constraint::Percentage(58), Constraint::Percentage(42)])
-        .split(outer[1]);
+    let cols = Layout::horizontal([Constraint::Percentage(58), Constraint::Percentage(42)]).split(outer[1]);
 
     // --- Daily: list of days; for focus day, also list ride files ---
     let day_list_h = cols[0].height.saturating_sub(2) as usize; // borders
@@ -173,9 +155,7 @@ pub fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
     let mut daily_lines: Vec<Line> = Vec::new();
     daily_lines.push(Line::from(Span::styled(
         "DAILY  (↑↓)  newest first",
-        Style::default()
-            .fg(Color::Cyan)
-            .add_modifier(Modifier::BOLD),
+        Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
     )));
     // Render newest → older so most recent is at the top of the pane
     daily_lines.push(Line::from(Span::styled(
@@ -204,11 +184,7 @@ pub fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
         format!("— rides on {focus_date} —"),
         Style::default().fg(Color::DarkGray),
     )));
-    let day_rides: Vec<_> = app
-        .catalog_rides
-        .iter()
-        .filter(|r| r.ride_date == focus_date)
-        .collect();
+    let day_rides: Vec<_> = app.catalog_rides.iter().filter(|r| r.ride_date == focus_date).collect();
     if day_rides.is_empty() {
         daily_lines.push(Line::from(Span::styled(
             "  (no per-file rows — demo or empty day)",
@@ -223,11 +199,7 @@ pub fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
                 Style::default().fg(Color::DarkGray),
             )));
         }
-        for (k, r) in day_rides
-            .iter()
-            .take(ride_lines_budget.saturating_sub(1))
-            .enumerate()
-        {
+        for (k, r) in day_rides.iter().take(ride_lines_budget.saturating_sub(1)).enumerate() {
             let name = r.source_file.rsplit('/').next().unwrap_or(&r.source_file);
             let mins = r.duration_s / 60.0;
             let marker = if k == ride_sel { "▶" } else { " " };
@@ -290,18 +262,13 @@ pub fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
     let mut week_lines: Vec<Line> = Vec::new();
     week_lines.push(Line::from(Span::styled(
         "WEEKLY  (←→)  newest first",
-        Style::default()
-            .fg(Color::Yellow)
-            .add_modifier(Modifier::BOLD),
+        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
     )));
     if app.weekly_loads.is_empty() {
         week_lines.push(Line::from("  (no weeks)"));
     } else {
         week_lines.push(Line::from(Span::styled(
-            format!(
-                "  {:<10}  {:>7}  {:>5}  {:>4}",
-                "week", "W-TSLi", "rides", "days"
-            ),
+            format!("  {:<10}  {:>7}  {:>5}  {:>4}", "week", "W-TSLi", "rides", "days"),
             Style::default().fg(Color::DarkGray),
         )));
         for wi in (week_lo..=week_hi).rev() {
@@ -336,16 +303,8 @@ pub fn render_calendar_view(frame: &mut Frame, app: &App, area: Rect) {
 
 /// Short pipeline/platform label for calendar ride rows.
 fn ride_source_label(r: &crate::app::CatalogRideRow) -> String {
-    let pipe = r
-        .ingest_pipeline
-        .as_deref()
-        .unwrap_or("")
-        .to_ascii_lowercase();
-    let plat = r
-        .source_platform
-        .as_deref()
-        .unwrap_or("")
-        .to_ascii_lowercase();
+    let pipe = r.ingest_pipeline.as_deref().unwrap_or("").to_ascii_lowercase();
+    let plat = r.source_platform.as_deref().unwrap_or("").to_ascii_lowercase();
     match (pipe.as_str(), plat.as_str()) {
         ("email", p) if !p.is_empty() => format!("email/{p}"),
         ("polar", _) => "polar".into(),
@@ -391,11 +350,7 @@ pub fn render_weekly_tsli_bar(frame: &mut Frame, app: &App, area: Rect, week_i: 
     ])
     .split(inner);
 
-    let max_w = app
-        .weekly_loads
-        .iter()
-        .map(|w| w.total_tss)
-        .fold(1.0_f64, f64::max);
+    let max_w = app.weekly_loads.iter().map(|w| w.total_tss).fold(1.0_f64, f64::max);
     let spark_data: Vec<u64> = app
         .weekly_loads
         .iter()
@@ -406,9 +361,7 @@ pub fn render_weekly_tsli_bar(frame: &mut Frame, app: &App, area: Rect, week_i: 
     let mark_width = split[0].width as usize;
     let marker_line = weekly_focus_marker_line(n, week_i, mark_width);
 
-    let mark_style = Style::default()
-        .fg(Color::LightYellow)
-        .add_modifier(Modifier::BOLD);
+    let mark_style = Style::default().fg(Color::LightYellow).add_modifier(Modifier::BOLD);
     frame.render_widget(
         Paragraph::new(Line::from(Span::styled(marker_line.clone(), mark_style))),
         split[0],

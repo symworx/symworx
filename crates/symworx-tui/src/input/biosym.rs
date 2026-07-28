@@ -229,11 +229,7 @@ pub fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                 app.status = "Peak param: match_tol".to_string();
             }
             KeyCode::Char('d') | KeyCode::Char('D') => {
-                let kind = app
-                    .loaded_signal
-                    .as_ref()
-                    .map(|s| s.kind)
-                    .unwrap_or_default();
+                let kind = app.loaded_signal.as_ref().map(|s| s.kind).unwrap_or_default();
                 app.peak_params = crate::app::PeakDetectParams::for_kind(kind);
                 app.status = format!(
                     "Peak params reset to {} defaults. {}",
@@ -376,8 +372,7 @@ pub fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
         KeyCode::Char('p') | KeyCode::Char('P') => {
             app.pending_process = true;
             app.pending_peak_params = false;
-            app.status = "Process: ↑↓ or 1–5   ←→/± window (MA/Median)   Enter apply   Esc cancel"
-                .to_string();
+            app.status = "Process: ↑↓ or 1–5   ←→/± window (MA/Median)   Enter apply   Esc cancel".to_string();
             return false;
         }
         KeyCode::Char('k') => {
@@ -388,8 +383,7 @@ pub fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
         KeyCode::Char('K') => {
             // Open peak-parameter editor (live re-detect on ←→; chart stays visible below)
             if app.loaded_signal.is_none() {
-                app.status =
-                    "No signal loaded — generate (Ctrl+G) or load a file first.".to_string();
+                app.status = "No signal loaded — generate (Ctrl+G) or load a file first.".to_string();
                 return false;
             }
             app.pending_process = false;
@@ -419,11 +413,7 @@ pub fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                 signal.show_detected_peaks = !signal.show_detected_peaks;
                 app.status = format!(
                     "Detected peaks overlay: {} ({} peaks)",
-                    if signal.show_detected_peaks {
-                        "ON"
-                    } else {
-                        "OFF"
-                    },
+                    if signal.show_detected_peaks { "ON" } else { "OFF" },
                     signal.detected_peaks.len()
                 );
             }
@@ -445,12 +435,7 @@ pub fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                     }
                 }
                 app.status = crate::processing::rebuild_tachogram_status(app);
-                if app
-                    .loaded_signal
-                    .as_ref()
-                    .and_then(|s| s.tachogram.as_ref())
-                    .is_none()
-                {
+                if app.loaded_signal.as_ref().and_then(|s| s.tachogram.as_ref()).is_none() {
                     app.status = format!("Tachogram view — {}", app.status);
                 } else {
                     app.status = format!("View: tachogram — {}", app.status);
@@ -504,23 +489,15 @@ pub fn handle_explore_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
         }
         KeyCode::Right | KeyCode::Char('l') | KeyCode::Char('L') => {
             if let Some(sig) = &app.loaded_signal {
-                let (view_len, n, step) = if app.explore_view == crate::app::ExploreView::Tachogram
-                {
+                let (view_len, n, step) = if app.explore_view == crate::app::ExploreView::Tachogram {
                     let n = sig.tachogram.as_ref().map(|t| t.n_intervals()).unwrap_or(0);
                     (crate::ui::tabs::explore::TACHO_VIEW_LEN, n, 5usize)
                 } else {
-                    (
-                        crate::ui::tabs::explore::EXPLORE_VIEW_LEN,
-                        sig.current.len(),
-                        30usize,
-                    )
+                    (crate::ui::tabs::explore::EXPLORE_VIEW_LEN, sig.current.len(), 30usize)
                 };
                 let max_start = n.saturating_sub(view_len);
                 app.explore_scroll = (app.explore_scroll + step).min(max_start);
-                app.status = format!(
-                    "Explore: pan x → start={} (max {})",
-                    app.explore_scroll, max_start
-                );
+                app.status = format!("Explore: pan x → start={} (max {})", app.explore_scroll, max_start);
             }
             return false;
         }
@@ -570,8 +547,7 @@ pub fn handle_dynamics_keys(app: &mut App, code: KeyCode) -> bool {
                     app.last_rqa = Some(res);
                     app.last_rp = Some(rp);
                     app.last_crqa = None;
-                    app.status =
-                        "RQA computed. See Dynamics tab (improved RP preview + MSE).".to_string();
+                    app.status = "RQA computed. See Dynamics tab (improved RP preview + MSE).".to_string();
                 } else {
                     app.status = "Load signal first (Import/Explore).".to_string();
                 }
@@ -599,14 +575,13 @@ pub fn handle_dynamics_keys(app: &mut App, code: KeyCode) -> bool {
         KeyCode::Char('x') | KeyCode::Char('X') => {
             // cRQA: prefer reference vs current; fallback to current vs time-reversed for demo
             if let Some(sig) = &app.loaded_signal {
-                let (name_a, series_a, series_b) =
-                    if let Some((ref_name, ref_data)) = &app.reference_series {
-                        (ref_name.clone(), ref_data.clone(), sig.current.clone())
-                    } else {
-                        // fallback demo: signal vs its reverse (shows asymmetry/structure differences)
-                        let rev: Vec<f64> = sig.current.iter().rev().copied().collect();
-                        ("current".to_string(), sig.current.clone(), rev)
-                    };
+                let (name_a, series_a, series_b) = if let Some((ref_name, ref_data)) = &app.reference_series {
+                    (ref_name.clone(), ref_data.clone(), sig.current.clone())
+                } else {
+                    // fallback demo: signal vs its reverse (shows asymmetry/structure differences)
+                    let rev: Vec<f64> = sig.current.iter().rev().copied().collect();
+                    ("current".to_string(), sig.current.clone(), rev)
+                };
                 let res = symworx_dynamics::crqa(
                     &series_a,
                     &series_b,
@@ -627,7 +602,10 @@ pub fn handle_dynamics_keys(app: &mut App, code: KeyCode) -> bool {
             // Pin current as reference series for subsequent cRQA
             if let Some(sig) = &app.loaded_signal {
                 app.reference_series = Some((sig.name.clone(), sig.current.clone()));
-                app.status = format!("Pinned '{}' as cRQA reference. Press x to cross with current (or after processing).", sig.name);
+                app.status = format!(
+                    "Pinned '{}' as cRQA reference. Press x to cross with current (or after processing).",
+                    sig.name
+                );
             } else {
                 app.status = "No signal to pin.".to_string();
             }
@@ -684,11 +662,7 @@ pub fn export_rqa_csv(
     };
     let mut f = File::create(path)?;
     writeln!(f, "m,tau,radius,theiler")?;
-    writeln!(
-        f,
-        "{},{},{},{}",
-        params.m, params.tau, params.radius, params.theiler
-    )?;
+    writeln!(f, "{},{},{},{}", params.m, params.tau, params.radius, params.theiler)?;
     writeln!(
         f,
         "recurrence_rate,determinism,laminarity,lmax,lmean,lentr,trapping_time,vmax,n_recurrences"

@@ -19,18 +19,7 @@ use symworx_stats::{
 fn main() {
     println!("=== symworx-stats: ROC / AUC (simple) ===\n");
 
-    let x = array![
-        [0.0],
-        [0.1],
-        [0.2],
-        [0.3],
-        [0.4],
-        [0.55],
-        [0.65],
-        [0.75],
-        [0.85],
-        [1.0],
-    ];
+    let x = array![[0.0], [0.1], [0.2], [0.3], [0.4], [0.55], [0.65], [0.75], [0.85], [1.0],];
     let y_f = array![0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0];
     let y: Vec<usize> = y_f.iter().map(|&v| v as usize).collect();
 

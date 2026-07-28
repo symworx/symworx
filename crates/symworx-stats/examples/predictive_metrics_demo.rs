@@ -66,9 +66,7 @@ fn main() {
     let yhat_slice: Vec<f64> = y_hat.to_vec();
     let rep = regression_report(&y_slice, &yhat_slice);
     println!("   {rep}");
-    println!(
-        "   (R² close to 1 and small RMSE ⇒ good fit; bias shows systematic under/over-prediction)"
-    );
+    println!("   (R² close to 1 and small RMSE ⇒ good fit; bias shows systematic under/over-prediction)");
 
     // Baseline: always predict the mean of y
     let y_mean = y_slice.iter().sum::<f64>() / y_slice.len() as f64;
@@ -83,14 +81,7 @@ fn main() {
 
     // --- k-means ---
     println!("\n4) k-means on two Gaussian-like blobs");
-    let data = array![
-        [0.0, 0.1],
-        [0.2, -0.1],
-        [0.1, 0.0],
-        [5.0, 5.1],
-        [5.2, 4.9],
-        [4.9, 5.0],
-    ];
+    let data = array![[0.0, 0.1], [0.2, -0.1], [0.1, 0.0], [5.0, 5.1], [5.2, 4.9], [4.9, 5.0],];
     let km = kmeans(
         &data,
         &KMeansConfig {

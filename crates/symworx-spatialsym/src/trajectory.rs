@@ -179,12 +179,7 @@ impl SpatialFrame {
 
     /// Directional free space proxy: average distance to agents roughly in `direction`.
     /// angle_tolerance in radians (e.g. 1.0 ~ 57 degrees).
-    pub fn free_space_in_direction(
-        &self,
-        agent_idx: usize,
-        direction: Vec2,
-        angle_tolerance: f64,
-    ) -> Option<f64> {
+    pub fn free_space_in_direction(&self, agent_idx: usize, direction: Vec2, angle_tolerance: f64) -> Option<f64> {
         if agent_idx >= self.num_agents() || direction.norm() < 1e-9 {
             return None;
         }
@@ -226,20 +221,13 @@ impl SpatialFrame {
     /// - Threshold is somewhat arbitrary; may need per-sport or per-metadata tuning.
     /// - Without last-touch events, it's always a heuristic (velocity is proxy).
     /// - If called outside full batch context, you lose post-hoc consistency.
-    pub fn infer_ball_carrier(
-        &self,
-        focal: Point2,
-        vel_toward_focal: Option<&[f64]>,
-    ) -> Option<usize> {
+    pub fn infer_ball_carrier(&self, focal: Point2, vel_toward_focal: Option<&[f64]>) -> Option<usize> {
         let mut best = None;
         let mut best_score = f64::NEG_INFINITY;
 
         for (i, &p) in self.agent_positions.iter().enumerate() {
             let d = p.distance(focal);
-            let vel = vel_toward_focal
-                .and_then(|v| v.get(i))
-                .copied()
-                .unwrap_or(0.0);
+            let vel = vel_toward_focal.and_then(|v| v.get(i)).copied().unwrap_or(0.0);
             let vel_score = vel.max(0.0);
             let score = 1.0 / (d + 0.1) + 0.5 * vel_score;
 
@@ -266,11 +254,7 @@ impl SpatialFrame {
 
 impl SpatialContext {
     /// Build SpatialContext from SpatialFrame + speeds (integrates kinematics + geometry).
-    pub fn from_frame_and_speeds(
-        frame: &SpatialFrame,
-        speeds: Vec<f64>,
-        focal: Option<Point2>,
-    ) -> Self {
+    pub fn from_frame_and_speeds(frame: &SpatialFrame, speeds: Vec<f64>, focal: Option<Point2>) -> Self {
         let on_ball_idx = if let Some(f) = focal {
             frame.infer_ball_carrier(f, None)
         } else {
@@ -528,11 +512,7 @@ impl AgentTrajectories {
             ));
         }
         let new_times = self.times[range.clone()].to_vec();
-        let new_positions: Vec<Vec<Point2>> = self
-            .positions
-            .iter()
-            .map(|p| p[range.clone()].to_vec())
-            .collect();
+        let new_positions: Vec<Vec<Point2>> = self.positions.iter().map(|p| p[range.clone()].to_vec()).collect();
 
         let new_groups = self.groups.clone();
 
@@ -587,10 +567,7 @@ impl AgentTrajectories {
 
     /// Async version of classification (default params).
     #[cfg(feature = "async")]
-    pub async fn classify_async(
-        &self,
-        window_sec: f64,
-    ) -> Vec<Vec<crate::decision::AgentDecision>> {
+    pub async fn classify_async(&self, window_sec: f64) -> Vec<Vec<crate::decision::AgentDecision>> {
         self.classify_with_params_async(window_sec, 12.0, 1.0)
     }
 
@@ -638,11 +615,7 @@ impl AgentTrajectories {
             .iter()
             .map(|p| {
                 let sp = crate::kinematics::derive_speeds(p, &self.times);
-                crate::kinematics::count_accelerations_decelerations(
-                    &sp,
-                    &self.times,
-                    accel_threshold,
-                )
+                crate::kinematics::count_accelerations_decelerations(&sp, &self.times, accel_threshold)
             })
             .collect()
     }
@@ -720,13 +693,8 @@ impl AgentTrajectories {
             .map(|i| {
                 let speeds = &speeds_all[i];
                 let (ac, dc) = counts[i];
-                let metrics = symworx_loadsym::compute_movement_load_metrics(
-                    speeds,
-                    &self.times,
-                    ac,
-                    dc,
-                    action_weight,
-                );
+                let metrics =
+                    symworx_loadsym::compute_movement_load_metrics(speeds, &self.times, ac, dc, action_weight);
 
                 let group = self.groups.as_ref().and_then(|g| g.get(i).copied());
 
@@ -796,13 +764,7 @@ impl AgentTrajectories {
                 let group_indices: Vec<usize> = player_sums
                     .iter()
                     .enumerate()
-                    .filter_map(|(idx, ps)| {
-                        if ps.group == Some(group) {
-                            Some(idx)
-                        } else {
-                            None
-                        }
-                    })
+                    .filter_map(|(idx, ps)| if ps.group == Some(group) { Some(idx) } else { None })
                     .collect();
 
                 for t in 0..self.num_times() {

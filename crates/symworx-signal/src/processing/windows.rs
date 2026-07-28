@@ -26,15 +26,8 @@ use crate::processing::interpolation::interp_linear;
 /// application of feature functions and later spectral work.
 ///
 /// The implementation uses linear interpolation on the provided (time, value) pairs.
-pub fn resample_rr_to_tachogram(
-    event_times_sec: &[f64],
-    interval_values_sec: &[f64],
-    target_fs: f64,
-) -> Vec<f64> {
-    if event_times_sec.len() < 2
-        || event_times_sec.len() != interval_values_sec.len()
-        || target_fs <= 0.0
-    {
+pub fn resample_rr_to_tachogram(event_times_sec: &[f64], interval_values_sec: &[f64], target_fs: f64) -> Vec<f64> {
+    if event_times_sec.len() < 2 || event_times_sec.len() != interval_values_sec.len() || target_fs <= 0.0 {
         return vec![];
     }
 

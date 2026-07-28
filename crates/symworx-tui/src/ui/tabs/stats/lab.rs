@@ -73,10 +73,7 @@ pub fn render_lab(frame: &mut Frame, app: &App, area: Rect) {
             app.stats_pipeline_model.label(),
             app.stats_pipeline_k
         ),
-        StatsLabTask::Poly => format!(
-            "poly max d={}  ·  d/D  ·  ↑↓/f degree focus",
-            app.stats_poly_max_degree
-        ),
+        StatsLabTask::Poly => format!("poly max d={}  ·  d/D  ·  ↑↓/f degree focus", app.stats_poly_max_degree),
         StatsLabTask::Classify => "logistic binary / OVR  ·  bal_acc + F1".into(),
         StatsLabTask::Regress => "single-X OLS  ·  fit + residuals".into(),
         StatsLabTask::Correlate => "Pearson r  ·  scatter".into(),
@@ -102,9 +99,7 @@ pub fn render_lab(frame: &mut Frame, app: &App, area: Rect) {
     // —— Analysis strip: equal-width cells, first row of the Lab panel ——
     let n_tasks = tasks.len().max(1);
     let tab_constraints: Vec<Constraint> = (0..n_tasks).map(|_| Constraint::Fill(1)).collect();
-    let tab_cells = Layout::horizontal(tab_constraints)
-        .spacing(1)
-        .split(hdr_rows[0]);
+    let tab_cells = Layout::horizontal(tab_constraints).spacing(1).split(hdr_rows[0]);
 
     let sel = app.stats_lab_task.min(tasks.len() - 1);
     for (i, t) in tasks.iter().enumerate() {
@@ -134,9 +129,7 @@ pub fn render_lab(frame: &mut Frame, app: &App, area: Rect) {
     let under = Paragraph::new(Line::from(vec![
         Span::styled(
             " Lab ",
-            Style::default()
-                .fg(Color::Magenta)
-                .add_modifier(Modifier::BOLD),
+            Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD),
         ),
         Span::styled(
             " ·  statistical analyses  ·  1–6 or t to switch ",
@@ -192,16 +185,13 @@ pub fn render_lab(frame: &mut Frame, app: &App, area: Rect) {
     // Body: pipeline = table | plots; else = stacked fit + residual
     if let Some(ref r) = app.stats_lab_result {
         if !r.metrics_rows.is_empty() {
-            let body = Layout::horizontal([Constraint::Percentage(34), Constraint::Percentage(66)])
-                .split(outer[2]);
+            let body = Layout::horizontal([Constraint::Percentage(34), Constraint::Percentage(66)]).split(outer[2]);
             render_split_metrics_table(frame, body[0], r);
-            let plots = Layout::vertical([Constraint::Percentage(55), Constraint::Percentage(45)])
-                .split(body[1]);
+            let plots = Layout::vertical([Constraint::Percentage(55), Constraint::Percentage(45)]).split(body[1]);
             render_fit_panel(frame, plots[0], r);
             render_residual_panel(frame, plots[1], r, app.stats_residual_mode);
         } else {
-            let plots = Layout::vertical([Constraint::Percentage(55), Constraint::Percentage(45)])
-                .split(outer[2]);
+            let plots = Layout::vertical([Constraint::Percentage(55), Constraint::Percentage(45)]).split(outer[2]);
             render_fit_panel(frame, plots[0], r);
             render_residual_panel(frame, plots[1], r, app.stats_residual_mode);
         }
@@ -218,10 +208,8 @@ pub fn render_lab(frame: &mut Frame, app: &App, area: Rect) {
     }
 
     frame.render_widget(
-        Paragraph::new(
-            "1–6 task  x/y  Enter  h res  d poly  m model  k folds  ↑↓/f split  Esc Import",
-        )
-        .style(Style::default().fg(Color::DarkGray)),
+        Paragraph::new("1–6 task  x/y  Enter  h res  d poly  m model  k folds  ↑↓/f split  Esc Import")
+            .style(Style::default().fg(Color::DarkGray)),
         outer[3],
     );
 }
@@ -234,8 +222,7 @@ pub fn render_split_metrics_table(frame: &mut Frame, area: Rect, r: &StatsLabRes
         .first()
         .map(|row| row.metric_kind == SplitMetricKind::Classification)
         .unwrap_or(false);
-    let is_poly =
-        r.task == StatsLabTask::Poly || r.metrics_table_title.eq_ignore_ascii_case("degrees");
+    let is_poly = r.task == StatsLabTask::Poly || r.metrics_table_title.eq_ignore_ascii_case("degrees");
     let (h1, h2, h3) = if is_clf {
         ("Acc", "balAcc", "mF1")
     } else if is_poly {
@@ -277,9 +264,7 @@ pub fn render_split_metrics_table(frame: &mut Frame, area: Rect, r: &StatsLabRes
         )),
         Line::from(Span::styled(
             format!("  {col0:<8}  n  {h1:>6} {h2:>7} {h3:>6}"),
-            Style::default()
-                .fg(Color::DarkGray)
-                .add_modifier(Modifier::BOLD),
+            Style::default().fg(Color::DarkGray).add_modifier(Modifier::BOLD),
         )),
     ];
     for (i, row) in r.metrics_rows.iter().enumerate() {
@@ -290,9 +275,7 @@ pub fn render_split_metrics_table(frame: &mut Frame, area: Rect, r: &StatsLabRes
                 .bg(Color::Magenta)
                 .add_modifier(Modifier::BOLD)
         } else if row.is_best {
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD)
+            Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
         } else {
             Style::default()
         };

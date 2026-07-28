@@ -31,8 +31,7 @@ pub fn run_describe(table: &TableData, col: usize) -> Result<StatsLabResult, Str
         "Describe · {name}\n  n={}  mean={m:.4}  median={med:.4}\n  sd={s:.4}  min={mn:.4}  max={mx:.4}",
         c.len()
     );
-    let interpretation =
-        format!("Column “{name}”: centre ≈ {m:.3} (median {med:.3}); spread sd ≈ {s:.3}.");
+    let interpretation = format!("Column “{name}”: centre ≈ {m:.3} (median {med:.3}); spread sd ≈ {s:.3}.");
     let scatter_x: Vec<f64> = (0..c.len()).map(|i| i as f64).collect();
     let mut r = empty_result(StatsLabTask::Describe);
     r.summary = summary;
@@ -44,11 +43,7 @@ pub fn run_describe(table: &TableData, col: usize) -> Result<StatsLabResult, Str
     Ok(r)
 }
 
-pub fn run_correlate(
-    table: &TableData,
-    x_col: usize,
-    y_col: usize,
-) -> Result<StatsLabResult, String> {
+pub fn run_correlate(table: &TableData, x_col: usize, y_col: usize) -> Result<StatsLabResult, String> {
     if x_col == y_col {
         return Err("Pick two different columns for correlation".into());
     }

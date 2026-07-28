@@ -68,8 +68,7 @@ pub fn resp_peak_finder<'a>(
 
 /// Detect breathing-cycle peaks (no bandpass).
 pub fn detect_respiration_peaks(ts: &RespTimeSeries) -> IntervalSeries {
-    detect_respiration_peaks_with(ts, &PhysiologyProcessingParams::none())
-        .expect("default detection has no bandpass")
+    detect_respiration_peaks_with(ts, &PhysiologyProcessingParams::none()).expect("default detection has no bandpass")
 }
 
 /// Detect peaks with optional bandpass and peak overrides.
@@ -78,10 +77,7 @@ pub fn detect_respiration_peaks_with(
     processing: &PhysiologyProcessingParams,
 ) -> Result<IntervalSeries, &'static str> {
     let signal = preprocess_signal(resp_signal(ts), processing)?;
-    Ok(detect_intervals(
-        &signal,
-        resp_peak_finder(&signal, processing),
-    ))
+    Ok(detect_intervals(&signal, resp_peak_finder(&signal, processing)))
 }
 
 /// Summarize a respiration recording (raw flow).
@@ -100,10 +96,8 @@ fn build_resp_analysis(signal: &PhysiologySignal, intervals: IntervalSeries) -> 
 
     let (insp_intervals_sec, exp_intervals_sec) = intervals.alternating_phase_intervals();
     let phase_peaks = phase_peak_indices(&signal.samples);
-    let insp_peak_intervals_sec =
-        phase_peak_intervals_sec(&phase_peaks.inhalation_peak_indices, signal.fs);
-    let exp_peak_intervals_sec =
-        phase_peak_intervals_sec(&phase_peaks.exhalation_peak_indices, signal.fs);
+    let insp_peak_intervals_sec = phase_peak_intervals_sec(&phase_peaks.inhalation_peak_indices, signal.fs);
+    let exp_peak_intervals_sec = phase_peak_intervals_sec(&phase_peaks.exhalation_peak_indices, signal.fs);
 
     RespAnalysis {
         summary,
@@ -119,8 +113,7 @@ fn build_resp_analysis(signal: &PhysiologySignal, intervals: IntervalSeries) -> 
 
 /// Full analysis without bandpass (backward compatible).
 pub fn analyze_respiration(ts: &RespTimeSeries) -> RespAnalysis {
-    analyze_respiration_with(ts, &PhysiologyProcessingParams::none())
-        .expect("default analysis has no bandpass")
+    analyze_respiration_with(ts, &PhysiologyProcessingParams::none()).expect("default analysis has no bandpass")
 }
 
 /// Full analysis with explicit processing parameters.
@@ -134,10 +127,7 @@ pub fn analyze_respiration_with(
 }
 
 /// Analysis using quality-preset bandpass and peak settings.
-pub fn analyze_respiration_with_quality(
-    ts: &RespTimeSeries,
-    quality: RespSignalQuality,
-) -> RespAnalysis {
+pub fn analyze_respiration_with_quality(ts: &RespTimeSeries, quality: RespSignalQuality) -> RespAnalysis {
     analyze_respiration_with(ts, &resp_processing_for_quality(quality))
         .expect("quality presets use valid bandpass cutoffs")
 }
@@ -247,10 +237,7 @@ mod tests {
         let ts = generate_respiration_timeseries(&params);
         let analysis = analyze_respiration(&ts);
         assert!(!analysis.phase_peaks.inhalation_peak_indices.is_empty());
-        assert!(
-            !analysis.insp_peak_intervals_sec.is_empty()
-                || analysis.phase_peaks.inhalation_peak_indices.len() < 2
-        );
+        assert!(!analysis.insp_peak_intervals_sec.is_empty() || analysis.phase_peaks.inhalation_peak_indices.len() < 2);
     }
 
     #[test]

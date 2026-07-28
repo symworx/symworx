@@ -9,20 +9,14 @@ pub fn calendar_status(app: &App) -> String {
     if app.daily_loads.is_empty() {
         return "Calendar empty — r: reload catalog  g: demo".to_string();
     }
-    let idx = app
-        .loadsym_scroll
-        .min(app.daily_loads.len().saturating_sub(1));
+    let idx = app.loadsym_scroll.min(app.daily_loads.len().saturating_sub(1));
     let date = app
         .daily_load_dates
         .get(idx)
         .cloned()
         .unwrap_or_else(|| format!("day {}", idx));
     let tss = app.daily_loads.get(idx).copied().unwrap_or(0.0);
-    let src = if app.loadsym_from_catalog {
-        "catalog"
-    } else {
-        "demo"
-    };
+    let src = if app.loadsym_from_catalog { "catalog" } else { "demo" };
     let day_rides = crate::processing::rides_for_focus_day(app);
     let n_files = day_rides.len();
     let ride_i = if n_files == 0 {
@@ -40,11 +34,7 @@ pub fn calendar_status(app: &App) -> String {
         n_files,
         idx + 1,
         app.daily_loads.len(),
-        if app.weekly_loads.is_empty() {
-            0
-        } else {
-            widx + 1
-        },
+        if app.weekly_loads.is_empty() { 0 } else { widx + 1 },
         app.weekly_loads.len()
     )
 }
@@ -72,8 +62,7 @@ pub fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
             }
             KeyCode::Char('1') => {
                 app.loadsym_view = crate::app::LoadSymView::Workout;
-                app.status =
-                    "Workout: o open file  i newest  1–5 streams  ←→ pan  Esc list".to_string();
+                app.status = "Workout: o open file  i newest  1–5 streams  ←→ pan  Esc list".to_string();
                 return false;
             }
             KeyCode::Char('2') => {
@@ -96,8 +85,7 @@ pub fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                 match app.loadsym_selection {
                     0 => {
                         app.loadsym_view = crate::app::LoadSymView::Workout;
-                        app.status =
-                            "Workout: o open file  i newest  1–5 streams  Esc list".to_string();
+                        app.status = "Workout: o open file  i newest  1–5 streams  Esc list".to_string();
                     }
                     1 => enter_loadsym_metrics(app),
                     2 => {
@@ -115,8 +103,7 @@ pub fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
             KeyCode::Char('g') | KeyCode::Char('G') => {
                 crate::processing::apply_demo_daily_loads(app, 14);
                 app.loadsym_goal_user_override = false;
-                app.status =
-                    "LoadSym: synthetic demo daily loads (r: reload real catalog)".to_string();
+                app.status = "LoadSym: synthetic demo daily loads (r: reload real catalog)".to_string();
                 return false;
             }
             KeyCode::Char('r') | KeyCode::Char('R') => {
@@ -126,9 +113,7 @@ pub fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                         app.status = calendar_status(app);
                     }
                     Ok(false) => {
-                        app.status =
-                            "No catalog at $VELOFIT_HOME/db — run: symload db init && ingest"
-                                .to_string();
+                        app.status = "No catalog at $VELOFIT_HOME/db — run: symload db init && ingest".to_string();
                     }
                     Err(e) => {
                         app.status = format!("Catalog load error: {}", e);
@@ -153,15 +138,11 @@ pub fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                         app.workout_user_thresh = 0.0;
                         app.workout_user_min_dur = 3;
                         app.loadsym_view = crate::app::LoadSymView::Workout;
-                        app.status = format!(
-                            "Loaded {} ({} samples). Roots: $VELOFIT_HOME + ./data",
-                            src, n
-                        );
+                        app.status = format!("Loaded {} ({} samples). Roots: $VELOFIT_HOME + ./data", src, n);
                     }
                 } else {
                     app.status =
-                        "No .fit/.csv in $VELOFIT_HOME/raw|inbox or ./data/. Drop a file and press i or o."
-                            .to_string();
+                        "No .fit/.csv in $VELOFIT_HOME/raw|inbox or ./data/. Drop a file and press i or o.".to_string();
                 }
                 return false;
             }
@@ -222,10 +203,7 @@ pub fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                         )
                     };
                 }
-                KeyCode::Char('i')
-                | KeyCode::Char('I')
-                | KeyCode::Char('a')
-                | KeyCode::Char('A') => {
+                KeyCode::Char('i') | KeyCode::Char('I') | KeyCode::Char('a') | KeyCode::Char('A') => {
                     // Newest .fit under ~/velofit (raw/inbox) and project data dirs
                     if let Some(act) = crate::processing::find_newest_loadsym_activity(app) {
                         let path = std::path::PathBuf::from(&act.source);
@@ -245,7 +223,9 @@ pub fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                             );
                         }
                     } else {
-                        app.status = "No .fit/.csv in ~/velofit/raw|inbox or ./data. Press o to browse, or import via symload.".to_string();
+                        app.status =
+                            "No .fit/.csv in ~/velofit/raw|inbox or ./data. Press o to browse, or import via symload."
+                                .to_string();
                     }
                 }
                 KeyCode::Char('r') | KeyCode::Char('R') => {
@@ -255,8 +235,7 @@ pub fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                     app.workout_stream_on = [true, true, true, false, false];
                     app.workout_user_thresh = 0.0;
                     app.workout_user_min_dur = 3;
-                    app.status =
-                        "Cleared activity. Press o/i to load a file (no demo series).".to_string();
+                    app.status = "Cleared activity. Press o/i to load a file (no demo series).".to_string();
                 }
                 KeyCode::Char('1') => {
                     app.status = crate::processing::toggle_workout_panel(app, 0);
@@ -274,23 +253,16 @@ pub fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                     app.status = crate::processing::toggle_workout_panel(app, 4);
                 }
                 KeyCode::Char('e') | KeyCode::Char('E') => {
-                    app.status =
-                        "Exported workout (CSV to data/ would be written here).".to_string();
+                    app.status = "Exported workout (CSV to data/ would be written here).".to_string();
                 }
                 // True exploration: user-defined threshold + min duration (samples for regions)
                 KeyCode::Char('t') => {
                     app.workout_user_thresh = (app.workout_user_thresh + 5.0).max(0.0);
-                    app.status = format!(
-                        "User thresh set to {:.1} (auto when 0)",
-                        app.workout_user_thresh
-                    );
+                    app.status = format!("User thresh set to {:.1} (auto when 0)", app.workout_user_thresh);
                 }
                 KeyCode::Char('T') => {
                     app.workout_user_thresh = (app.workout_user_thresh - 5.0).max(0.0);
-                    app.status = format!(
-                        "User thresh set to {:.1} (auto when 0)",
-                        app.workout_user_thresh
-                    );
+                    app.status = format!("User thresh set to {:.1} (auto when 0)", app.workout_user_thresh);
                 }
                 KeyCode::Char('d') => {
                     app.workout_user_min_dur = app.workout_user_min_dur.saturating_add(1);
@@ -329,8 +301,7 @@ pub fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
             match code {
                 // Daily list (newest first on screen: ↓ = older, ↑ = newer)
                 KeyCode::Up | KeyCode::Char('k') => {
-                    app.loadsym_scroll =
-                        (app.loadsym_scroll + 1).min(app.daily_loads.len().saturating_sub(1));
+                    app.loadsym_scroll = (app.loadsym_scroll + 1).min(app.daily_loads.len().saturating_sub(1));
                     app.calendar_ride_sel = 0;
                     crate::processing::sync_week_scroll_from_daily(app);
                     crate::processing::clamp_calendar_ride_sel(app);
@@ -357,8 +328,8 @@ pub fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                 }
                 KeyCode::Right | KeyCode::Char('l') => {
                     if !app.weekly_loads.is_empty() {
-                        app.loadsym_week_scroll = (app.loadsym_week_scroll + 1)
-                            .min(app.weekly_loads.len().saturating_sub(1));
+                        app.loadsym_week_scroll =
+                            (app.loadsym_week_scroll + 1).min(app.weekly_loads.len().saturating_sub(1));
                     }
                     if let Some(w) = app.weekly_loads.get(app.loadsym_week_scroll) {
                         app.loadsym_scroll = w.day_index_hi;
@@ -406,8 +377,7 @@ pub fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                     crate::processing::sync_week_scroll_from_daily(app);
                 }
                 KeyCode::PageDown => {
-                    app.loadsym_scroll =
-                        (app.loadsym_scroll + 10).min(app.daily_loads.len().saturating_sub(1));
+                    app.loadsym_scroll = (app.loadsym_scroll + 10).min(app.daily_loads.len().saturating_sub(1));
                     app.calendar_ride_sel = 0;
                     crate::processing::sync_week_scroll_from_daily(app);
                 }
@@ -418,9 +388,7 @@ pub fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                             app.calendar_ride_sel = 0;
                             app.status = calendar_status(app);
                         }
-                        Ok(false) => {
-                            app.status = "No catalog DB found — run symload ingest first".into()
-                        }
+                        Ok(false) => app.status = "No catalog DB found — run symload ingest first".into(),
                         Err(e) => app.status = format!("Catalog error: {}", e),
                     }
                     return false;
@@ -457,8 +425,8 @@ pub fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
             KeyCode::Up | KeyCode::Char('k') => {
                 // Newest-first UI: ↑ = newer (higher storage index)
                 if !app.catalog_activity_metrics.is_empty() {
-                    app.metrics_scroll = (app.metrics_scroll + 1)
-                        .min(app.catalog_activity_metrics.len().saturating_sub(1));
+                    app.metrics_scroll =
+                        (app.metrics_scroll + 1).min(app.catalog_activity_metrics.len().saturating_sub(1));
                 }
                 app.status = metrics_status(app);
             }
@@ -477,8 +445,8 @@ pub fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                 app.status = metrics_status(app);
             }
             KeyCode::PageUp => {
-                app.metrics_scroll = (app.metrics_scroll + 10)
-                    .min(app.catalog_activity_metrics.len().saturating_sub(1));
+                app.metrics_scroll =
+                    (app.metrics_scroll + 10).min(app.catalog_activity_metrics.len().saturating_sub(1));
                 app.status = metrics_status(app);
             }
             KeyCode::PageDown => {
@@ -488,13 +456,11 @@ pub fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
             KeyCode::Enter | KeyCode::Char('o') | KeyCode::Char('O') => {
                 let _ = crate::processing::open_metrics_row_into_workout(app);
             }
-            KeyCode::Char('r') | KeyCode::Char('R') => {
-                match crate::processing::try_load_loadsym_catalog(app) {
-                    Ok(true) => app.status = metrics_status(app),
-                    Ok(false) => app.status = "No catalog — run symload db init && ingest".into(),
-                    Err(e) => app.status = format!("Catalog error: {e}"),
-                }
-            }
+            KeyCode::Char('r') | KeyCode::Char('R') => match crate::processing::try_load_loadsym_catalog(app) {
+                Ok(true) => app.status = metrics_status(app),
+                Ok(false) => app.status = "No catalog — run symload db init && ingest".into(),
+                Err(e) => app.status = format!("Catalog error: {e}"),
+            },
             // v: toggle trend ↔ bi-plot
             KeyCode::Char('v') | KeyCode::Char('V') => {
                 use crate::app::MetricsChartMode;
@@ -606,8 +572,7 @@ pub fn handle_loadsym_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                         app.status = format!("Catalog reloaded. {}", opt_status(app));
                     }
                     Ok(false) => {
-                        app.status =
-                            "No catalog — run symload db init && ingest, or g for demo".to_string();
+                        app.status = "No catalog — run symload db init && ingest, or g for demo".to_string();
                     }
                     Err(e) => app.status = format!("Catalog error: {}", e),
                 }
@@ -634,8 +599,7 @@ pub fn handle_workout_open_modal(app: &mut App, code: KeyCode) -> bool {
         }
         KeyCode::Down | KeyCode::Char('j') | KeyCode::Char('J') => {
             if !app.workout_file_list.is_empty() {
-                app.workout_file_sel =
-                    (app.workout_file_sel + 1).min(app.workout_file_list.len().saturating_sub(1));
+                app.workout_file_sel = (app.workout_file_sel + 1).min(app.workout_file_list.len().saturating_sub(1));
             }
         }
         KeyCode::Home => {
@@ -649,8 +613,7 @@ pub fn handle_workout_open_modal(app: &mut App, code: KeyCode) -> bool {
         }
         KeyCode::PageDown => {
             if !app.workout_file_list.is_empty() {
-                app.workout_file_sel =
-                    (app.workout_file_sel + 10).min(app.workout_file_list.len().saturating_sub(1));
+                app.workout_file_sel = (app.workout_file_sel + 10).min(app.workout_file_list.len().saturating_sub(1));
             }
         }
         KeyCode::Enter => {
@@ -669,9 +632,7 @@ pub fn enter_loadsym_optimization(app: &mut App) {
     }
     if app.daily_loads.is_empty() {
         app.loadsym_goal_suggest_note.clear();
-        app.status =
-            "Optimization — no loads. r catalog / g demo · set H with −/+ · Enter recompute"
-                .to_string();
+        app.status = "Optimization — no loads. r catalog / g demo · set H with −/+ · Enter recompute".to_string();
     } else {
         // Fresh enter: re-suggest goal from form/fatigue/ACLi (user can override with 1/2/3).
         crate::processing::apply_suggested_load_goal(app, true);
@@ -686,9 +647,7 @@ pub fn enter_loadsym_metrics(app: &mut App) {
         let _ = crate::processing::try_load_loadsym_catalog(app);
     }
     if app.catalog_activity_metrics.is_empty() {
-        app.status =
-            "Metrics — empty. r catalog after symload ingest · Enter opens ride in Workout"
-                .to_string();
+        app.status = "Metrics — empty. r catalog after symload ingest · Enter opens ride in Workout".to_string();
     } else {
         app.metrics_scroll = app.catalog_activity_metrics.len().saturating_sub(1);
         app.status = metrics_status(app);
@@ -707,9 +666,7 @@ pub fn apply_loadsym_strip_view(app: &mut App, view: crate::app::LoadSymView) {
     match view {
         LoadSymView::Workout => {
             app.loadsym_view = LoadSymView::Workout;
-            app.status =
-                "Workout: o open file  i newest  1–5 streams  ←→ pan  Esc list  ·  Ctrl+←→ views"
-                    .to_string();
+            app.status = "Workout: o open file  i newest  1–5 streams  ←→ pan  Esc list  ·  Ctrl+←→ views".to_string();
         }
         LoadSymView::Metrics => enter_loadsym_metrics(app),
         LoadSymView::Calendar => {
@@ -748,9 +705,7 @@ pub fn metrics_status(app: &App) -> String {
         n,
         r.ride_date,
         name,
-        r.tss
-            .map(|v| format!("{:.0}", v))
-            .unwrap_or_else(|| "-".into()),
+        r.tss.map(|v| format!("{:.0}", v)).unwrap_or_else(|| "-".into()),
         chart,
     )
 }

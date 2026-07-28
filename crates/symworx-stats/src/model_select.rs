@@ -98,8 +98,7 @@ pub fn bic_gaussian(rss: f64, n: usize, n_params: usize) -> f64 {
 /// (numerical noise can make this slightly negative — clamped to 0 when
 /// within a tiny relative tolerance).
 pub fn nested_lr_chi2(rss_null: f64, rss_alt: f64, n: usize) -> f64 {
-    if n == 0 || !rss_null.is_finite() || !rss_alt.is_finite() || rss_null <= 0.0 || rss_alt <= 0.0
-    {
+    if n == 0 || !rss_null.is_finite() || !rss_alt.is_finite() || rss_null <= 0.0 || rss_alt <= 0.0 {
         return f64::NAN;
     }
     let ratio = rss_null / rss_alt;

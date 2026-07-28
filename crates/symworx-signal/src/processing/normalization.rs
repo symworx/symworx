@@ -36,9 +36,7 @@ pub fn scale_to_percent(data: &[f64]) -> Vec<f64> {
         // all values are the same
         vec![0.0; data.len()]
     } else {
-        data.iter()
-            .map(|x| 100.0 * (x - min) / (max - min))
-            .collect()
+        data.iter().map(|x| 100.0 * (x - min) / (max - min)).collect()
     }
 }
 
@@ -93,8 +91,7 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0];
         let zscored = zscore(&data);
         let mean = zscored.iter().sum::<f64>() / zscored.len() as f64;
-        let std_dev =
-            (zscored.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / zscored.len() as f64).sqrt();
+        let std_dev = (zscored.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / zscored.len() as f64).sqrt();
 
         assert!((mean - 0.0).abs() < 1e-6);
         assert!((std_dev - 1.0).abs() < 1e-5);

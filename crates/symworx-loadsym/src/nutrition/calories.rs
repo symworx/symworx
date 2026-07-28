@@ -180,13 +180,7 @@ impl Default for BmrConfig {
 ///
 /// Returns `f64::NAN` for clearly invalid inputs (age outside adult range, unrealistic
 /// height/weight). Callers should handle NaN or pre-validate.
-pub fn calculate_bmr(
-    weight_kg: f64,
-    height_m: f64,
-    age_years: f64,
-    gender: Gender,
-    config: BmrConfig,
-) -> f64 {
+pub fn calculate_bmr(weight_kg: f64, height_m: f64, age_years: f64, gender: Gender, config: BmrConfig) -> f64 {
     // Basic validation (adult-oriented; formula not intended for children/elderly extremes)
     if weight_kg < 20.0 || height_m < 0.5 || !(18.0..=99.0).contains(&age_years) {
         return f64::NAN;
@@ -202,9 +196,7 @@ pub fn calculate_bmr(
     };
 
     // Apply obesity adjustment if configured and applicable
-    if let Some(adjusted_weight) =
-        get_adjusted_weight(weight_kg, height_m, bmi, config.obesity_adjustment)
-    {
+    if let Some(adjusted_weight) = get_adjusted_weight(weight_kg, height_m, bmi, config.obesity_adjustment) {
         bmr = match gender {
             Gender::Male => 10.0 * adjusted_weight + 6.25 * height_cm - 5.0 * age_years + 5.0,
             Gender::Female => 10.0 * adjusted_weight + 6.25 * height_cm - 5.0 * age_years - 161.0,
@@ -224,12 +216,7 @@ pub fn calculate_bmr(
 }
 
 /// Returns adjusted weight if applicable, otherwise None
-fn get_adjusted_weight(
-    weight_kg: f64,
-    height_m: f64,
-    bmi: f64,
-    adjustment: ObesityAdjustment,
-) -> Option<f64> {
+fn get_adjusted_weight(weight_kg: f64, height_m: f64, bmi: f64, adjustment: ObesityAdjustment) -> Option<f64> {
     match adjustment {
         ObesityAdjustment::AdjustedWeight { factor } if bmi > 30.0 => {
             let ideal_weight = 22.5 * height_m * height_m; // Healthy BMI midpoint
@@ -286,12 +273,7 @@ pub fn calculate_deficit_from_active(bmr: f64, tdee: f64, deficit_level: Deficit
 /// Returns `(target_intake_kcal, target_activity_kcal)`.
 ///
 /// The intake target is guaranteed to be at least `bmr`.
-pub fn calculate_calorie_targets(
-    tdee: f64,
-    bmr: f64,
-    deficit: f64,
-    strategy: DeficitStrategy,
-) -> (f64, f64) {
+pub fn calculate_calorie_targets(tdee: f64, bmr: f64, deficit: f64, strategy: DeficitStrategy) -> (f64, f64) {
     let (calorie_portion, activity_portion) = strategy.split();
 
     let deficit_from_calories = deficit * calorie_portion;
@@ -349,8 +331,7 @@ mod tests {
 
     #[test]
     fn test_calculate_calorie_targets() {
-        let (intake, activity) =
-            calculate_calorie_targets(2500.0, 1600.0, 500.0, DeficitStrategy::Balanced);
+        let (intake, activity) = calculate_calorie_targets(2500.0, 1600.0, 500.0, DeficitStrategy::Balanced);
         assert!((intake - 2250.0).abs() < 1.0);
         // target activity = active cals + portion of deficit
         assert!(activity > 1100.0 && activity < 1200.0);

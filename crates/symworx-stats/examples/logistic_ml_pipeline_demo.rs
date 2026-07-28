@@ -102,10 +102,7 @@ fn main() {
     let p_test = model.predict_proba(&x_test);
     let yhat = model.predict(&x_test, cfg.threshold);
     for i in 0..y_test.len().min(6) {
-        println!(
-            "     y={:.0}  p(y=1)={:.3}  ŷ={:.0}",
-            y_test[i], p_test[i], yhat[i]
-        );
+        println!("     y={:.0}  p(y=1)={:.3}  ŷ={:.0}", y_test[i], p_test[i], yhat[i]);
     }
 
     // ------------------------------------------------------------------
@@ -127,12 +124,8 @@ fn main() {
         println!("   fold {k}: val accuracy = {acc:.3}");
     }
     let mean_cv = fold_acc.iter().sum::<f64>() / fold_acc.len() as f64;
-    let var_cv =
-        fold_acc.iter().map(|a| (a - mean_cv).powi(2)).sum::<f64>() / fold_acc.len() as f64;
-    println!(
-        "   CV mean accuracy = {mean_cv:.3}  (std ≈ {:.3})",
-        var_cv.sqrt()
-    );
+    let var_cv = fold_acc.iter().map(|a| (a - mean_cv).powi(2)).sum::<f64>() / fold_acc.len() as f64;
+    println!("   CV mean accuracy = {mean_cv:.3}  (std ≈ {:.3})", var_cv.sqrt());
     println!("   final hold-out test accuracy = {test_acc:.3}  (single frozen test)");
 
     println!("\nDone.");

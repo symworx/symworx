@@ -51,10 +51,7 @@ pub fn render_generate(frame: &mut Frame, app: &App, area: Rect) {
             "n={}  seed={}  noise={:.2}  ·  ↑↓ preset  n/N size  s/S seed  +/− noise  Enter run",
             app.stats_gen_n, app.stats_gen_seed, app.stats_gen_noise
         )),
-        Line::from(Span::styled(
-            p.description(),
-            Style::default().fg(Color::Yellow),
-        )),
+        Line::from(Span::styled(p.description(), Style::default().fg(Color::Yellow))),
     ])
     .block(
         Block::new()
@@ -66,9 +63,7 @@ pub fn render_generate(frame: &mut Frame, app: &App, area: Rect) {
 
     let mut lines = vec![Line::from(Span::styled(
         "  PRESET",
-        Style::default()
-            .fg(Color::DarkGray)
-            .add_modifier(Modifier::BOLD),
+        Style::default().fg(Color::DarkGray).add_modifier(Modifier::BOLD),
     ))];
     for (i, pr) in presets.iter().enumerate() {
         let marker = if i == sel { "▶" } else { " " };

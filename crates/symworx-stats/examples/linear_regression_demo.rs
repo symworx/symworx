@@ -70,7 +70,5 @@ fn main() {
     }
 
     println!("\nDone.");
-    println!(
-        "  ML pipeline version: cargo run -p symworx-stats --example linear_ml_pipeline_demo --features linalg"
-    );
+    println!("  ML pipeline version: cargo run -p symworx-stats --example linear_ml_pipeline_demo --features linalg");
 }

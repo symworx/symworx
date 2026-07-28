@@ -29,13 +29,9 @@ pub struct PyGender {
 #[pymethods]
 impl PyGender {
     #[classattr]
-    pub const MALE: Self = Self {
-        inner: Gender::Male,
-    };
+    pub const MALE: Self = Self { inner: Gender::Male };
     #[classattr]
-    pub const FEMALE: Self = Self {
-        inner: Gender::Female,
-    };
+    pub const FEMALE: Self = Self { inner: Gender::Female };
     pub fn __repr__(&self) -> String {
         format!("Gender::{:?}", self.inner)
     }
@@ -141,17 +137,8 @@ impl PyDeficitStrategy {
 }
 
 #[pyfunction(name = "calculate_bmr")]
-pub fn py_calculate_bmr(
-    weight_kg: f64,
-    height_m: f64,
-    age_years: f64,
-    is_male: bool,
-) -> PyResult<f64> {
-    let gender = if is_male {
-        Gender::Male
-    } else {
-        Gender::Female
-    };
+pub fn py_calculate_bmr(weight_kg: f64, height_m: f64, age_years: f64, is_male: bool) -> PyResult<f64> {
+    let gender = if is_male { Gender::Male } else { Gender::Female };
     Ok(calculate_bmr(
         weight_kg,
         height_m,
@@ -208,12 +195,7 @@ pub fn py_calculate_deficit_from_active(bmr: f64, tdee: f64, deficit_level: &str
 }
 
 #[pyfunction(name = "calculate_calorie_targets")]
-pub fn py_calculate_calorie_targets(
-    tdee: f64,
-    bmr: f64,
-    deficit: f64,
-    strategy: &str,
-) -> PyResult<(f64, f64)> {
+pub fn py_calculate_calorie_targets(tdee: f64, bmr: f64, deficit: f64, strategy: &str) -> PyResult<(f64, f64)> {
     let strat = match strategy.to_lowercase().as_str() {
         "caloric_restriction" | "restriction" => DeficitStrategy::CaloricRestriction,
         "activity_increase" | "activity" => DeficitStrategy::ActivityIncrease,
@@ -260,11 +242,7 @@ pub fn py_calculate_weightloss(
         _ => DeficitStrategy::Balanced,
     };
 
-    let gender = if is_male {
-        Gender::Male
-    } else {
-        Gender::Female
-    };
+    let gender = if is_male { Gender::Male } else { Gender::Female };
     let model = calculate_weightloss(
         age_years,
         gender,

@@ -76,13 +76,7 @@ fn smooth01(u: f64) -> f64 {
 /// - expiration  [f_insp, 1): volume V_tidal → 0 (exponential-like empty)
 ///
 /// Guarantees V(0) = V(1) = 0 so tiling cycles cannot accumulate baseline.
-fn breath_volume_at_phase(
-    phase: f64,
-    f_insp: f64,
-    kappa_insp: f64,
-    tau_exp: f64,
-    tidal: f64,
-) -> f64 {
+fn breath_volume_at_phase(phase: f64, f_insp: f64, kappa_insp: f64, tau_exp: f64, tidal: f64) -> f64 {
     let phase = phase.rem_euclid(1.0);
     let f_insp = f_insp.clamp(0.15, 0.7);
     let tidal = tidal.max(0.0);

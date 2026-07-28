@@ -24,9 +24,7 @@ impl SampleRing {
     /// Create a ring with the given capacity (must be ≥ 1).
     pub fn new(capacity: usize) -> Result<Self> {
         if capacity == 0 {
-            return Err(EmbedError::InvalidParameter(
-                "ring capacity must be ≥ 1".into(),
-            ));
+            return Err(EmbedError::InvalidParameter("ring capacity must be ≥ 1".into()));
         }
         Ok(Self {
             cap: capacity,

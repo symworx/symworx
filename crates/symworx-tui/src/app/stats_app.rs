@@ -25,11 +25,9 @@ impl App {
             .enumerate()
             .find(|(_, h)| {
                 let lower = h.to_ascii_lowercase();
-                Y_KEYS.iter().any(|k| {
-                    lower == *k
-                        || lower.ends_with(&format!("_{k}"))
-                        || lower.starts_with(&format!("{k}_"))
-                })
+                Y_KEYS
+                    .iter()
+                    .any(|k| lower == *k || lower.ends_with(&format!("_{k}")) || lower.starts_with(&format!("{k}_")))
             })
             .map(|(i, _)| i)
             .unwrap_or(n - 1);
@@ -37,11 +35,7 @@ impl App {
         (x, y)
     }
     pub fn stats_col_name(table: &symworx_io::TableData, col: usize) -> String {
-        table
-            .headers
-            .get(col)
-            .cloned()
-            .unwrap_or_else(|| format!("col{col}"))
+        table.headers.get(col).cloned().unwrap_or_else(|| format!("col{col}"))
     }
     pub fn enter_stats_lab_with_table(
         &mut self,
@@ -68,8 +62,7 @@ impl App {
         self.stats_table = Some(table);
         self.stats_view = StatsView::Lab;
 
-        let task_label =
-            StatsLabTask::ALL[self.stats_lab_task.min(StatsLabTask::ALL.len() - 1)].label();
+        let task_label = StatsLabTask::ALL[self.stats_lab_task.min(StatsLabTask::ALL.len() - 1)].label();
         self.status = format!(
             "{} · {}×{} · X={} Y={} · {} · Enter to run",
             source_msg.into(),

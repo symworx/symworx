@@ -181,10 +181,7 @@ mod tests {
         for (a, b) in series.intervals_sec.iter().zip(expected.iter()) {
             assert!((a - b).abs() < 1e-9, "interval diff too large: {a} vs {b}");
         }
-        assert!(
-            (series.mean_instantaneous_rate() - (60.0 / 1.1 + 60.0 / 1.1 + 60.0 / 1.2) / 3.0).abs()
-                < 1e-9
-        );
+        assert!((series.mean_instantaneous_rate() - (60.0 / 1.1 + 60.0 / 1.1 + 60.0 / 1.2) / 3.0).abs() < 1e-9);
     }
 
     #[test]

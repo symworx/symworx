@@ -27,10 +27,7 @@ pub fn peaks_to_intervals(peaks: &[PhysiologyPeak], fs: f64) -> IntervalSeries {
 }
 
 /// Detect peaks on a physiology signal with a custom finder preset.
-pub fn detect_intervals(
-    signal: &PhysiologySignal,
-    finder: PeakFinderBuilder<'_>,
-) -> IntervalSeries {
+pub fn detect_intervals(signal: &PhysiologySignal, finder: PeakFinderBuilder<'_>) -> IntervalSeries {
     let peaks = detect_peaks(finder);
     peaks_to_intervals(&peaks, signal.fs)
 }

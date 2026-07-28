@@ -34,10 +34,7 @@ pub fn phase_peak_intervals_sec(indices: &[usize], fs: f64) -> Vec<f64> {
     if indices.len() < 2 || fs <= 0.0 {
         return vec![];
     }
-    indices
-        .windows(2)
-        .map(|w| (w[1] - w[0]) as f64 / fs)
-        .collect()
+    indices.windows(2).map(|w| (w[1] - w[0]) as f64 / fs).collect()
 }
 
 #[cfg(test)]

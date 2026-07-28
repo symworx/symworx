@@ -112,10 +112,7 @@ pub fn discover_activity_files(dirs: &[PathBuf], recursive: bool) -> Vec<Activit
 /// Convenience: newest activity path under default search dirs (non-recursive).
 pub fn find_newest_activity_path() -> Option<PathBuf> {
     let dirs = default_activity_search_dirs();
-    discover_activity_files(&dirs, false)
-        .into_iter()
-        .next()
-        .map(|e| e.path)
+    discover_activity_files(&dirs, false).into_iter().next().map(|e| e.path)
 }
 
 fn scan_one_dir(dir: &Path, out: &mut Vec<ActivityFileEntry>) {

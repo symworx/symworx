@@ -84,9 +84,7 @@ impl GaitData {
 
     /// Calculate cadence in steps per minute.
     pub fn calculate_cadence(&self) -> Option<f64> {
-        self.stride_intervals
-            .as_ref()
-            .and_then(metrics::compute_cadence)
+        self.stride_intervals.as_ref().and_then(metrics::compute_cadence)
     }
 
     /// Calculate step times (alternating left/right assumption).

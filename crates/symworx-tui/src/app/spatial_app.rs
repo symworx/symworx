@@ -21,11 +21,7 @@ use super::{
 impl App {
     pub fn seed_spatial_demo(&mut self) {
         use symworx_spatialsym::Point2;
-        let init = vec![
-            Point2::new(0., 0.),
-            Point2::new(1.2, 2.5),
-            Point2::new(0.7, -0.5),
-        ];
+        let init = vec![Point2::new(0., 0.), Point2::new(1.2, 2.5), Point2::new(0.7, -0.5)];
         let evs = vec![
             synthetic::SpatialEvent::StartRun {
                 agent: 1,
@@ -45,16 +41,11 @@ impl App {
                 start_time: 0.7,
             },
         ];
-        let (ev_t, ev_p, ev_f) =
-            synthetic::generate_event_driven(init, Point2::new(0.25, 0.), &evs, 1.4, 0.1);
+        let (ev_t, ev_p, ev_f) = synthetic::generate_event_driven(init, Point2::new(0.25, 0.), &evs, 1.4, 0.1);
         let groups = vec![0u32, 0, 1];
         let att = vec![Vec2::new(1., 0.), Vec2::new(1., 0.), Vec2::new(-1., 0.)];
         let dims = Some(PlayingDimensions::new(105.0, 68.0));
-        let goal_pos = vec![
-            Point2::new(52.5, 0.0),
-            Point2::new(52.5, 0.0),
-            Point2::new(-52.5, 0.0),
-        ];
+        let goal_pos = vec![Point2::new(52.5, 0.0), Point2::new(52.5, 0.0), Point2::new(-52.5, 0.0)];
         let (batch, focal) = symworx_spatialsym::build_agent_trajectories(
             ev_t.clone(),
             ev_p,
@@ -93,8 +84,8 @@ impl App {
             Point2,
         };
         let path_str = path.to_string_lossy().to_string();
-        let (times, trajs) = symworx_spatialsym::load_trajectories_csv(&path_str)
-            .map_err(|e| anyhow::anyhow!("spatial load: {}", e))?;
+        let (times, trajs) =
+            symworx_spatialsym::load_trajectories_csv(&path_str).map_err(|e| anyhow::anyhow!("spatial load: {}", e))?;
 
         if trajs.is_empty() {
             anyhow::bail!("no trajectories in spatial csv");
@@ -122,15 +113,10 @@ impl App {
         let ev_t = times.into_iter().take(n_steps).collect();
         let mut ev_f: Vec<Point2> = Vec::new();
         for t in 0..n_steps {
-            let fx = trimmed
-                .first()
-                .and_then(|v| v.get(t))
-                .map(|p| p.x)
-                .unwrap_or(0.0);
+            let fx = trimmed.first().and_then(|v| v.get(t)).map(|p| p.x).unwrap_or(0.0);
             ev_f.push(Point2::new(fx + 2.0, 1.0));
         }
-        let (batch, focal) =
-            build_agent_trajectories(ev_t, trimmed, groups, att, ev_f, dims, Some(goal_pos));
+        let (batch, focal) = build_agent_trajectories(ev_t, trimmed, groups, att, ev_f, dims, Some(goal_pos));
         self.spatial_batch = Some(batch);
         self.spatial_focal = Some(focal);
         self.spatial_frame_idx = 0;

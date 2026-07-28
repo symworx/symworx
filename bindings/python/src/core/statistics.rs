@@ -89,14 +89,11 @@ fn array2_from_rows(x: Vec<Vec<f64>>) -> PyResult<Array2<f64>> {
         return Err(PyValueError::new_err("X must have at least one feature"));
     }
     if x.iter().any(|row| row.len() != ncols) {
-        return Err(PyValueError::new_err(
-            "All rows of X must have the same length",
-        ));
+        return Err(PyValueError::new_err("All rows of X must have the same length"));
     }
     let nrows = x.len();
     let flat: Vec<f64> = x.into_iter().flatten().collect();
-    Array2::from_shape_vec((nrows, ncols), flat)
-        .map_err(|e| PyValueError::new_err(format!("Invalid X shape: {e}")))
+    Array2::from_shape_vec((nrows, ncols), flat).map_err(|e| PyValueError::new_err(format!("Invalid X shape: {e}")))
 }
 
 fn array2_to_vec(a: &Array2<f64>) -> Vec<Vec<f64>> {
@@ -150,10 +147,7 @@ pub fn py_pearson_correlation(data: Vec<Vec<f64>>, col1: usize, col2: usize) -> 
 }
 
 #[pyfunction(name = "correlation_matrix")]
-pub fn py_correlation_matrix<'py>(
-    py: Python<'py>,
-    data: Vec<Vec<f64>>,
-) -> PyResult<Bound<'py, PyArray2<f64>>> {
+pub fn py_correlation_matrix<'py>(py: Python<'py>, data: Vec<Vec<f64>>) -> PyResult<Bound<'py, PyArray2<f64>>> {
     let arr = correlation_matrix_from_vec(&data);
 
     // Reconstruct as Vec<Vec<f64>> (cheap for small correlation matrices)
@@ -161,9 +155,7 @@ pub fn py_correlation_matrix<'py>(
     // the numpy crate was compiled against. This avoids ndarray version
     // mismatches between the workspace (0.15) and numpy (which resolved 0.16).
     let n = arr.nrows();
-    let mat: Vec<Vec<f64>> = (0..n)
-        .map(|i| (0..n).map(|j| arr[[i, j]]).collect())
-        .collect();
+    let mat: Vec<Vec<f64>> = (0..n).map(|i| (0..n).map(|j| arr[[i, j]]).collect()).collect();
 
     Ok(PyArray2::from_vec2(py, &mat)?)
 }
@@ -180,9 +172,7 @@ pub fn py_correlation_matrix_from_vec<'py>(
     // the numpy crate was compiled against. This avoids ndarray version
     // mismatches between the workspace (0.15) and numpy (which resolved 0.16).
     let n = arr.nrows();
-    let mat: Vec<Vec<f64>> = (0..n)
-        .map(|i| (0..n).map(|j| arr[[i, j]]).collect())
-        .collect();
+    let mat: Vec<Vec<f64>> = (0..n).map(|i| (0..n).map(|j| arr[[i, j]]).collect()).collect();
 
     Ok(PyArray2::from_vec2(py, &mat)?)
 }
@@ -343,11 +333,7 @@ impl From<RustKde> for PyKdeEstimate {
 impl PyKdeEstimate {
     /// List of `(x, density)` pairs.
     fn points(&self) -> Vec<(f64, f64)> {
-        self.x
-            .iter()
-            .zip(self.density.iter())
-            .map(|(&x, &d)| (x, d))
-            .collect()
+        self.x.iter().zip(self.density.iter()).map(|(&x, &d)| (x, d)).collect()
     }
 
     /// Scale density to expected counts for a given histogram bin width:
@@ -405,12 +391,7 @@ pub fn py_histogram(data: Vec<f64>, n_bins: usize) -> PyHistogram {
 /// Gaussian KDE with Silverman bandwidth by default.
 #[pyfunction(name = "kde_gaussian")]
 #[pyo3(signature = (data, n_points=80, bandwidth=None, pad_frac=0.05))]
-pub fn py_kde_gaussian(
-    data: Vec<f64>,
-    n_points: usize,
-    bandwidth: Option<f64>,
-    pad_frac: f64,
-) -> PyKdeEstimate {
+pub fn py_kde_gaussian(data: Vec<f64>, n_points: usize, bandwidth: Option<f64>, pad_frac: f64) -> PyKdeEstimate {
     rust_kde_gaussian(
         &data,
         &KdeConfig {
@@ -431,13 +412,7 @@ pub fn py_silverman_bandwidth(data: Vec<f64>) -> f64 {
 /// Histogram + KDE together (default bins / grid). Convenience for residual plots.
 #[pyfunction(name = "hist_kde")]
 #[pyo3(signature = (data, n_bins=24, n_points=80, bandwidth=None, pad_frac=0.05))]
-pub fn py_hist_kde(
-    data: Vec<f64>,
-    n_bins: usize,
-    n_points: usize,
-    bandwidth: Option<f64>,
-    pad_frac: f64,
-) -> PyHistKde {
+pub fn py_hist_kde(data: Vec<f64>, n_bins: usize, n_points: usize, bandwidth: Option<f64>, pad_frac: f64) -> PyHistKde {
     let combined = rust_hist_kde_with(
         &data,
         &HistogramConfig { n_bins },
@@ -934,11 +909,7 @@ pub fn py_classification_report<'py>(
     d.set_item("recall", rep.recall)?;
     d.set_item("f1", rep.f1)?;
     let cm: Vec<Vec<usize>> = (0..rep.confusion.nrows())
-        .map(|i| {
-            (0..rep.confusion.ncols())
-                .map(|j| rep.confusion[[i, j]])
-                .collect()
-        })
+        .map(|i| (0..rep.confusion.ncols()).map(|j| rep.confusion[[i, j]]).collect())
         .collect();
     d.set_item("confusion", cm)?;
     Ok(d)
@@ -953,11 +924,7 @@ pub fn py_roc_auc(y_true: Vec<usize>, scores: Vec<f64>) -> f64 {
 /// Macro one-vs-rest ROC-AUC. scores = list of rows (n_classes each).
 #[pyfunction(name = "roc_auc_ovr")]
 #[pyo3(signature = (y_true, scores, classes=None))]
-pub fn py_roc_auc_ovr(
-    y_true: Vec<usize>,
-    scores: Vec<Vec<f64>>,
-    classes: Option<Vec<usize>>,
-) -> PyResult<f64> {
+pub fn py_roc_auc_ovr(y_true: Vec<usize>, scores: Vec<Vec<f64>>, classes: Option<Vec<usize>>) -> PyResult<f64> {
     let a = array2_from_rows(scores)?;
     let cls_ref = classes.as_deref();
     Ok(rust_roc_auc_ovr(&y_true, &a, cls_ref))
@@ -998,11 +965,7 @@ impl PyGaussianNb {
 /// Fit Gaussian Naive Bayes. y = integer class labels.
 #[pyfunction(name = "gaussian_nb")]
 #[pyo3(signature = (x, y, var_smoothing=1e-9))]
-pub fn py_gaussian_nb(
-    x: Vec<Vec<f64>>,
-    y: Vec<usize>,
-    var_smoothing: f64,
-) -> PyResult<PyGaussianNb> {
+pub fn py_gaussian_nb(x: Vec<Vec<f64>>, y: Vec<usize>, var_smoothing: f64) -> PyResult<PyGaussianNb> {
     let a = array2_from_rows(x)?;
     if a.nrows() != y.len() {
         return Err(PyValueError::new_err("X and y length mismatch"));

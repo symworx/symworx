@@ -209,10 +209,7 @@ impl PyGaitData {
 
     #[getter]
     fn pelvis_vertical_position(&self) -> Option<Vec<f64>> {
-        self.inner
-            .pelvis_vertical_position
-            .as_ref()
-            .map(|a| a.to_vec())
+        self.inner.pelvis_vertical_position.as_ref().map(|a| a.to_vec())
     }
 
     #[setter]
@@ -228,9 +225,7 @@ impl PyGaitData {
 
     #[pyo3(signature = (walking_speed=None))]
     fn calculate_stride_length(&mut self, walking_speed: Option<f64>) -> Option<Vec<f64>> {
-        self.inner
-            .calculate_stride_length(walking_speed)
-            .map(|a| a.to_vec())
+        self.inner.calculate_stride_length(walking_speed).map(|a| a.to_vec())
     }
 
     fn calculate_step_length(&mut self) -> Option<Vec<f64>> {
@@ -246,9 +241,7 @@ impl PyGaitData {
     }
 
     fn calculate_vertical_oscillation(&self) -> Option<Vec<f64>> {
-        self.inner
-            .calculate_vertical_oscillation()
-            .map(|a| a.to_vec())
+        self.inner.calculate_vertical_oscillation().map(|a| a.to_vec())
     }
 
     fn calculate_step_intervals(&mut self) -> Option<(Vec<f64>, Vec<f64>)> {
@@ -276,8 +269,7 @@ impl PyGaitData {
 #[pyfunction(name = "detect_gait_strides")]
 pub fn py_detect_gait_strides(signal: Vec<f64>, fs: f64) -> PyGaitAnalysis {
     let intervals = symworx_biosym::biomechanics::gait::detect_gait_strides(&signal, fs);
-    let analysis =
-        symworx_biosym::biomechanics::gait::analyze_gait_from_times(&intervals.peak_times, None);
+    let analysis = symworx_biosym::biomechanics::gait::analyze_gait_from_times(&intervals.peak_times, None);
     PyGaitAnalysis::from(analysis)
 }
 

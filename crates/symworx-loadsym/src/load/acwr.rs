@@ -65,11 +65,7 @@ impl RiskLevel {
 /// Returns the *latest* snapshot only. For full series use [`compute_acwr_series`].
 ///
 /// Errors on insufficient data (when chronic window not met).
-pub fn compute_acute_chronic(
-    daily_loads: &[f64],
-    acute_window: usize,
-    chronic_window: usize,
-) -> Result<AcwrSnapshot> {
+pub fn compute_acute_chronic(daily_loads: &[f64], acute_window: usize, chronic_window: usize) -> Result<AcwrSnapshot> {
     if acute_window == 0 || chronic_window == 0 || acute_window > chronic_window {
         return Err(LoadSymError::InvalidParameter(
             "acute_window must be >0 and <= chronic_window".into(),
@@ -133,11 +129,7 @@ pub fn compute_acwr_series(
 /// EWMA-based acute and chronic (common "smoothed" variant used in modern load monitoring).
 ///
 /// Returns the *latest* values only in the snapshot (EWMA fields populated).
-pub fn compute_ewma_acute_chronic(
-    daily_loads: &[f64],
-    acute_span: usize,
-    chronic_span: usize,
-) -> Result<AcwrSnapshot> {
+pub fn compute_ewma_acute_chronic(daily_loads: &[f64], acute_span: usize, chronic_span: usize) -> Result<AcwrSnapshot> {
     if daily_loads.is_empty() {
         return Err(LoadSymError::InsufficientData("empty load series".into()));
     }

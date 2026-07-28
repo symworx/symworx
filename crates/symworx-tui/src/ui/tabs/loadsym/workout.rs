@@ -50,10 +50,7 @@ pub fn stream_color(s: WorkoutStream) -> Color {
     }
 }
 
-pub fn stream_series(
-    act: &symworx_io::ActivityData,
-    s: WorkoutStream,
-) -> (Vec<f64>, &'static str, bool) {
+pub fn stream_series(act: &symworx_io::ActivityData, s: WorkoutStream) -> (Vec<f64>, &'static str, bool) {
     (s.series(act), s.chart_title(), s.present_on(act))
 }
 
@@ -65,9 +62,7 @@ pub fn render_workout_view(frame: &mut Frame, app: &App, area: Rect) {
         let empty = Paragraph::new(vec![
             Line::from(Span::styled(
                 "Workout Analysis — no activity loaded",
-                Style::default()
-                    .fg(Color::Yellow)
-                    .add_modifier(Modifier::BOLD),
+                Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
             )),
             Line::from(""),
             Line::from("  o     open file browser ($VELOFIT_HOME/raw|inbox, ./data)"),
@@ -101,8 +96,8 @@ pub fn render_workout_view(frame: &mut Frame, app: &App, area: Rect) {
     let end = (start + view_len).min(n);
 
     // Focused series for summary / thresh (activity_series)
-    let focus = WorkoutStream::from_index(app.activity_series.min(WorkoutStream::COUNT - 1))
-        .unwrap_or(WorkoutStream::Power);
+    let focus =
+        WorkoutStream::from_index(app.activity_series.min(WorkoutStream::COUNT - 1)).unwrap_or(WorkoutStream::Power);
     let (focus_series, series_name, series_present) = stream_series(act, focus);
 
     let n_samples = focus_series.len().max(1);
@@ -134,11 +129,7 @@ pub fn render_workout_view(frame: &mut Frame, app: &App, area: Rect) {
     } else {
         mean + 0.5 * std.max(1.0)
     };
-    let min_dur = if use_user {
-        app.workout_user_min_dur
-    } else {
-        1
-    };
+    let min_dur = if use_user { app.workout_user_min_dur } else { 1 };
     let regions = if focus_series.is_empty() {
         0
     } else {
@@ -172,13 +163,7 @@ pub fn render_workout_view(frame: &mut Frame, app: &App, area: Rect) {
         "Mean", "Std", "Peak", "Best3", "Best30", "Regions", "Thresh", "SEPi", "TSLi",
     ]
     .into_iter()
-    .map(|h| {
-        Cell::from(h).style(
-            Style::default()
-                .fg(Color::Cyan)
-                .add_modifier(Modifier::BOLD),
-        )
-    })
+    .map(|h| Cell::from(h).style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)))
     .collect();
 
     let (np_str, tss_str) = if let Some(ref m) = ride_metrics {
@@ -282,22 +267,12 @@ pub fn render_workout_view(frame: &mut Frame, app: &App, area: Rect) {
         } else {
             format!(" {} · no data ", stream.chart_title())
         };
-        render_workout_line_chart(
-            frame,
-            rect,
-            series,
-            start,
-            end,
-            &title,
-            stream_color(*stream),
-            *present,
-        );
+        render_workout_line_chart(frame, rect, series, start, end, &title, stream_color(*stream), *present);
     }
 
-    let footer = Paragraph::new(
-        "o open  i newest  r clear  ←→ pan  1–5 streams  t/T thresh  d/D dur  f/F FTP  Esc list",
-    )
-    .style(Style::default().fg(Color::DarkGray));
+    let footer =
+        Paragraph::new("o open  i newest  r clear  ←→ pan  1–5 streams  t/T thresh  d/D dur  f/F FTP  Esc list")
+            .style(Style::default().fg(Color::DarkGray));
     frame.render_widget(footer, chunks[2 + n_panels]);
 }
 

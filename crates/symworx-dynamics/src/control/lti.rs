@@ -28,12 +28,7 @@ pub struct LtiDiscrete {
 
 impl LtiDiscrete {
     /// Create a fully specified discrete LTI system.
-    pub fn new(
-        a: Array2<f64>,
-        b: Option<Array2<f64>>,
-        c: Array2<f64>,
-        d: Option<Array2<f64>>,
-    ) -> Self {
+    pub fn new(a: Array2<f64>, b: Option<Array2<f64>>, c: Array2<f64>, d: Option<Array2<f64>>) -> Self {
         let n = a.nrows();
         assert_eq!(a.ncols(), n, "A must be square");
         assert_eq!(c.ncols(), n, "C cols must equal state dim");
@@ -86,12 +81,7 @@ impl LtiDiscrete {
     /// Simulate open-loop for `n_steps` from `x0`.
     ///
     /// `inputs[k]` is applied at step `k` (length `n_steps`). If `None`, free response.
-    pub fn simulate(
-        &self,
-        x0: &Array1<f64>,
-        n_steps: usize,
-        inputs: Option<&[Array1<f64>]>,
-    ) -> LtiSimResult {
+    pub fn simulate(&self, x0: &Array1<f64>, n_steps: usize, inputs: Option<&[Array1<f64>]>) -> LtiSimResult {
         if let Some(us) = inputs {
             assert_eq!(us.len(), n_steps, "inputs length must equal n_steps");
         }
@@ -116,20 +106,9 @@ impl LtiDiscrete {
     ///
     /// `k_gain` is `m × n` (rows = inputs, cols = states).
     pub fn state_feedback(&self, k_gain: &Array2<f64>) -> Self {
-        let b = self
-            .b
-            .as_ref()
-            .expect("state feedback requires an input matrix B");
-        assert_eq!(
-            k_gain.nrows(),
-            b.ncols(),
-            "K rows must equal number of inputs"
-        );
-        assert_eq!(
-            k_gain.ncols(),
-            self.n_states(),
-            "K cols must equal state dim"
-        );
+        let b = self.b.as_ref().expect("state feedback requires an input matrix B");
+        assert_eq!(k_gain.nrows(), b.ncols(), "K rows must equal number of inputs");
+        assert_eq!(k_gain.ncols(), self.n_states(), "K cols must equal state dim");
         let a_cl = &self.a - &b.dot(k_gain);
         // r enters through B: x⁺ = A_cl x + B r
         Self::new(a_cl, Some(b.clone()), self.c.clone(), self.d.clone())

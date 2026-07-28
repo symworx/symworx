@@ -27,11 +27,7 @@ fn main() {
     let age = 32.0;
     let is_male = true;
 
-    let gender = if is_male {
-        Gender::Male
-    } else {
-        Gender::Female
-    };
+    let gender = if is_male { Gender::Male } else { Gender::Female };
     let bmr = calculate_bmr(weight, height_m, age, gender, BmrConfig::default());
     let bmi = calculate_bmi(weight, height_m);
     let tdee = calculate_tdee(bmr, ActivityLevel::Moderate);

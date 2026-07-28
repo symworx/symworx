@@ -31,10 +31,7 @@ fn main() {
     println!("1) Fit Gaussian NB on 2-class blobs");
     let model = gaussian_nb_default(&x, &y);
     println!("   classes = {:?}", model.classes);
-    println!(
-        "   priors  = {:?}",
-        model.log_priors.mapv(f64::exp).to_vec()
-    );
+    println!("   priors  = {:?}", model.log_priors.mapv(f64::exp).to_vec());
 
     let pred = model.predict(&x);
     let rep = classification_report(&y, &pred, Some(2));

@@ -18,47 +18,20 @@ fn main() {
     let duration = 3.5; // longer for more interesting sequences including creation/denial/conversion
 
     // 1+2: parametric + noisy (math)
-    let _t: Vec<f64> = (0..=((duration / dt) as usize))
-        .map(|i| i as f64 * dt)
-        .collect();
-    let lin = symworx_spatialsym::generate_linear_trajectory(
-        Point2::new(0., 0.),
-        Vec2::new(4., 0.),
-        duration,
-        dt,
-    );
-    let curved = symworx_spatialsym::generate_curved_trajectory(
-        Point2::new(0., 2.),
-        Vec2::new(3.5, 0.),
-        duration,
-        dt,
-        1.0,
-        3.5,
-    );
-    let noisy = symworx_spatialsym::generate_noisy_trajectory(
-        Point2::new(0., 4.),
-        Vec2::new(3.8, 0.),
-        duration,
-        dt,
-        0.3,
-    );
-    println!(
-        "1+2: lin={} curved={} noisy={}",
-        lin.len(),
-        curved.len(),
-        noisy.len()
-    );
+    let _t: Vec<f64> = (0..=((duration / dt) as usize)).map(|i| i as f64 * dt).collect();
+    let lin = symworx_spatialsym::generate_linear_trajectory(Point2::new(0., 0.), Vec2::new(4., 0.), duration, dt);
+    let curved =
+        symworx_spatialsym::generate_curved_trajectory(Point2::new(0., 2.), Vec2::new(3.5, 0.), duration, dt, 1.0, 3.5);
+    let noisy =
+        symworx_spatialsym::generate_noisy_trajectory(Point2::new(0., 4.), Vec2::new(3.8, 0.), duration, dt, 0.3);
+    println!("1+2: lin={} curved={} noisy={}", lin.len(), curved.len(), noisy.len());
 
     // 3: event-driven - longer sequence with goal-scoring creation + denial
     // Attacker (agent 1) makes a run to create a scoring opportunity near the target (goal area).
     // Passer (0) plays the ball into space (Creation for receiver).
     // Defender (2) closes to deny the space (Prevention).
     // Later sequence leads toward a conversion.
-    let init = vec![
-        Point2::new(0., 0.),
-        Point2::new(1.2, 2.5),
-        Point2::new(0.7, -0.5),
-    ];
+    let init = vec![Point2::new(0., 0.), Point2::new(1.2, 2.5), Point2::new(0.7, -0.5)];
     let goal_target = Point2::new(8.5, 2.5); // goal area
     let evs = vec![
         // Early run to create space near goal (Creation opportunity)
@@ -94,8 +67,7 @@ fn main() {
             time: 2.4,
         },
     ];
-    let (ev_t, ev_p, ev_f) =
-        symworx_spatialsym::generate_event_driven(init, Point2::new(0.25, 0.), &evs, duration, dt);
+    let (ev_t, ev_p, ev_f) = symworx_spatialsym::generate_event_driven(init, Point2::new(0.25, 0.), &evs, duration, dt);
 
     let groups = vec![0u32, 0, 1];
     let att = vec![Vec2::new(1., 0.), Vec2::new(1., 0.), Vec2::new(-1., 0.)];
@@ -106,15 +78,8 @@ fn main() {
         Point2::new(52.5, 0.0),
         Point2::new(-52.5, 0.0), // left goal for defending team (group 1)
     ];
-    let (batch, focal) = symworx_spatialsym::build_agent_trajectories(
-        ev_t,
-        ev_p,
-        groups,
-        att,
-        ev_f,
-        dims,
-        Some(goal_pos),
-    );
+    let (batch, focal) =
+        symworx_spatialsym::build_agent_trajectories(ev_t, ev_p, groups, att, ev_f, dims, Some(goal_pos));
 
     println!(
         "\nBatch (3): {} agents, {} times (longer example with explicit goal-scoring creation + denial)",
@@ -134,10 +99,7 @@ fn main() {
         "\nAgent1 decisions (t={}..{}): {:?}",
         start,
         end,
-        decs[1][start..end]
-            .iter()
-            .map(|d| d.action)
-            .collect::<Vec<_>>()
+        decs[1][start..end].iter().map(|d| d.action).collect::<Vec<_>>()
     );
 
     // Also show defender decisions (agent 2) to see Prevention/Denial
@@ -145,10 +107,7 @@ fn main() {
         "Agent2 (defender) decisions (t={}..{}): {:?}",
         start,
         end,
-        decs[2][start..end]
-            .iter()
-            .map(|d| d.action)
-            .collect::<Vec<_>>()
+        decs[2][start..end].iter().map(|d| d.action).collect::<Vec<_>>()
     );
 
     let sums = batch.per_player_summaries(2.0, 4.5, Some(&focal));
@@ -171,28 +130,19 @@ fn main() {
         "Classifier (agent0 creator) t={}-{}: {:?}",
         key_start,
         key_end,
-        decs[0][key_start..key_end]
-            .iter()
-            .map(|d| d.action)
-            .collect::<Vec<_>>()
+        decs[0][key_start..key_end].iter().map(|d| d.action).collect::<Vec<_>>()
     );
     println!(
         "Classifier (agent1) t={}-{}: {:?}",
         key_start,
         key_end,
-        decs[1][key_start..key_end]
-            .iter()
-            .map(|d| d.action)
-            .collect::<Vec<_>>()
+        decs[1][key_start..key_end].iter().map(|d| d.action).collect::<Vec<_>>()
     );
     println!(
         "Classifier (agent2 denier) t={}-{}: {:?}",
         key_start,
         key_end,
-        decs[2][key_start..key_end]
-            .iter()
-            .map(|d| d.action)
-            .collect::<Vec<_>>()
+        decs[2][key_start..key_end].iter().map(|d| d.action).collect::<Vec<_>>()
     );
 
     println!("\nGround truth labels for scoring_sequence:");

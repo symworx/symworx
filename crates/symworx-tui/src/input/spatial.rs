@@ -22,8 +22,7 @@ pub fn handle_spatial_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                     app.spatial_view = crate::app::SpatialView::Visualize;
                     return false;
                 }
-                app.status =
-                    "Spatial: no suitable .csv in ./data/ — press 1/g for synthetic.".to_string();
+                app.status = "Spatial: no suitable .csv in ./data/ — press 1/g for synthetic.".to_string();
                 return false;
             }
             KeyCode::Char('v') | KeyCode::Char('V') | KeyCode::Esc => {
@@ -101,11 +100,7 @@ pub fn handle_spatial_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                 }
             }
             KeyCode::Char('>') => {
-                if let Some((f, _)) = app
-                    .spatial_events
-                    .iter()
-                    .find(|(f, _)| *f > app.spatial_frame_idx)
-                {
+                if let Some((f, _)) = app.spatial_events.iter().find(|(f, _)| *f > app.spatial_frame_idx) {
                     app.spatial_frame_idx = *f;
                     app.status = format!("Spatial: next event → frame {}", app.spatial_frame_idx);
                 }
@@ -130,18 +125,14 @@ pub fn handle_spatial_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                                 )
                             })
                             .unwrap_or_default();
-                        app.status = format!(
-                            "Spatial: inferred carrier = agent {}{} (frame {})",
-                            carrier, extra, idx
-                        );
+                        app.status = format!("Spatial: inferred carrier = agent {}{} (frame {})", carrier, extra, idx);
                     } else {
                         app.status = format!("Spatial: no clear carrier (frame {})", idx);
                     }
                 }
             }
             KeyCode::Char('l') | KeyCode::Char('L') => {
-                app.status = "Spatial: frame view + events + summaries (arrows n/p < > for events)"
-                    .to_string();
+                app.status = "Spatial: frame view + events + summaries (arrows n/p < > for events)".to_string();
             }
             KeyCode::Char('e') | KeyCode::Char('E') => {
                 // Enhanced export: CSV + JSON for LLM/agent, plus metadata file
@@ -155,27 +146,24 @@ pub fn handle_spatial_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                     // CSV
                     let csv_p = format!("{}.csv", base);
                     if let Ok(mut w) = csv::Writer::from_path(&csv_p) {
-                        let _ = w.write_record([
-                            "frame", "agent", "x", "y", "action", "conf", "speed", "fwd",
-                        ]);
+                        let _ = w.write_record(["frame", "agent", "x", "y", "action", "conf", "speed", "fwd"]);
                         for f in 0..batch.num_times() {
                             if let Some(frame) = batch.frame(f) {
                                 for (ai, pos) in frame.agent_positions.iter().enumerate() {
-                                    let (act, conf, spd, fwd) =
-                                        if let Some(decs) = &app.spatial_decisions {
-                                            if let Some(d) = decs.get(ai).and_then(|r| r.get(f)) {
-                                                (
-                                                    format!("{:?}", d.action),
-                                                    d.confidence.unwrap_or(0.0),
-                                                    d.features.speed,
-                                                    d.features.forward_component,
-                                                )
-                                            } else {
-                                                ("".into(), 0.0, 0.0, 0.0)
-                                            }
+                                    let (act, conf, spd, fwd) = if let Some(decs) = &app.spatial_decisions {
+                                        if let Some(d) = decs.get(ai).and_then(|r| r.get(f)) {
+                                            (
+                                                format!("{:?}", d.action),
+                                                d.confidence.unwrap_or(0.0),
+                                                d.features.speed,
+                                                d.features.forward_component,
+                                            )
                                         } else {
-                                            ("".into(), 0., 0., 0.)
-                                        };
+                                            ("".into(), 0.0, 0.0, 0.0)
+                                        }
+                                    } else {
+                                        ("".into(), 0., 0., 0.)
+                                    };
                                     let _ = w.write_record(&[
                                         f.to_string(),
                                         ai.to_string(),
@@ -241,16 +229,9 @@ pub fn handle_spatial_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                     if ev_idx < app.spatial_events.len() {
                         let (frame, desc) = &app.spatial_events[ev_idx];
                         app.spatial_frame_idx = *frame;
-                        app.status = format!(
-                            "Spatial: jumped to event {} '{}' (frame {})",
-                            ev_idx, desc, frame
-                        );
+                        app.status = format!("Spatial: jumped to event {} '{}' (frame {})", ev_idx, desc, frame);
                     } else if !app.spatial_events.is_empty() {
-                        app.status = format!(
-                            "Spatial: no event {} (have 0-{})",
-                            ev_idx,
-                            app.spatial_events.len() - 1
-                        );
+                        app.status = format!("Spatial: no event {} (have 0-{})", ev_idx, app.spatial_events.len() - 1);
                     }
                 }
             }

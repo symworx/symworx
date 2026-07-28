@@ -172,11 +172,7 @@ impl PolynomialDegreeSearch {
         self.best_by(|f| f.scores.adj_r2, true)
     }
 
-    fn best_by(
-        &self,
-        score: impl Fn(&PolynomialDegreeFit) -> f64,
-        maximize: bool,
-    ) -> Option<usize> {
+    fn best_by(&self, score: impl Fn(&PolynomialDegreeFit) -> f64, maximize: bool) -> Option<usize> {
         let mut best: Option<&PolynomialDegreeFit> = None;
         for f in &self.fits {
             let s = score(f);
@@ -187,17 +183,9 @@ impl PolynomialDegreeSearch {
                 None => f,
                 Some(b) => {
                     let sb = score(b);
-                    let better = if maximize {
-                        s > sb + 1e-15
-                    } else {
-                        s < sb - 1e-15
-                    };
+                    let better = if maximize { s > sb + 1e-15 } else { s < sb - 1e-15 };
                     let tie = (s - sb).abs() <= 1e-15;
-                    if better || (tie && f.degree < b.degree) {
-                        f
-                    } else {
-                        b
-                    }
+                    if better || (tie && f.degree < b.degree) { f } else { b }
                 }
             });
         }
@@ -285,10 +273,7 @@ impl fmt::Display for PolyRegError {
             PolyRegError::LengthMismatch { n_x, n_y } => {
                 write!(f, "x length {n_x} != y length {n_y}")
             }
-            PolyRegError::NoFeasibleDegree {
-                n_samples,
-                max_degree,
-            } => write!(
+            PolyRegError::NoFeasibleDegree { n_samples, max_degree } => write!(
                 f,
                 "no feasible polynomial degree for n={n_samples}, max_degree={max_degree}"
             ),
@@ -320,11 +305,7 @@ pub fn polynomial_design(x: &[f64], degree: usize) -> Array2<f64> {
 /// (`n_params = d+1 ≤ n` ⇒ `d ≤ n−1`).
 #[inline]
 pub fn max_feasible_degree(n_samples: usize) -> Option<usize> {
-    if n_samples == 0 {
-        None
-    } else {
-        Some(n_samples - 1)
-    }
+    if n_samples == 0 { None } else { Some(n_samples - 1) }
 }
 
 /// Soft rule: prefer at least two samples per free parameter.
@@ -347,11 +328,7 @@ pub fn soft_min_samples_for_degree(degree: usize) -> usize {
 ///
 /// Requires `linalg` (via [`ols`]).
 #[cfg(feature = "linalg")]
-pub fn fit_polynomial_degrees(
-    x: &[f64],
-    y: &[f64],
-    max_degree: usize,
-) -> Result<PolynomialDegreeSearch, PolyRegError> {
+pub fn fit_polynomial_degrees(x: &[f64], y: &[f64], max_degree: usize) -> Result<PolynomialDegreeSearch, PolyRegError> {
     fit_polynomial_degrees_with(
         x,
         y,
@@ -601,10 +578,10 @@ mod tests {
         let search = fit_polynomial_degrees(&x, &y, 2).unwrap();
         assert!(search.fit_for_degree(2).is_some());
         assert!(
-            search.warnings.iter().any(|w| w.contains("soft")
-                || w.contains("2×")
-                || w.contains("2x")
-                || w.contains("poorly determined")),
+            search
+                .warnings
+                .iter()
+                .any(|w| w.contains("soft") || w.contains("2×") || w.contains("2x") || w.contains("poorly determined")),
             "warnings: {:?}",
             search.warnings
         );

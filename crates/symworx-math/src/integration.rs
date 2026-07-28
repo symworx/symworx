@@ -63,12 +63,7 @@ where
 
 /// Integrate using fixed-step RK4 from t_start to t_end.
 /// Returns (times, states) where states is Vec of Array1<f64>.
-pub fn rk4_integrate<F>(
-    f: F,
-    t_span: (f64, f64),
-    y0: Array1<f64>,
-    dt: f64,
-) -> (Vec<f64>, Vec<Array1<f64>>)
+pub fn rk4_integrate<F>(f: F, t_span: (f64, f64), y0: Array1<f64>, dt: f64) -> (Vec<f64>, Vec<Array1<f64>>)
 where
     F: Fn(f64, &Array1<f64>) -> Array1<f64>,
 {

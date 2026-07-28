@@ -37,11 +37,7 @@ mod tests {
 
     #[test]
     fn pairwise_and_focal() {
-        let pts = vec![
-            Point2::new(0., 0.),
-            Point2::new(3., 0.),
-            Point2::new(0., 4.),
-        ];
+        let pts = vec![Point2::new(0., 0.), Point2::new(3., 0.), Point2::new(0., 4.)];
         let dmat = pairwise_distances(&pts);
         assert!((dmat[0][1] - 3.0).abs() < 1e-9);
         assert!((dmat[0][2] - 4.0).abs() < 1e-9);

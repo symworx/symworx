@@ -38,16 +38,13 @@ pub fn handle_home_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers) 
         }
         KeyCode::Char('d') | KeyCode::Char('D') => {
             if app.home_selection == 2 {
-                app.status =
-                    "LoadSym: 1 Workout  2 Metrics  3 Calendar  4 Optimization".to_string();
+                app.status = "LoadSym: 1 Workout  2 Metrics  3 Calendar  4 Optimization".to_string();
             }
             return false;
         }
         KeyCode::Char('i') | KeyCode::Char('I') => {
             if app.home_selection == 2 {
-                app.status =
-                    "LoadSym: import via activity files (FIT via symworx-io) — see LoadSym tab."
-                        .to_string();
+                app.status = "LoadSym: import via activity files (FIT via symworx-io) — see LoadSym tab.".to_string();
             } else if app.home_selection == 3 {
                 app.switch_workflow(crate::app::Workflow::SpatialSym);
             }

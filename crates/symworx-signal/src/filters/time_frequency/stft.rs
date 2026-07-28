@@ -50,18 +50,9 @@ impl StftResult {
 }
 
 /// Computes the Short-Time Fourier Transform of a signal.
-pub fn stft(
-    signal: &[f64],
-    fs: f64,
-    window_length: usize,
-    overlap: usize,
-    window_type: WindowType,
-) -> StftResult {
+pub fn stft(signal: &[f64], fs: f64, window_length: usize, overlap: usize, window_type: WindowType) -> StftResult {
     assert!(window_length > 1, "Window length must be > 1");
-    assert!(
-        overlap < window_length,
-        "Overlap must be less than window length"
-    );
+    assert!(overlap < window_length, "Overlap must be less than window length");
 
     let hop = window_length - overlap;
     let n_windows = if signal.len() < window_length {
@@ -88,16 +79,10 @@ pub fn stft(
     // Generate window
     let window: Vec<f64> = match window_type {
         WindowType::Hann => (0..window_length)
-            .map(|i| {
-                0.5 * (1.0
-                    - (2.0 * std::f64::consts::PI * i as f64 / (window_length - 1) as f64).cos())
-            })
+            .map(|i| 0.5 * (1.0 - (2.0 * std::f64::consts::PI * i as f64 / (window_length - 1) as f64).cos()))
             .collect(),
         WindowType::Hamming => (0..window_length)
-            .map(|i| {
-                0.54 - 0.46
-                    * (2.0 * std::f64::consts::PI * i as f64 / (window_length - 1) as f64).cos()
-            })
+            .map(|i| 0.54 - 0.46 * (2.0 * std::f64::consts::PI * i as f64 / (window_length - 1) as f64).cos())
             .collect(),
         WindowType::Rectangular => vec![1.0; window_length],
     };
@@ -123,11 +108,7 @@ pub fn stft(
 
     // Frequency and time axes
     let frequencies: Array1<f64> = Array1::linspace(0.0, fs / 2.0, n_freq);
-    let times: Array1<f64> = Array1::linspace(
-        window_length as f64 / (2.0 * fs),
-        (signal.len() as f64) / fs,
-        n_windows,
-    );
+    let times: Array1<f64> = Array1::linspace(window_length as f64 / (2.0 * fs), (signal.len() as f64) / fs, n_windows);
 
     StftResult {
         spectrogram,

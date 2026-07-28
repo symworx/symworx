@@ -82,17 +82,11 @@ pub fn try_load_loadsym_catalog(app: &mut App) -> Result<bool, String> {
                     is_primary: r.is_primary,
                 })
                 .collect();
-            app.weekly_loads = build_weekly_loads(
-                &app.daily_load_dates,
-                &app.daily_loads,
-                &app.daily_ride_counts,
-            );
+            app.weekly_loads = build_weekly_loads(&app.daily_load_dates, &app.daily_loads, &app.daily_ride_counts);
             app.loadsym_catalog_path = Some(path);
             app.loadsym_from_catalog = true;
             // Metrics table (best-effort; empty if query fails)
-            if let Ok(Some((_, metrics))) =
-                symworx_loadsym::catalog::try_load_default_activity_metrics()
-            {
+            if let Ok(Some((_, metrics))) = symworx_loadsym::catalog::try_load_default_activity_metrics() {
                 app.catalog_activity_metrics = metrics
                     .into_iter()
                     .map(|r| ActivityMetricsUiRow {
@@ -145,9 +139,7 @@ pub fn open_metrics_row_into_workout(app: &mut App) -> bool {
                 "{} · from metrics {} TSLi={}",
                 msg,
                 row.ride_date,
-                row.tss
-                    .map(|t| format!("{:.0}", t))
-                    .unwrap_or_else(|| "-".into())
+                row.tss.map(|t| format!("{:.0}", t)).unwrap_or_else(|| "-".into())
             );
             true
         }
@@ -161,20 +153,14 @@ pub fn open_metrics_row_into_workout(app: &mut App) -> bool {
 /// Apply synthetic demo loads (clears catalog-backed date metadata).
 pub fn apply_demo_daily_loads(app: &mut App, days: usize) {
     app.daily_loads = symworx_loadsym::load::generate_demo_daily_loads(days, 400.0, 100.0);
-    app.daily_load_dates = (0..app.daily_loads.len())
-        .map(|i| format!("d{:03}", i))
-        .collect();
+    app.daily_load_dates = (0..app.daily_loads.len()).map(|i| format!("d{:03}", i)).collect();
     app.daily_acwr.clear();
     app.daily_risk.clear();
     app.daily_ride_counts = vec![1; app.daily_loads.len()];
     app.catalog_rides.clear();
     app.catalog_activity_metrics.clear();
     app.metrics_scroll = 0;
-    app.weekly_loads = build_weekly_loads(
-        &app.daily_load_dates,
-        &app.daily_loads,
-        &app.daily_ride_counts,
-    );
+    app.weekly_loads = build_weekly_loads(&app.daily_load_dates, &app.daily_loads, &app.daily_ride_counts);
     app.loadsym_from_catalog = false;
     app.loadsym_catalog_path = None;
     invalidate_loadsym_plan_cache(app);
@@ -219,8 +205,7 @@ pub fn ensure_loadsym_plan(app: &mut App) {
         return;
     }
     let key = loadsym_plan_input_key(app);
-    if key == app.loadsym_plan_cache_key
-        && (app.loadsym_cached_plan.is_some() || app.loadsym_cached_plan_err.is_some())
+    if key == app.loadsym_plan_cache_key && (app.loadsym_cached_plan.is_some() || app.loadsym_cached_plan_err.is_some())
     {
         return;
     }
@@ -263,11 +248,7 @@ pub fn focus_calendar_most_recent(app: &mut App) {
 }
 
 /// Build Mon–Sun weeks from daily series.
-pub fn build_weekly_loads(
-    dates: &[String],
-    loads: &[f64],
-    ride_counts: &[i64],
-) -> Vec<WeeklyLoadRow> {
+pub fn build_weekly_loads(dates: &[String], loads: &[f64], ride_counts: &[i64]) -> Vec<WeeklyLoadRow> {
     if dates.is_empty() || loads.is_empty() {
         return vec![];
     }
@@ -289,10 +270,7 @@ pub fn build_weekly_loads(
         };
         let slice = i..group_end;
         let total_tss: f64 = loads[slice.clone()].iter().sum();
-        let ride_count: i64 = ride_counts
-            .get(slice.clone())
-            .map(|s| s.iter().sum())
-            .unwrap_or(0);
+        let ride_count: i64 = ride_counts.get(slice.clone()).map(|s| s.iter().sum()).unwrap_or(0);
         weeks.push(WeeklyLoadRow {
             week_start,
             total_tss,
@@ -328,11 +306,7 @@ fn parse_ymd(s: &str) -> Option<(i32, u32, u32)> {
     if parts.len() != 3 {
         return None;
     }
-    Some((
-        parts[0].parse().ok()?,
-        parts[1].parse().ok()?,
-        parts[2].parse().ok()?,
-    ))
+    Some((parts[0].parse().ok()?, parts[1].parse().ok()?, parts[2].parse().ok()?))
 }
 
 fn days_in_month(y: i32, m: u32) -> u32 {
@@ -366,9 +340,7 @@ pub fn sync_week_scroll_from_daily(app: &mut App) {
         app.loadsym_week_scroll = 0;
         return;
     }
-    let day = app
-        .loadsym_scroll
-        .min(app.daily_loads.len().saturating_sub(1));
+    let day = app.loadsym_scroll.min(app.daily_loads.len().saturating_sub(1));
     if let Some((wi, _)) = app
         .weekly_loads
         .iter()
@@ -386,9 +358,7 @@ pub fn sync_daily_scroll_from_week(app: &mut App) {
     if app.weekly_loads.is_empty() {
         return;
     }
-    let wi = app
-        .loadsym_week_scroll
-        .min(app.weekly_loads.len().saturating_sub(1));
+    let wi = app.loadsym_week_scroll.min(app.weekly_loads.len().saturating_sub(1));
     app.loadsym_week_scroll = wi;
     app.loadsym_scroll = app.weekly_loads[wi].day_index_lo;
 }
@@ -398,10 +368,7 @@ pub fn rides_for_focus_day(app: &App) -> Vec<&CatalogRideRow> {
         Some(d) => d.as_str(),
         None => return vec![],
     };
-    app.catalog_rides
-        .iter()
-        .filter(|r| r.ride_date == date)
-        .collect()
+    app.catalog_rides.iter().filter(|r| r.ride_date == date).collect()
 }
 
 /// Clamp `calendar_ride_sel` to the rides available on the focused day.
@@ -415,10 +382,7 @@ pub fn clamp_calendar_ride_sel(app: &mut App) {
 }
 
 /// Resolve a catalog `source_file` key (absolute, relative to VELOFIT, or basename search).
-pub fn resolve_activity_path(
-    source_key: &str,
-    search_dirs: &[std::path::PathBuf],
-) -> Option<std::path::PathBuf> {
+pub fn resolve_activity_path(source_key: &str, search_dirs: &[std::path::PathBuf]) -> Option<std::path::PathBuf> {
     use std::path::{
         Path,
         PathBuf,
@@ -450,10 +414,7 @@ pub fn resolve_activity_path(
     }
 
     // Basename-only match under search dirs (non-recursive + one recursive pass on velofit)
-    let base = Path::new(key)
-        .file_name()
-        .and_then(|s| s.to_str())
-        .unwrap_or(key);
+    let base = Path::new(key).file_name().and_then(|s| s.to_str()).unwrap_or(key);
     let entries = symworx_io::discover_activity_files(search_dirs, false);
     for e in &entries {
         if e.path.file_name().and_then(|n| n.to_str()) == Some(base) {
@@ -593,25 +554,18 @@ pub fn open_calendar_ride_into_workout(app: &mut App) -> bool {
     clamp_calendar_ride_sel(app);
     let rides: Vec<CatalogRideRow> = rides_for_focus_day(app).into_iter().cloned().collect();
     if rides.is_empty() {
-        app.status =
-            "No ride files on this day (demo days have none — use catalog + Enter/o)".to_string();
+        app.status = "No ride files on this day (demo days have none — use catalog + Enter/o)".to_string();
         return false;
     }
     let ride = &rides[app.calendar_ride_sel];
     let Some(path) = resolve_activity_path(&ride.source_file, &app.loadsym_archive_dirs) else {
-        app.status = format!(
-            "Cannot resolve file for {} ({})",
-            ride.ride_date, ride.source_file
-        );
+        app.status = format!("Cannot resolve file for {} ({})", ride.ride_date, ride.source_file);
         return false;
     };
     match load_activity_into_app(app, &path) {
         Ok(msg) => {
             app.loadsym_view = crate::app::LoadSymView::Workout;
-            app.status = format!(
-                "{} · from calendar {} TSLi={:.1}",
-                msg, ride.ride_date, ride.tss
-            );
+            app.status = format!("{} · from calendar {} TSLi={:.1}", msg, ride.ride_date, ride.tss);
             true
         }
         Err(e) => {
@@ -635,9 +589,7 @@ pub fn open_selected_workout_file(app: &mut App) -> bool {
         app.pending_workout_open = false;
         return false;
     }
-    let idx = app
-        .workout_file_sel
-        .min(app.workout_file_list.len().saturating_sub(1));
+    let idx = app.workout_file_sel.min(app.workout_file_list.len().saturating_sub(1));
     let path = app.workout_file_list[idx].clone();
     match load_activity_into_app(app, &path) {
         Ok(msg) => {
@@ -677,9 +629,7 @@ pub fn apply_suggested_load_goal(app: &mut App, force: bool) {
     let Some(state) = series.last_state() else {
         return;
     };
-    let acwr = compute_acute_chronic(&app.daily_loads, 7, 28)
-        .ok()
-        .map(|s| s.acwr);
+    let acwr = compute_acute_chronic(&app.daily_loads, 7, 28).ok().map(|s| s.acwr);
     let suggestion = suggest_load_goal(&state, acwr, &GoalSuggestParams::default());
     app.loadsym_plan_goal = suggestion.goal;
     app.loadsym_goal_suggest_note = format!(

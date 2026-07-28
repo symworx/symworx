@@ -211,10 +211,7 @@ pub fn py_analyze_respiration(ts: PyRespTimeSeries) -> PyRespAnalysis {
 }
 
 #[pyfunction(name = "analyze_respiration_with_quality")]
-pub fn py_analyze_respiration_with_quality(
-    ts: PyRespTimeSeries,
-    quality: PyRespSignalQuality,
-) -> PyRespAnalysis {
+pub fn py_analyze_respiration_with_quality(ts: PyRespTimeSeries, quality: PyRespSignalQuality) -> PyRespAnalysis {
     let rust_ts = resp_timeseries_from_py(ts);
     PyRespAnalysis::from(analyze_respiration_with_quality(&rust_ts, quality.into()))
 }

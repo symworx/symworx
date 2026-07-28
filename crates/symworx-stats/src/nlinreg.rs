@@ -94,11 +94,7 @@ pub fn nonlinear_least_squares_design<M>(
 where
     M: Fn(&Array1<f64>, &Array1<f64>) -> f64,
 {
-    assert_eq!(
-        x.nrows(),
-        y.len(),
-        "X and y must have the same number of rows"
-    );
+    assert_eq!(x.nrows(), y.len(), "X and y must have the same number of rows");
     let n = y.len() as f64;
 
     let loss = |theta: &Array1<f64>| {
@@ -147,11 +143,7 @@ mod tests {
 
         let fit = nonlinear_least_squares(&x, &y, model, array![0.0, 0.0], &cfg);
         assert!((fit.params[0] - 2.0).abs() < 1e-3, "slope {:?}", fit.params);
-        assert!(
-            (fit.params[1] - 1.0).abs() < 1e-3,
-            "intercept {:?}",
-            fit.params
-        );
+        assert!((fit.params[1] - 1.0).abs() < 1e-3, "intercept {:?}", fit.params);
         assert!(fit.rmse < 1e-3);
     }
 
@@ -172,15 +164,7 @@ mod tests {
         };
 
         let fit = nonlinear_least_squares(&x, &y, model, array![1.0, 0.1], &cfg);
-        assert!(
-            (fit.params[0] - a_true).abs() < 0.05,
-            "a = {}",
-            fit.params[0]
-        );
-        assert!(
-            (fit.params[1] - b_true).abs() < 0.05,
-            "b = {}",
-            fit.params[1]
-        );
+        assert!((fit.params[0] - a_true).abs() < 0.05, "a = {}", fit.params[0]);
+        assert!((fit.params[1] - b_true).abs() < 0.05, "b = {}", fit.params[1]);
     }
 }

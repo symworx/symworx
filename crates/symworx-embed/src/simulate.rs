@@ -128,11 +128,7 @@ impl StreamSource for SimulatorSource {
         }
 
         let t = self.started.elapsed().as_secs_f64();
-        let dt = if self.n == 0 {
-            0.0
-        } else {
-            (t - self.last_t).max(0.0)
-        };
+        let dt = if self.n == 0 { 0.0 } else { (t - self.last_t).max(0.0) };
         self.last_t = t;
 
         // Slow HR / BR drift (labels). Keep label noise tiny so the waveform

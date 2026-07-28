@@ -51,10 +51,7 @@ fn main() {
     // Recovery forecast under easy load
     let rest = forecast_with_constant_load(s, 20.0, &params, 7).expect("forecast");
     let after = rest.last_state().unwrap();
-    println!(
-        "After 7 easy days (20 TSS): form {:+.1} → {:+.1}",
-        s.form, after.form
-    );
+    println!("After 7 easy days (20 TSS): form {:+.1} → {:+.1}", s.form, after.form);
 
     if let Some(d) = estimate_recovery_days(s, &params, s.form + 10.0, 15.0, 30).unwrap() {
         println!("Days to form +10 under 15 TSS/day: {}", d);
@@ -72,15 +69,8 @@ fn main() {
         horizon_days: 4,
         ..Default::default()
     };
-    println!(
-        "\n--- Next {}-day plans (default H=4, max 10) ---",
-        thr.horizon_days
-    );
-    for goal in [
-        LoadGoal::Recovery,
-        LoadGoal::Maintenance,
-        LoadGoal::Overload,
-    ] {
+    println!("\n--- Next {}-day plans (default H=4, max 10) ---", thr.horizon_days);
+    for goal in [LoadGoal::Recovery, LoadGoal::Maintenance, LoadGoal::Overload] {
         match optimize_load_plan(&loads, &params, goal, &thr) {
             Ok(plan) => {
                 println!(

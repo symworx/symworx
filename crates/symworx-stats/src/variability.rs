@@ -76,12 +76,7 @@ pub fn sd_successive_differences(data: &[f64]) -> f64 {
     let diffs = successive_differences(data);
     let mean = diffs.iter().sum::<f64>() / diffs.len() as f64;
 
-    diffs
-        .iter()
-        .map(|&d| (d - mean).powi(2))
-        .sum::<f64>()
-        .sqrt()
-        / (diffs.len() as f64).sqrt()
+    diffs.iter().map(|&d| (d - mean).powi(2)).sum::<f64>().sqrt() / (diffs.len() as f64).sqrt()
 }
 
 // TESTS

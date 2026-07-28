@@ -86,18 +86,11 @@ fn main() {
             ridge: 0.0,
         },
     );
-    println!(
-        "   K ≈ A  (rel. fit error = {:.2e})",
-        edmd_model.relative_fit_error
-    );
+    println!("   K ≈ A  (rel. fit error = {:.2e})", edmd_model.relative_fit_error);
     let x = array![1.0, 0.0];
     let pred = edmd_model.predict_one(&x);
     let true_next = a.dot(&x);
-    println!(
-        "   one-step: pred={:?}  true={:?}",
-        pred.to_vec(),
-        true_next.to_vec()
-    );
+    println!("   one-step: pred={:?}  true={:?}", pred.to_vec(), true_next.to_vec());
 
     // --- SINDy (continuous-style via small Euler plant) ---
     println!("\n3) SINDy on ẋ = A_c x  (Euler-integrated training data)");
@@ -130,11 +123,7 @@ fn main() {
     );
     let f = sindy_model.rhs(&array![1.0, 0.5]);
     let f_true = a_c.dot(&array![1.0, 0.5]);
-    println!(
-        "   rhs at [1,0.5]: model={:?}  true={:?}",
-        f.to_vec(),
-        f_true.to_vec()
-    );
+    println!("   rhs at [1,0.5]: model={:?}  true={:?}", f.to_vec(), f_true.to_vec());
 
     // --- SINDYc ---
     println!("\n4) SINDYc on ẋ = -0.5 x + u  (scalar, multi-sine input)");
@@ -165,16 +154,9 @@ fn main() {
             ridge: 1e-10,
         },
     );
-    println!(
-        "   Ξ (library × state) =\n{}",
-        format_matrix(&sindyc_model.xi)
-    );
+    println!("   Ξ (library × state) =\n{}", format_matrix(&sindyc_model.xi));
     let f_c = sindyc_model.rhs(&array![0.5], &array![1.0]);
-    println!(
-        "   f(0.5, u=1) model={:.4}  true={:.4}",
-        f_c[0],
-        -0.5 * 0.5 + 1.0
-    );
+    println!("   f(0.5, u=1) model={:.4}  true={:.4}", f_c[0], -0.5 * 0.5 + 1.0);
 
     // --- LTI + PID ---
     println!("\n5) LTI scalar plant + PID regulation");
@@ -195,10 +177,7 @@ fn main() {
         let (xn, _) = plant.step(&x_pid, Some(&array![u]));
         x_pid = xn;
     }
-    println!(
-        "   after 60 steps: x={:.4}  (setpoint={setpoint})",
-        x_pid[0]
-    );
+    println!("   after 60 steps: x={:.4}  (setpoint={setpoint})", x_pid[0]);
 
     println!("\nDone. See also:");
     println!("  cargo run -p symworx-stats --example predictive_metrics_demo --features linalg");

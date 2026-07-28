@@ -364,8 +364,7 @@ pub fn classify_space_actions(
         let nearby = &nearby_at_t[t];
 
         // Determine possession state for the frame (based on ball carrier group)
-        let in_possession_group =
-            on_ball.and_then(|carrier| groups.and_then(|g| g.get(carrier).copied()));
+        let in_possession_group = on_ball.and_then(|carrier| groups.and_then(|g| g.get(carrier).copied()));
 
         for a in 0..n_agents {
             let pos = agent_trajectories[a][t];
@@ -391,22 +390,10 @@ pub fn classify_space_actions(
                 continue;
             }
 
-            let _focal_dist = focal_trajectory.and_then(|f| {
-                if t < f.len() {
-                    Some((f[t] - pos).norm())
-                } else {
-                    None
-                }
-            });
+            let _focal_dist = focal_trajectory.and_then(|f| if t < f.len() { Some((f[t] - pos).norm()) } else { None });
 
             // Distance to this agent's goal (if provided). Used for scoring-opportunity logic.
-            let dist_to_goal = goal_positions.and_then(|g| {
-                if a < g.len() {
-                    Some((g[a] - pos).norm())
-                } else {
-                    None
-                }
-            });
+            let dist_to_goal = goal_positions.and_then(|g| if a < g.len() { Some((g[a] - pos).norm()) } else { None });
 
             // Nearest opponent (groups aware)
             let mut nearest_dist = f64::INFINITY;
@@ -531,8 +518,7 @@ pub fn classify_space_actions(
                 if same_possession {
                     // Off-ball attacker making a dangerous run that creates a scoring chance
                     let near_goal = dist_to_goal.map_or(goal_progress > 0.4, |d| d < 15.0);
-                    let creating_danger =
-                        near_goal && forward > 0.45 && speed > 2.2 && nearest_dist > 4.5;
+                    let creating_danger = near_goal && forward > 0.45 && speed > 2.2 && nearest_dist > 4.5;
                     if creating_danger {
                         SpaceAction::Creation
                     } else if forward > 0.3 && speed > 0.3 {
@@ -557,10 +543,8 @@ pub fn classify_space_actions(
             };
 
             // Simple confidence based on signals (speed, space, etc.)
-            let confidence = Some(
-                (0.3 + 0.4 * (speed / 5.0).min(1.0) + if nearest_dist > 10.0 { 0.3 } else { 0.0 })
-                    .min(1.0),
-            );
+            let confidence =
+                Some((0.3 + 0.4 * (speed / 5.0).min(1.0) + if nearest_dist > 10.0 { 0.3 } else { 0.0 }).min(1.0));
 
             results[a][t] = AgentDecision {
                 action,
@@ -584,8 +568,7 @@ pub fn classify_space_actions(
     };
 
     for t in 0..n_times.saturating_sub(look_ahead_frames) {
-        if let (Some(carrier), Some(receiver)) =
-            (on_ball_at_t[t], on_ball_at_t[t + look_ahead_frames])
+        if let (Some(carrier), Some(receiver)) = (on_ball_at_t[t], on_ball_at_t[t + look_ahead_frames])
             && carrier != receiver
         {
             let receiver_now_pressed = {
@@ -610,9 +593,7 @@ pub fn classify_space_actions(
                 min_d < 7.0
             };
 
-            if receiver_now_pressed
-                && let Some(dec) = results.get_mut(carrier).and_then(|v| v.get_mut(t))
-            {
+            if receiver_now_pressed && let Some(dec) = results.get_mut(carrier).and_then(|v| v.get_mut(t)) {
                 match dec.action {
                     SpaceAction::Penetration | SpaceAction::Creation | SpaceAction::Conversion => {
                         dec.action = SpaceAction::Neutral;
@@ -633,27 +614,15 @@ mod tests {
 
     #[test]
     fn space_action_variants_and_desc() {
-        assert_eq!(
-            SpaceAction::Expansion.description(),
-            "Expansion (create space)"
-        );
-        assert_eq!(
-            SpaceAction::Penetration.description(),
-            "Penetration (exploit space)"
-        );
+        assert_eq!(SpaceAction::Expansion.description(), "Expansion (create space)");
+        assert_eq!(SpaceAction::Penetration.description(), "Penetration (exploit space)");
         assert_eq!(SpaceAction::Denial.description(), "Denial (deny space)");
-        assert_eq!(
-            SpaceAction::Pressure.description(),
-            "Pressure (close space)"
-        );
+        assert_eq!(SpaceAction::Pressure.description(), "Pressure (close space)");
         assert_eq!(
             SpaceAction::Creation.description(),
             "Creation (create scoring opportunity)"
         );
-        assert_eq!(
-            SpaceAction::Conversion.description(),
-            "Conversion (successful score)"
-        );
+        assert_eq!(SpaceAction::Conversion.description(), "Conversion (successful score)");
         assert_eq!(
             SpaceAction::Prevention.description(),
             "Prevention (deny scoring opportunity)"

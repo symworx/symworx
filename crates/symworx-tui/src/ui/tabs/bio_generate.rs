@@ -74,10 +74,7 @@ pub fn render_bio_generate_tab(frame: &mut Frame, app: &App, area: Rect) {
             "Synthetic biosignals (symworx-biosym)",
             Style::default().fg(Color::Cyan),
         )),
-        Line::from(Span::styled(
-            p.description(),
-            Style::default().fg(Color::Yellow),
-        )),
+        Line::from(Span::styled(p.description(), Style::default().fg(Color::Yellow))),
         Line::from(Span::styled(
             "↑↓ select  ·  Enter generate → Explore  ·  1/2/3 quick  ·  Esc Import",
             Style::default().fg(Color::DarkGray),
@@ -94,9 +91,7 @@ pub fn render_bio_generate_tab(frame: &mut Frame, app: &App, area: Rect) {
 
     let mut lines = vec![Line::from(Span::styled(
         "  PRESET",
-        Style::default()
-            .fg(Color::DarkGray)
-            .add_modifier(Modifier::BOLD),
+        Style::default().fg(Color::DarkGray).add_modifier(Modifier::BOLD),
     ))];
     for (i, pr) in presets.iter().enumerate() {
         let marker = if i == sel { "▶" } else { " " };

@@ -233,10 +233,7 @@ fn handle_db_command(args: &[String]) -> Result<(), String> {
                 let ftp_n: i64 = conn
                     .query_row("SELECT COUNT(*) FROM ftp_history", [], |r| r.get(0))
                     .unwrap_or(0);
-                let last = symworx_loadsym::catalog::meta_get(
-                    &conn,
-                    symworx_loadsym::catalog::META_LAST_INGEST_AT,
-                )?;
+                let last = symworx_loadsym::catalog::meta_get(&conn, symworx_loadsym::catalog::META_LAST_INGEST_AT)?;
                 println!("db: {}", db.display());
                 println!(
                     "activities: {}  (load_primary={}  secondary/dup={})",
@@ -373,13 +370,7 @@ fn parse_ingest_target(args: &[String]) -> PathBuf {
     let mut i = 2usize;
     while i < args.len() {
         let a = &args[i];
-        if a == "--force"
-            || a == "-F"
-            || a == "--all"
-            || a == "-a"
-            || a == "--since-all"
-            || a == "--no-watermark"
-        {
+        if a == "--force" || a == "-F" || a == "--all" || a == "-a" || a == "--since-all" || a == "--no-watermark" {
             i += 1;
             continue;
         }
@@ -514,10 +505,7 @@ fn handle_ingest(args: &[String], force: bool) -> Result<(), String> {
                 ftp_origin,
             } => {
                 inserted += 1;
-                println!(
-                    "+ {}  TSS={:.1}  FTP={:.0}W ({})",
-                    source_key, tss, ftp_w, ftp_origin
-                );
+                println!("+ {}  TSS={:.1}  FTP={:.0}W ({})", source_key, tss, ftp_w, ftp_origin);
             }
             IngestOutcome::Skipped { source_key, reason } => {
                 skipped += 1;
@@ -535,10 +523,7 @@ fn handle_ingest(args: &[String], force: bool) -> Result<(), String> {
     // Re-link multi-source duplicates (time-window), then rebuild dailies from load primaries.
     let (multi, secs) = symworx_loadsym::catalog::relink_all_sessions(&conn)?;
     if multi > 0 || secs > 0 {
-        println!(
-            "session link: multi-source groups={}  secondary copies={}",
-            multi, secs
-        );
+        println!("session link: multi-source groups={}  secondary copies={}", multi, secs);
     }
     let days_n = symworx_loadsym::catalog::recompute_all_daily_loads(&conn)?;
     let metrics_n = recompute_load_metrics(&conn)?;
@@ -571,10 +556,7 @@ fn handle_relink(args: &[String]) -> Result<(), String> {
 
     let db = parse_db_path(args);
     if !db.exists() {
-        return Err(format!(
-            "database not found at {} — run: symload db init",
-            db.display()
-        ));
+        return Err(format!("database not found at {} — run: symload db init", db.display()));
     }
     let conn = open_catalog(&db)?;
     let (multi, secs) = relink_all_sessions(&conn)?;
@@ -604,9 +586,7 @@ fn polar_credentials_from_env_and_dotenv() -> Result<symworx_io::polar::PolarCre
 
     let dotenv = parse_velofit_dotenv();
     let client_id = env_or_dotenv(POLAR_CLIENT_ID_ENV, &dotenv).ok_or_else(|| {
-        format!(
-            "set {POLAR_CLIENT_ID_ENV} via env or $VELOFIT_HOME/.env (admin.polaraccesslink.com)"
-        )
+        format!("set {POLAR_CLIENT_ID_ENV} via env or $VELOFIT_HOME/.env (admin.polaraccesslink.com)")
     })?;
     let client_secret = env_or_dotenv(POLAR_CLIENT_SECRET_ENV, &dotenv)
         .ok_or_else(|| format!("set {POLAR_CLIENT_SECRET_ENV} via env or $VELOFIT_HOME/.env"))?;
@@ -656,11 +636,8 @@ fn handle_polar(args: &[String]) -> Result<(), String> {
                 .unwrap_or_else(default_token_path);
             println!("polar: client_id={}", creds.client_id);
             println!("polar: redirect_uri={}", creds.redirect_uri);
-            println!(
-                "polar: register this redirect URI at https://admin.polaraccesslink.com if needed"
-            );
-            let token =
-                run_oauth_flow(creds, &token_path, !no_browser).map_err(|e| e.to_string())?;
+            println!("polar: register this redirect URI at https://admin.polaraccesslink.com if needed");
+            let token = run_oauth_flow(creds, &token_path, !no_browser).map_err(|e| e.to_string())?;
             println!(
                 "polar auth OK — user_id={} token → {}",
                 token.user_id,
@@ -718,11 +695,7 @@ fn handle_polar(args: &[String]) -> Result<(), String> {
             println!(
                 "polar token_file: {} ({})",
                 tok_path.display(),
-                if tok_path.exists() {
-                    "present"
-                } else {
-                    "missing"
-                }
+                if tok_path.exists() { "present" } else { "missing" }
             );
             let raw = default_polar_raw_dir();
             let n_fit = if raw.is_dir() {
@@ -759,9 +732,7 @@ fn handle_polar(args: &[String]) -> Result<(), String> {
 /// Parse `--sources a,b,c` (or repeated `--source x`). Empty → all built-in pipelines.
 fn parse_sync_sources(args: &[String]) -> Vec<String> {
     let mut out = Vec::new();
-    if let Some(s) =
-        parse_flag_value(args, "--sources").or_else(|| parse_flag_value(args, "--source"))
-    {
+    if let Some(s) = parse_flag_value(args, "--sources").or_else(|| parse_flag_value(args, "--source")) {
         for part in s.split(|c| c == ',' || c == '+') {
             let t = part.trim().to_ascii_lowercase();
             if !t.is_empty() {
@@ -801,9 +772,7 @@ fn sync_wants(sources: &[String], name: &str) -> bool {
 /// ```
 fn handle_sync(args: &[String]) -> Result<(), String> {
     let sources = parse_sync_sources(args);
-    let skip_ingest = args
-        .iter()
-        .any(|a| a == "--skip-ingest" || a == "--no-ingest");
+    let skip_ingest = args.iter().any(|a| a == "--skip-ingest" || a == "--no-ingest");
     let ftp = parse_ftp(args);
 
     println!("sync: sources={:?}  ftp_fallback={:.0}", sources, ftp);
@@ -891,9 +860,7 @@ fn handle_sync(args: &[String]) -> Result<(), String> {
                         }
                     }
                     None => {
-                        eprintln!(
-                            "polar: no token — run `symload polar auth` first (or skip polar)"
-                        );
+                        eprintln!("polar: no token — run `symload polar auth` first (or skip polar)");
                         steps_fail += 1;
                     }
                 },
@@ -1051,9 +1018,7 @@ fn parse_velofit_dotenv() -> std::collections::HashMap<String, String> {
         // Gmail shows app passwords as "xxxx xxxx xxxx xxxx"; IMAP wants the 16
         // alphanumerics. Strip whitespace for password keys only.
         let val = if key.contains("PASSWORD") || key.contains("SECRET") || key.contains("TOKEN") {
-            val.chars()
-                .filter(|c| !c.is_whitespace())
-                .collect::<String>()
+            val.chars().filter(|c| !c.is_whitespace()).collect::<String>()
         } else {
             val.to_string()
         };
@@ -1085,20 +1050,12 @@ fn env_or_dotenv(key: &str, dotenv: &std::collections::HashMap<String, String>) 
         .ok()
         .filter(|s| !s.is_empty())
         .map(normalize)
-        .or_else(|| {
-            dotenv
-                .get(key)
-                .cloned()
-                .filter(|s| !s.is_empty())
-                .map(normalize)
-        })
+        .or_else(|| dotenv.get(key).cloned().filter(|s| !s.is_empty()).map(normalize))
 }
 
 /// Build [`email::ImapConfig`] from process env, then dotenv fallbacks.
 #[cfg(feature = "email")]
-fn imap_config_from_env_and_dotenv(
-    dotenv: &std::collections::HashMap<String, String>,
-) -> email::ImapConfig {
+fn imap_config_from_env_and_dotenv(dotenv: &std::collections::HashMap<String, String>) -> email::ImapConfig {
     let mut cfg = email::ImapConfig::default();
     if let Some(h) = env_or_dotenv(email::SYMLOAD_IMAP_HOST_ENV, dotenv) {
         cfg.host = h;
@@ -1227,8 +1184,7 @@ fn promote_fit_dir(from: &Path, to: &Path) -> Result<(usize, usize), String> {
             skipped += 1;
             continue;
         }
-        fs::rename(p, &dest)
-            .map_err(|e| format!("move {} → {}: {}", p.display(), dest.display(), e))?;
+        fs::rename(p, &dest).map_err(|e| format!("move {} → {}: {}", p.display(), dest.display(), e))?;
         moved += 1;
         println!("  {} → {}", name.to_string_lossy(), dest.display());
     }
@@ -1304,11 +1260,7 @@ fn process_one(path: &Path, ftp: f64, json_only: bool) -> Result<(), Box<dyn std
     let n = act.len();
     let dur = act.duration_s();
     let p = act.power_series();
-    let avg = if n > 0 {
-        p.iter().sum::<f64>() / n as f64
-    } else {
-        0.0
-    };
+    let avg = if n > 0 { p.iter().sum::<f64>() / n as f64 } else { 0.0 };
     let maxp = p.iter().copied().fold(0.0, f64::max);
 
     let m = compute_ride_metrics(&act.times_s, &p, ftp);

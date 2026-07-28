@@ -74,8 +74,7 @@ impl LogisticModel {
     /// Hard class labels in `{0, 1}` using `threshold` (default 0.5 via
     /// [`LogisticConfig::threshold`] at fit time is not stored — pass explicitly).
     pub fn predict(&self, x: &Array2<f64>, threshold: f64) -> Array1<f64> {
-        self.predict_proba(x)
-            .mapv(|p| if p >= threshold { 1.0 } else { 0.0 })
+        self.predict_proba(x).mapv(|p| if p >= threshold { 1.0 } else { 0.0 })
     }
 
     /// Classification accuracy on labeled data (`y` in `{0, 1}`).
@@ -160,18 +159,10 @@ impl Default for LogisticConfig {
 /// let p = model.predict_proba(&x);
 /// assert!(p[0] < 0.5 && p[5] > 0.5);
 /// ```
-pub fn logistic_regression(
-    x: &Array2<f64>,
-    y: &Array1<f64>,
-    config: &LogisticConfig,
-) -> LogisticModel {
+pub fn logistic_regression(x: &Array2<f64>, y: &Array1<f64>, config: &LogisticConfig) -> LogisticModel {
     let n_samples = x.nrows();
     let n_features = x.ncols();
-    assert_eq!(
-        y.len(),
-        n_samples,
-        "X and y must have the same number of rows"
-    );
+    assert_eq!(y.len(), n_samples, "X and y must have the same number of rows");
     assert!(config.l2 >= 0.0, "l2 must be non-negative");
     assert!(config.learning_rate > 0.0, "learning_rate must be positive");
     assert!(n_samples > 0, "need at least one sample");
@@ -218,9 +209,7 @@ pub fn logistic_regression(
         let step_b = config.learning_rate * grad_b;
         let step_beta = &grad_beta * config.learning_rate;
 
-        let max_step = step_beta
-            .iter()
-            .fold(step_b.abs(), |acc, &s| acc.max(s.abs()));
+        let max_step = step_beta.iter().fold(step_b.abs(), |acc, &s| acc.max(s.abs()));
 
         if config.fit_intercept {
             intercept -= step_b;
@@ -423,11 +412,7 @@ impl MulticlassLogisticModel {
 /// });
 /// assert_eq!(model.n_classes(), 3);
 /// ```
-pub fn logistic_regression_ovr(
-    x: &Array2<f64>,
-    y: &[usize],
-    config: &LogisticConfig,
-) -> MulticlassLogisticModel {
+pub fn logistic_regression_ovr(x: &Array2<f64>, y: &[usize], config: &LogisticConfig) -> MulticlassLogisticModel {
     assert_eq!(x.nrows(), y.len(), "X and y length mismatch");
     assert!(x.nrows() > 0, "need at least one sample");
     assert!(x.ncols() > 0, "need at least one feature");
@@ -477,18 +462,7 @@ mod tests {
     #[test]
     fn separates_1d_threshold() {
         // y = 1 when x > 0.5
-        let x = array![
-            [0.0],
-            [0.1],
-            [0.2],
-            [0.3],
-            [0.4],
-            [0.6],
-            [0.7],
-            [0.8],
-            [0.9],
-            [1.0],
-        ];
+        let x = array![[0.0], [0.1], [0.2], [0.3], [0.4], [0.6], [0.7], [0.8], [0.9], [1.0],];
         let y = array![0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0];
 
         let model = logistic_regression(

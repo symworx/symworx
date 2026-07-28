@@ -61,9 +61,7 @@ pub fn gait_processing_poor() -> PhysiologyProcessingParams {
 }
 
 /// Map quality to processing params for gait stride detection.
-pub fn gait_processing_for_quality(
-    quality: super::quality::GaitSignalQuality,
-) -> PhysiologyProcessingParams {
+pub fn gait_processing_for_quality(quality: super::quality::GaitSignalQuality) -> PhysiologyProcessingParams {
     match quality {
         super::quality::GaitSignalQuality::Reference | super::quality::GaitSignalQuality::High => {
             gait_processing_high()

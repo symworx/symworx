@@ -18,8 +18,7 @@ impl App {
         match wf {
             Workflow::Home => {
                 self.current_tab = Tab::Home;
-                self.status =
-                    "Home — 1 BioSym  2 StatsSym  3 LoadSym  4 Spatial  • Ctrl+H here".to_string();
+                self.status = "Home — 1 BioSym  2 StatsSym  3 LoadSym  4 Spatial  • Ctrl+H here".to_string();
             }
             Workflow::BioSym => {
                 self.current_tab = if self.loaded_signal.is_some() {
@@ -36,7 +35,8 @@ impl App {
             Workflow::SpatialSym => {
                 self.current_tab = Tab::Spatial;
                 self.spatial_view = SpatialView::Visualize;
-                self.status = "SpatialSym — g:regen  i:import/generate  arrows:nav  (sub-views inside Spatial tab)".to_string();
+                self.status =
+                    "SpatialSym — g:regen  i:import/generate  arrows:nav  (sub-views inside Spatial tab)".to_string();
             }
             Workflow::LoadSym => {
                 self.current_tab = Tab::LoadSym;
@@ -75,8 +75,7 @@ impl App {
                             "StatsSym Lab — load a table first (Import or Ctrl+G)".into()
                         }
                     }
-                    _ => "StatsSym Import — ↑↓ files  Enter load  / filter  Ctrl+G generate  ·  Ctrl+←→ tabs"
-                        .into(),
+                    _ => "StatsSym Import — ↑↓ files  Enter load  / filter  Ctrl+G generate  ·  Ctrl+←→ tabs".into(),
                 };
             }
         }
@@ -91,18 +90,12 @@ impl App {
         }
         if self.current_tab != Tab::Spatial && self.status.starts_with("Spatial") {
             self.status = match self.current_tab {
-                Tab::Import => {
-                    "Import — / filter, ↑↓ select, Enter load, c convert, Ctrl+G generate"
-                        .to_string()
-                }
+                Tab::Import => "Import — / filter, ↑↓ select, Enter load, c convert, Ctrl+G generate".to_string(),
                 Tab::Explore => {
-                    "Explore — Ctrl+L live  p process  k peaks  K params  i tachogram  e export"
-                        .to_string()
+                    "Explore — Ctrl+L live  p process  k peaks  K params  i tachogram  e export".to_string()
                 }
                 Tab::Dynamics => "Dynamics (RQA/cRQA + MSE)".to_string(),
-                Tab::Generate => {
-                    "Generate — ↑↓ preset  Enter → Explore  ·  1/2/3 quick".to_string()
-                }
+                Tab::Generate => "Generate — ↑↓ preset  Enter → Explore  ·  1/2/3 quick".to_string(),
                 _ => "Symview".to_string(),
             };
         } else if self.current_tab == Tab::Spatial && !self.status.starts_with("Spatial") {
@@ -113,9 +106,7 @@ impl App {
                 .unwrap_or(0);
             self.status = format!("Spatial: frame {}/{}", self.spatial_frame_idx, maxf);
         } else if self.current_tab == Tab::LoadSym && self.loadsym_view == LoadSymView::List {
-            self.status =
-                "LoadSym — ↑↓ 1–4 Workout · Metrics · Calendar · Optimization  • Esc back"
-                    .to_string();
+            self.status = "LoadSym — ↑↓ 1–4 Workout · Metrics · Calendar · Optimization  • Esc back".to_string();
         }
     }
 }

@@ -29,10 +29,7 @@ use symworx_loadsym::load::{
 // ==========================================================
 
 #[pyfunction(name = "calculate_mechanical_load")]
-pub fn py_calculate_mechanical_load(
-    force_data: Vec<f64>,
-    velocity_data: Vec<f64>,
-) -> PyResult<f64> {
+pub fn py_calculate_mechanical_load(force_data: Vec<f64>, velocity_data: Vec<f64>) -> PyResult<f64> {
     if force_data.len() != velocity_data.len() {
         return Err(pyo3::exceptions::PyValueError::new_err(format!(
             "force_data and velocity_data must have the same length ({} vs {})",
@@ -94,9 +91,7 @@ pub fn py_optimize_load_plan(
 
 /// PMC pulse-response series: ``(fitness/CTL, fatigue/ATL, form/TSB, performance)``.
 #[pyfunction(name = "simulate_pulse_response")]
-pub fn py_simulate_pulse_response(
-    daily_loads: Vec<f64>,
-) -> PyResult<(Vec<f64>, Vec<f64>, Vec<f64>, Vec<f64>)> {
+pub fn py_simulate_pulse_response(daily_loads: Vec<f64>) -> PyResult<(Vec<f64>, Vec<f64>, Vec<f64>, Vec<f64>)> {
     let params = PulseResponseParams::pmc_defaults();
     match simulate_pulse_response(&daily_loads, &params, None) {
         Ok(s) => Ok((s.fitness, s.fatigue, s.form, s.performance)),
@@ -124,12 +119,7 @@ pub fn py_compute_acute_chronic(
     chronic_window: usize,
 ) -> PyResult<(f64, f64, f64, String)> {
     match compute_acute_chronic(&daily_loads, acute_window, chronic_window) {
-        Ok(s) => Ok((
-            s.acute_load,
-            s.chronic_load,
-            s.acwr,
-            s.risk_level.as_str().to_string(),
-        )),
+        Ok(s) => Ok((s.acute_load, s.chronic_load, s.acwr, s.risk_level.as_str().to_string())),
         Err(e) => Err(pyo3::exceptions::PyValueError::new_err(e.to_string())),
     }
 }
@@ -141,12 +131,7 @@ pub fn py_compute_ewma_acute_chronic(
     chronic_span: usize,
 ) -> PyResult<(f64, f64, f64, String)> {
     match compute_ewma_acute_chronic(&daily_loads, acute_span, chronic_span) {
-        Ok(s) => Ok((
-            s.acute_load,
-            s.chronic_load,
-            s.acwr,
-            s.risk_level.as_str().to_string(),
-        )),
+        Ok(s) => Ok((s.acute_load, s.chronic_load, s.acwr, s.risk_level.as_str().to_string())),
         Err(e) => Err(pyo3::exceptions::PyValueError::new_err(e.to_string())),
     }
 }
@@ -158,8 +143,7 @@ pub fn py_classify_acwr(acwr: f64) -> String {
 
 #[pyfunction(name = "compute_monotony")]
 pub fn py_compute_monotony(daily_loads: Vec<f64>) -> PyResult<f64> {
-    compute_monotony(&daily_loads)
-        .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
+    compute_monotony(&daily_loads).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
 }
 
 #[pyfunction(name = "compute_strain")]

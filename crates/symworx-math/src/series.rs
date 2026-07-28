@@ -201,11 +201,7 @@ pub fn ewma(data: &[f64], span: usize) -> Vec<f64> {
 /// let wins: Vec<_> = sliding_windows(&data, 3, 2).collect();
 /// assert_eq!(wins, vec![&data[0..3], &data[2..5]]);
 /// ```
-pub fn sliding_windows(
-    data: &[f64],
-    window: usize,
-    step: usize,
-) -> impl Iterator<Item = &[f64]> + '_ {
+pub fn sliding_windows(data: &[f64], window: usize, step: usize) -> impl Iterator<Item = &[f64]> + '_ {
     (0..)
         .map(move |i| {
             let start = i * step;

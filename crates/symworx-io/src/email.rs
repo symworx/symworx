@@ -93,11 +93,7 @@ impl ImapConfig {
 /// so re-runs are safe. Only decoded MIME attachment bytes are written —
 /// never the raw RFC822 message body.
 #[cfg(feature = "email")]
-pub fn fetch_srm_fit_attachments(
-    user: &str,
-    app_password: &str,
-    target_dir: &Path,
-) -> Result<Vec<PathBuf>, SymError> {
+pub fn fetch_srm_fit_attachments(user: &str, app_password: &str, target_dir: &Path) -> Result<Vec<PathBuf>, SymError> {
     fetch_fit_attachments(user, app_password, target_dir, "SUBJECT SRM")
 }
 
@@ -114,13 +110,7 @@ pub fn fetch_fit_attachments(
     target_dir: &Path,
     search_query: &str,
 ) -> Result<Vec<PathBuf>, SymError> {
-    fetch_fit_attachments_with_config(
-        user,
-        app_password,
-        target_dir,
-        search_query,
-        &ImapConfig::from_env(),
-    )
+    fetch_fit_attachments_with_config(user, app_password, target_dir, search_query, &ImapConfig::from_env())
 }
 
 /// Same as [`fetch_fit_attachments`] but with an explicit [`ImapConfig`]
@@ -144,8 +134,7 @@ pub fn fetch_fit_attachments_with_config(
     use imap::Session;
     use mailparse::parse_mail;
 
-    std::fs::create_dir_all(target_dir)
-        .map_err(|e| SymError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
+    std::fs::create_dir_all(target_dir).map_err(|e| SymError::Io(std::io::Error::new(std::io::ErrorKind::Other, e)))?;
 
     let skip_dirs = existing_archive_skip_dirs(target_dir);
 
@@ -168,12 +157,8 @@ pub fn fetch_fit_attachments_with_config(
         imap_cfg.mailbox, imap_cfg.host, imap_cfg.port
     );
 
-    sess.select(&imap_cfg.mailbox).map_err(|e| {
-        SymError::UnsupportedFormat(format!(
-            "Select mailbox '{}' failed: {}",
-            imap_cfg.mailbox, e
-        ))
-    })?;
+    sess.select(&imap_cfg.mailbox)
+        .map_err(|e| SymError::UnsupportedFormat(format!("Select mailbox '{}' failed: {}", imap_cfg.mailbox, e)))?;
 
     eprintln!("imap: searching ({}) …", search_query);
     // `search` returns sequence numbers (not UIDs); pair with `fetch`, not `uid_fetch`.
@@ -255,10 +240,7 @@ pub fn fetch_fit_attachments_with_config(
                 }
                 let mut file = File::create(&out_path).map_err(SymError::Io)?;
                 file.write_all(&bytes).map_err(SymError::Io)?;
-                eprintln!(
-                    "  + {}",
-                    out_path.file_name().unwrap_or_default().to_string_lossy()
-                );
+                eprintln!("  + {}", out_path.file_name().unwrap_or_default().to_string_lossy());
                 saved.push(out_path);
             }
         }
@@ -322,22 +304,14 @@ fn basename_exists_in_dirs(fname: &str, dirs: &[PathBuf]) -> bool {
 
 /// Walk a parsed MIME tree and collect (filename, decoded bytes) for .fit parts.
 #[cfg(feature = "email")]
-fn extract_fit_attachments_from_mail(
-    mail: &mailparse::ParsedMail<'_>,
-    uid: u32,
-) -> Vec<(String, Vec<u8>)> {
+fn extract_fit_attachments_from_mail(mail: &mailparse::ParsedMail<'_>, uid: u32) -> Vec<(String, Vec<u8>)> {
     let mut out = Vec::new();
     collect_fit_parts(mail, uid, 0, &mut out);
     out
 }
 
 #[cfg(feature = "email")]
-fn collect_fit_parts(
-    mail: &mailparse::ParsedMail<'_>,
-    uid: u32,
-    part_idx: usize,
-    out: &mut Vec<(String, Vec<u8>)>,
-) {
+fn collect_fit_parts(mail: &mailparse::ParsedMail<'_>, uid: u32, part_idx: usize, out: &mut Vec<(String, Vec<u8>)>) {
     // Prefer Content-Disposition filename, then Content-Type name=
     let fname = attachment_filename(mail);
 

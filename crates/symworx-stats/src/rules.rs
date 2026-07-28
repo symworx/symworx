@@ -181,11 +181,7 @@ pub struct RuleListClassifier {
 
 impl RuleListClassifier {
     /// Build a classifier; `classes` may be empty (inferred from rules + default).
-    pub fn new(
-        rules: Vec<ClassificationRule>,
-        default_label: usize,
-        classes: impl Into<Vec<usize>>,
-    ) -> Self {
+    pub fn new(rules: Vec<ClassificationRule>, default_label: usize, classes: impl Into<Vec<usize>>) -> Self {
         let mut classes = classes.into();
         if classes.is_empty() {
             classes = infer_classes(&rules, default_label);
@@ -315,18 +311,9 @@ impl DecisionStump {
     ///
     /// Actually: rule1: feature <= t → left; default → right covers the rest.
     pub fn to_rule_list(&self) -> RuleListClassifier {
-        let rule = ClassificationRule::threshold(
-            self.feature,
-            Comparison::Le,
-            self.threshold,
-            self.left_label,
-        )
-        .with_name("stump_left");
-        RuleListClassifier::new(
-            vec![rule],
-            self.right_label,
-            [self.left_label, self.right_label],
-        )
+        let rule = ClassificationRule::threshold(self.feature, Comparison::Le, self.threshold, self.left_label)
+            .with_name("stump_left");
+        RuleListClassifier::new(vec![rule], self.right_label, [self.left_label, self.right_label])
     }
 
     /// Predict labels.
@@ -384,8 +371,7 @@ pub fn fit_decision_stump(x: &Array2<f64>, y: &[usize]) -> Option<DecisionStump>
                 continue;
             }
             let n = x.nrows() as f64;
-            let imp = (left_y.len() as f64 / n) * gini(&left_y)
-                + (right_y.len() as f64 / n) * gini(&right_y);
+            let imp = (left_y.len() as f64 / n) * gini(&left_y) + (right_y.len() as f64 / n) * gini(&right_y);
             let left_label = majority(&left_y);
             let right_label = majority(&right_y);
 

@@ -49,21 +49,11 @@ impl RlsFilter {
     /// Performs one RLS adaptation step.
     pub fn adapt(&mut self, input: f64, desired: f64) -> f64 {
         let input_vec: Vec<f64> = std::iter::once(input)
-            .chain(
-                self.weights
-                    .iter()
-                    .copied()
-                    .take(self.length.saturating_sub(1)),
-            )
+            .chain(self.weights.iter().copied().take(self.length.saturating_sub(1)))
             .collect();
 
         // Compute output
-        let output: f64 = self
-            .weights
-            .iter()
-            .zip(&input_vec)
-            .map(|(&w, &x)| w * x)
-            .sum();
+        let output: f64 = self.weights.iter().zip(&input_vec).map(|(&w, &x)| w * x).sum();
 
         let error = desired - output;
 
@@ -75,8 +65,7 @@ impl RlsFilter {
             }
         }
 
-        let lambda_pi_input =
-            self.lambda + pi.iter().zip(&input_vec).map(|(&p, &x)| p * x).sum::<f64>();
+        let lambda_pi_input = self.lambda + pi.iter().zip(&input_vec).map(|(&p, &x)| p * x).sum::<f64>();
         let k: Vec<f64> = pi.iter().map(|&val| val / lambda_pi_input).collect();
 
         // Update weights

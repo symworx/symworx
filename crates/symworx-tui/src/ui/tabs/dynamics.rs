@@ -101,31 +101,17 @@ pub fn render_dynamics_tab(frame: &mut Frame, app: &App, area: Rect) {
             )));
             content_lines.push(Line::from(""));
         } else if let Some(r) = &app.last_rqa {
-            content_lines.push(Line::from(format!(
-                "RR (recurrence rate): {:.3}",
-                r.recurrence_rate
-            )));
-            content_lines.push(Line::from(format!(
-                "DET (determinism)   : {:.3}",
-                r.determinism
-            )));
-            content_lines.push(Line::from(format!(
-                "LAM (laminarity)    : {:.3}",
-                r.laminarity
-            )));
-            content_lines.push(Line::from(format!(
-                "Lmax / Vmax         : {} / {}",
-                r.lmax, r.vmax
-            )));
+            content_lines.push(Line::from(format!("RR (recurrence rate): {:.3}", r.recurrence_rate)));
+            content_lines.push(Line::from(format!("DET (determinism)   : {:.3}", r.determinism)));
+            content_lines.push(Line::from(format!("LAM (laminarity)    : {:.3}", r.laminarity)));
+            content_lines.push(Line::from(format!("Lmax / Vmax         : {} / {}", r.lmax, r.vmax)));
             content_lines.push(Line::from(format!(
                 "Lentr / TT          : {:.2} / {:.2}",
                 r.lentr, r.trapping_time
             )));
             content_lines.push(Line::from(""));
         } else {
-            content_lines.push(Line::from(
-                "No RQA result yet. Press 'c' to edit params & compute.",
-            ));
+            content_lines.push(Line::from("No RQA result yet. Press 'c' to edit params & compute."));
         }
 
         // Reference for cRQA
@@ -137,10 +123,7 @@ pub fn render_dynamics_tab(frame: &mut Frame, app: &App, area: Rect) {
         let stats = crate::app::compute_basic_stats(&sig.current);
         let r_se = 0.2 * stats.std.max(0.01);
         let se = symworx_dynamics::sample_entropy(&sig.current, 2, r_se);
-        content_lines.push(Line::from(format!(
-            "Sample Entropy (m=2, r=0.2σ): {:.4}",
-            se
-        )));
+        content_lines.push(Line::from(format!("Sample Entropy (m=2, r=0.2σ): {:.4}", se)));
 
         let mse = symworx_dynamics::multiscale_entropy(&sig.current, 6, 2, r_se);
         let mse_str: Vec<String> = mse
@@ -172,9 +155,7 @@ pub fn render_dynamics_tab(frame: &mut Frame, app: &App, area: Rect) {
                 "Keys: c=edit/compute RQA  x=cRQA  p=pin ref  e=export  r=reset",
             ));
         } else {
-            content_lines.push(Line::from(
-                "Compute (c) to see recurrence structure preview + MSE.",
-            ));
+            content_lines.push(Line::from("Compute (c) to see recurrence structure preview + MSE."));
         }
 
         let content = Paragraph::new(content_lines).block(block);
@@ -192,13 +173,7 @@ pub fn render_dynamics_tab(frame: &mut Frame, app: &App, area: Rect) {
 
 /// Downsampled styled RP preview. Returns Lines using colored Spans for better visibility.
 /// Recurrent points in bright green; non-recurrent dim or spaces. Uses symworx-dynamics.
-fn render_styled_rp_preview(
-    series: &[f64],
-    m: usize,
-    tau: usize,
-    radius: f64,
-    theiler: usize,
-) -> Vec<Line<'static>> {
+fn render_styled_rp_preview(series: &[f64], m: usize, tau: usize, radius: f64, theiler: usize) -> Vec<Line<'static>> {
     use symworx_dynamics::RecurrencePlot;
 
     let max_pts = 42usize; // a bit denser than before

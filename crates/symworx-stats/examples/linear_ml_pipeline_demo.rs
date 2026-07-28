@@ -169,9 +169,7 @@ fn main() {
     );
 
     println!("\nDone.");
-    println!(
-        "  Simple fit/predict: cargo run -p symworx-stats --example linear_regression_demo --features linalg"
-    );
+    println!("  Simple fit/predict: cargo run -p symworx-stats --example linear_regression_demo --features linalg");
 }
 
 fn make_regression(n: usize, seed: u64) -> (Array2<f64>, Array1<f64>) {

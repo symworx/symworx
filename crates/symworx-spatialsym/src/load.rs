@@ -54,31 +54,24 @@ pub async fn load_trajectories_csv_async(path: &str) -> Result<(Vec<f64>, Vec<Ve
 }
 
 /// Internal helper that takes a csv::Reader (used by both sync and async paths).
-fn load_trajectories_from_reader<R: std::io::Read>(
-    mut rdr: csv::Reader<R>,
-) -> Result<(Vec<f64>, Vec<Vec<Point2>>)> {
+fn load_trajectories_from_reader<R: std::io::Read>(mut rdr: csv::Reader<R>) -> Result<(Vec<f64>, Vec<Vec<Point2>>)> {
     let headers = rdr
         .headers()
         .map_err(|e| SpatialError::InvalidParameter(format!("CSV header error: {}", e)))?
         .clone();
 
-    let find_col =
-        |name: &str| -> Option<usize> { headers.iter().position(|h| h.eq_ignore_ascii_case(name)) };
+    let find_col = |name: &str| -> Option<usize> { headers.iter().position(|h| h.eq_ignore_ascii_case(name)) };
 
-    let col_time = find_col("time")
-        .ok_or_else(|| SpatialError::InvalidParameter("missing 'time' column".into()))?;
-    let col_id = find_col("agent_id")
-        .ok_or_else(|| SpatialError::InvalidParameter("missing 'agent_id' column".into()))?;
-    let col_x =
-        find_col("x").ok_or_else(|| SpatialError::InvalidParameter("missing 'x' column".into()))?;
-    let col_y =
-        find_col("y").ok_or_else(|| SpatialError::InvalidParameter("missing 'y' column".into()))?;
+    let col_time = find_col("time").ok_or_else(|| SpatialError::InvalidParameter("missing 'time' column".into()))?;
+    let col_id =
+        find_col("agent_id").ok_or_else(|| SpatialError::InvalidParameter("missing 'agent_id' column".into()))?;
+    let col_x = find_col("x").ok_or_else(|| SpatialError::InvalidParameter("missing 'x' column".into()))?;
+    let col_y = find_col("y").ok_or_else(|| SpatialError::InvalidParameter("missing 'y' column".into()))?;
 
     let mut by_agent: BTreeMap<i32, Vec<(f64, Point2)>> = BTreeMap::new();
 
     for result in rdr.records() {
-        let record =
-            result.map_err(|e| SpatialError::InvalidParameter(format!("CSV row error: {}", e)))?;
+        let record = result.map_err(|e| SpatialError::InvalidParameter(format!("CSV row error: {}", e)))?;
 
         let t: f64 = record
             .get(col_time)
@@ -108,13 +101,7 @@ fn load_trajectories_from_reader<R: std::io::Read>(
         return Err(SpatialError::InsufficientData("no data loaded".into()));
     }
 
-    let times: Vec<f64> = by_agent
-        .values()
-        .next()
-        .unwrap()
-        .iter()
-        .map(|(t, _)| *t)
-        .collect();
+    let times: Vec<f64> = by_agent.values().next().unwrap().iter().map(|(t, _)| *t).collect();
 
     let mut trajectories = Vec::new();
     for (_id, mut entries) in by_agent {

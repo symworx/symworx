@@ -125,8 +125,7 @@ pub fn compute_movement_load_metrics(
         distance += spd * dt;
     }
 
-    let load =
-        estimate_external_load_from_pace(speeds, times, accel_count, decel_count, action_weight);
+    let load = estimate_external_load_from_pace(speeds, times, accel_count, decel_count, action_weight);
 
     MovementLoadMetrics {
         total_distance: distance,
@@ -162,11 +161,7 @@ pub fn highest_rolling(series: &[f64], window: usize) -> f64 {
 
 /// Find contiguous regions where value >= threshold.
 /// Returns vec of (start_idx, end_idx) half-open.
-pub fn find_exceedance_regions(
-    series: &[f64],
-    threshold: f64,
-    min_duration: usize,
-) -> Vec<(usize, usize)> {
+pub fn find_exceedance_regions(series: &[f64], threshold: f64, min_duration: usize) -> Vec<(usize, usize)> {
     let mut regions = vec![];
     let mut i = 0;
     while i < series.len() {
@@ -188,10 +183,7 @@ pub fn find_exceedance_regions(
 
 /// Build a simple marker string for TUI viz (short bars for exceedances).
 pub fn exceedance_marker_string(series: &[f64], threshold: f64) -> String {
-    series
-        .iter()
-        .map(|&v| if v >= threshold { "│" } else { "·" })
-        .collect()
+    series.iter().map(|&v| if v >= threshold { "│" } else { "·" }).collect()
 }
 
 // ---------------------------------------------------------------------------
@@ -304,11 +296,7 @@ pub fn compute_ride_metrics(times_s: &[f64], power: &[f64], ftp_w: f64) -> RideM
 
 /// Back-compat convenience wrapper when you have an ActivityData (TUI usage).
 /// Callers must depend on symworx-io separately.
-pub fn compute_ride_metrics_from_activity(
-    times_s: &[f64],
-    power: &[Option<f64>],
-    ftp_w: f64,
-) -> RideMetrics {
+pub fn compute_ride_metrics_from_activity(times_s: &[f64], power: &[Option<f64>], ftp_w: f64) -> RideMetrics {
     let p_clean: Vec<f64> = power.iter().map(|o| o.unwrap_or(0.0)).collect();
     compute_ride_metrics(times_s, &p_clean, ftp_w)
 }

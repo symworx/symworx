@@ -168,13 +168,8 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
                                 .iter()
                                 .enumerate()
                                 .filter_map(|(ai, row)| {
-                                    row.get(idx).and_then(|d| {
-                                        if d.features.is_ball_carrier {
-                                            Some(ai)
-                                        } else {
-                                            None
-                                        }
-                                    })
+                                    row.get(idx)
+                                        .and_then(|d| if d.features.is_ball_carrier { Some(ai) } else { None })
                                 })
                                 .collect();
                             if !current_carriers.is_empty() {
@@ -189,26 +184,21 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
 
             lines.push("Positions + features:".to_string());
             for (i, p) in spatial_frame.agent_positions.iter().enumerate() {
-                let gt = app.spatial_labels.as_ref().and_then(|labs| {
-                    labs.get(i)
-                        .and_then(|row| row.get(idx))
-                        .map(|a| format!("{:?}", a))
-                });
+                let gt = app
+                    .spatial_labels
+                    .as_ref()
+                    .and_then(|labs| labs.get(i).and_then(|row| row.get(idx)).map(|a| format!("{:?}", a)));
 
                 let line = if let Some(decs) = &app.spatial_decisions {
                     if let Some(d) = decs.get(i).and_then(|row| row.get(idx)) {
                         let f = &d.features;
-                        let mut parts: Vec<String> =
-                            vec![format!("CL:{:<11}", format!("{:?}", d.action))];
+                        let mut parts: Vec<String> = vec![format!("CL:{:<11}", format!("{:?}", d.action))];
                         if let Some(c) = d.confidence {
                             parts.push(format!("conf={:.2}", c));
                         }
                         parts.push(format!("spd={:.1}", f.speed));
                         parts.push(format!("fwd={:+.2}", f.forward_component));
-                        parts.push(format!(
-                            "ball={}",
-                            if f.is_ball_carrier { "Y" } else { "N" }
-                        ));
+                        parts.push(format!("ball={}", if f.is_ball_carrier { "Y" } else { "N" }));
                         if let Some(v) = f.nearest_opponent_dist {
                             parts.push(format!("near={:.1}", v));
                         }
@@ -258,8 +248,8 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
                     ev_lines.push("  ... (more events)".into());
                 }
             }
-            let events_p = Paragraph::new(ev_lines.join("\n"))
-                .block(Block::new().borders(Borders::TOP).title(" Event Tags "));
+            let events_p =
+                Paragraph::new(ev_lines.join("\n")).block(Block::new().borders(Borders::TOP).title(" Event Tags "));
             frame.render_widget(events_p, chunks[3]);
 
             let summaries = app
@@ -285,8 +275,8 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
                     focal_str
                 ));
             }
-            let sum_p = Paragraph::new(sum_lines.join("\n"))
-                .block(Block::new().borders(Borders::TOP).title(" Summary Data "));
+            let sum_p =
+                Paragraph::new(sum_lines.join("\n")).block(Block::new().borders(Borders::TOP).title(" Summary Data "));
             frame.render_widget(sum_p, chunks[4]);
         } else {
             let content = Paragraph::new("No frame data");
@@ -321,12 +311,7 @@ fn render_spatial_import_menu(frame: &mut Frame, app: &App, area: Rect) {
             if p.is_file() {
                 if let Some(ext) = p.extension().and_then(|x| x.to_str()) {
                     if ext.eq_ignore_ascii_case("csv") {
-                        files.push(
-                            p.file_name()
-                                .unwrap_or_default()
-                                .to_string_lossy()
-                                .to_string(),
-                        );
+                        files.push(p.file_name().unwrap_or_default().to_string_lossy().to_string());
                     }
                 }
             } else if p.is_dir() {

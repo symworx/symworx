@@ -44,10 +44,7 @@ pub fn render_import(frame: &mut Frame, app: &mut App, area: Rect) {
     if !app.manual_path.is_empty() {
         h.push_str(&format!("  Manual: {}", app.manual_path));
     }
-    frame.render_widget(
-        Paragraph::new(h).style(Style::default().fg(Color::Yellow)),
-        chunks[0],
-    );
+    frame.render_widget(Paragraph::new(h).style(Style::default().fg(Color::Yellow)), chunks[0]);
 
     // File list (shared discovery with BioSym)
     let vis = app.visible_indices();
@@ -75,11 +72,7 @@ pub fn render_import(frame: &mut Frame, app: &mut App, area: Rect) {
                 .padding(Padding::horizontal(1))
                 .border_style(Color::Magenta),
         )
-        .highlight_style(
-            Style::default()
-                .fg(Color::Cyan)
-                .add_modifier(Modifier::BOLD),
-        )
+        .highlight_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
         .highlight_symbol("> ");
     frame.render_stateful_widget(list, chunks[1], &mut app.list_state);
 

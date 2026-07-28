@@ -45,9 +45,7 @@ impl Pca {
         // Use population variance convention (s^2 / n) to match var_axis(0.0) in whitening tests
         let n_samples = centered.nrows() as f64;
         let explained_variance = if n_samples > 0.0 {
-            svd.s
-                .slice(s![0..n_components])
-                .mapv(|s| (s * s) / n_samples)
+            svd.s.slice(s![0..n_components]).mapv(|s| (s * s) / n_samples)
         } else {
             Array1::zeros(n_components)
         };

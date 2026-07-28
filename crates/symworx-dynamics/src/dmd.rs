@@ -214,10 +214,7 @@ pub fn snapshots_from_states(states: &[Array1<f64>]) -> Array2<f64> {
 /// Input `embedded` is a list of delay vectors (each length `m_embed`);
 /// output is `m_embed × n_vectors`.
 pub fn snapshots_from_embedding(embedded: &[Vec<f64>]) -> Array2<f64> {
-    assert!(
-        !embedded.is_empty(),
-        "embedded trajectories must not be empty"
-    );
+    assert!(!embedded.is_empty(), "embedded trajectories must not be empty");
     let n = embedded[0].len();
     let m = embedded.len();
     let mut out = Array2::zeros((n, m));
@@ -280,10 +277,7 @@ fn fit_amplitudes(modes: &Array2<Complex64>, x0: &Array1<f64>) -> Array1<Complex
             a[[n + i, r + j]] = z.re;
         }
     }
-    let sol = a
-        .least_squares(&rhs)
-        .expect("amplitude least-squares failed")
-        .solution;
+    let sol = a.least_squares(&rhs).expect("amplitude least-squares failed").solution;
     let mut b = Array1::<Complex64>::zeros(r);
     for j in 0..r {
         b[j] = Complex64::new(sol[j], sol[r + j]);

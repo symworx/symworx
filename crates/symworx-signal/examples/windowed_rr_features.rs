@@ -20,21 +20,13 @@ use symworx_signal::processing::{
 
 fn main() {
     // Synthetic "raw" RR intervals (seconds) with one obvious artifact
-    let mut raw_rr: Vec<f64> = (0..120)
-        .map(|i| 0.85 + 0.05 * ((i as f64 * 0.1).sin()))
-        .collect();
+    let mut raw_rr: Vec<f64> = (0..120).map(|i| 0.85 + 0.05 * ((i as f64 * 0.1).sin())).collect();
     raw_rr[47] = 2.3; // big outlier (ectopic-like)
 
-    println!(
-        "Raw RR len = {}, has obvious spike at index 47",
-        raw_rr.len()
-    );
+    println!("Raw RR len = {}, has obvious spike at index 47", raw_rr.len());
 
     // 1. Clean using "dynamics interpolation" (Local MAD + linear interp replacement)
-    let crit = OutlierCriterion::LocalMAD {
-        half_window: 5,
-        k: 4.0,
-    };
+    let crit = OutlierCriterion::LocalMAD { half_window: 5, k: 4.0 };
     let cleaned = robust_interpolate(&raw_rr, crit, FillStrategy::LinearInterp);
     println!("Cleaned RR (first 5): {:?}", &cleaned[..5]);
 
@@ -55,9 +47,7 @@ fn main() {
     // 30-second windows at 4 Hz = 120 samples, step 30 s = 120 samples (non-overlap for demo)
     let win_len = 120;
     let step = 120;
-    let means: Vec<f64> = rolling_apply(&tach, win_len, step, |w| {
-        w.iter().sum::<f64>() / w.len() as f64
-    });
+    let means: Vec<f64> = rolling_apply(&tach, win_len, step, |w| w.iter().sum::<f64>() / w.len() as f64);
     println!(
         "Per-window means (approx RR) over ~30 s non-overlapping windows: {:?}",
         means

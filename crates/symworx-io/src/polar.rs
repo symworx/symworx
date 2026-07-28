@@ -202,10 +202,7 @@ impl PolarCredentials {
 
     /// True when a user access token is available.
     pub fn has_user_token(&self) -> bool {
-        self.access_token
-            .as_ref()
-            .map(|t| !t.is_empty())
-            .unwrap_or(false)
+        self.access_token.as_ref().map(|t| !t.is_empty()).unwrap_or(false)
     }
 
     /// Browser authorization URL (user must grant access).
@@ -246,8 +243,7 @@ fn urlencoding_minimal(s: &str) -> String {
 /// Load token JSON if present.
 pub fn load_token_file(path: &Path) -> Result<PolarTokenFile, SymError> {
     let text = fs::read_to_string(path).map_err(SymError::Io)?;
-    serde_json::from_str(&text)
-        .map_err(|e| SymError::UnsupportedFormat(format!("parse polar token file: {e}")))
+    serde_json::from_str(&text).map_err(|e| SymError::UnsupportedFormat(format!("parse polar token file: {e}")))
 }
 
 /// Write token JSON (creates parent dirs). Mode is best-effort 0600 on Unix via umask only.
@@ -269,10 +265,7 @@ pub fn save_token_file(path: &Path, token: &PolarTokenFile) -> Result<(), SymErr
 }
 
 /// Exchange authorization code for access token.
-pub fn exchange_authorization_code(
-    creds: &PolarCredentials,
-    code: &str,
-) -> Result<PolarTokenFile, SymError> {
+pub fn exchange_authorization_code(creds: &PolarCredentials, code: &str) -> Result<PolarTokenFile, SymError> {
     let basic = base64::Engine::encode(
         &base64::engine::general_purpose::STANDARD,
         format!("{}:{}", creds.client_id, creds.client_secret),
@@ -312,8 +305,8 @@ pub fn exchange_authorization_code(
         #[allow(dead_code)]
         expires_in: Option<i64>,
     }
-    let tr: TokenResp = serde_json::from_str(&text)
-        .map_err(|e| SymError::UnsupportedFormat(format!("token JSON: {e}")))?;
+    let tr: TokenResp =
+        serde_json::from_str(&text).map_err(|e| SymError::UnsupportedFormat(format!("token JSON: {e}")))?;
     let user_id = tr
         .x_user_id
         .ok_or_else(|| SymError::UnsupportedFormat("token response missing x_user_id".into()))?;
@@ -349,9 +342,7 @@ pub fn register_user(access_token: &str, member_id: &str) -> Result<(), SymError
                 "Polar register user HTTP {code}: {text}"
             )))
         }
-        Err(e) => Err(SymError::UnsupportedFormat(format!(
-            "Polar register user failed: {e}"
-        ))),
+        Err(e) => Err(SymError::UnsupportedFormat(format!("Polar register user failed: {e}"))),
     }
 }
 
@@ -432,15 +423,12 @@ fn wait_for_oauth_code(redirect_uri: &str, expected_state: &str) -> Result<Strin
     }
 
     let body = if let Some(ref err) = error {
-        format!(
-            "<html><body><h1>Polar auth failed</h1><p>{err}</p><p>You can close this tab.</p></body></html>"
-        )
+        format!("<html><body><h1>Polar auth failed</h1><p>{err}</p><p>You can close this tab.</p></body></html>")
     } else if code.is_some() {
         "<html><body><h1>Symload Polar auth OK</h1><p>You can close this tab and return to the terminal.</p></body></html>"
             .to_string()
     } else {
-        "<html><body><h1>Missing code</h1><p>No authorization code in redirect.</p></body></html>"
-            .to_string()
+        "<html><body><h1>Missing code</h1><p>No authorization code in redirect.</p></body></html>".to_string()
     };
     let resp = format!(
         "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
@@ -450,13 +438,9 @@ fn wait_for_oauth_code(redirect_uri: &str, expected_state: &str) -> Result<Strin
     let _ = stream.write_all(resp.as_bytes());
 
     if let Some(err) = error {
-        return Err(SymError::UnsupportedFormat(format!(
-            "Polar OAuth error: {err}"
-        )));
+        return Err(SymError::UnsupportedFormat(format!("Polar OAuth error: {err}")));
     }
-    let code = code.ok_or_else(|| {
-        SymError::UnsupportedFormat("OAuth redirect missing code parameter".into())
-    })?;
+    let code = code.ok_or_else(|| SymError::UnsupportedFormat("OAuth redirect missing code parameter".into()))?;
     if let Some(st) = state {
         if st != expected_state {
             return Err(SymError::UnsupportedFormat(format!(
@@ -472,19 +456,15 @@ fn parse_redirect_listen(redirect_uri: &str) -> Result<(String, u16, String), Sy
     let rest = redirect_uri
         .strip_prefix("http://")
         .or_else(|| redirect_uri.strip_prefix("https://"))
-        .ok_or_else(|| {
-            SymError::UnsupportedFormat(
-                "POLAR_REDIRECT_URI must be http://127.0.0.1:PORT/path".into(),
-            )
-        })?;
+        .ok_or_else(|| SymError::UnsupportedFormat("POLAR_REDIRECT_URI must be http://127.0.0.1:PORT/path".into()))?;
     let (hostport, path) = rest
         .split_once('/')
         .map(|(h, p)| (h, format!("/{p}")))
         .unwrap_or((rest, "/".into()));
     let (host, port) = if let Some((h, p)) = hostport.split_once(':') {
-        let port: u16 = p.parse().map_err(|_| {
-            SymError::UnsupportedFormat(format!("invalid port in redirect URI: {p}"))
-        })?;
+        let port: u16 = p
+            .parse()
+            .map_err(|_| SymError::UnsupportedFormat(format!("invalid port in redirect URI: {p}")))?;
         (h.to_string(), port)
     } else {
         (hostport.to_string(), 80)
@@ -573,11 +553,11 @@ pub fn list_exercises(access_token: &str) -> Result<Vec<PolarExerciseSummary>, S
 
 /// Parse list-exercises JSON (array of objects with `id`).
 pub fn parse_exercise_list_json(text: &str) -> Result<Vec<PolarExerciseSummary>, SymError> {
-    let v: serde_json::Value = serde_json::from_str(text)
-        .map_err(|e| SymError::UnsupportedFormat(format!("exercises JSON: {e}")))?;
-    let arr = v.as_array().ok_or_else(|| {
-        SymError::UnsupportedFormat("exercises response is not a JSON array".into())
-    })?;
+    let v: serde_json::Value =
+        serde_json::from_str(text).map_err(|e| SymError::UnsupportedFormat(format!("exercises JSON: {e}")))?;
+    let arr = v
+        .as_array()
+        .ok_or_else(|| SymError::UnsupportedFormat("exercises response is not a JSON array".into()))?;
     let mut out = Vec::with_capacity(arr.len());
     for item in arr {
         let id = item
@@ -591,22 +571,10 @@ pub fn parse_exercise_list_json(text: &str) -> Result<Vec<PolarExerciseSummary>,
             .ok_or_else(|| SymError::UnsupportedFormat("exercise missing id".into()))?;
         out.push(PolarExerciseSummary {
             id,
-            start_time: item
-                .get("start_time")
-                .and_then(|x| x.as_str())
-                .map(|s| s.to_string()),
-            upload_time: item
-                .get("upload_time")
-                .and_then(|x| x.as_str())
-                .map(|s| s.to_string()),
-            sport: item
-                .get("sport")
-                .and_then(|x| x.as_str())
-                .map(|s| s.to_string()),
-            device: item
-                .get("device")
-                .and_then(|x| x.as_str())
-                .map(|s| s.to_string()),
+            start_time: item.get("start_time").and_then(|x| x.as_str()).map(|s| s.to_string()),
+            upload_time: item.get("upload_time").and_then(|x| x.as_str()).map(|s| s.to_string()),
+            sport: item.get("sport").and_then(|x| x.as_str()).map(|s| s.to_string()),
+            device: item.get("device").and_then(|x| x.as_str()).map(|s| s.to_string()),
         });
     }
     Ok(out)
@@ -629,9 +597,7 @@ pub fn download_exercise_fit(access_token: &str, exercise_id: &str) -> Result<Ve
         })?;
 
     let mut bytes = Vec::new();
-    resp.into_reader()
-        .read_to_end(&mut bytes)
-        .map_err(SymError::Io)?;
+    resp.into_reader().read_to_end(&mut bytes).map_err(SymError::Io)?;
     if bytes.len() < 14 {
         return Err(SymError::UnsupportedFormat(format!(
             "FIT for {exercise_id} too small ({} bytes)",
@@ -661,23 +627,13 @@ pub fn polar_fit_filename(exercise_id: &str) -> String {
 /// Extract Polar exercise id from a landed filename (`polar_{id}.fit`).
 pub fn external_id_from_polar_filename(path: &Path) -> Option<String> {
     let name = path.file_name()?.to_str()?;
-    let stem = name
-        .strip_suffix(".fit")
-        .or_else(|| name.strip_suffix(".FIT"))?;
+    let stem = name.strip_suffix(".fit").or_else(|| name.strip_suffix(".FIT"))?;
     let id = stem.strip_prefix("polar_")?;
-    if id.is_empty() {
-        None
-    } else {
-        Some(id.to_string())
-    }
+    if id.is_empty() { None } else { Some(id.to_string()) }
 }
 
 /// List exercises and download missing FITs into `target_dir` (default `raw/polar`).
-pub fn fetch_exercise_fits(
-    access_token: &str,
-    target_dir: &Path,
-    dry_run: bool,
-) -> Result<PolarFetchReport, SymError> {
+pub fn fetch_exercise_fits(access_token: &str, target_dir: &Path, dry_run: bool) -> Result<PolarFetchReport, SymError> {
     fs::create_dir_all(target_dir).map_err(SymError::Io)?;
     let exercises = list_exercises(access_token)?;
     let mut report = PolarFetchReport {

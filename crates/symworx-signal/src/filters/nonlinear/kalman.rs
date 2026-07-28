@@ -186,11 +186,7 @@ impl KalmanFilter {
     /// (and also the filtered states for immediate use).
     ///
     /// `controls` can be `None` or a slice of control vectors (must match length of `zs`).
-    pub fn run_forward(
-        &mut self,
-        zs: &[Array1<f64>],
-        controls: Option<&[Array1<f64>]>,
-    ) -> FilterRun {
+    pub fn run_forward(&mut self, zs: &[Array1<f64>], controls: Option<&[Array1<f64>]>) -> FilterRun {
         let mut filtered_states = Vec::with_capacity(zs.len());
         let mut filtered_covs = Vec::with_capacity(zs.len());
         let mut predicted_states = Vec::with_capacity(zs.len());
@@ -219,9 +215,7 @@ impl KalmanFilter {
             let hx = h.dot(&x_pred);
             let y = z - &hx;
             let s = h.dot(&p_pred).dot(&h.t()) + r;
-            let k = p_pred
-                .dot(&h.t())
-                .dot(&s.inv().expect("S inversion failed"));
+            let k = p_pred.dot(&h.t()).dot(&s.inv().expect("S inversion failed"));
 
             let x_upd = &x_pred + &k.dot(&y);
             let i: Array2<f64> = Array2::eye(p_pred.nrows());
@@ -402,8 +396,7 @@ mod tests {
         let q = Array2::eye(2) * 0.01;
         let r = array![[0.1]];
         let b = array![[1.0], [0.0]];
-        let mut kf =
-            KalmanFilter::from_discrete_lti(f, h, q, r, array![0.0, 0.0], Array2::eye(2), Some(b));
+        let mut kf = KalmanFilter::from_discrete_lti(f, h, q, r, array![0.0, 0.0], Array2::eye(2), Some(b));
         kf.predict(Some(&array![0.5]));
         assert!((kf.state()[0] - 0.5).abs() < 1e-12);
     }
@@ -420,10 +413,7 @@ mod tests {
         let f = array![[1.0, dt], [0.0, 1.0]];
         let h = array![[1.0, 0.0]];
         let q = array![
-            [
-                process_var * dt.powi(4) / 4.0,
-                process_var * dt.powi(3) / 2.0
-            ],
+            [process_var * dt.powi(4) / 4.0, process_var * dt.powi(3) / 2.0],
             [process_var * dt.powi(3) / 2.0, process_var * dt.powi(2)]
         ];
         let r = array![[meas_var]];

@@ -100,11 +100,7 @@ pub fn peak_thresholds(
 ///
 /// Height/prominence scale with the series range; min spacing uses `fs` when known.
 /// Works for raw PPG/resp and for derivative series after process menu.
-pub fn detect_peaks_with_params(
-    data: &[f64],
-    fs: Option<f64>,
-    params: &PeakDetectParams,
-) -> Vec<usize> {
+pub fn detect_peaks_with_params(data: &[f64], fs: Option<f64>, params: &PeakDetectParams) -> Vec<usize> {
     let Some((height, prominence, distance, _, _, _)) = peak_thresholds(data, fs, params) else {
         return vec![];
     };

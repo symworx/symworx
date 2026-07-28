@@ -30,28 +30,19 @@ pub fn render_loadsym_list(frame: &mut Frame, app: &App, area: Rect) {
             Style::default().fg(Color::Cyan),
         )),
         Line::from(""),
-        Line::from(format!(
-            "{}1. Workout Analysis",
-            if sel == 0 { "▶ " } else { "  " }
-        )),
+        Line::from(format!("{}1. Workout Analysis", if sel == 0 { "▶ " } else { "  " })),
         Line::from(Span::styled(
             "   Charts: power/HR/speed/cad/elev · 1–5 toggle · o open · SEPi/TSLi",
             Style::default().fg(Color::DarkGray),
         )),
         Line::from(""),
-        Line::from(format!(
-            "{}2. Metrics / Library",
-            if sel == 1 { "▶ " } else { "  " }
-        )),
+        Line::from(format!("{}2. Metrics / Library", if sel == 1 { "▶ " } else { "  " })),
         Line::from(Span::styled(
             "   Table + trend / bi-plot · 1–8 metrics · Enter open workout",
             Style::default().fg(Color::DarkGray),
         )),
         Line::from(""),
-        Line::from(format!(
-            "{}3. Calendar View",
-            if sel == 2 { "▶ " } else { "  " }
-        )),
+        Line::from(format!("{}3. Calendar View", if sel == 2 { "▶ " } else { "  " })),
         Line::from(Span::styled(
             if app.loadsym_from_catalog {
                 format!(
@@ -93,9 +84,7 @@ pub fn render_workout_open_modal(frame: &mut Frame, app: &App, area: Rect) {
     let mut lines: Vec<Line> = vec![
         Line::from(Span::styled(
             format!("Select activity file  ({n} found)  ·  ↑↓  Enter load  Esc cancel"),
-            Style::default()
-                .fg(Color::Cyan)
-                .add_modifier(Modifier::BOLD),
+            Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
     ];
@@ -117,10 +106,7 @@ pub fn render_workout_open_modal(frame: &mut Frame, app: &App, area: Rect) {
         for i in start..end {
             let path = &app.workout_file_list[i];
             let name = path.file_name().and_then(|s| s.to_str()).unwrap_or("?");
-            let parent = path
-                .parent()
-                .map(|p| p.display().to_string())
-                .unwrap_or_default();
+            let parent = path.parent().map(|p| p.display().to_string()).unwrap_or_default();
             let marker = if i == sel { "▶" } else { " " };
             let style = if i == sel {
                 Style::default()
@@ -131,11 +117,7 @@ pub fn render_workout_open_modal(frame: &mut Frame, app: &App, area: Rect) {
                 Style::default()
             };
             lines.push(Line::from(Span::styled(
-                format!(
-                    "{marker} {:<36}  {}",
-                    truncate_str(name, 36),
-                    truncate_str(&parent, 40)
-                ),
+                format!("{marker} {:<36}  {}", truncate_str(name, 36), truncate_str(&parent, 40)),
                 style,
             )));
         }

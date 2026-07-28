@@ -38,10 +38,7 @@ fn main() {
     println!("1) Standardize features (fit on all rows for this toy demo)");
     let (scaler, x_std) = StandardScaler::fit_transform(&x);
     println!("   mean  = [{:.3}, {:.3}]", scaler.mean[0], scaler.mean[1]);
-    println!(
-        "   scale = [{:.3}, {:.3}]",
-        scaler.scale[0], scaler.scale[1]
-    );
+    println!("   scale = [{:.3}, {:.3}]", scaler.scale[0], scaler.scale[1]);
 
     println!("\n2) Fit logistic regression on scaled features");
     let model = logistic_regression(
@@ -67,17 +64,11 @@ fn main() {
     println!("   {rep}");
     println!(
         "   per-class precision = {:?}",
-        rep.precision
-            .iter()
-            .map(|v| format!("{v:.3}"))
-            .collect::<Vec<_>>()
+        rep.precision.iter().map(|v| format!("{v:.3}")).collect::<Vec<_>>()
     );
     println!(
         "   per-class recall    = {:?}",
-        rep.recall
-            .iter()
-            .map(|v| format!("{v:.3}"))
-            .collect::<Vec<_>>()
+        rep.recall.iter().map(|v| format!("{v:.3}")).collect::<Vec<_>>()
     );
     println!(
         "   per-class F1        = {:?}",

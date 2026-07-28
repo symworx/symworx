@@ -24,11 +24,7 @@ use crate::app::{
     StatsLabTask,
 };
 
-pub fn run_classify(
-    table: &TableData,
-    x_col: usize,
-    y_col: usize,
-) -> Result<StatsLabResult, String> {
+pub fn run_classify(table: &TableData, x_col: usize, y_col: usize) -> Result<StatsLabResult, String> {
     let n = table.n_rows();
     let p = table.n_cols();
     if n < 10 {
@@ -136,27 +132,15 @@ pub fn run_classify(
         r.scatter_y = sy;
         if n_feat == 1 {
             let xmin = r.scatter_x.iter().copied().fold(f64::INFINITY, f64::min);
-            let xmax = r
-                .scatter_x
-                .iter()
-                .copied()
-                .fold(f64::NEG_INFINITY, f64::max);
+            let xmax = r.scatter_x.iter().copied().fold(f64::NEG_INFINITY, f64::max);
             r.fit_line_x = vec![xmin, xmax];
             r.fit_line_y = vec![0.5, 0.5];
         }
         r.scatter_x_label = x_lab;
         r.scatter_y_label = y_lab;
         r.is_pred_vs_obs = false;
-        r.residuals = proba
-            .iter()
-            .zip(y_bin.iter())
-            .map(|(&p, &yi)| p - yi)
-            .collect();
-        r.ba_mean = proba
-            .iter()
-            .zip(y_bin.iter())
-            .map(|(&p, &yi)| (p + yi) / 2.0)
-            .collect();
+        r.residuals = proba.iter().zip(y_bin.iter()).map(|(&p, &yi)| p - yi).collect();
+        r.ba_mean = proba.iter().zip(y_bin.iter()).map(|(&p, &yi)| (p + yi) / 2.0).collect();
         Ok(r)
     } else {
         // Multiclass OVR — continuous X × K-group teaching path
@@ -291,10 +275,7 @@ pub fn format_conf_mat(cm: &ndarray::Array2<usize>, class_values: &[f64]) -> Str
     s
 }
 
-pub fn format_per_class_prf(
-    rep: &symworx_stats::ClassificationReport,
-    class_values: &[f64],
-) -> String {
+pub fn format_per_class_prf(rep: &symworx_stats::ClassificationReport, class_values: &[f64]) -> String {
     let k = rep
         .n_classes
         .min(class_values.len())

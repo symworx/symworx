@@ -43,10 +43,7 @@ impl KalmanFilter1D {
         let f = array![[1.0, dt], [0.0, 1.0]];
 
         let q = array![
-            [
-                process_var * dt.powi(4) / 4.0,
-                process_var * dt.powi(3) / 2.0
-            ],
+            [process_var * dt.powi(4) / 4.0, process_var * dt.powi(3) / 2.0],
             [process_var * dt.powi(3) / 2.0, process_var * dt.powi(2)]
         ];
 
@@ -77,10 +74,7 @@ impl KalmanFilter1D {
         let s = self.h.dot(&self.p).dot(&self.h.t()) + &self.r;
 
         // Kalman gain
-        let k: Array2<f64> = self
-            .p
-            .dot(&self.h.t())
-            .dot(&s.inv().expect("Matrix inversion failed"));
+        let k: Array2<f64> = self.p.dot(&self.h.t()).dot(&s.inv().expect("Matrix inversion failed"));
 
         // State update: x = x + K * y
         let correction = k.dot(&y);

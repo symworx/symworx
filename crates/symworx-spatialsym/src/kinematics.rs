@@ -76,12 +76,7 @@ pub fn future_bearings(positions: &[Point2], times: &[f64], window_sec: f64) -> 
     windowed_bearings(positions, times, window_sec, /* look_forward= */ true)
 }
 
-fn windowed_bearings(
-    positions: &[Point2],
-    times: &[f64],
-    window_sec: f64,
-    look_forward: bool,
-) -> Vec<Option<f64>> {
+fn windowed_bearings(positions: &[Point2], times: &[f64], window_sec: f64, look_forward: bool) -> Vec<Option<f64>> {
     let n = positions.len();
     if n == 0 || times.len() != n || window_sec <= 0.0 {
         return vec![None; n];
@@ -161,11 +156,7 @@ pub fn derive_speeds(positions: &[Point2], times: &[f64]) -> Vec<f64> {
 ///
 /// `accel_threshold`: change in speed per second (m/s²) to count as significant (e.g. 2.0-3.0).
 /// Returns (num_accelerations, num_decelerations)
-pub fn count_accelerations_decelerations(
-    speeds: &[f64],
-    times: &[f64],
-    accel_threshold: f64,
-) -> (usize, usize) {
+pub fn count_accelerations_decelerations(speeds: &[f64], times: &[f64], accel_threshold: f64) -> (usize, usize) {
     if speeds.len() < 2 || times.len() < speeds.len() + 1 {
         return (0, 0);
     }
@@ -210,11 +201,7 @@ mod tests {
 
     #[test]
     fn velocities_from_positions() {
-        let pos = vec![
-            Point2::new(0.0, 0.0),
-            Point2::new(1.0, 0.0),
-            Point2::new(3.0, 0.0),
-        ];
+        let pos = vec![Point2::new(0.0, 0.0), Point2::new(1.0, 0.0), Point2::new(3.0, 0.0)];
         let vels = derive_velocities(&pos, 1.0);
         assert_eq!(vels.len(), 2);
         assert!((vels[0].x - 1.0).abs() < 1e-9);

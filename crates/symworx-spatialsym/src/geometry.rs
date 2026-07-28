@@ -131,10 +131,7 @@ impl Mul<f64> for Vec2 {
 impl Neg for Vec2 {
     type Output = Self;
     fn neg(self) -> Self::Output {
-        Self {
-            x: -self.x,
-            y: -self.y,
-        }
+        Self { x: -self.x, y: -self.y }
     }
 }
 
@@ -189,11 +186,7 @@ impl Vec2 {
     /// Returns a unit vector in the same direction (NaN if zero length).
     pub fn normalize(self) -> Self {
         let n = self.norm();
-        if n == 0.0 {
-            Self::zero()
-        } else {
-            self * (1.0 / n)
-        }
+        if n == 0.0 { Self::zero() } else { self * (1.0 / n) }
     }
 
     /// Bearing in radians using atan2(dy, dx), range (-pi, pi].

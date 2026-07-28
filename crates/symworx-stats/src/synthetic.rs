@@ -144,10 +144,7 @@ impl std::fmt::Display for SyntheticError {
 impl std::error::Error for SyntheticError {}
 
 /// Generate a synthetic teaching table for `preset` with `spec`.
-pub fn generate(
-    preset: SyntheticPreset,
-    spec: &SyntheticSpec,
-) -> Result<SyntheticTable, SyntheticError> {
+pub fn generate(preset: SyntheticPreset, spec: &SyntheticSpec) -> Result<SyntheticTable, SyntheticError> {
     if spec.n == 0 {
         return Err(SyntheticError("n must be > 0".into()));
     }
@@ -212,10 +209,7 @@ fn gen_bivariate(rng: &mut StdRng, spec: &SyntheticSpec) -> Result<SyntheticTabl
     })
 }
 
-fn gen_linear_regression(
-    rng: &mut StdRng,
-    spec: &SyntheticSpec,
-) -> Result<SyntheticTable, SyntheticError> {
+fn gen_linear_regression(rng: &mut StdRng, spec: &SyntheticSpec) -> Result<SyntheticTable, SyntheticError> {
     let p = spec.n_features.clamp(1, 8);
     // Fixed teaching coefficients: β0=1, βj = j
     let mut headers = Vec::with_capacity(p + 1);
@@ -251,11 +245,7 @@ fn gen_linear_regression(
     })
 }
 
-fn gen_class_blobs(
-    rng: &mut StdRng,
-    spec: &SyntheticSpec,
-    n_classes: usize,
-) -> Result<SyntheticTable, SyntheticError> {
+fn gen_class_blobs(rng: &mut StdRng, spec: &SyntheticSpec, n_classes: usize) -> Result<SyntheticTable, SyntheticError> {
     let sep = spec.separation.max(0.1);
     // Place centers on a circle
     let mut centers = Vec::with_capacity(n_classes);

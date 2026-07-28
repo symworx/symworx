@@ -63,9 +63,7 @@ impl TableData {
 
     /// Column index by case-insensitive header name.
     pub fn column_index(&self, name: &str) -> Option<usize> {
-        self.headers
-            .iter()
-            .position(|h| h.eq_ignore_ascii_case(name))
+        self.headers.iter().position(|h| h.eq_ignore_ascii_case(name))
     }
 }
 
@@ -130,9 +128,7 @@ pub fn load_numeric_table(path: &str) -> Result<TableData, SymError> {
     }
 
     if out_cols.is_empty() {
-        return Err(SymError::UnsupportedFormat(
-            "no numeric columns found in csv".into(),
-        ));
+        return Err(SymError::UnsupportedFormat("no numeric columns found in csv".into()));
     }
 
     // Align lengths (ragged flexible CSV)
@@ -173,11 +169,7 @@ pub fn write_numeric_table(path: &str, table: &TableData) -> Result<(), SymError
 }
 
 /// Convenience: write headers + columns (column-major) to CSV.
-pub fn write_columns_csv(
-    path: &str,
-    headers: &[String],
-    columns: &[Vec<f64>],
-) -> Result<(), SymError> {
+pub fn write_columns_csv(path: &str, headers: &[String], columns: &[Vec<f64>]) -> Result<(), SymError> {
     write_numeric_table(
         path,
         &TableData {

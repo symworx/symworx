@@ -39,9 +39,7 @@ fn app(terminal: &mut DefaultTerminal) -> std::io::Result<()> {
 
         if event::poll(tick_rate)? {
             if let event::Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press
-                    && input::handle_key(&mut app, key.code, key.modifiers)
-                {
+                if key.kind == KeyEventKind::Press && input::handle_key(&mut app, key.code, key.modifiers) {
                     return Ok(());
                 }
             }

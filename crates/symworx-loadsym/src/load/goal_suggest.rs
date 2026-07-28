@@ -66,11 +66,7 @@ pub struct GoalSuggestion {
 /// - `acwr` — optional acute:chronic ratio (advisory only)
 ///
 /// Does **not** run [`super::optimize_load_plan`]; it only chooses a default goal.
-pub fn suggest_load_goal(
-    state: &PulseResponseState,
-    acwr: Option<f64>,
-    params: &GoalSuggestParams,
-) -> GoalSuggestion {
+pub fn suggest_load_goal(state: &PulseResponseState, acwr: Option<f64>, params: &GoalSuggestParams) -> GoalSuggestion {
     let form = state.form;
     let fitness = state.fitness.max(1e-6);
     let fatigue = state.fatigue.max(0.0);

@@ -193,12 +193,7 @@ impl CrossRecurrencePlot {
     ///
     /// Theiler window (if >0) excludes pairs where `|i-j| <= theiler`. Useful when
     /// the two series are time-aligned; for independent recordings use theiler=0.
-    pub fn from_trajectories(
-        tx: &Array2<f64>,
-        ty: &Array2<f64>,
-        radius: f64,
-        theiler: usize,
-    ) -> Self {
+    pub fn from_trajectories(tx: &Array2<f64>, ty: &Array2<f64>, radius: f64, theiler: usize) -> Self {
         let nx = tx.nrows();
         let ny = ty.nrows();
         if nx == 0 || ny == 0 || tx.ncols() == 0 || ty.ncols() == 0 {
@@ -233,14 +228,7 @@ impl CrossRecurrencePlot {
     }
 
     /// Convenience: embed x and y with the same (m, tau) then build CRP.
-    pub fn from_series(
-        x: &[f64],
-        y: &[f64],
-        m: usize,
-        tau: usize,
-        radius: f64,
-        theiler: usize,
-    ) -> Self {
+    pub fn from_series(x: &[f64], y: &[f64], m: usize, tau: usize, radius: f64, theiler: usize) -> Self {
         let ex = crate::edim(x, m, tau);
         let ey = crate::edim(y, m, tau);
         if ex.is_empty() || ey.is_empty() {

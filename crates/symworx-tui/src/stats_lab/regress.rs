@@ -26,11 +26,7 @@ use crate::app::{
     StatsLabTask,
 };
 
-pub fn run_regress(
-    table: &TableData,
-    x_col: usize,
-    y_col: usize,
-) -> Result<StatsLabResult, String> {
+pub fn run_regress(table: &TableData, x_col: usize, y_col: usize) -> Result<StatsLabResult, String> {
     let n = table.n_rows();
     let p = table.n_cols();
     if n < 5 {
@@ -74,11 +70,7 @@ pub fn run_regress(
     pairs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
     let fit_x: Vec<f64> = pairs.iter().map(|p| p.0).collect();
     let fit_yh: Vec<f64> = pairs.iter().map(|p| p.2).collect();
-    let ba_mean: Vec<f64> = y_v
-        .iter()
-        .zip(y_hat_v.iter())
-        .map(|(&a, &p)| (a + p) / 2.0)
-        .collect();
+    let ba_mean: Vec<f64> = y_v.iter().zip(y_hat_v.iter()).map(|(&a, &p)| (a + p) / 2.0).collect();
 
     let mut r = empty_result(StatsLabTask::Regress);
     r.model_label = "OLS".into();

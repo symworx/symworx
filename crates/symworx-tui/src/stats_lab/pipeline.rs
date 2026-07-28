@@ -97,25 +97,10 @@ pub fn run_pipeline(
     .map_err(|e| e.to_string())?;
 
     match model_kind {
-        PipelineModel::Ols => run_pipeline_ols(
-            &x,
-            &table.columns[y_col],
-            &y_name,
-            &feat_names,
-            &plan,
-            &fold_note,
-        ),
+        PipelineModel::Ols => run_pipeline_ols(&x, &table.columns[y_col], &y_name, &feat_names, &plan, &fold_note),
         PipelineModel::Logistic => {
             let (labels, class_values) = encode_class_labels(&table.columns[y_col])?;
-            run_pipeline_logistic(
-                &x,
-                &labels,
-                &class_values,
-                &y_name,
-                &feat_names,
-                &plan,
-                &fold_note,
-            )
+            run_pipeline_logistic(&x, &labels, &class_values, &y_name, &feat_names, &plan, &fold_note)
         }
     }
 }
@@ -198,13 +183,7 @@ pub fn run_pipeline_ols(
         .coefficients
         .iter()
         .enumerate()
-        .map(|(j, b)| {
-            format!(
-                "{}={:.3}",
-                feat_names.get(j).map(|s| s.as_str()).unwrap_or("?"),
-                b
-            )
-        })
+        .map(|(j, b)| format!("{}={:.3}", feat_names.get(j).map(|s| s.as_str()).unwrap_or("?"), b))
         .collect::<Vec<_>>()
         .join(", ");
 
@@ -223,8 +202,7 @@ pub fn run_pipeline_ols(
     r.metrics_rows = rows;
     r.focused_row = test_row_idx;
     r.metrics_table_title = "Splits".into();
-    r.table_footer =
-        format!("Focus ★ = hold-out (Test) by default  ·  R²_test={r2_te:.4}  R²_train={r2_tr:.4}");
+    r.table_footer = format!("Focus ★ = hold-out (Test) by default  ·  R²_test={r2_te:.4}  R²_train={r2_tr:.4}");
     seed_active_from_focus(&mut r);
     Ok(r)
 }
@@ -341,9 +319,7 @@ pub fn run_pipeline_logistic(
     r.metrics_rows = rows;
     r.focused_row = test_row_idx;
     r.metrics_table_title = "Splits".into();
-    r.table_footer = format!(
-        "Focus ★ = hold-out (Test) by default  ·  Acc_test={acc_te:.4}  Acc_train={acc_tr:.4}"
-    );
+    r.table_footer = format!("Focus ★ = hold-out (Test) by default  ·  Acc_test={acc_te:.4}  Acc_train={acc_tr:.4}");
     seed_active_from_focus(&mut r);
     Ok(r)
 }
@@ -360,17 +336,7 @@ pub fn fit_predict_clf_row(
     y_name: &str,
     config: &LogisticConfig,
 ) -> Result<SplitMetricsRow, String> {
-    fit_on_train_score_val_clf(
-        label,
-        note,
-        x,
-        y_fit,
-        x,
-        y_score,
-        class_values,
-        y_name,
-        config,
-    )
+    fit_on_train_score_val_clf(label, note, x, y_fit, x, y_score, class_values, y_name, config)
 }
 
 pub fn fit_on_train_score_val_clf(
@@ -385,13 +351,7 @@ pub fn fit_on_train_score_val_clf(
     config: &LogisticConfig,
 ) -> Result<SplitMetricsRow, String> {
     let k = class_values.len();
-    if y_fit
-        .iter()
-        .copied()
-        .collect::<std::collections::BTreeSet<_>>()
-        .len()
-        < 2
-    {
+    if y_fit.iter().copied().collect::<std::collections::BTreeSet<_>>().len() < 2 {
         return Err(format!(
             "{label}: need ≥2 classes in fit split (try shuffle/seed or more rows)"
         ));

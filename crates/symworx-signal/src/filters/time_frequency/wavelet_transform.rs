@@ -93,39 +93,13 @@ pub fn cwt(
 }
 
 /// Convenience function for Wavelet transform (Morelet).
-pub fn cwt_morlet(
-    signal: &[f64],
-    fs: f64,
-    min_scale: f64,
-    max_scale: f64,
-    num_scales: usize,
-) -> CwtResult {
-    cwt(
-        signal,
-        fs,
-        WaveletType::Morlet,
-        min_scale,
-        max_scale,
-        num_scales,
-    )
+pub fn cwt_morlet(signal: &[f64], fs: f64, min_scale: f64, max_scale: f64, num_scales: usize) -> CwtResult {
+    cwt(signal, fs, WaveletType::Morlet, min_scale, max_scale, num_scales)
 }
 
 /// Convenience function for Wavelet transform (Mexican Hat).
-pub fn cwt_mexhat(
-    signal: &[f64],
-    fs: f64,
-    min_scale: f64,
-    max_scale: f64,
-    num_scales: usize,
-) -> CwtResult {
-    cwt(
-        signal,
-        fs,
-        WaveletType::MexicanHat,
-        min_scale,
-        max_scale,
-        num_scales,
-    )
+pub fn cwt_mexhat(signal: &[f64], fs: f64, min_scale: f64, max_scale: f64, num_scales: usize) -> CwtResult {
+    cwt(signal, fs, WaveletType::MexicanHat, min_scale, max_scale, num_scales)
 }
 
 // TESTS
@@ -136,9 +110,7 @@ mod tests {
 
     #[test]
     fn test_cwt_basic() {
-        let signal: Vec<f64> = (0..512)
-            .map(|i| (2.0 * PI * 8.0 * i as f64 / 256.0).sin())
-            .collect();
+        let signal: Vec<f64> = (0..512).map(|i| (2.0 * PI * 8.0 * i as f64 / 256.0).sin()).collect();
 
         let result = cwt_morlet(&signal, 256.0, 4.0, 64.0, 32);
 

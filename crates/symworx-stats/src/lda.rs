@@ -119,10 +119,7 @@ pub fn lda(x: &Array2<f64>, y: &[usize]) -> LdaModel {
     let n = x.nrows();
     let p = x.ncols();
     assert!(k >= 2, "LDA needs at least 2 classes");
-    assert!(
-        n > k,
-        "LDA needs n > n_classes for a non-degenerate pooled covariance"
-    );
+    assert!(n > k, "LDA needs n > n_classes for a non-degenerate pooled covariance");
 
     let mut priors = Array1::<f64>::zeros(k);
     let mut means = Array2::<f64>::zeros((k, p));

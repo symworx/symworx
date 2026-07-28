@@ -45,21 +45,13 @@ pub fn render_fit_panel(frame: &mut Frame, area: Rect, r: &StatsLabResult) {
     let pts: Vec<(f64, f64)> = sx.iter().zip(sy.iter()).map(|(&x, &y)| (x, y)).collect();
     let line: Vec<(f64, f64)> = flx.iter().zip(fly.iter()).map(|(&x, &y)| (x, y)).collect();
 
-    let x_min = pts
-        .iter()
-        .chain(line.iter())
-        .map(|p| p.0)
-        .fold(f64::INFINITY, f64::min);
+    let x_min = pts.iter().chain(line.iter()).map(|p| p.0).fold(f64::INFINITY, f64::min);
     let mut x_max = pts
         .iter()
         .chain(line.iter())
         .map(|p| p.0)
         .fold(f64::NEG_INFINITY, f64::max);
-    let y_min = pts
-        .iter()
-        .chain(line.iter())
-        .map(|p| p.1)
-        .fold(f64::INFINITY, f64::min);
+    let y_min = pts.iter().chain(line.iter()).map(|p| p.1).fold(f64::INFINITY, f64::min);
     let mut y_max = pts
         .iter()
         .chain(line.iter())
@@ -115,35 +107,20 @@ pub fn render_fit_panel(frame: &mut Frame, area: Rect, r: &StatsLabResult) {
                 .title(title)
                 .border_style(Style::default().fg(Color::LightCyan)),
         )
-        .x_axis(
-            Axis::default()
-                .title(x_lab)
-                .bounds([x0, x_max])
-                .labels(vec![
-                    Line::from(format!("{x0:.1}")),
-                    Line::from(format!("{:.1}", (x0 + x_max) / 2.0)),
-                    Line::from(format!("{x_max:.1}")),
-                ]),
-        )
-        .y_axis(
-            Axis::default()
-                .title(y_lab)
-                .bounds([y0, y_max])
-                .labels(vec![
-                    Line::from(format!("{y0:.1}")),
-                    Line::from(format!("{:.1}", (y0 + y_max) / 2.0)),
-                    Line::from(format!("{y_max:.1}")),
-                ]),
-        );
+        .x_axis(Axis::default().title(x_lab).bounds([x0, x_max]).labels(vec![
+            Line::from(format!("{x0:.1}")),
+            Line::from(format!("{:.1}", (x0 + x_max) / 2.0)),
+            Line::from(format!("{x_max:.1}")),
+        ]))
+        .y_axis(Axis::default().title(y_lab).bounds([y0, y_max]).labels(vec![
+            Line::from(format!("{y0:.1}")),
+            Line::from(format!("{:.1}", (y0 + y_max) / 2.0)),
+            Line::from(format!("{y_max:.1}")),
+        ]));
     frame.render_widget(chart, area);
 }
 
-pub fn render_residual_panel(
-    frame: &mut Frame,
-    area: Rect,
-    r: &StatsLabResult,
-    mode: ResidualPanelMode,
-) {
+pub fn render_residual_panel(frame: &mut Frame, area: Rect, r: &StatsLabResult, mode: ResidualPanelMode) {
     let (_sx, _sy, _flx, _fly, ba_mean, residuals, _xl, _yl, _pred) = r.active_plot();
     if residuals.is_empty() {
         frame.render_widget(
@@ -160,17 +137,9 @@ pub fn render_residual_panel(
 
     match mode {
         ResidualPanelMode::BlandAltman => {
-            let pts: Vec<(f64, f64)> = ba_mean
-                .iter()
-                .zip(residuals.iter())
-                .map(|(&m, &e)| (m, e))
-                .collect();
+            let pts: Vec<(f64, f64)> = ba_mean.iter().zip(residuals.iter()).map(|(&m, &e)| (m, e)).collect();
             if pts.is_empty() {
-                let pts: Vec<(f64, f64)> = residuals
-                    .iter()
-                    .enumerate()
-                    .map(|(i, &e)| (i as f64, e))
-                    .collect();
+                let pts: Vec<(f64, f64)> = residuals.iter().enumerate().map(|(i, &e)| (i as f64, e)).collect();
                 render_ba_chart(frame, area, &pts, "index", "residual y−ŷ");
             } else {
                 render_ba_chart(frame, area, &pts, "mean (y+ŷ)/2", "difference y−ŷ");
@@ -182,20 +151,10 @@ pub fn render_residual_panel(
     }
 }
 
-pub fn render_ba_chart(
-    frame: &mut Frame,
-    area: Rect,
-    pts: &[(f64, f64)],
-    x_lab: &str,
-    y_lab: &str,
-) {
+pub fn render_ba_chart(frame: &mut Frame, area: Rect, pts: &[(f64, f64)], x_lab: &str, y_lab: &str) {
     let x_min = pts.iter().map(|p| p.0).fold(f64::INFINITY, f64::min);
     let x_max = pts.iter().map(|p| p.0).fold(f64::NEG_INFINITY, f64::max);
-    let y_abs = pts
-        .iter()
-        .map(|p| p.1.abs())
-        .fold(0.0_f64, f64::max)
-        .max(1e-6);
+    let y_abs = pts.iter().map(|p| p.1.abs()).fold(0.0_f64, f64::max).max(1e-6);
     let y_lim = y_abs * 1.15;
     let x0 = if x_min >= 0.0 { 0.0 } else { x_min };
     let x1 = if (x_max - x0).abs() < 1e-12 {
@@ -255,9 +214,7 @@ pub fn render_ba_chart(
             Block::new()
                 .borders(Borders::ALL)
                 .padding(Padding::horizontal(1))
-                .title(format!(
-                    " Bland–Altman · mean e={mean_e:.3}  ±1.96 sd  h=hist "
-                ))
+                .title(format!(" Bland–Altman · mean e={mean_e:.3}  ±1.96 sd  h=hist "))
                 .border_style(Style::default().fg(Color::LightMagenta)),
         )
         .x_axis(Axis::default().title(x_lab).bounds([x0, x1]).labels(vec![
@@ -265,16 +222,11 @@ pub fn render_ba_chart(
             Line::from(format!("{:.1}", (x0 + x1) / 2.0)),
             Line::from(format!("{x1:.1}")),
         ]))
-        .y_axis(
-            Axis::default()
-                .title(y_lab)
-                .bounds([-y_lim, y_lim])
-                .labels(vec![
-                    Line::from(format!("{:.1}", -y_lim)),
-                    Line::from("0"),
-                    Line::from(format!("{y_lim:.1}")),
-                ]),
-        );
+        .y_axis(Axis::default().title(y_lab).bounds([-y_lim, y_lim]).labels(vec![
+            Line::from(format!("{:.1}", -y_lim)),
+            Line::from("0"),
+            Line::from(format!("{y_lim:.1}")),
+        ]));
     frame.render_widget(chart, area);
 }
 
@@ -357,25 +309,15 @@ pub fn render_residual_hist(frame: &mut Frame, area: Rect, residuals_data: &[f64
                 .title(" Residuals · hist + polygon + KDE  ·  h=BA ")
                 .border_style(Style::default().fg(Color::LightYellow)),
         )
-        .x_axis(
-            Axis::default()
-                .title("residual y−ŷ")
-                .bounds([x0, x1])
-                .labels(vec![
-                    Line::from(format!("{x0:.2}")),
-                    Line::from("0"),
-                    Line::from(format!("{x1:.2}")),
-                ]),
-        )
-        .y_axis(
-            Axis::default()
-                .title("count")
-                .bounds([0.0, y_max])
-                .labels(vec![
-                    Line::from("0"),
-                    Line::from(format!("{:.0}", y_max / 2.0)),
-                    Line::from(format!("{y_max:.0}")),
-                ]),
-        );
+        .x_axis(Axis::default().title("residual y−ŷ").bounds([x0, x1]).labels(vec![
+            Line::from(format!("{x0:.2}")),
+            Line::from("0"),
+            Line::from(format!("{x1:.2}")),
+        ]))
+        .y_axis(Axis::default().title("count").bounds([0.0, y_max]).labels(vec![
+            Line::from("0"),
+            Line::from(format!("{:.0}", y_max / 2.0)),
+            Line::from(format!("{y_max:.0}")),
+        ]));
     frame.render_widget(chart, area);
 }

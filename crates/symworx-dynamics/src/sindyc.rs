@@ -86,12 +86,7 @@ impl SindycResult {
     ///
     /// * `controls` — length `n_steps`; `controls[k]` is applied at step `k`
     /// * returns states `n × (n_steps + 1)`
-    pub fn simulate_euler(
-        &self,
-        x0: &Array1<f64>,
-        controls: &[Array1<f64>],
-        dt: f64,
-    ) -> Array2<f64> {
+    pub fn simulate_euler(&self, x0: &Array1<f64>, controls: &[Array1<f64>], dt: f64) -> Array2<f64> {
         let n_steps = controls.len();
         let mut out = Array2::zeros((self.state_dim, n_steps + 1));
         let mut x = x0.to_owned();
@@ -162,12 +157,7 @@ impl Default for SindycConfig {
 ///   in state column `k` (same length as snapshots; last control unused for FD)
 /// * `dt` — sample interval
 /// * `config` — library + STLS options
-pub fn sindyc(
-    snapshots: &Array2<f64>,
-    controls: &Array2<f64>,
-    dt: f64,
-    config: &SindycConfig,
-) -> SindycResult {
+pub fn sindyc(snapshots: &Array2<f64>, controls: &Array2<f64>, dt: f64, config: &SindycConfig) -> SindycResult {
     assert!(dt > 0.0, "dt must be positive");
     let t = snapshots.ncols();
     assert!(t >= 2, "need at least 2 snapshots");
@@ -216,13 +206,7 @@ pub fn sindyc_with_derivatives(
     let library_dim = theta.ncols();
     let x_dot = derivatives.t().to_owned();
 
-    let (xi, iterations) = stls(
-        &theta,
-        &x_dot,
-        config.threshold,
-        config.max_iter,
-        config.ridge,
-    );
+    let (xi, iterations) = stls(&theta, &x_dot, config.threshold, config.max_iter, config.ridge);
 
     let relative_fit_error = mean_relative_column_error(&x_dot, &theta.dot(&xi));
 
@@ -338,9 +322,7 @@ pub fn lift_xu(
 fn has_constant(dict: &Dictionary) -> bool {
     match dict {
         Dictionary::Identity => false,
-        Dictionary::Polynomial {
-            include_constant, ..
-        } => *include_constant,
+        Dictionary::Polynomial { include_constant, .. } => *include_constant,
     }
 }
 
@@ -408,8 +390,8 @@ mod tests {
         let mut controls = Array2::zeros((1, t));
         for k in 0..t {
             let tk = k as f64 * dt;
-            controls[[0, k]] = (2.0 * std::f64::consts::PI * 0.5 * tk).sin()
-                + 0.3 * (2.0 * std::f64::consts::PI * 1.3 * tk).sin();
+            controls[[0, k]] =
+                (2.0 * std::f64::consts::PI * 0.5 * tk).sin() + 0.3 * (2.0 * std::f64::consts::PI * 1.3 * tk).sin();
         }
         let snaps = simulate_forced(&a, &b, array![0.2], &controls, dt);
 

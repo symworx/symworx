@@ -20,12 +20,7 @@ use crate::{
 
 /// Generate a parametric linear trajectory (option 1 base).
 /// Starts at `start`, moves with constant `velocity` for `duration` at `dt`.
-pub fn generate_linear_trajectory(
-    start: Point2,
-    velocity: Vec2,
-    duration: f64,
-    dt: f64,
-) -> Vec<Point2> {
+pub fn generate_linear_trajectory(start: Point2, velocity: Vec2, duration: f64, dt: f64) -> Vec<Point2> {
     let n = (duration / dt).ceil() as usize;
     (0..n)
         .map(|i| {
@@ -222,9 +217,7 @@ pub fn build_agent_trajectories(
         batch = batch.with_playing_dimensions(dims);
     }
     if let Some(g) = goal_positions {
-        batch = batch
-            .with_goal_positions(g)
-            .expect("goal_positions length must match");
+        batch = batch.with_goal_positions(g).expect("goal_positions length must match");
     }
 
     (batch, focal)

@@ -70,11 +70,7 @@ pub fn detect_gait_strides_with(
 }
 
 /// Detect using a quality preset.
-pub fn detect_gait_strides_with_quality(
-    signal: &[f64],
-    fs: f64,
-    quality: GaitSignalQuality,
-) -> IntervalSeries {
+pub fn detect_gait_strides_with_quality(signal: &[f64], fs: f64, quality: GaitSignalQuality) -> IntervalSeries {
     detect_gait_strides_with(signal, fs, &gait_processing_for_quality(quality))
         .expect("quality presets use valid bandpass cutoffs")
 }
@@ -106,11 +102,7 @@ pub fn analyze_gait_signal(signal: &[f64], fs: f64) -> GaitAnalysis {
 }
 
 /// Analysis using quality preset on a raw signal.
-pub fn analyze_gait_signal_with_quality(
-    signal: &[f64],
-    fs: f64,
-    quality: GaitSignalQuality,
-) -> GaitAnalysis {
+pub fn analyze_gait_signal_with_quality(signal: &[f64], fs: f64, quality: GaitSignalQuality) -> GaitAnalysis {
     let intervals = detect_gait_strides_with_quality(signal, fs, quality);
     analyze_gait_from_times(&intervals.peak_times, None)
 }
@@ -129,11 +121,7 @@ pub fn analyze_gait(data: &mut GaitData, walking_speed: Option<f64>) -> GaitAnal
         data.calculate_step_length();
     }
     let stats = data.to_gait_stats(Some(speed));
-    let times_for_intervals = data
-        .stride_times
-        .as_ref()
-        .map(|t| t.to_vec())
-        .unwrap_or_default();
+    let times_for_intervals = data.stride_times.as_ref().map(|t| t.to_vec()).unwrap_or_default();
     let intervals = if times_for_intervals.len() >= 2 {
         IntervalSeries::from_times(&times_for_intervals)
     } else {

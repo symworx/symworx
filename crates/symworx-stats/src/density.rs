@@ -53,10 +53,7 @@ impl Histogram {
 
     /// Bin centers and counts as `(x, count)` pairs (for plotting / polygons).
     pub fn centers_counts(&self) -> Vec<(f64, f64)> {
-        self.bins
-            .iter()
-            .map(|b| (b.center, b.count as f64))
-            .collect()
+        self.bins.iter().map(|b| (b.center, b.count as f64)).collect()
     }
 
     /// Nominal bin width (uses the first bin; empty → `NaN`).
@@ -166,11 +163,7 @@ pub struct KdeEstimate {
 impl KdeEstimate {
     /// `(x, density)` pairs for plotting.
     pub fn points(&self) -> Vec<(f64, f64)> {
-        self.x
-            .iter()
-            .zip(self.density.iter())
-            .map(|(&x, &y)| (x, y))
-            .collect()
+        self.x.iter().zip(self.density.iter()).map(|(&x, &y)| (x, y)).collect()
     }
 
     /// Scale density to **expected counts per bin width** for overlay on a
@@ -307,11 +300,7 @@ pub fn hist_kde_with(data: &[f64], hist_cfg: &HistogramConfig, kde_cfg: &KdeConf
     } else {
         kde.points()
     };
-    HistKde {
-        hist,
-        kde,
-        kde_counts,
-    }
+    HistKde { hist, kde, kde_counts }
 }
 
 #[cfg(test)]

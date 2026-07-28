@@ -25,12 +25,7 @@ impl BandpassFilter {
     /// * `q` — Quality factor (typically 0.5–2.0; higher = narrower band)
     pub fn new(fs: f64, f_low: f64, f_high: f64, q: f64) -> Self {
         let (b, a) = design_bandpass(fs, f_low, f_high, q);
-        Self {
-            b,
-            a,
-            z1: 0.0,
-            z2: 0.0,
-        }
+        Self { b, a, z1: 0.0, z2: 0.0 }
     }
 
     /// Resets the filter's internal state.
@@ -111,17 +106,9 @@ mod tests {
         // DC should be attenuated; check the very end of the response (IIR transient
         // at 5 Hz cutoff on fs=1000 takes a while to fully settle in 100 samples).
         let last = *output.last().unwrap();
-        assert!(
-            last.abs() < 0.1,
-            "final sample near zero for DC input, got {}",
-            last
-        );
+        assert!(last.abs() < 0.1, "final sample near zero for DC input, got {}", last);
         // Also ensure overall not blowing up (sum of abs over all is reasonable)
         let sum_abs: f64 = output.iter().map(|&v| v.abs()).sum();
-        assert!(
-            sum_abs < 20.0,
-            "total energy not excessive, got {}",
-            sum_abs
-        );
+        assert!(sum_abs < 20.0, "total energy not excessive, got {}", sum_abs);
     }
 }

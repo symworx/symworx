@@ -33,10 +33,7 @@ pub fn compute_hrv_metrics(rr_intervals_sec: &[f64]) -> HrvMetrics {
         None
     };
 
-    HrvMetrics {
-        rmssd_sec,
-        sdnn_sec,
-    }
+    HrvMetrics { rmssd_sec, sdnn_sec }
 }
 
 #[cfg(test)]

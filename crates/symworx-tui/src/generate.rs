@@ -60,9 +60,7 @@ impl DemoPreset {
             DemoPreset::RestingPPG => "Photoplethysmogram + ground-truth systolic/diastolic peaks",
             DemoPreset::LightRespiration => "Respiration waveform + known inhalation peaks",
             DemoPreset::SimpleStride => "Stride-interval series (event / gait demo)",
-            DemoPreset::MultiWaveformDemo => {
-                "Multiple PPG / resp / stride variants for multi-wave testing"
-            }
+            DemoPreset::MultiWaveformDemo => "Multiple PPG / resp / stride variants for multi-wave testing",
         }
     }
 }
@@ -117,9 +115,7 @@ fn generate_ppg_variants(data_dir: &Path, count: usize) -> Result<GeneratedDemo>
         let params = base_params.clone();
         // Slightly variable RR intervals (~70 bpm + RSA) — longer series for pan demo
         let n_beats = 80 + i * 10;
-        let mut rr: Vec<f64> = (0..n_beats)
-            .map(|j| 0.85 + 0.04 * (j as f64 * 0.3).sin())
-            .collect();
+        let mut rr: Vec<f64> = (0..n_beats).map(|j| 0.85 + 0.04 * (j as f64 * 0.3).sin()).collect();
         for r in &mut rr {
             *r += 0.02 * rand::random::<f64>() - 0.01;
         }
@@ -138,10 +134,7 @@ fn generate_ppg_variants(data_dir: &Path, count: usize) -> Result<GeneratedDemo>
         save_two_column(&path, &ts.times, &ts.values, "time,ppg")?;
         save_peaks_sidecar(
             &path,
-            &[
-                ("systolic", &ts.systolic_peaks),
-                ("diastolic", &ts.diastolic_peaks),
-            ],
+            &[("systolic", &ts.systolic_peaks), ("diastolic", &ts.diastolic_peaks)],
         )?;
 
         last = Some(GeneratedDemo {
@@ -281,10 +274,7 @@ fn save_peaks_sidecar(signal_path: &Path, groups: &[(&str, &[usize])]) -> Result
 
 /// Sidecar path for a signal file: `foo.csv` → `foo.peaks.csv`.
 pub fn peaks_sidecar_path(signal_path: &Path) -> PathBuf {
-    let stem = signal_path
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("signal");
+    let stem = signal_path.file_stem().and_then(|s| s.to_str()).unwrap_or("signal");
     signal_path
         .parent()
         .unwrap_or_else(|| Path::new("."))

@@ -172,15 +172,9 @@ pub fn edmd_pair(x: &Array2<f64>, x_prime: &Array2<f64>, config: &EdmdConfig) ->
         }
     }
     let y_prime_yt = y_prime.dot(&y.t());
-    let k = y_prime_yt.dot(
-        &gram
-            .inv()
-            .expect("EDMD Gram matrix inversion failed — try ridge > 0"),
-    );
+    let k = y_prime_yt.dot(&gram.inv().expect("EDMD Gram matrix inversion failed — try ridge > 0"));
 
-    let (evals, evecs) = k
-        .eig()
-        .expect("eigendecomposition of Koopman matrix failed");
+    let (evals, evecs) = k.eig().expect("eigendecomposition of Koopman matrix failed");
 
     let relative_fit_error = mean_relative_column_error(&y_prime, &k.dot(&y));
 
@@ -244,9 +238,7 @@ pub fn decode_state(psi: &Array1<f64>, dictionary: &Dictionary, state_dim: usize
             assert_eq!(psi.len(), state_dim);
             psi.to_owned()
         }
-        Dictionary::Polynomial {
-            include_constant, ..
-        } => {
+        Dictionary::Polynomial { include_constant, .. } => {
             let start = if *include_constant { 1 } else { 0 };
             assert!(
                 psi.len() >= start + state_dim,
@@ -414,20 +406,12 @@ mod tests {
                 ridge: 1e-10,
             },
         );
-        assert!(
-            model.relative_fit_error < 1e-4,
-            "fit err {}",
-            model.relative_fit_error
-        );
+        assert!(model.relative_fit_error < 1e-4, "fit err {}", model.relative_fit_error);
 
         let traj = model.predict_states(&array![1.2], 5);
         let mut x = 1.2;
         for k in 0..=5 {
-            assert!(
-                (traj[k][0] - x).abs() < 1e-3,
-                "step {k}: {} vs {x}",
-                traj[k][0]
-            );
+            assert!((traj[k][0] - x).abs() < 1e-3, "step {k}: {} vs {x}", traj[k][0]);
             x *= 0.7;
         }
     }

@@ -70,8 +70,7 @@ pub fn init_catalog(db_path: &Path) -> Result<(), String> {
     conn.execute_batch("PRAGMA foreign_keys = ON;")
         .map_err(|e| format!("pragma: {}", e))?;
     let schema = get_schema("sqlite");
-    conn.execute_batch(schema)
-        .map_err(|e| format!("apply schema: {}", e))?;
+    conn.execute_batch(schema).map_err(|e| format!("apply schema: {}", e))?;
     migrate_catalog(&conn)?;
     Ok(())
 }
@@ -95,11 +94,9 @@ pub fn open_catalog(db_path: &Path) -> Result<Connection, String> {
 }
 
 fn schema_version(conn: &Connection) -> Result<i32, String> {
-    let v: Result<i32, _> = conn.query_row(
-        "SELECT COALESCE(MAX(version), 0) FROM schema_migrations",
-        [],
-        |r| r.get(0),
-    );
+    let v: Result<i32, _> = conn.query_row("SELECT COALESCE(MAX(version), 0) FROM schema_migrations", [], |r| {
+        r.get(0)
+    });
     match v {
         Ok(n) => Ok(n),
         Err(_) => Ok(0),
@@ -179,11 +176,8 @@ fn migrate_v4_session_dedup(conn: &Connection) -> Result<(), String> {
     ];
     for (col, ty) in cols {
         if !table_has_column(conn, "activities", col)? {
-            conn.execute(
-                &format!("ALTER TABLE activities ADD COLUMN {} {}", col, ty),
-                [],
-            )
-            .map_err(|e| format!("add activities.{}: {}", col, e))?;
+            conn.execute(&format!("ALTER TABLE activities ADD COLUMN {} {}", col, ty), [])
+                .map_err(|e| format!("add activities.{}: {}", col, e))?;
         }
     }
 
@@ -192,10 +186,7 @@ fn migrate_v4_session_dedup(conn: &Connection) -> Result<(), String> {
         "UPDATE activities SET counts_for_load = 1 WHERE counts_for_load IS NULL",
         [],
     );
-    let _ = conn.execute(
-        "UPDATE activities SET is_primary = 1 WHERE is_primary IS NULL",
-        [],
-    );
+    let _ = conn.execute("UPDATE activities SET is_primary = 1 WHERE is_primary IS NULL", []);
 
     // Best-effort pipeline from path / platform for existing rows.
     let _ = conn.execute(
@@ -240,11 +231,9 @@ fn migrate_v4_session_dedup(conn: &Connection) -> Result<(), String> {
 
 /// Read a `catalog_meta` value (None if missing).
 pub fn meta_get(conn: &Connection, key: &str) -> Result<Option<String>, String> {
-    conn.query_row(
-        "SELECT value FROM catalog_meta WHERE key = ?1",
-        params![key],
-        |r| r.get::<_, String>(0),
-    )
+    conn.query_row("SELECT value FROM catalog_meta WHERE key = ?1", params![key], |r| {
+        r.get::<_, String>(0)
+    })
     .optional()
     .map_err(|e| format!("meta_get: {}", e))
 }
@@ -360,11 +349,8 @@ fn table_has_column(conn: &Connection, table: &str, col: &str) -> Result<bool, S
 fn migrate_v2_ftp_history(conn: &Connection) -> Result<(), String> {
     // activities.ftp_history_id
     if !table_has_column(conn, "activities", "ftp_history_id")? {
-        conn.execute(
-            "ALTER TABLE activities ADD COLUMN ftp_history_id INTEGER",
-            [],
-        )
-        .map_err(|e| format!("add ftp_history_id: {}", e))?;
+        conn.execute("ALTER TABLE activities ADD COLUMN ftp_history_id INTEGER", [])
+            .map_err(|e| format!("add ftp_history_id: {}", e))?;
     }
 
     let has_id = table_has_column(conn, "ftp_history", "id").unwrap_or(false);
@@ -472,10 +458,7 @@ pub fn resolve_ftp(
     sport: Option<&str>,
     fallback_ftp: f64,
 ) -> Result<FtpResolution, String> {
-    let sport = sport
-        .map(|s| s.trim())
-        .filter(|s| !s.is_empty())
-        .unwrap_or("cycling");
+    let sport = sport.map(|s| s.trim()).filter(|s| !s.is_empty()).unwrap_or("cycling");
 
     let row = conn
         .query_row(
@@ -531,14 +514,7 @@ pub fn set_ftp_history(
            ftp_w=excluded.ftp_w,
            source=excluded.source,
            notes=excluded.notes",
-        params![
-            effective_from,
-            effective_to,
-            ftp_w,
-            sport,
-            source,
-            notes
-        ],
+        params![effective_from, effective_to, ftp_w, sport, source, notes],
     )
     .map_err(|e| e.to_string())?;
     let id: i64 = conn
@@ -563,14 +539,7 @@ pub fn list_ftp_history(
         .map_err(|e| e.to_string())?;
     let rows = stmt
         .query_map([], |r| {
-            Ok((
-                r.get(0)?,
-                r.get(1)?,
-                r.get(2)?,
-                r.get(3)?,
-                r.get(4)?,
-                r.get(5)?,
-            ))
+            Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?, r.get(5)?))
         })
         .map_err(|e| e.to_string())?
         .collect::<Result<Vec<_>, _>>()
@@ -597,9 +566,7 @@ pub fn file_sha256(path: &Path) -> Result<String, String> {
     let mut hasher = Sha256::new();
     let mut buf = [0u8; 64 * 1024];
     loop {
-        let n = f
-            .read(&mut buf)
-            .map_err(|e| format!("read for hash: {}", e))?;
+        let n = f.read(&mut buf).map_err(|e| format!("read for hash: {}", e))?;
         if n == 0 {
             break;
         }
@@ -831,11 +798,7 @@ pub fn ingest_one(
     let power = act.power_series();
     let metrics = compute_ride_metrics(&act.times_s, &power, ftp_res.ftp_w);
     let n = act.len() as f64;
-    let avg_p = if n > 0.0 {
-        power.iter().sum::<f64>() / n
-    } else {
-        0.0
-    };
+    let avg_p = if n > 0.0 { power.iter().sum::<f64>() / n } else { 0.0 };
     let max_p = power.iter().copied().fold(0.0_f64, f64::max);
     let (avg_hr, max_hr) = series_avg_max_opt(&act.heart_rate_bpm);
     let (avg_cad, max_cad) = series_avg_max_opt(&act.cadence);
@@ -979,10 +942,7 @@ fn guess_platform(act: &ActivityData) -> Option<String> {
 
 /// Infer ingest pipeline from path segments (and optionally device platform).
 pub fn guess_ingest_pipeline(path: &Path, platform: Option<&str>) -> String {
-    let s = path
-        .to_string_lossy()
-        .replace('\\', "/")
-        .to_ascii_lowercase();
+    let s = path.to_string_lossy().replace('\\', "/").to_ascii_lowercase();
     let name = path
         .file_name()
         .and_then(|n| n.to_str())
@@ -997,16 +957,10 @@ pub fn guess_ingest_pipeline(path: &Path, platform: Option<&str>) -> String {
     if s.contains("/manual/") || s.starts_with("manual/") {
         return "manual".into();
     }
-    if platform
-        .map(|p| p.eq_ignore_ascii_case("polar"))
-        .unwrap_or(false)
-    {
+    if platform.map(|p| p.eq_ignore_ascii_case("polar")).unwrap_or(false) {
         return "polar".into();
     }
-    if platform
-        .map(|p| p.eq_ignore_ascii_case("srm"))
-        .unwrap_or(false)
-    {
+    if platform.map(|p| p.eq_ignore_ascii_case("srm")).unwrap_or(false) {
         // SRM often arrives via email; without path hints stay manual/archive.
         return "manual".into();
     }
@@ -1019,15 +973,9 @@ pub fn external_id_from_path(path: &Path, pipeline: &str) -> Option<String> {
         return None;
     }
     let name = path.file_name()?.to_str()?;
-    let stem = name
-        .strip_suffix(".fit")
-        .or_else(|| name.strip_suffix(".FIT"))?;
+    let stem = name.strip_suffix(".fit").or_else(|| name.strip_suffix(".FIT"))?;
     let id = stem.strip_prefix("polar_")?;
-    if id.is_empty() {
-        None
-    } else {
-        Some(id.to_string())
-    }
+    if id.is_empty() { None } else { Some(id.to_string()) }
 }
 
 /// ISO-8601 UTC from Unix seconds (`YYYY-MM-DDTHH:MM:SSZ`).
@@ -1072,8 +1020,11 @@ pub struct ActivityLinkRow {
 /// Returns `(groups_with_multiple, secondary_rows)`.
 pub fn relink_all_sessions(conn: &Connection) -> Result<(usize, usize), String> {
     // Clear groups so we rebuild cleanly.
-    conn.execute("UPDATE activities SET session_group_id = NULL, match_reason = 'sole', counts_for_load = 1, is_primary = 1", [])
-        .map_err(|e| e.to_string())?;
+    conn.execute(
+        "UPDATE activities SET session_group_id = NULL, match_reason = 'sole', counts_for_load = 1, is_primary = 1",
+        [],
+    )
+    .map_err(|e| e.to_string())?;
     conn.execute("DELETE FROM session_groups", [])
         .map_err(|e| e.to_string())?;
 
@@ -1162,12 +1113,7 @@ fn set_activity_group_flags(
             counts_for_load = ?2,
             match_reason = ?3
          WHERE id = ?4",
-        params![
-            group_id,
-            if is_primary { 1 } else { 0 },
-            reason,
-            activity_id
-        ],
+        params![group_id, if is_primary { 1 } else { 0 }, reason, activity_id],
     )
     .map_err(|e| e.to_string())?;
     Ok(())
@@ -1232,8 +1178,8 @@ pub fn sessions_match(a: &ActivityLinkRow, b: &ActivityLinkRow) -> bool {
             }
             // Without start times, only match if durations are very similar AND
             // different pipelines (avoid collapsing two real doubles on same day).
-            let same_pipeline = a.ingest_pipeline.as_deref().unwrap_or("")
-                == b.ingest_pipeline.as_deref().unwrap_or("");
+            let same_pipeline =
+                a.ingest_pipeline.as_deref().unwrap_or("") == b.ingest_pipeline.as_deref().unwrap_or("");
             if same_pipeline {
                 return false;
             }
@@ -1278,16 +1224,8 @@ fn primary_score(a: &ActivityLinkRow) -> i64 {
         score += 1_000_000;
         score += power.min(2000.0) as i64; // slight preference for higher mean power
     }
-    let plat = a
-        .source_platform
-        .as_deref()
-        .unwrap_or("")
-        .to_ascii_lowercase();
-    let pipe = a
-        .ingest_pipeline
-        .as_deref()
-        .unwrap_or("")
-        .to_ascii_lowercase();
+    let plat = a.source_platform.as_deref().unwrap_or("").to_ascii_lowercase();
+    let pipe = a.ingest_pipeline.as_deref().unwrap_or("").to_ascii_lowercase();
     if plat.contains("srm") || pipe == "email" {
         score += 50_000;
     } else if plat.contains("quarq")
@@ -1309,8 +1247,7 @@ fn primary_score(a: &ActivityLinkRow) -> i64 {
 
 /// Rebuild *all* `daily_loads` rows from `activities` (clears stale dates like bulk-mtime piles).
 pub fn recompute_all_daily_loads(conn: &Connection) -> Result<usize, String> {
-    conn.execute("DELETE FROM daily_loads", [])
-        .map_err(|e| e.to_string())?;
+    conn.execute("DELETE FROM daily_loads", []).map_err(|e| e.to_string())?;
     let mut stmt = conn
         .prepare("SELECT DISTINCT ride_date FROM activities ORDER BY ride_date")
         .map_err(|e| e.to_string())?;
@@ -1348,11 +1285,8 @@ pub fn recompute_daily_for_date(conn: &Connection, ride_date: &str) -> Result<()
     // Keep a daily_loads row only when at least one load-primary exists.
     // (Secondary-only days are unexpected but would clear the day.)
     if count == 0 {
-        conn.execute(
-            "DELETE FROM daily_loads WHERE ride_date = ?1",
-            params![ride_date],
-        )
-        .map_err(|e| e.to_string())?;
+        conn.execute("DELETE FROM daily_loads WHERE ride_date = ?1", params![ride_date])
+            .map_err(|e| e.to_string())?;
         return Ok(());
     }
 
@@ -1440,9 +1374,7 @@ pub fn recompute_load_metrics(conn: &Connection) -> Result<usize, String> {
                 monotony=excluded.monotony,
                 strain=excluded.strain,
                 computed_at=datetime('now')",
-            params![
-                date, acute, chronic, acwr, risk, ctl, atl, tsb, mono, strain
-            ],
+            params![date, acute, chronic, acwr, risk, ctl, atl, tsb, mono, strain],
         )
         .map_err(|e| e.to_string())?;
         n_written += 1;
@@ -1629,8 +1561,7 @@ pub fn load_daily_snapshots(conn: &Connection) -> Result<Vec<DailySnapshot>, Str
 
 /// Convenience: open default catalog path and load daily + ride rows for the TUI.
 /// Returns `Ok(None)` if the DB file does not exist (not an error for the TUI).
-pub fn try_load_default_calendar()
--> Result<Option<(PathBuf, Vec<DailySnapshot>, Vec<RideSummary>)>, String> {
+pub fn try_load_default_calendar() -> Result<Option<(PathBuf, Vec<DailySnapshot>, Vec<RideSummary>)>, String> {
     let path = default_catalog_path();
     if !path.exists() {
         return Ok(None);
@@ -1643,8 +1574,7 @@ pub fn try_load_default_calendar()
 
 /// Convenience: default catalog + activity metrics rows for Metrics table.
 /// Returns `Ok(None)` if the DB file does not exist.
-pub fn try_load_default_activity_metrics()
--> Result<Option<(PathBuf, Vec<ActivityMetricsRow>)>, String> {
+pub fn try_load_default_activity_metrics() -> Result<Option<(PathBuf, Vec<ActivityMetricsRow>)>, String> {
     let path = default_catalog_path();
     if !path.exists() {
         return Ok(None);
@@ -1684,18 +1614,9 @@ mod tests {
 
     #[test]
     fn guess_pipeline_from_path() {
-        assert_eq!(
-            guess_ingest_pipeline(Path::new("raw/email/ride.fit"), None),
-            "email"
-        );
-        assert_eq!(
-            guess_ingest_pipeline(Path::new("raw/polar/abc.fit"), None),
-            "polar"
-        );
-        assert_eq!(
-            guess_ingest_pipeline(Path::new("raw/ride.fit"), Some("srm")),
-            "manual"
-        );
+        assert_eq!(guess_ingest_pipeline(Path::new("raw/email/ride.fit"), None), "email");
+        assert_eq!(guess_ingest_pipeline(Path::new("raw/polar/abc.fit"), None), "polar");
+        assert_eq!(guess_ingest_pipeline(Path::new("raw/ride.fit"), Some("srm")), "manual");
     }
 
     fn link_row(
@@ -1755,24 +1676,8 @@ mod tests {
 
     #[test]
     fn primary_prefers_power_meter() {
-        let srm = link_row(
-            1,
-            "2026-07-01",
-            Some(1),
-            3600.0,
-            Some(220.0),
-            "srm",
-            "email",
-        );
-        let polar = link_row(
-            2,
-            "2026-07-01",
-            Some(1),
-            3600.0,
-            Some(0.0),
-            "polar",
-            "polar",
-        );
+        let srm = link_row(1, "2026-07-01", Some(1), 3600.0, Some(220.0), "srm", "email");
+        let polar = link_row(2, "2026-07-01", Some(1), 3600.0, Some(0.0), "polar", "polar");
         let (pid, _) = pick_primary(&[&srm, &polar]);
         assert_eq!(pid, 1);
         let (pid2, _) = pick_primary(&[&polar, &srm]);

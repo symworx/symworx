@@ -119,9 +119,7 @@ impl PulseResponseParams {
             ));
         }
         if !self.k_fitness.is_finite() || !self.k_fatigue.is_finite() || !self.p0.is_finite() {
-            return Err(LoadSymError::InvalidParameter(
-                "gains and p0 must be finite".into(),
-            ));
+            return Err(LoadSymError::InvalidParameter("gains and p0 must be finite".into()));
         }
         Ok(())
     }
@@ -153,8 +151,7 @@ impl PulseResponseState {
 
     /// Recompute `performance` and `form` from fitness/fatigue and params.
     pub fn finalize(mut self, params: &PulseResponseParams) -> Self {
-        self.performance =
-            params.p0 + params.k_fitness * self.fitness - params.k_fatigue * self.fatigue;
+        self.performance = params.p0 + params.k_fitness * self.fitness - params.k_fatigue * self.fatigue;
         self.form = self.fitness - self.fatigue;
         self
     }
@@ -221,16 +218,8 @@ impl PulseResponseSeries {
 /// Apply one day of load to the current state (before → after).
 ///
 /// State on entry is the *previous* day's end state (or zero).
-pub fn step_pulse_response(
-    state: PulseResponseState,
-    load: f64,
-    params: &PulseResponseParams,
-) -> PulseResponseState {
-    let w = if load.is_finite() && load > 0.0 {
-        load
-    } else {
-        0.0
-    };
+pub fn step_pulse_response(state: PulseResponseState, load: f64, params: &PulseResponseParams) -> PulseResponseState {
+    let w = if load.is_finite() && load > 0.0 { load } else { 0.0 };
 
     let (fitness, fatigue) = match params.update {
         PulseUpdateRule::Banister => {
@@ -331,10 +320,7 @@ pub fn estimate_recovery_days(
 ///
 /// Day 0 applies load=1; subsequent days apply load=0. Useful for teaching LTI
 /// impulse-response behaviour (Kim / Banister).
-pub fn unit_impulse_response(
-    params: &PulseResponseParams,
-    horizon: usize,
-) -> Result<PulseResponseSeries> {
+pub fn unit_impulse_response(params: &PulseResponseParams, horizon: usize) -> Result<PulseResponseSeries> {
     params.validate()?;
     if horizon == 0 {
         return Ok(PulseResponseSeries::empty());
@@ -366,9 +352,7 @@ where
 
     params.validate()?;
     if !(dt.is_finite() && dt > 0.0) {
-        return Err(LoadSymError::InvalidParameter(
-            "dt must be finite and > 0".into(),
-        ));
+        return Err(LoadSymError::InvalidParameter("dt must be finite and > 0".into()));
     }
 
     let tau_g = params.tau_fitness.max(1e-9);
@@ -548,8 +532,7 @@ mod tests {
     fn continuous_smoke() {
         let params = PulseResponseParams::pmc_defaults();
         let y0 = PulseResponseState::zero(&params);
-        let (times, states) =
-            simulate_pulse_response_continuous(|_| 10.0, &params, (0.0, 5.0), y0, 0.25).unwrap();
+        let (times, states) = simulate_pulse_response_continuous(|_| 10.0, &params, (0.0, 5.0), y0, 0.25).unwrap();
         assert!(times.len() > 2);
         assert_eq!(times.len(), states.len());
         assert!(states.last().unwrap().fitness > 0.0);

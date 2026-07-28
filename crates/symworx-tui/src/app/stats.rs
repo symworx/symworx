@@ -204,19 +204,7 @@ pub struct StatsLabResult {
 
 impl StatsLabResult {
     /// Series used by the fit / residual panels (focused split when present).
-    pub fn active_plot(
-        &self,
-    ) -> (
-        &[f64],
-        &[f64],
-        &[f64],
-        &[f64],
-        &[f64],
-        &[f64],
-        &str,
-        &str,
-        bool,
-    ) {
+    pub fn active_plot(&self) -> (&[f64], &[f64], &[f64], &[f64], &[f64], &[f64], &str, &str, bool) {
         if let Some(row) = self.metrics_rows.get(self.focused_row) {
             (
                 &row.plot_x,

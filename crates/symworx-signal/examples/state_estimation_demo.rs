@@ -59,8 +59,7 @@ fn main() {
     // --- EKF: estimate θ from sin(θ) measurements ---
     println!("\n3) ExtendedKalmanFilter — measure sin(θ), recover θ");
     let true_theta = 0.55_f64;
-    let mut ekf =
-        ExtendedKalmanFilter::new(array![0.0], array![[1.0]], array![[1e-5]], array![[0.02]]);
+    let mut ekf = ExtendedKalmanFilter::new(array![0.0], array![[1.0]], array![[1e-5]], array![[0.02]]);
     let f = |x: &Array1<f64>, _: Option<&Array1<f64>>| array![x[0]]; // static state
     let mut ekf_hist = Vec::new();
     let mut truth = Vec::new();
@@ -105,15 +104,8 @@ fn main() {
     let q = Array2::eye(2) * 0.01;
     let r = array![[0.1]];
     let b = array![[1.0], [0.0]];
-    let mut controlled = KalmanFilter::from_discrete_lti(
-        f_mat,
-        h_mat,
-        q,
-        r,
-        array![0.0, 0.0],
-        Array2::eye(2) * 10.0,
-        Some(b),
-    );
+    let mut controlled =
+        KalmanFilter::from_discrete_lti(f_mat, h_mat, q, r, array![0.0, 0.0], Array2::eye(2) * 10.0, Some(b));
     controlled.predict(Some(&array![0.75]));
     println!("   after u=[0.75]: state={:?}", controlled.state().to_vec());
 

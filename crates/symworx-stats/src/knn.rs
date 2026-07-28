@@ -207,11 +207,7 @@ impl KnnClassifier {
             let Some(ci) = self.classes.iter().position(|&c| c == label) else {
                 continue;
             };
-            let w = if self.config.weighted {
-                1.0 / (d + 1e-12)
-            } else {
-                1.0
-            };
+            let w = if self.config.weighted { 1.0 / (d + 1e-12) } else { 1.0 };
             votes[ci] += w;
         }
         votes
@@ -231,14 +227,7 @@ mod tests {
 
     #[test]
     fn two_class_blobs() {
-        let x = array![
-            [0.0, 0.0],
-            [0.1, 0.0],
-            [0.0, 0.1],
-            [5.0, 5.0],
-            [5.1, 5.0],
-            [5.0, 5.1],
-        ];
+        let x = array![[0.0, 0.0], [0.1, 0.0], [0.0, 0.1], [5.0, 5.0], [5.1, 5.0], [5.0, 5.1],];
         let y = vec![0, 0, 0, 1, 1, 1];
         let clf = KnnClassifier::fit_k(&x, &y, 3);
         let pred = clf.predict(&x);
@@ -247,14 +236,7 @@ mod tests {
 
     #[test]
     fn three_class() {
-        let x = array![
-            [0.0, 0.0],
-            [0.1, 0.0],
-            [3.0, 0.0],
-            [3.1, 0.0],
-            [0.0, 3.0],
-            [0.0, 3.1],
-        ];
+        let x = array![[0.0, 0.0], [0.1, 0.0], [3.0, 0.0], [3.1, 0.0], [0.0, 3.0], [0.0, 3.1],];
         let y = vec![0, 0, 1, 1, 2, 2];
         let clf = knn_classify(
             &x,

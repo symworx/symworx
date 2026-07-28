@@ -28,12 +28,7 @@ impl ChebyshevFilter {
     /// * `ripple_db` — Passband ripple in decibels (e.g. 0.5 dB)
     pub fn new(fs: f64, f_low: f64, f_high: f64, ripple_db: f64) -> Self {
         let (b, a) = design_cheby1(fs, f_low, f_high, ripple_db);
-        Self {
-            b,
-            a,
-            z1: 0.0,
-            z2: 0.0,
-        }
+        Self { b, a, z1: 0.0, z2: 0.0 }
     }
 
     /// Resets the filter's internal state.

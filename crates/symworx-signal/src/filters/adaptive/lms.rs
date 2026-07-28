@@ -47,12 +47,7 @@ impl LmsFilter {
             .chain(self.weights.iter().copied().take(self.length - 1))
             .collect();
 
-        let output: f64 = self
-            .weights
-            .iter()
-            .zip(&input_vec)
-            .map(|(&w, &x)| w * x)
-            .sum();
+        let output: f64 = self.weights.iter().zip(&input_vec).map(|(&w, &x)| w * x).sum();
         let error = desired - output;
 
         for (w, &x) in self.weights.iter_mut().zip(&input_vec) {
@@ -65,11 +60,7 @@ impl LmsFilter {
     /// Process a batch of samples with LMS adaptation.
     pub fn process(&mut self, inputs: &[f64], desired: &[f64]) -> Vec<f64> {
         assert_eq!(inputs.len(), desired.len());
-        inputs
-            .iter()
-            .zip(desired)
-            .map(|(&x, &d)| self.adapt(x, d))
-            .collect()
+        inputs.iter().zip(desired).map(|(&x, &d)| self.adapt(x, d)).collect()
     }
 
     /// Returns a copy of the current filter weights.
@@ -102,12 +93,7 @@ impl NlmsFilter {
             .chain(self.weights.iter().copied().take(self.length - 1))
             .collect();
 
-        let output: f64 = self
-            .weights
-            .iter()
-            .zip(&input_vec)
-            .map(|(&w, &x)| w * x)
-            .sum();
+        let output: f64 = self.weights.iter().zip(&input_vec).map(|(&w, &x)| w * x).sum();
         let error = desired - output;
 
         // Compute input power
@@ -124,11 +110,7 @@ impl NlmsFilter {
     /// Process a batch of samples with NLMS adaptation.
     pub fn process(&mut self, inputs: &[f64], desired: &[f64]) -> Vec<f64> {
         assert_eq!(inputs.len(), desired.len());
-        inputs
-            .iter()
-            .zip(desired)
-            .map(|(&x, &d)| self.adapt(x, d))
-            .collect()
+        inputs.iter().zip(desired).map(|(&x, &d)| self.adapt(x, d)).collect()
     }
 
     /// Returns a copy of the current filter weights.

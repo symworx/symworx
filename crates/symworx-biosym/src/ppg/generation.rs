@@ -29,7 +29,7 @@ pub struct PPGSimulationParams {
     /// Duration of simulation
     pub duration: f64,
     /// Parameters used to simulate signal
-    pub beat_params: (f64, f64, f64, f64, f64, f64), /* (amp_s, mu_s, sigma_s, amp_d, mu_d, sigma_d) */
+    pub beat_params: (f64, f64, f64, f64, f64, f64), // (amp_s, mu_s, sigma_s, amp_d, mu_d, sigma_d)
     /// Noise parameter/configuration for simulation
     pub noise_config: PPGNoiseConfig,
     /// Seed the simulation for reproducibility
@@ -57,10 +57,7 @@ fn gaussian(amp: f64, mu: f64, sigma: f64, x: f64) -> f64 {
 }
 
 /// Keep systolic / diastolic Gaussians physiologically ordered and positive.
-fn clamp_beat_params(
-    params: (f64, f64, f64, f64, f64, f64),
-    beat_duration: f64,
-) -> (f64, f64, f64, f64, f64, f64) {
+fn clamp_beat_params(params: (f64, f64, f64, f64, f64, f64), beat_duration: f64) -> (f64, f64, f64, f64, f64, f64) {
     let (mut amp_s, mut mu_s, mut sigma_s, mut amp_d, mut mu_d, mut sigma_d) = params;
     let bd = beat_duration.max(0.4);
 

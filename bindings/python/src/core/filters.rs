@@ -151,8 +151,7 @@ fn vec2_to_array2(v: Vec<Vec<f64>>) -> PyResult<Array2<f64>> {
         }
         data.extend_from_slice(row);
     }
-    Array2::from_shape_vec((nrows, ncols), data)
-        .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
+    Array2::from_shape_vec((nrows, ncols), data).map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
 }
 
 // Helper to convert Vec<f64> -> Array1<f64>
@@ -213,21 +212,12 @@ impl PyKalmanFilter {
     /// Returns list of filtered state vectors (one per time step).
     /// controls: optional list of control vectors (same length as zs).
     #[pyo3(signature = (zs, controls=None))]
-    fn filter(
-        &mut self,
-        zs: Vec<Vec<f64>>,
-        controls: Option<Vec<Vec<f64>>>,
-    ) -> PyResult<Vec<Vec<f64>>> {
+    fn filter(&mut self, zs: Vec<Vec<f64>>, controls: Option<Vec<Vec<f64>>>) -> PyResult<Vec<Vec<f64>>> {
         let zs: Vec<Array1<f64>> = zs.into_iter().map(vec_to_array1).collect();
-        let controls: Option<Vec<Array1<f64>>> =
-            controls.map(|cs| cs.into_iter().map(vec_to_array1).collect());
+        let controls: Option<Vec<Array1<f64>>> = controls.map(|cs| cs.into_iter().map(vec_to_array1).collect());
 
         let run = self.inner.run_forward(&zs, controls.as_deref());
-        Ok(run
-            .filtered_states
-            .into_iter()
-            .map(|s| s.to_vec())
-            .collect())
+        Ok(run.filtered_states.into_iter().map(|s| s.to_vec()).collect())
     }
 }
 

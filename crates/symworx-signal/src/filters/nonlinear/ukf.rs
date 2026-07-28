@@ -65,13 +65,7 @@ impl UnscentedKalmanFilter {
     }
 
     /// Create a UKF with custom sigma-point parameters.
-    pub fn with_params(
-        x0: Array1<f64>,
-        p0: Array2<f64>,
-        q: Array2<f64>,
-        r: Array2<f64>,
-        params: UkfParams,
-    ) -> Self {
+    pub fn with_params(x0: Array1<f64>, p0: Array2<f64>, q: Array2<f64>, r: Array2<f64>, params: UkfParams) -> Self {
         let n = x0.len();
         assert_eq!(p0.shape(), &[n, n]);
         assert_eq!(q.shape(), &[n, n]);
@@ -172,11 +166,7 @@ impl UnscentedKalmanFilter {
 }
 
 /// Generate `2n+1` sigma points (columns) and mean/covariance weights.
-pub fn sigma_points(
-    x: &Array1<f64>,
-    p: &Array2<f64>,
-    params: &UkfParams,
-) -> (Array2<f64>, Array1<f64>, Array1<f64>) {
+pub fn sigma_points(x: &Array1<f64>, p: &Array2<f64>, params: &UkfParams) -> (Array2<f64>, Array1<f64>, Array1<f64>) {
     let n = x.len();
     let lambda = params.alpha.powi(2) * (n as f64 + params.kappa) - n as f64;
     let c = n as f64 + lambda;
@@ -242,8 +232,7 @@ mod tests {
 
     #[test]
     fn test_ukf_linear_tracking() {
-        let mut ukf =
-            UnscentedKalmanFilter::new(array![0.0], array![[1.0]], array![[0.01]], array![[0.1]]);
+        let mut ukf = UnscentedKalmanFilter::new(array![0.0], array![[1.0]], array![[0.01]], array![[0.1]]);
         let f = |x: &Array1<f64>, _: Option<&Array1<f64>>| array![0.9 * x[0]];
         let h = |x: &Array1<f64>| array![x[0]];
 
@@ -281,10 +270,6 @@ mod tests {
             ukf.predict(&f, None);
             ukf.update(&array![true_theta.sin()], &h);
         }
-        assert!(
-            (ukf.state()[0] - true_theta).abs() < 0.15,
-            "θ est {}",
-            ukf.state()[0]
-        );
+        assert!((ukf.state()[0] - true_theta).abs() < 0.15, "θ est {}", ukf.state()[0]);
     }
 }

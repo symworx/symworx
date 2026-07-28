@@ -40,11 +40,7 @@ pub fn accuracy(y_true: &[usize], y_pred: &[usize]) -> f64 {
     if y_true.len() != y_pred.len() || y_true.is_empty() {
         return f64::NAN;
     }
-    let correct = y_true
-        .iter()
-        .zip(y_pred.iter())
-        .filter(|(a, p)| a == p)
-        .count();
+    let correct = y_true.iter().zip(y_pred.iter()).filter(|(a, p)| a == p).count();
     correct as f64 / y_true.len() as f64
 }
 
@@ -65,11 +61,7 @@ pub fn n_classes_from_labels(y_true: &[usize], y_pred: &[usize]) -> usize {
 /// via [`n_classes_from_labels`].
 ///
 /// Returns an empty `0×0` matrix if inputs are empty or lengths differ.
-pub fn confusion_matrix(
-    y_true: &[usize],
-    y_pred: &[usize],
-    n_classes: Option<usize>,
-) -> Array2<usize> {
+pub fn confusion_matrix(y_true: &[usize], y_pred: &[usize], n_classes: Option<usize>) -> Array2<usize> {
     if y_true.len() != y_pred.len() || y_true.is_empty() {
         return Array2::zeros((0, 0));
     }
@@ -96,11 +88,7 @@ pub fn precision_per_class(cm: &Array2<usize>) -> Vec<f64> {
                 tp = cm[[i, j]];
             }
         }
-        out[j] = if col_sum == 0 {
-            0.0
-        } else {
-            tp as f64 / col_sum as f64
-        };
+        out[j] = if col_sum == 0 { 0.0 } else { tp as f64 / col_sum as f64 };
     }
     out
 }
@@ -118,11 +106,7 @@ pub fn recall_per_class(cm: &Array2<usize>) -> Vec<f64> {
                 tp = cm[[i, j]];
             }
         }
-        out[i] = if row_sum == 0 {
-            0.0
-        } else {
-            tp as f64 / row_sum as f64
-        };
+        out[i] = if row_sum == 0 { 0.0 } else { tp as f64 / row_sum as f64 };
     }
     out
 }
@@ -132,13 +116,7 @@ pub fn f1_per_class(precision: &[f64], recall: &[f64]) -> Vec<f64> {
     precision
         .iter()
         .zip(recall.iter())
-        .map(|(&p, &r)| {
-            if p + r == 0.0 {
-                0.0
-            } else {
-                2.0 * p * r / (p + r)
-            }
-        })
+        .map(|(&p, &r)| if p + r == 0.0 { 0.0 } else { 2.0 * p * r / (p + r) })
         .collect()
 }
 
@@ -236,11 +214,7 @@ impl fmt::Display for ClassificationReport {
 /// Build a [`ClassificationReport`] from integer labels.
 ///
 /// If `n_classes` is `None`, it is inferred from the labels.
-pub fn classification_report(
-    y_true: &[usize],
-    y_pred: &[usize],
-    n_classes: Option<usize>,
-) -> ClassificationReport {
+pub fn classification_report(y_true: &[usize], y_pred: &[usize], n_classes: Option<usize>) -> ClassificationReport {
     if y_true.len() != y_pred.len() || y_true.is_empty() {
         return ClassificationReport::invalid();
     }
@@ -321,11 +295,7 @@ pub fn roc_curve(y_true: &[usize], scores: &[f64]) -> Option<RocCurve> {
 
     // Sort by score descending
     let mut order: Vec<usize> = (0..y_true.len()).collect();
-    order.sort_by(|&i, &j| {
-        scores[j]
-            .partial_cmp(&scores[i])
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
+    order.sort_by(|&i, &j| scores[j].partial_cmp(&scores[i]).unwrap_or(std::cmp::Ordering::Equal));
 
     let mut fpr = Vec::with_capacity(y_true.len() + 2);
     let mut tpr = Vec::with_capacity(y_true.len() + 2);
@@ -398,10 +368,7 @@ pub fn roc_auc_ovr(y_true: &[usize], scores: &Array2<f64>, classes: Option<&[usi
 
     let mut aucs = Vec::with_capacity(class_list.len());
     for (col, &cls) in class_list.iter().enumerate() {
-        let binary_y: Vec<usize> = y_true
-            .iter()
-            .map(|&y| if y == cls { 1 } else { 0 })
-            .collect();
+        let binary_y: Vec<usize> = y_true.iter().map(|&y| if y == cls { 1 } else { 0 }).collect();
         let col_scores: Vec<f64> = scores.column(col).to_vec();
         let a = roc_auc(&binary_y, &col_scores);
         if !a.is_finite() {

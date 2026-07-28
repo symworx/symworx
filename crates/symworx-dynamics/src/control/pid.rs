@@ -129,10 +129,6 @@ mod tests {
             let (x_next, _) = plant.step(&x, Some(&array![u]));
             x = x_next;
         }
-        assert!(
-            (x[0] - setpoint).abs() < 0.05,
-            "final state {} not near setpoint",
-            x[0]
-        );
+        assert!((x[0] - setpoint).abs() < 0.05, "final state {} not near setpoint", x[0]);
     }
 }

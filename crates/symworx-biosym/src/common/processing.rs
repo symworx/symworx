@@ -64,11 +64,7 @@ impl PhysiologyProcessingParams {
 }
 
 /// Apply cascaded bandpass filtering in place on a sample vector.
-pub fn apply_bandpass(
-    samples: &[f64],
-    fs: f64,
-    params: &BandpassParams,
-) -> Result<Vec<f64>, &'static str> {
+pub fn apply_bandpass(samples: &[f64], fs: f64, params: &BandpassParams) -> Result<Vec<f64>, &'static str> {
     params.validate(fs)?;
     let stages = params.stages.max(1);
     let mut out = samples.to_vec();
@@ -93,10 +89,7 @@ pub fn apply_peak_overrides<'a>(
     let prominence = overrides.min_prominence.unwrap_or(base_prominence);
     let height = overrides.min_height.unwrap_or(base_height);
 
-    finder
-        .distance(distance)
-        .prominence(prominence)
-        .height(height)
+    finder.distance(distance).prominence(prominence).height(height)
 }
 
 /// Apply optional bandpass from processing params (using the common
@@ -128,10 +121,7 @@ mod tests {
         let filtered = apply_bandpass(&samples, fs, &params).unwrap();
         // Ignore startup transient; tail should be strongly attenuated.
         let tail_energy: f64 = filtered[100..].iter().map(|v| v.abs()).sum();
-        assert!(
-            tail_energy < 2.0,
-            "DC tail should be attenuated, energy={tail_energy}"
-        );
+        assert!(tail_energy < 2.0, "DC tail should be attenuated, energy={tail_energy}");
     }
 
     #[test]

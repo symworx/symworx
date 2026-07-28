@@ -182,11 +182,7 @@ fn render_live_stream(frame: &mut Frame, app: &App, area: Rect) {
         _ => Color::LightGreen,
     };
 
-    let roll = if live.is_rolling() {
-        "rolling"
-    } else {
-        "filling"
-    };
+    let roll = if live.is_rolling() { "rolling" } else { "filling" };
     let outer = Block::new()
         .title(format!(
             " LIVE · {} · sid={} · window {:.0}s ({} pts, {}) ",
@@ -200,10 +196,7 @@ fn render_live_stream(frame: &mut Frame, app: &App, area: Rect) {
         .padding(Padding::horizontal(1))
         .border_style(status_color);
 
-    let bpm_s = live
-        .last_bpm
-        .map(|b| format!("{:.1}", b))
-        .unwrap_or_else(|| "—".into());
+    let bpm_s = live.last_bpm.map(|b| format!("{:.1}", b)).unwrap_or_else(|| "—".into());
     let bpm_avg_s = live
         .last_bpm_avg
         .map(|b| format!("{:.1}", b))
@@ -243,14 +236,7 @@ fn render_live_stream(frame: &mut Frame, app: &App, area: Rect) {
     let ir = sanitize_series(&live.ir_series());
     let resp = sanitize_series(&live.resp_series());
     render_live_channel_chart(frame, chunks[1], " PPG (IR) ", Color::LightCyan, &ir, true);
-    render_live_channel_chart(
-        frame,
-        chunks[2],
-        " Respiration ",
-        Color::LightMagenta,
-        &resp,
-        false,
-    );
+    render_live_channel_chart(frame, chunks[2], " Respiration ", Color::LightMagenta, &resp, false);
 }
 
 fn sanitize_series(raw: &[f64]) -> Vec<f64> {
@@ -269,11 +255,7 @@ fn render_live_channel_chart(
     integer_y: bool,
 ) {
     let n = series.len();
-    let data: Vec<(f64, f64)> = series
-        .iter()
-        .enumerate()
-        .map(|(i, &v)| (i as f64, v))
-        .collect();
+    let data: Vec<(f64, f64)> = series.iter().enumerate().map(|(i, &v)| (i as f64, v)).collect();
 
     let mut y_min = series.iter().copied().fold(f64::INFINITY, f64::min);
     let mut y_max = series.iter().copied().fold(f64::NEG_INFINITY, f64::max);
@@ -294,15 +276,9 @@ fn render_live_channel_chart(
         .data(&data)];
 
     let y_labels = if integer_y {
-        vec![
-            Line::from(format!("{:.0}", y_min)),
-            Line::from(format!("{:.0}", y_max)),
-        ]
+        vec![Line::from(format!("{:.0}", y_min)), Line::from(format!("{:.0}", y_max))]
     } else {
-        vec![
-            Line::from(format!("{:.2}", y_min)),
-            Line::from(format!("{:.2}", y_max)),
-        ]
+        vec![Line::from(format!("{:.2}", y_min)), Line::from(format!("{:.2}", y_max))]
     };
 
     let chart = Chart::new(datasets)
@@ -451,10 +427,7 @@ fn render_waveform(frame: &mut Frame, app: &App, area: Rect) {
             Line::from(format!("{:.2}", y_max)),
         ]);
 
-    let chart = Chart::new(datasets)
-        .block(Block::new())
-        .x_axis(x_axis)
-        .y_axis(y_axis);
+    let chart = Chart::new(datasets).block(Block::new()).x_axis(x_axis).y_axis(y_axis);
 
     let pan_hint = if n > view_len {
         format!("  ←→ pan  window {}/{}", start, max_start)
@@ -465,15 +438,18 @@ fn render_waveform(frame: &mut Frame, app: &App, area: Rect) {
         .fs
         .map(|f| format!("{:.0} Hz", f))
         .unwrap_or_else(|| "fs?".into());
-    let n_ibi = signal
-        .tachogram
-        .as_ref()
-        .map(|t| t.n_intervals())
-        .unwrap_or(0);
+    let n_ibi = signal.tachogram.as_ref().map(|t| t.n_intervals()).unwrap_or(0);
     let pp = &app.peak_params;
-    let lines = [format!(
+    let lines = [
+        format!(
             "File: {}  |  {}  {}  |  samples {}..{} / {}{}  |  view: waveform (i=tacho)",
-            signal.name, signal.kind.label(), fs_s, start, end, n, pan_hint
+            signal.name,
+            signal.kind.label(),
+            fs_s,
+            start,
+            end,
+            n,
+            pan_hint
         ),
         format!(
             "Mean: {:.2}  Std: {:.2}  Min: {:.2}  Max: {:.2}  |  known {}/{}  det {}  IBI n={}",
@@ -489,7 +465,8 @@ fn render_waveform(frame: &mut Frame, app: &App, area: Rect) {
         format!(
             "Peak params: h={:.2} prom={:.2} min_int={:.2}s tol=±{}  |  p k K  i tacho  e export  o source",
             pp.height_frac, pp.prom_frac, pp.min_interval_sec, pp.match_tol
-        )];
+        ),
+    ];
 
     let content = Paragraph::new(lines.join("\n")).block(block);
     let chunks = Layout::vertical([Constraint::Length(5), Constraint::Min(1)]).split(area);
@@ -500,10 +477,7 @@ fn render_waveform(frame: &mut Frame, app: &App, area: Rect) {
 fn render_tachogram(frame: &mut Frame, app: &App, area: Rect) {
     let signal = app.loaded_signal.as_ref().expect("checked");
     let block = Block::new()
-        .title(format!(
-            " Explore — Tachogram ({}) ",
-            signal.tachogram_source.label()
-        ))
+        .title(format!(" Explore — Tachogram ({}) ", signal.tachogram_source.label()))
         .borders(Borders::ALL)
         .padding(Padding::horizontal(1))
         .border_style(Color::Yellow);
@@ -580,10 +554,7 @@ fn render_tachogram(frame: &mut Frame, app: &App, area: Rect) {
             Line::from(format!("{:.3}", y_max)),
         ]);
 
-    let chart = Chart::new(datasets)
-        .block(Block::new())
-        .x_axis(x_axis)
-        .y_axis(y_axis);
+    let chart = Chart::new(datasets).block(Block::new()).x_axis(x_axis).y_axis(y_axis);
 
     let mean = tacho
         .mean_interval()
@@ -638,11 +609,7 @@ fn render_tachogram(frame: &mut Frame, app: &App, area: Rect) {
 fn render_peak_params_panel(frame: &mut Frame, app: &App, area: Rect) {
     let pp = &app.peak_params;
     let sel = app.peak_param_selection;
-    let kind = app
-        .loaded_signal
-        .as_ref()
-        .map(|s| s.kind.label())
-        .unwrap_or("?");
+    let kind = app.loaded_signal.as_ref().map(|s| s.kind.label()).unwrap_or("?");
     let fs = app.loaded_signal.as_ref().and_then(|s| s.fs);
 
     let thr = app
@@ -658,10 +625,7 @@ fn render_peak_params_panel(frame: &mut Frame, app: &App, area: Rect) {
     let fields: [(&str, String); 4] = [
         (
             "height_frac",
-            format!(
-                "{:.2}   (min height as frac of range above min)",
-                pp.height_frac
-            ),
+            format!("{:.2}   (min height as frac of range above min)", pp.height_frac),
         ),
         (
             "prom_frac",
@@ -673,8 +637,7 @@ fn render_peak_params_panel(frame: &mut Frame, app: &App, area: Rect) {
                 "{:.2} s  → dist {} samples @ fs={}",
                 pp.min_interval_sec,
                 thr.map(|t| t.2).unwrap_or(0),
-                fs.map(|f| format!("{:.0}", f))
-                    .unwrap_or_else(|| "?".into())
+                fs.map(|f| format!("{:.0}", f)).unwrap_or_else(|| "?".into())
             ),
         ),
         (
@@ -699,11 +662,7 @@ fn render_peak_params_panel(frame: &mut Frame, app: &App, area: Rect) {
         let n_det = sig.detected_peaks.len();
         let n_known = sig.known_peaks_primary.len();
         let matched = if n_known > 0 {
-            crate::processing::count_peak_matches(
-                &sig.known_peaks_primary,
-                &sig.detected_peaks,
-                pp.match_tol,
-            )
+            crate::processing::count_peak_matches(&sig.known_peaks_primary, &sig.detected_peaks, pp.match_tol)
         } else {
             0
         };

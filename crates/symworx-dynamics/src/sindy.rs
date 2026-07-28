@@ -138,11 +138,7 @@ pub fn sindy(snapshots: &Array2<f64>, dt: f64, config: &SindyConfig) -> SindyRes
 ///
 /// * `states` — `n × m` state samples (columns)
 /// * `derivatives` — `n × m` corresponding `ẋ` (or `Δx`) columns
-pub fn sindy_with_derivatives(
-    states: &Array2<f64>,
-    derivatives: &Array2<f64>,
-    config: &SindyConfig,
-) -> SindyResult {
+pub fn sindy_with_derivatives(states: &Array2<f64>, derivatives: &Array2<f64>, config: &SindyConfig) -> SindyResult {
     assert_eq!(states.nrows(), derivatives.nrows());
     assert_eq!(states.ncols(), derivatives.ncols());
     assert!(states.ncols() >= 1);
@@ -156,13 +152,7 @@ pub fn sindy_with_derivatives(
     // X_dot as samples × state (m × n)
     let x_dot = derivatives.t().to_owned();
 
-    let (xi, iterations) = stls(
-        &theta,
-        &x_dot,
-        config.threshold,
-        config.max_iter,
-        config.ridge,
-    );
+    let (xi, iterations) = stls(&theta, &x_dot, config.threshold, config.max_iter, config.ridge);
 
     let relative_fit_error = mean_relative_column_error(&x_dot, &theta.dot(&xi));
 
@@ -284,10 +274,7 @@ fn ridge_least_squares(theta: &Array2<f64>, y: &Array1<f64>, ridge: f64) -> Arra
             gram[[i, i]] += ridge;
         }
         let thy = theta.t().dot(y);
-        return gram
-            .inv()
-            .expect("SINDy ridge Gram inversion failed")
-            .dot(&thy);
+        return gram.inv().expect("SINDy ridge Gram inversion failed").dot(&thy);
     }
     // Unregularized least squares via SVD
     match theta.least_squares(y) {
@@ -332,12 +319,7 @@ mod tests {
     use crate::koopman::Dictionary;
 
     /// Linear system ẋ = A x with known A.
-    fn simulate_linear_continuous(
-        a: &Array2<f64>,
-        x0: Array1<f64>,
-        dt: f64,
-        steps: usize,
-    ) -> Array2<f64> {
+    fn simulate_linear_continuous(a: &Array2<f64>, x0: Array1<f64>, dt: f64, steps: usize) -> Array2<f64> {
         // Euler integration of ẋ = A x
         let n = x0.len();
         let mut snaps = Array2::zeros((n, steps));
@@ -372,11 +354,7 @@ mod tests {
         // ξ column 0 should ≈ [0, -0.5, 0.1, 0, 0, 0]
         // ξ column 1 should ≈ [0, 0, -0.3, 0, 0, 0]
         assert_eq!(model.library_dim, 6);
-        assert!(
-            model.sparsity(1e-6) <= 4,
-            "sparsity {}",
-            model.sparsity(1e-6)
-        );
+        assert!(model.sparsity(1e-6) <= 4, "sparsity {}", model.sparsity(1e-6));
 
         let xi = &model.xi;
         assert!((xi[[1, 0]] + 0.5).abs() < 0.08, "A00: got {}", xi[[1, 0]]);

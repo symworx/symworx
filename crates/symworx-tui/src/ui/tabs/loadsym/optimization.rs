@@ -151,21 +151,9 @@ pub fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect) {
     let n = loads.len();
     let last7: f64 = loads.iter().rev().take(7).sum();
     let last28: f64 = loads.iter().rev().take(28).sum();
-    let date_lo = app
-        .daily_load_dates
-        .first()
-        .map(|s| s.as_str())
-        .unwrap_or("?");
-    let date_hi = app
-        .daily_load_dates
-        .last()
-        .map(|s| s.as_str())
-        .unwrap_or("?");
-    let src = if app.loadsym_from_catalog {
-        "catalog"
-    } else {
-        "demo"
-    };
+    let date_lo = app.daily_load_dates.first().map(|s| s.as_str()).unwrap_or("?");
+    let date_hi = app.daily_load_dates.last().map(|s| s.as_str()).unwrap_or("?");
+    let src = if app.loadsym_from_catalog { "catalog" } else { "demo" };
     let src_path = app
         .loadsym_catalog_path
         .as_ref()
@@ -174,10 +162,9 @@ pub fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect) {
         .unwrap_or("-");
 
     // Fixed-width fields so goal tabbing does not reflow this strip.
-    let (ctl, atl, tsb) =
-        state
-            .map(|s| (s.ctl(), s.atl(), s.tsb()))
-            .unwrap_or((f64::NAN, f64::NAN, f64::NAN));
+    let (ctl, atl, tsb) = state
+        .map(|s| (s.ctl(), s.atl(), s.tsb()))
+        .unwrap_or((f64::NAN, f64::NAN, f64::NAN));
     metric_lines.push(Line::from(format!(
         " source={:<7}  days={:<4}  range={:<10} → {:<10}  file={:<16}  H={:<2}d",
         src,
@@ -243,16 +230,12 @@ pub fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect) {
         let badge = if plan.success {
             Span::styled(
                 "SUCCESS",
-                Style::default()
-                    .fg(Color::Green)
-                    .add_modifier(Modifier::BOLD),
+                Style::default().fg(Color::Green).add_modifier(Modifier::BOLD),
             )
         } else {
             Span::styled(
                 "FAIL/partial",
-                Style::default()
-                    .fg(Color::Yellow)
-                    .add_modifier(Modifier::BOLD),
+                Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
             )
         };
         lines.push(Line::from(vec![
@@ -270,10 +253,7 @@ pub fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect) {
         ]));
         if let Some(a) = plan.projected_acwr {
             lines.push(Line::from(Span::styled(
-                format!(
-                    " ACLi context (advisory): projected={:.2} — does not drive SUCCESS",
-                    a
-                ),
+                format!(" ACLi context (advisory): projected={:.2} — does not drive SUCCESS", a),
                 Style::default().fg(Color::DarkGray),
             )));
         }
@@ -283,18 +263,8 @@ pub fn render_optimization_view(frame: &mut Frame, app: &App, area: Rect) {
             Style::default().fg(Color::DarkGray),
         )));
         for (i, tss) in plan.daily_tss.iter().enumerate() {
-            let form_i = plan
-                .predicted_states
-                .form
-                .get(i)
-                .copied()
-                .unwrap_or(f64::NAN);
-            lines.push(Line::from(format!(
-                " +{:<5}{:>8.0}{:>+12.1}",
-                i + 1,
-                tss,
-                form_i
-            )));
+            let form_i = plan.predicted_states.form.get(i).copied().unwrap_or(f64::NAN);
+            lines.push(Line::from(format!(" +{:<5}{:>8.0}{:>+12.1}", i + 1, tss, form_i)));
         }
         lines.push(Line::from(""));
         for m in plan.messages.iter().take(4) {
@@ -406,28 +376,15 @@ pub fn render_opt_dual_charts(
     render_hist_proj_bar(frame, rows[0], " Load (TSLi) ", load_hist, load_proj, |v| {
         ((v / load_max) * 100.0).round().clamp(0.0, 100.0) as u64
     });
-    render_hist_proj_bar(
-        frame,
-        rows[1],
-        " Readiness (SLBi) ",
-        form_hist,
-        form_proj,
-        |v| {
-            let s = form_to_spark_f(v);
-            ((s / form_max) * 100.0).round().clamp(0.0, 100.0) as u64
-        },
-    );
+    render_hist_proj_bar(frame, rows[1], " Readiness (SLBi) ", form_hist, form_proj, |v| {
+        let s = form_to_spark_f(v);
+        ((s / form_max) * 100.0).round().clamp(0.0, 100.0) as u64
+    });
 }
 
 /// One metric row: [ history sparkline yellow | projected sparkline purple ].
-pub fn render_hist_proj_bar<F>(
-    frame: &mut Frame,
-    area: Rect,
-    title: &str,
-    hist: &[f64],
-    proj: &[f64],
-    to_u64: F,
-) where
+pub fn render_hist_proj_bar<F>(frame: &mut Frame, area: Rect, title: &str, hist: &[f64], proj: &[f64], to_u64: F)
+where
     F: Fn(f64) -> u64,
 {
     let n_h = hist.len().max(1);

@@ -114,9 +114,7 @@ pub struct GaussianNbConfig {
 
 impl Default for GaussianNbConfig {
     fn default() -> Self {
-        Self {
-            var_smoothing: 1e-9,
-        }
+        Self { var_smoothing: 1e-9 }
     }
 }
 
@@ -207,14 +205,7 @@ mod tests {
 
     #[test]
     fn separates_two_blobs() {
-        let x = array![
-            [0.0, 0.0],
-            [0.1, 0.1],
-            [0.0, 0.2],
-            [5.0, 5.0],
-            [5.1, 4.9],
-            [4.9, 5.1],
-        ];
+        let x = array![[0.0, 0.0], [0.1, 0.1], [0.0, 0.2], [5.0, 5.0], [5.1, 4.9], [4.9, 5.1],];
         let y = vec![0, 0, 0, 1, 1, 1];
         let model = gaussian_nb_default(&x, &y);
         let pred = model.predict(&x);
@@ -226,14 +217,7 @@ mod tests {
 
     #[test]
     fn three_classes() {
-        let x = array![
-            [0.0, 0.0],
-            [0.1, 0.0],
-            [3.0, 0.0],
-            [3.1, 0.1],
-            [0.0, 3.0],
-            [0.1, 3.1],
-        ];
+        let x = array![[0.0, 0.0], [0.1, 0.0], [3.0, 0.0], [3.1, 0.1], [0.0, 3.0], [0.1, 3.1],];
         let y = vec![0, 0, 1, 1, 2, 2];
         let model = gaussian_nb_default(&x, &y);
         assert_eq!(model.n_classes(), 3);

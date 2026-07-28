@@ -407,10 +407,7 @@ impl App {
                     let path = entry.path();
                     if path.is_file() {
                         if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
-                            if matches!(
-                                ext.to_lowercase().as_str(),
-                                "csv" | "txt" | "dat" | "bin" | "biosym"
-                            ) {
+                            if matches!(ext.to_lowercase().as_str(), "csv" | "txt" | "dat" | "bin" | "biosym") {
                                 self.file_list.push(path);
                             }
                         }

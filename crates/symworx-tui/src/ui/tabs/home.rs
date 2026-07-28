@@ -98,11 +98,7 @@ pub fn render_home_tab(frame: &mut Frame, app: &App, area: Rect) {
     frame.render_widget(logo, chunks[0]);
 
     // BioSym (1) - selection 0
-    let sel = if app.home_selection == 0 {
-        "▶ "
-    } else {
-        "  "
-    };
+    let sel = if app.home_selection == 0 { "▶ " } else { "  " };
     let b1 = Paragraph::new(vec![
         Line::from(Span::styled(
             "Biomechanical & Physiological Signals",
@@ -120,20 +116,13 @@ pub fn render_home_tab(frame: &mut Frame, app: &App, area: Rect) {
             .title(format!("{}1 BioSym", sel)),
     );
     if app.home_selection == 0 {
-        frame.render_widget(
-            b1.clone().style(Style::default().fg(Color::Cyan)),
-            chunks[2],
-        );
+        frame.render_widget(b1.clone().style(Style::default().fg(Color::Cyan)), chunks[2]);
     } else {
         frame.render_widget(b1, chunks[2]);
     }
 
     // StatsSym (2) - selection 1
-    let sel = if app.home_selection == 1 {
-        "▶ "
-    } else {
-        "  "
-    };
+    let sel = if app.home_selection == 1 { "▶ " } else { "  " };
     let b2 = Paragraph::new(vec![
         Line::from(Span::styled(
             "Import → Lab · guided stats & demos",
@@ -151,20 +140,13 @@ pub fn render_home_tab(frame: &mut Frame, app: &App, area: Rect) {
             .title(format!("{}2 StatsSym", sel)),
     );
     if app.home_selection == 1 {
-        frame.render_widget(
-            b2.clone().style(Style::default().fg(Color::Magenta)),
-            chunks[3],
-        );
+        frame.render_widget(b2.clone().style(Style::default().fg(Color::Magenta)), chunks[3]);
     } else {
         frame.render_widget(b2, chunks[3]);
     }
 
     // LoadSym (3) - selection 2
-    let sel = if app.home_selection == 2 {
-        "▶ "
-    } else {
-        "  "
-    };
+    let sel = if app.home_selection == 2 { "▶ " } else { "  " };
     let b3 = Paragraph::new(vec![
         Line::from(Span::styled(
             "Training Load, ACWR, Monotony & Nutrition",
@@ -182,20 +164,13 @@ pub fn render_home_tab(frame: &mut Frame, app: &App, area: Rect) {
             .title(format!("{}3 LoadSym", sel)),
     );
     if app.home_selection == 2 {
-        frame.render_widget(
-            b3.clone().style(Style::default().fg(Color::Cyan)),
-            chunks[4],
-        );
+        frame.render_widget(b3.clone().style(Style::default().fg(Color::Cyan)), chunks[4]);
     } else {
         frame.render_widget(b3, chunks[4]);
     }
 
     // SpatialSym (4) - selection 3
-    let sel = if app.home_selection == 3 {
-        "▶ "
-    } else {
-        "  "
-    };
+    let sel = if app.home_selection == 3 { "▶ " } else { "  " };
     let b4 = Paragraph::new(vec![
         Line::from(Span::styled(
             "Trajectory & Spatial Decision Analysis",
@@ -213,10 +188,7 @@ pub fn render_home_tab(frame: &mut Frame, app: &App, area: Rect) {
             .title(format!("{}4 SpatialSym", sel)),
     );
     if app.home_selection == 3 {
-        frame.render_widget(
-            b4.clone().style(Style::default().fg(Color::Cyan)),
-            chunks[5],
-        );
+        frame.render_widget(b4.clone().style(Style::default().fg(Color::Cyan)), chunks[5]);
     } else {
         frame.render_widget(b4, chunks[5]);
     }

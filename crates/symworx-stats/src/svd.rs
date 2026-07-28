@@ -135,10 +135,7 @@ mod tests {
         assert_eq!(svd.rank(Some(1e-8)), 1);
 
         let a1 = svd.reconstruct_rank_k(1);
-        let max_error = (&a - &a1)
-            .mapv(f64::abs)
-            .into_iter()
-            .fold(0.0_f64, |acc, v| acc.max(v));
+        let max_error = (&a - &a1).mapv(f64::abs).into_iter().fold(0.0_f64, |acc, v| acc.max(v));
         assert!(max_error < 1e-8, "rank-1 reconstruction should be exact");
 
         let (u_k, s_k, vt_k) = svd.truncate(1);

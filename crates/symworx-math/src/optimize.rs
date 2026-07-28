@@ -166,11 +166,7 @@ where
 }
 
 /// Convenience: gradient descent with finite-difference gradients only.
-pub fn gradient_descent_fd<F>(
-    f: F,
-    x0: Array1<f64>,
-    config: &GradientDescentConfig,
-) -> GradientDescentResult
+pub fn gradient_descent_fd<F>(f: F, x0: Array1<f64>, config: &GradientDescentConfig) -> GradientDescentResult
 where
     F: Fn(&Array1<f64>) -> f64,
 {
@@ -183,13 +179,7 @@ where
 ///
 /// Armijo knobs come from [`GradientDescentConfig`] so this stays under
 /// Clippy's argument-count limit.
-fn armijo_step<F>(
-    f: &F,
-    x: &Array1<f64>,
-    f_x: f64,
-    g: &Array1<f64>,
-    config: &GradientDescentConfig,
-) -> f64
+fn armijo_step<F>(f: &F, x: &Array1<f64>, f_x: f64, g: &Array1<f64>, config: &GradientDescentConfig) -> f64
 where
     F: Fn(&Array1<f64>) -> f64,
 {

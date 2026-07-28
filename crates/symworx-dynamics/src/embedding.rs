@@ -39,10 +39,7 @@ pub fn fnn(data: &[f64], m: usize, tau: usize, rtol: f64, atol: f64, theiler: us
 
     let n = m1.len();
     if n == 0 {
-        return FnnResult {
-            m,
-            fnn_ratio: f64::NAN,
-        };
+        return FnnResult { m, fnn_ratio: f64::NAN };
     }
 
     let mut false_count = 0usize;

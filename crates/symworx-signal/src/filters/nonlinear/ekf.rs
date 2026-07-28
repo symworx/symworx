@@ -184,8 +184,7 @@ mod tests {
     #[test]
     fn test_ekf_linear_reduces_to_kf_behavior() {
         // Linear system: x⁺ = 0.9 x, z = x + v  (1D)
-        let mut ekf =
-            ExtendedKalmanFilter::new(array![0.0], array![[1.0]], array![[0.01]], array![[0.1]]);
+        let mut ekf = ExtendedKalmanFilter::new(array![0.0], array![[1.0]], array![[0.01]], array![[0.1]]);
 
         let f = |x: &Array1<f64>, _: Option<&Array1<f64>>| array![0.9 * x[0]];
         let f_j = |_: &Array1<f64>, _: Option<&Array1<f64>>| array![[0.9]];
@@ -209,18 +208,13 @@ mod tests {
     #[test]
     fn test_ekf_fd_nonlinear_measurement() {
         // State is angle θ; measure sin(θ)
-        let mut ekf =
-            ExtendedKalmanFilter::new(array![0.1], array![[0.5]], array![[1e-4]], array![[0.01]]);
+        let mut ekf = ExtendedKalmanFilter::new(array![0.1], array![[0.5]], array![[1e-4]], array![[0.01]]);
         let f = |x: &Array1<f64>, _: Option<&Array1<f64>>| array![x[0]]; // static
         let true_theta = 0.5_f64;
         for _ in 0..30 {
             ekf.predict_fd(&f, None, 1e-6);
             ekf.update_fd(&array![true_theta.sin()], |x| array![x[0].sin()], 1e-6);
         }
-        assert!(
-            (ekf.state()[0] - true_theta).abs() < 0.1,
-            "θ est {}",
-            ekf.state()[0]
-        );
+        assert!((ekf.state()[0] - true_theta).abs() < 0.1, "θ est {}", ekf.state()[0]);
     }
 }

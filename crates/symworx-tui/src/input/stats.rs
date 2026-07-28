@@ -134,17 +134,11 @@ pub fn handle_stats_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers)
             // Poly: max degree (Enter re-runs).
             KeyCode::Char('d') => {
                 app.stats_poly_max_degree = (app.stats_poly_max_degree + 1).min(8);
-                app.status = format!(
-                    "Poly max degree = {}  ·  Enter to re-run",
-                    app.stats_poly_max_degree
-                );
+                app.status = format!("Poly max degree = {}  ·  Enter to re-run", app.stats_poly_max_degree);
             }
             KeyCode::Char('D') => {
                 app.stats_poly_max_degree = app.stats_poly_max_degree.saturating_sub(1).max(1);
-                app.status = format!(
-                    "Poly max degree = {}  ·  Enter to re-run",
-                    app.stats_poly_max_degree
-                );
+                app.status = format!("Poly max degree = {}  ·  Enter to re-run", app.stats_poly_max_degree);
             }
             KeyCode::Char('x') => {
                 if let Some(ref t) = app.stats_table {
@@ -178,17 +172,11 @@ pub fn handle_stats_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers)
             }
             KeyCode::Char('h') | KeyCode::Char('H') => {
                 app.stats_residual_mode = match app.stats_residual_mode {
-                    crate::app::ResidualPanelMode::BlandAltman => {
-                        crate::app::ResidualPanelMode::Histogram
-                    }
-                    crate::app::ResidualPanelMode::Histogram => {
-                        crate::app::ResidualPanelMode::BlandAltman
-                    }
+                    crate::app::ResidualPanelMode::BlandAltman => crate::app::ResidualPanelMode::Histogram,
+                    crate::app::ResidualPanelMode::Histogram => crate::app::ResidualPanelMode::BlandAltman,
                 };
                 app.status = match app.stats_residual_mode {
-                    crate::app::ResidualPanelMode::BlandAltman => {
-                        "Residual panel: Bland–Altman".into()
-                    }
+                    crate::app::ResidualPanelMode::BlandAltman => "Residual panel: Bland–Altman".into(),
                     crate::app::ResidualPanelMode::Histogram => "Residual panel: histogram".into(),
                 };
             }
@@ -202,17 +190,11 @@ pub fn handle_stats_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers)
             }
             KeyCode::Char('k') => {
                 app.stats_pipeline_k = (app.stats_pipeline_k + 1).min(10);
-                app.status = format!(
-                    "Pipeline folds k={}  ·  Enter to re-run",
-                    app.stats_pipeline_k
-                );
+                app.status = format!("Pipeline folds k={}  ·  Enter to re-run", app.stats_pipeline_k);
             }
             KeyCode::Char('K') => {
                 app.stats_pipeline_k = app.stats_pipeline_k.saturating_sub(1).max(2);
-                app.status = format!(
-                    "Pipeline folds k={}  ·  Enter to re-run",
-                    app.stats_pipeline_k
-                );
+                app.status = format!("Pipeline folds k={}  ·  Enter to re-run", app.stats_pipeline_k);
             }
             // Focus metrics table row (Pipeline splits / Poly degrees) — plots follow.
             KeyCode::Char('f') | KeyCode::Char('F') | KeyCode::Down => {
@@ -253,9 +235,8 @@ pub fn handle_stats_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers)
             }
             KeyCode::Enter => {
                 if let Some(ref table) = app.stats_table {
-                    let task = crate::app::StatsLabTask::ALL[app
-                        .stats_lab_task
-                        .min(crate::app::StatsLabTask::ALL.len() - 1)];
+                    let task =
+                        crate::app::StatsLabTask::ALL[app.stats_lab_task.min(crate::app::StatsLabTask::ALL.len() - 1)];
                     match crate::stats_lab::run_lab(
                         table,
                         task,

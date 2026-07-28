@@ -27,10 +27,7 @@ use symworx_core::io::{
 pub fn py_load_any(path: &str) -> PyResult<Vec<Vec<f64>>> {
     match load_any(path) {
         Ok(data) => Ok(data),
-        Err(e) => Err(PyErr::new::<PyIOError, _>(format!(
-            "Failed to load file: {}",
-            e
-        ))),
+        Err(e) => Err(PyErr::new::<PyIOError, _>(format!("Failed to load file: {}", e))),
     }
 }
 
@@ -51,10 +48,7 @@ impl PyCsvReader {
     pub fn read(&self, path: &str) -> PyResult<Vec<Vec<f64>>> {
         match CsvReader::read(path) {
             Ok(data) => Ok(data),
-            Err(e) => Err(PyErr::new::<PyIOError, _>(format!(
-                "Failed to read CSV file: {}",
-                e
-            ))),
+            Err(e) => Err(PyErr::new::<PyIOError, _>(format!("Failed to read CSV file: {}", e))),
         }
     }
 }
@@ -75,10 +69,7 @@ impl PyCsvWriter {
     pub fn write(&self, path: &str, data: Vec<Vec<f64>>) -> PyResult<()> {
         match CsvWriter::write(path, &data) {
             Ok(_) => Ok(()),
-            Err(e) => Err(PyErr::new::<PyIOError, _>(format!(
-                "Failed to write CSV file: {}",
-                e
-            ))),
+            Err(e) => Err(PyErr::new::<PyIOError, _>(format!("Failed to write CSV file: {}", e))),
         }
     }
 }
@@ -103,10 +94,7 @@ pub fn py_read_gbd(path: &str, sql: &str) -> PyResult<PyGbdTable> {
             name: table.name,
             rows: table.rows,
         }),
-        Err(e) => Err(PyErr::new::<PyIOError, _>(format!(
-            "Failed to read GBD: {}",
-            e
-        ))),
+        Err(e) => Err(PyErr::new::<PyIOError, _>(format!("Failed to read GBD: {}", e))),
     }
 }
 
@@ -133,10 +121,7 @@ pub fn py_read_ibi(path: &str) -> PyResult<Vec<PyIbiRecord>> {
                 rr_ms: r.rr_ms,
             })
             .collect()),
-        Err(e) => Err(PyErr::new::<PyIOError, _>(format!(
-            "Failed to read IBI file: {}",
-            e
-        ))),
+        Err(e) => Err(PyErr::new::<PyIOError, _>(format!("Failed to read IBI file: {}", e))),
     }
 }
 
@@ -223,24 +208,10 @@ pub fn py_load_activity(path: &str) -> PyResult<PyObject> {
 
 #[cfg(feature = "email")]
 #[pyfunction(name = "fetch_srm_fit_attachments")]
-pub fn py_fetch_srm_fit_attachments(
-    user: &str,
-    app_password: &str,
-    target_dir: &str,
-) -> PyResult<Vec<String>> {
-    match symworx_io::fetch_srm_fit_attachments(
-        user,
-        app_password,
-        std::path::Path::new(target_dir),
-    ) {
-        Ok(paths) => Ok(paths
-            .into_iter()
-            .map(|p| p.to_string_lossy().to_string())
-            .collect()),
-        Err(e) => Err(PyErr::new::<PyIOError, _>(format!(
-            "fetch_srm_fit_attachments: {}",
-            e
-        ))),
+pub fn py_fetch_srm_fit_attachments(user: &str, app_password: &str, target_dir: &str) -> PyResult<Vec<String>> {
+    match symworx_io::fetch_srm_fit_attachments(user, app_password, std::path::Path::new(target_dir)) {
+        Ok(paths) => Ok(paths.into_iter().map(|p| p.to_string_lossy().to_string()).collect()),
+        Err(e) => Err(PyErr::new::<PyIOError, _>(format!("fetch_srm_fit_attachments: {}", e))),
     }
 }
 

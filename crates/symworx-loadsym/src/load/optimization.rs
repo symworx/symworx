@@ -224,11 +224,7 @@ pub fn optimize_load_plan(
         .ok_or_else(|| LoadSymError::InsufficientData("empty simulation".into()))?;
 
     let chronic_ref = chronic_reference(history_loads);
-    let recent_max = history_loads
-        .iter()
-        .copied()
-        .fold(0.0_f64, f64::max)
-        .max(chronic_ref);
+    let recent_max = history_loads.iter().copied().fold(0.0_f64, f64::max).max(chronic_ref);
     let w_max = (recent_max * thresholds.max_load_factor).max(1.0);
 
     let templates: Vec<f64> = TEMPLATE_FRACS
@@ -257,9 +253,7 @@ pub fn optimize_load_plan(
         search_beam(&ctx, &templates, h, BEAM_WIDTH)
     };
 
-    best.ok_or_else(|| {
-        LoadSymError::InvalidValue("no valid load plan candidates under constraints".into())
-    })
+    best.ok_or_else(|| LoadSymError::InvalidValue("no valid load plan candidates under constraints".into()))
 }
 
 /// Shared inputs for full-enumeration / beam plan search.
@@ -289,12 +283,7 @@ fn search_full_enum(ctx: &PlanSearchCtx<'_>, templates: &[f64], h: usize) -> Opt
 }
 
 /// Beam search: expand day-by-day, keep top `width` partial sequences by rank.
-fn search_beam(
-    ctx: &PlanSearchCtx<'_>,
-    templates: &[f64],
-    h: usize,
-    width: usize,
-) -> Option<LoadPlan> {
+fn search_beam(ctx: &PlanSearchCtx<'_>, templates: &[f64], h: usize, width: usize) -> Option<LoadPlan> {
     // Each beam entry is a partial (or full) day sequence.
     let mut beam: Vec<Vec<f64>> = vec![Vec::new()];
     let mut best: Option<LoadPlan> = None;
@@ -365,11 +354,7 @@ fn chronic_reference(history: &[f64]) -> f64 {
     let window = n.clamp(1, 28);
     let slice = &history[n - window..];
     let mean = slice.iter().sum::<f64>() / slice.len() as f64;
-    if mean.is_finite() && mean > 1.0 {
-        mean
-    } else {
-        50.0
-    }
+    if mean.is_finite() && mean > 1.0 { mean } else { 50.0 }
 }
 
 /// Mean |w_i − target| / target (scale-free day-to-day fit to a daily target).
@@ -443,8 +428,7 @@ fn evaluate_candidate(
     let (success, score) = match goal {
         LoadGoal::Recovery => {
             // Active recovery band: not pure rest, not moderate training.
-            let ok = load_frac + 1e-12 >= thr.recovery_load_frac_min
-                && load_frac <= thr.recovery_load_frac_max + 1e-12;
+            let ok = load_frac + 1e-12 >= thr.recovery_load_frac_min && load_frac <= thr.recovery_load_frac_max + 1e-12;
 
             let target = thr.recovery_load_frac_target;
             // Prefer mean near target + days near target·C (easy rides, not one big + zeros).
@@ -452,14 +436,12 @@ fn evaluate_candidate(
             let mut score = 1.2 * (load_frac - target).abs() + 0.8 * day_dev;
 
             // Extra push away from pure rest
-            let zero_frac = plan_loads.iter().filter(|&&w| w < 1.0).count() as f64
-                / plan_loads.len().max(1) as f64;
+            let zero_frac = plan_loads.iter().filter(|&&w| w < 1.0).count() as f64 / plan_loads.len().max(1) as f64;
             if zero_frac > 0.67 {
                 score += 0.4 * zero_frac;
             }
 
-            let rest_traj =
-                forecast_pulse_response(start, &vec![0.0; plan_loads.len()], params).ok()?;
+            let rest_traj = forecast_pulse_response(start, &vec![0.0; plan_loads.len()], params).ok()?;
             let form_rest = rest_traj.last_state()?.form;
             let rest_gain = (form_rest - form_start).max(0.0);
             let gain = form_end - form_start;
@@ -500,8 +482,8 @@ fn evaluate_candidate(
             (ok, score)
         }
         LoadGoal::Maintenance => {
-            let ok = load_frac >= thr.maintenance_load_frac_lo - 1e-12
-                && load_frac <= thr.maintenance_load_frac_hi + 1e-12;
+            let ok =
+                load_frac >= thr.maintenance_load_frac_lo - 1e-12 && load_frac <= thr.maintenance_load_frac_hi + 1e-12;
             // Keep weekly/horizon mean near chronic…
             let mut score = thr.maintenance_mean_weight * (load_frac - 1.0).abs();
             // …but prefer modulated days (easy / steady / moderate), not flat TSS.
@@ -557,8 +539,7 @@ fn evaluate_candidate(
             let hard_thr = thr.hard_day_frac * c;
             let cons = max_consecutive_ge(plan_loads, hard_thr);
             if cons > thr.max_consecutive_hard_soft {
-                score += thr.overload_consecutive_hard_weight
-                    * (cons - thr.max_consecutive_hard_soft) as f64;
+                score += thr.overload_consecutive_hard_weight * (cons - thr.max_consecutive_hard_soft) as f64;
                 messages.push(format!(
                     "structure soft: {} consecutive hard days (≥{:.0}%C); prefer ≤{}",
                     cons,
@@ -620,9 +601,7 @@ fn evaluate_candidate(
                 ));
             }
             Err(_) => {
-                messages.push(
-                    "ACWR context: insufficient history for 7/28 window (advisory skipped)".into(),
-                );
+                messages.push("ACWR context: insufficient history for 7/28 window (advisory skipped)".into());
             }
         }
     }
@@ -646,19 +625,11 @@ fn evaluate_candidate(
 /// Legacy stub retained for API compatibility (element-wise product).
 #[deprecated(note = "use optimize_load_plan for goal-conditioned multi-day planning")]
 pub fn optimize_load(parameters: &[f64], data: &[f64]) -> Vec<f64> {
-    parameters
-        .iter()
-        .zip(data.iter())
-        .map(|(p, d)| p * d)
-        .collect()
+    parameters.iter().zip(data.iter()).map(|(p, d)| p * d).collect()
 }
 
 #[allow(dead_code)]
-pub fn apply_plan_day(
-    state: PulseResponseState,
-    load: f64,
-    params: &PulseResponseParams,
-) -> PulseResponseState {
+pub fn apply_plan_day(state: PulseResponseState, load: f64, params: &PulseResponseParams) -> PulseResponseState {
     step_pulse_response(state, load, params)
 }
 

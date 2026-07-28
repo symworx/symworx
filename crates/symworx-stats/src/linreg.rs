@@ -33,10 +33,7 @@ pub struct LinearModel {
 impl LinearModel {
     /// Build from the legacy packed form `[intercept, β₀, β₁, …]`.
     pub fn from_packed(packed: &Array1<f64>) -> Self {
-        assert!(
-            !packed.is_empty(),
-            "packed coefficient vector must not be empty"
-        );
+        assert!(!packed.is_empty(), "packed coefficient vector must not be empty");
         Self {
             intercept: packed[0],
             coefficients: packed.slice(s![1..]).to_owned(),
@@ -102,11 +99,7 @@ pub fn l2(_x: &Array2<f64>, _y: &Array1<f64>) -> Array1<f64> {
 pub fn ols(x: &Array2<f64>, y: &Array1<f64>) -> LinearModel {
     let n_samples = x.nrows();
     let n_features = x.ncols();
-    assert_eq!(
-        y.len(),
-        n_samples,
-        "X and y must have the same number of rows"
-    );
+    assert_eq!(y.len(), n_samples, "X and y must have the same number of rows");
 
     // Augment X with column of ones for intercept
     let mut x_aug = Array2::<f64>::ones((n_samples, n_features + 1));
@@ -115,10 +108,7 @@ pub fn ols(x: &Array2<f64>, y: &Array1<f64>) -> LinearModel {
     let xtx = x_aug.t().dot(&x_aug);
     let xty = x_aug.t().dot(y);
 
-    let packed = xtx
-        .inv()
-        .expect("Matrix inversion failed — XᵀX is singular")
-        .dot(&xty);
+    let packed = xtx.inv().expect("Matrix inversion failed — XᵀX is singular").dot(&xty);
     LinearModel::from_packed(&packed)
 }
 
@@ -144,11 +134,7 @@ pub fn ols(_x: &Array2<f64>, _y: &Array1<f64>) -> LinearModel {
 pub fn ridge(x: &Array2<f64>, y: &Array1<f64>, alpha: f64) -> LinearModel {
     let n_samples = x.nrows();
     let n_features = x.ncols();
-    assert_eq!(
-        y.len(),
-        n_samples,
-        "X and y must have the same number of rows"
-    );
+    assert_eq!(y.len(), n_samples, "X and y must have the same number of rows");
     assert!(alpha >= 0.0, "alpha must be non-negative");
 
     // Center so intercept is unpenalized and solved in closed form after β
@@ -202,13 +188,7 @@ pub fn l1(
 ///
 /// Minimizes `(1/2n) ‖y − Xβ − b‖² + α ‖β‖₁` with unpenalized intercept
 /// (coordinate-descent soft-thresholding on centered data).
-pub fn lasso(
-    x: &Array2<f64>,
-    y: &Array1<f64>,
-    alpha: f64,
-    max_iter: usize,
-    tol: f64,
-) -> LinearModel {
+pub fn lasso(x: &Array2<f64>, y: &Array1<f64>, alpha: f64, max_iter: usize, tol: f64) -> LinearModel {
     elastic_net(x, y, alpha, 1.0, max_iter, tol)
 }
 
@@ -234,16 +214,9 @@ pub fn elastic_net(
 ) -> LinearModel {
     let n_samples = x.nrows();
     let n_features = x.ncols();
-    assert_eq!(
-        y.len(),
-        n_samples,
-        "X and y must have the same number of rows"
-    );
+    assert_eq!(y.len(), n_samples, "X and y must have the same number of rows");
     assert!(alpha >= 0.0, "alpha must be non-negative");
-    assert!(
-        (0.0..=1.0).contains(&l1_ratio),
-        "l1_ratio must be in [0, 1]"
-    );
+    assert!((0.0..=1.0).contains(&l1_ratio), "l1_ratio must be in [0, 1]");
 
     let x_mean = x.mean_axis(Axis(0)).expect("X must not be empty");
     let y_mean = y.mean().expect("y must not be empty");
@@ -336,11 +309,7 @@ mod tests {
         let y = array![2.0, 4.0, 6.0, 8.0];
         let model = ols(&x, &y);
         let pred = model.predict(&x);
-        let max_err = (&pred - &y)
-            .mapv(f64::abs)
-            .iter()
-            .cloned()
-            .fold(0.0, f64::max);
+        let max_err = (&pred - &y).mapv(f64::abs).iter().cloned().fold(0.0, f64::max);
         assert!(max_err < 1e-9);
         assert!((model.intercept).abs() < 1e-9);
         assert!((model.coefficients[0] - 2.0).abs() < 1e-9);

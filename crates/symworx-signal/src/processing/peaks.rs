@@ -79,12 +79,7 @@ impl PeakFinder {
     }
 
     /// Filters candidates by minimum prominence.
-    fn filter_by_prominence(
-        &self,
-        signal: ArrayView1<f64>,
-        candidates: &[usize],
-        min_prom: f64,
-    ) -> Vec<usize> {
+    fn filter_by_prominence(&self, signal: ArrayView1<f64>, candidates: &[usize], min_prom: f64) -> Vec<usize> {
         candidates
             .iter()
             .filter(|&&i| prominence(signal, i) >= min_prom)

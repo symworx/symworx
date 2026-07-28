@@ -83,11 +83,7 @@ fn main() {
             x.row(i).to_vec(),
             y[i],
             pred[i],
-            proba
-                .row(i)
-                .iter()
-                .map(|p| format!("{p:.3}"))
-                .collect::<Vec<_>>()
+            proba.row(i).iter().map(|p| format!("{p:.3}")).collect::<Vec<_>>()
         );
     }
 

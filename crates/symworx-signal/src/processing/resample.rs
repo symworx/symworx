@@ -28,10 +28,7 @@ impl<'a> Resample<'a> {
     /// Create a new resampler method.
     #[inline]
     pub fn new(y: &'a [f64]) -> Self {
-        Self {
-            y,
-            target_len: None,
-        }
+        Self { y, target_len: None }
     }
 
     /// Sets the target output length.

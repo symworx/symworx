@@ -20,24 +20,10 @@ fn main() {
     println!("=== symworx-stats: logistic regression (simple) ===\n");
 
     // y = 1 when x is large
-    let x = array![
-        [0.0],
-        [0.1],
-        [0.2],
-        [0.3],
-        [0.4],
-        [0.6],
-        [0.7],
-        [0.8],
-        [0.9],
-        [1.0],
-    ];
+    let x = array![[0.0], [0.1], [0.2], [0.3], [0.4], [0.6], [0.7], [0.8], [0.9], [1.0],];
     let y = array![0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0];
 
-    println!(
-        "1) Data: n = {}, n_features = 1 (threshold around x = 0.5)",
-        x.nrows()
-    );
+    println!("1) Data: n = {}, n_features = 1 (threshold around x = 0.5)", x.nrows());
 
     let model = logistic_regression(
         &x,
@@ -78,7 +64,5 @@ fn main() {
     println!("\n4) Training accuracy = {acc:.3}");
 
     println!("\nDone.");
-    println!(
-        "  ML pipeline version: cargo run -p symworx-stats --example logistic_ml_pipeline_demo"
-    );
+    println!("  ML pipeline version: cargo run -p symworx-stats --example logistic_ml_pipeline_demo");
 }

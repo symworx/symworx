@@ -78,11 +78,7 @@ pub fn render_metrics_view(frame: &mut Frame, app: &App, area: Rect) {
     let hdr = Paragraph::new(vec![
         Line::from(format!(
             "[{}] ride {}/{}  {}  ·  v chart mode  1–8 field  x/y axes",
-            if app.loadsym_from_catalog {
-                "catalog"
-            } else {
-                "—"
-            },
+            if app.loadsym_from_catalog { "catalog" } else { "—" },
             focus + 1,
             n,
             mode_s,
@@ -92,17 +88,11 @@ pub fn render_metrics_view(frame: &mut Frame, app: &App, area: Rect) {
                 "{}  {}  TSLi={}  SEPi={}  {}",
                 r.ride_date,
                 truncate_str(name, 28),
-                r.tss
-                    .map(|v| format!("{:.0}", v))
-                    .unwrap_or_else(|| "-".into()),
-                r.np_w
-                    .map(|v| format!("{:.0}", v))
-                    .unwrap_or_else(|| "-".into()),
+                r.tss.map(|v| format!("{:.0}", v)).unwrap_or_else(|| "-".into()),
+                r.np_w.map(|v| format!("{:.0}", v)).unwrap_or_else(|| "-".into()),
                 r.sport.as_deref().unwrap_or("-"),
             ),
-            Style::default()
-                .fg(Color::White)
-                .add_modifier(Modifier::BOLD),
+            Style::default().fg(Color::White).add_modifier(Modifier::BOLD),
         )),
     ])
     .block(
@@ -140,12 +130,8 @@ pub fn render_metrics_view(frame: &mut Frame, app: &App, area: Rect) {
             .as_deref()
             .map(|s| truncate_str(s, 4))
             .unwrap_or_else(|| "-".into());
-        let fmt0 = |o: Option<f64>| -> String {
-            o.map(|v| format!("{:.0}", v)).unwrap_or_else(|| "-".into())
-        };
-        let fmt1 = |o: Option<f64>| -> String {
-            o.map(|v| format!("{:.2}", v)).unwrap_or_else(|| "-".into())
-        };
+        let fmt0 = |o: Option<f64>| -> String { o.map(|v| format!("{:.0}", v)).unwrap_or_else(|| "-".into()) };
+        let fmt1 = |o: Option<f64>| -> String { o.map(|v| format!("{:.2}", v)).unwrap_or_else(|| "-".into()) };
         let line = format!(
             "{marker} {:<10} {:>5.0} {:>4} {:>5} {:>5} {:>5} {:>5} {:>4} {:>4}",
             truncate_str(&row.ride_date, 10),
@@ -183,24 +169,13 @@ pub fn render_metrics_view(frame: &mut Frame, app: &App, area: Rect) {
             render_metrics_trend_chart(frame, outer[2], rows, focus, app.metrics_trend_field);
         }
         MetricsChartMode::Biplot => {
-            render_metrics_biplot(
-                frame,
-                outer[2],
-                rows,
-                focus,
-                app.metrics_biplot_x,
-                app.metrics_biplot_y,
-            );
+            render_metrics_biplot(frame, outer[2], rows, focus, app.metrics_biplot_x, app.metrics_biplot_y);
         }
     }
 
     let foot = match app.metrics_chart_mode {
-        MetricsChartMode::Trend => {
-            "↑↓ row  Enter open  v bi-plot  1–8 Y-metric  r reload  Esc list"
-        }
-        MetricsChartMode::Biplot => {
-            "↑↓ row  Enter open  v trend  x/X axis  y/Y axis  1–8 set Y  Esc list"
-        }
+        MetricsChartMode::Trend => "↑↓ row  Enter open  v bi-plot  1–8 Y-metric  r reload  Esc list",
+        MetricsChartMode::Biplot => "↑↓ row  Enter open  v trend  x/X axis  y/Y axis  1–8 set Y  Esc list",
     };
     frame.render_widget(
         Paragraph::new(foot).style(Style::default().fg(Color::DarkGray)),

@@ -203,20 +203,12 @@ impl PyFillStrategy {
 }
 
 #[pyfunction(name = "robust_interpolate")]
-pub fn py_robust_interpolate(
-    data: Vec<f64>,
-    criterion: &PyOutlierCriterion,
-    strategy: &PyFillStrategy,
-) -> Vec<f64> {
+pub fn py_robust_interpolate(data: Vec<f64>, criterion: &PyOutlierCriterion, strategy: &PyFillStrategy) -> Vec<f64> {
     robust_interpolate(&data, criterion.inner, strategy.inner)
 }
 
 #[pyfunction(name = "resample_rr_to_tachogram")]
-pub fn py_resample_rr_to_tachogram(
-    event_times: Vec<f64>,
-    interval_values: Vec<f64>,
-    target_fs: f64,
-) -> Vec<f64> {
+pub fn py_resample_rr_to_tachogram(event_times: Vec<f64>, interval_values: Vec<f64>, target_fs: f64) -> Vec<f64> {
     resample_rr_to_tachogram(&event_times, &interval_values, target_fs)
 }
 

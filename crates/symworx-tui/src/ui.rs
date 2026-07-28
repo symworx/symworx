@@ -61,18 +61,10 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
     //   Center: module name
     //   Right: current sub-tab / HOME
     let header_area = h_inset(main_layout[0], 1);
-    let header_chunks = Layout::horizontal([
-        Constraint::Length(9),
-        Constraint::Fill(1),
-        Constraint::Min(12),
-    ])
-    .split(header_area);
+    let header_chunks =
+        Layout::horizontal([Constraint::Length(9), Constraint::Fill(1), Constraint::Min(12)]).split(header_area);
 
-    let left = Paragraph::new("SymView").style(
-        Style::default()
-            .fg(Color::White)
-            .add_modifier(Modifier::BOLD),
-    );
+    let left = Paragraph::new("SymView").style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD));
     frame.render_widget(left, header_chunks[0]);
 
     let parent = match app.current_workflow {
@@ -104,11 +96,9 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
             _ => app.current_tab.title().to_string(),
         }
     };
-    let right_p = Paragraph::new(right).alignment(Alignment::Right).style(
-        Style::default()
-            .fg(Color::Cyan)
-            .add_modifier(Modifier::BOLD),
-    );
+    let right_p = Paragraph::new(right)
+        .alignment(Alignment::Right)
+        .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD));
     frame.render_widget(right_p, header_chunks[2]);
 
     // Action bar: status + hints (also inset from terminal edges).
@@ -119,13 +109,9 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
     let content = h_inset(main_layout[2], 1);
     if is_home(app) {
         tabs::home::render_home_tab(frame, app, content);
-    } else if app.current_workflow == crate::app::Workflow::LoadSym
-        || app.current_tab == Tab::LoadSym
-    {
+    } else if app.current_workflow == crate::app::Workflow::LoadSym || app.current_tab == Tab::LoadSym {
         tabs::loadsym::render_loadsym_tab(frame, app, content);
-    } else if app.current_workflow == crate::app::Workflow::StatsSym
-        || app.current_tab == Tab::Stats
-    {
+    } else if app.current_workflow == crate::app::Workflow::StatsSym || app.current_tab == Tab::Stats {
         tabs::stats::render_stats_tab(frame, app, content);
     } else {
         match app.current_tab {
@@ -145,12 +131,8 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
     //   row 1 — Home | module tabs | quit  (side gutters + column padding)
     //   row 2 — empty buffer under the nav line
     let footer_area = main_layout[3];
-    let footer_rows = Layout::vertical([
-        Constraint::Length(1),
-        Constraint::Length(1),
-        Constraint::Length(1),
-    ])
-    .split(footer_area);
+    let footer_rows =
+        Layout::vertical([Constraint::Length(1), Constraint::Length(1), Constraint::Length(1)]).split(footer_area);
 
     frame.render_widget(Block::new().borders(Borders::TOP), footer_rows[0]);
 
@@ -163,9 +145,7 @@ pub fn ui(frame: &mut Frame, app: &mut App) {
     .split(nav);
 
     let home_style = if is_home(app) {
-        Style::default()
-            .fg(Color::Cyan)
-            .add_modifier(Modifier::BOLD)
+        Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)
     } else {
         Style::default().fg(Color::DarkGray)
     };
@@ -204,10 +184,7 @@ fn module_tab_line(app: &App) -> Line<'static> {
         crate::app::Workflow::StatsSym => vec![
             ("Import", app.stats_view == crate::app::StatsView::Import),
             ("Lab", app.stats_view == crate::app::StatsView::Lab),
-            (
-                "Generate",
-                app.stats_view == crate::app::StatsView::Generate,
-            ),
+            ("Generate", app.stats_view == crate::app::StatsView::Generate),
         ],
         crate::app::Workflow::LoadSym => {
             use crate::app::LoadSymView;
@@ -215,10 +192,7 @@ fn module_tab_line(app: &App) -> Line<'static> {
                 ("Workout", app.loadsym_view == LoadSymView::Workout),
                 ("Metrics", app.loadsym_view == LoadSymView::Metrics),
                 ("Calendar", app.loadsym_view == LoadSymView::Calendar),
-                (
-                    "Optimization",
-                    app.loadsym_view == LoadSymView::Optimization,
-                ),
+                ("Optimization", app.loadsym_view == LoadSymView::Optimization),
             ]
         }
         crate::app::Workflow::SpatialSym => vec![("Spatial", true)],
@@ -234,15 +208,10 @@ fn module_tab_line(app: &App) -> Line<'static> {
         if selected {
             spans.push(Span::styled(
                 format!(" {label} "),
-                Style::default()
-                    .fg(Color::Cyan)
-                    .add_modifier(Modifier::BOLD),
+                Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
             ));
         } else {
-            spans.push(Span::styled(
-                format!(" {label} "),
-                Style::default().fg(Color::DarkGray),
-            ));
+            spans.push(Span::styled(format!(" {label} "), Style::default().fg(Color::DarkGray)));
         }
     }
     spans.push(Span::raw(" "));
@@ -253,15 +222,11 @@ pub fn render_action_bar(app: &App) -> Paragraph<'_> {
     // Status + contextual Esc / key hints. Home / tabs / quit live in the footer.
 
     if app.pending_delete.is_some() {
-        return Paragraph::new("  Delete file?   [y] confirm   [n] / [Esc] cancel").style(
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD),
-        );
+        return Paragraph::new("  Delete file?   [y] confirm   [n] / [Esc] cancel")
+            .style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD));
     }
     if app.filter_mode {
-        return Paragraph::new("  Filtering…  [Esc] or [Enter] to exit filter")
-            .style(Style::default().fg(Color::Cyan));
+        return Paragraph::new("  Filtering…  [Esc] or [Enter] to exit filter").style(Style::default().fg(Color::Cyan));
     }
 
     let esc = if app.pending_process {
@@ -292,9 +257,7 @@ pub fn render_action_bar(app: &App) -> Paragraph<'_> {
         && (app.current_tab == Tab::Explore || app.current_tab == Tab::Generate)
     {
         "[Esc] Import  ·  "
-    } else if app.current_workflow == crate::app::Workflow::BioSym
-        && app.current_tab == Tab::Dynamics
-    {
+    } else if app.current_workflow == crate::app::Workflow::BioSym && app.current_tab == Tab::Dynamics {
         "[Esc] Explore  ·  "
     } else {
         ""

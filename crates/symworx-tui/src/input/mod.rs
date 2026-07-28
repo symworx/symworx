@@ -23,9 +23,7 @@ use crate::app::{
 pub fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool {
     // Hard quit: Ctrl+Q always. Esc-Esc at root screens (see esc_root_or_quit).
     // Bare `q` is not quit — collides with typing.
-    if matches!(code, KeyCode::Char('q') | KeyCode::Char('Q'))
-        && modifiers.contains(KeyModifiers::CONTROL)
-    {
+    if matches!(code, KeyCode::Char('q') | KeyCode::Char('Q')) && modifiers.contains(KeyModifiers::CONTROL) {
         return true;
     }
 
@@ -41,9 +39,7 @@ pub fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool
     }
 
     // Refresh must be reliable (even in submodes / while typing) — early return per conventions
-    if (code == KeyCode::Char('r') && modifiers.contains(KeyModifiers::CONTROL))
-        || code == KeyCode::F(5)
-    {
+    if (code == KeyCode::Char('r') && modifiers.contains(KeyModifiers::CONTROL)) || code == KeyCode::F(5) {
         app.refresh_file_list();
         app.status = "Refreshed file list (Ctrl+R / F5)".to_string();
         app.ensure_status_for_current_tab();
@@ -57,9 +53,7 @@ pub fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool
             return false;
         }
         // Still allow global home navigation from help dashboard
-        if (code == KeyCode::Char('h') || code == KeyCode::Char('H'))
-            && modifiers.contains(KeyModifiers::CONTROL)
-        {
+        if (code == KeyCode::Char('h') || code == KeyCode::Char('H')) && modifiers.contains(KeyModifiers::CONTROL) {
             app.help_mode = false;
             app.clear_submodes();
             app.switch_workflow(crate::app::Workflow::Home);
@@ -82,9 +76,7 @@ pub fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool
     }
 
     // Home / workflow selector access (always available, early)
-    if (code == KeyCode::Char('h') || code == KeyCode::Char('H'))
-        && modifiers.contains(KeyModifiers::CONTROL)
-    {
+    if (code == KeyCode::Char('h') || code == KeyCode::Char('H')) && modifiers.contains(KeyModifiers::CONTROL) {
         app.clear_submodes();
         app.switch_workflow(crate::app::Workflow::Home);
         return false;
@@ -103,8 +95,7 @@ pub fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool
             match app.current_workflow {
                 crate::app::Workflow::StatsSym => {
                     app.stats_view = crate::app::StatsView::Import;
-                    app.status =
-                        "StatsSym Import — ↑↓ files  Enter load  / filter  Ctrl+G generate".into();
+                    app.status = "StatsSym Import — ↑↓ files  Enter load  / filter  Ctrl+G generate".into();
                 }
                 _ => {
                     app.current_tab = Tab::Import;
@@ -132,9 +123,7 @@ pub fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool
             match app.current_workflow {
                 crate::app::Workflow::StatsSym => {
                     app.stats_view = crate::app::StatsView::Generate;
-                    app.status =
-                        "StatsSym Generate — ↑↓ preset  n/N size  s/S seed  +/− noise  Enter"
-                            .into();
+                    app.status = "StatsSym Generate — ↑↓ preset  n/N size  s/S seed  +/− noise  Enter".into();
                 }
                 _ => {
                     app.current_tab = Tab::Dynamics;
@@ -168,10 +157,7 @@ pub fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool
                 }
                 crate::app::Workflow::StatsSym => {
                     app.stats_view = app.stats_view.prev();
-                    app.status = format!(
-                        "StatsSym {}  ·  Ctrl+←→ tabs  ·  Ctrl+H Home",
-                        app.stats_view.title()
-                    );
+                    app.status = format!("StatsSym {}  ·  Ctrl+←→ tabs  ·  Ctrl+H Home", app.stats_view.title());
                 }
                 crate::app::Workflow::LoadSym => {
                     // Cancel open modal so strip navigation is never trapped.
@@ -202,10 +188,7 @@ pub fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool
                 }
                 crate::app::Workflow::StatsSym => {
                     app.stats_view = app.stats_view.next();
-                    app.status = format!(
-                        "StatsSym {}  ·  Ctrl+←→ tabs  ·  Ctrl+H Home",
-                        app.stats_view.title()
-                    );
+                    app.status = format!("StatsSym {}  ·  Ctrl+←→ tabs  ·  Ctrl+H Home", app.stats_view.title());
                 }
                 crate::app::Workflow::LoadSym => {
                     app.pending_workout_open = false;
@@ -224,8 +207,7 @@ pub fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool
                 app.manual_path.clear();
                 app.file_filter.clear();
                 app.filter_mode = false;
-                app.status =
-                    "StatsSym Generate — ↑↓ preset  n/N  s/S seed  +/− noise  Enter → Lab".into();
+                app.status = "StatsSym Generate — ↑↓ preset  n/N  s/S seed  +/− noise  Enter → Lab".into();
             } else {
                 // BioSym: dedicated Generate tab (parity with StatsSym).
                 app.current_workflow = crate::app::Workflow::BioSym;
@@ -234,8 +216,7 @@ pub fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool
                 app.manual_path.clear();
                 app.file_filter.clear();
                 app.filter_mode = false;
-                app.status =
-                    "BioSym Generate — ↑↓ preset  Enter generate → Explore  ·  1/2/3 quick".into();
+                app.status = "BioSym Generate — ↑↓ preset  Enter generate → Explore  ·  1/2/3 quick".into();
             }
             return false;
         }
@@ -245,8 +226,7 @@ pub fn handle_key(app: &mut App, code: KeyCode, modifiers: KeyModifiers) -> bool
                 app.start_live_simulator();
             } else {
                 app.status =
-                    "Ctrl+L live simulator is BioSym only — Home → 1 BioSym (or Explore), then Ctrl+L"
-                        .to_string();
+                    "Ctrl+L live simulator is BioSym only — Home → 1 BioSym (or Explore), then Ctrl+L".to_string();
             }
             return false;
         }

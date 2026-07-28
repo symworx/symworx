@@ -80,11 +80,7 @@ pub fn residuals(actual: &[f64], predicted: &[f64]) -> Vec<f64> {
     if actual.len() != predicted.len() {
         return Vec::new();
     }
-    actual
-        .iter()
-        .zip(predicted.iter())
-        .map(|(a, p)| a - p)
-        .collect()
+    actual.iter().zip(predicted.iter()).map(|(a, p)| a - p).collect()
 }
 
 /// Alias for [`residuals`] — same convention `y − ŷ`.

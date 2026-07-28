@@ -152,13 +152,7 @@ impl PyRecurrencePlot {
 
     /// Construct a recurrence plot from a scalar time series (performs time-delay embedding internally).
     #[staticmethod]
-    fn from_series(
-        series: Vec<f64>,
-        m: usize,
-        tau: usize,
-        radius: f64,
-        theiler: usize,
-    ) -> PyRecurrencePlot {
+    fn from_series(series: Vec<f64>, m: usize, tau: usize, radius: f64, theiler: usize) -> PyRecurrencePlot {
         let rp = RecurrencePlot::from_series(&series, m, tau, radius, theiler);
         PyRecurrencePlot { inner: rp }
     }
@@ -167,11 +161,7 @@ impl PyRecurrencePlot {
     ///
     /// `trajectory` should be a list of lists (or result of `edim`).
     #[staticmethod]
-    fn from_trajectory(
-        trajectory: Vec<Vec<f64>>,
-        radius: f64,
-        theiler: usize,
-    ) -> PyResult<PyRecurrencePlot> {
+    fn from_trajectory(trajectory: Vec<Vec<f64>>, radius: f64, theiler: usize) -> PyResult<PyRecurrencePlot> {
         if trajectory.is_empty() {
             return Ok(PyRecurrencePlot {
                 inner: RecurrencePlot::new(),
@@ -182,9 +172,8 @@ impl PyRecurrencePlot {
         let dim = trajectory[0].len();
         let flat: Vec<f64> = trajectory.into_iter().flatten().collect();
 
-        let arr = Array2::from_shape_vec((n, dim), flat).map_err(|e| {
-            pyo3::exceptions::PyValueError::new_err(format!("Invalid trajectory shape: {}", e))
-        })?;
+        let arr = Array2::from_shape_vec((n, dim), flat)
+            .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("Invalid trajectory shape: {}", e)))?;
 
         let rp = RecurrencePlot::from_trajectory(&arr, radius, theiler);
         Ok(PyRecurrencePlot { inner: rp })
@@ -205,14 +194,7 @@ pub fn py_edim(data: Vec<f64>, m: usize, tau: usize) -> Vec<Vec<f64>> {
 }
 
 #[pyfunction(name = "fnn")]
-pub fn py_fnn(
-    data: Vec<f64>,
-    m: usize,
-    tau: usize,
-    rtol: f64,
-    atol: f64,
-    theiler: usize,
-) -> PyResult<(usize, f64)> {
+pub fn py_fnn(data: Vec<f64>, m: usize, tau: usize, rtol: f64, atol: f64, theiler: usize) -> PyResult<(usize, f64)> {
     let result = fnn(&data, m, tau, rtol, atol, theiler);
     Ok((result.m, result.fnn_ratio))
 }
@@ -231,11 +213,7 @@ pub fn py_rqa(data: Vec<f64>, m: usize, tau: usize, radius: f64, theiler: usize)
 }
 
 #[pyfunction(name = "rqa_from_trajectory")]
-pub fn py_rqa_from_trajectory(
-    trajectory: Vec<Vec<f64>>,
-    radius: f64,
-    theiler: usize,
-) -> PyResult<PyRqaResult> {
+pub fn py_rqa_from_trajectory(trajectory: Vec<Vec<f64>>, radius: f64, theiler: usize) -> PyResult<PyRqaResult> {
     if trajectory.is_empty() {
         return Ok(PyRqaResult::from(RqaResult::default()));
     }
@@ -244,23 +222,15 @@ pub fn py_rqa_from_trajectory(
     let dim = trajectory[0].len();
     let flat: Vec<f64> = trajectory.into_iter().flatten().collect();
 
-    let arr = Array2::from_shape_vec((n, dim), flat).map_err(|e| {
-        pyo3::exceptions::PyValueError::new_err(format!("Invalid trajectory shape: {}", e))
-    })?;
+    let arr = Array2::from_shape_vec((n, dim), flat)
+        .map_err(|e| pyo3::exceptions::PyValueError::new_err(format!("Invalid trajectory shape: {}", e)))?;
 
     let res = rqa_from_trajectory(&arr, radius, theiler);
     Ok(PyRqaResult::from(res))
 }
 
 #[pyfunction(name = "crqa")]
-pub fn py_crqa(
-    x: Vec<f64>,
-    y: Vec<f64>,
-    m: usize,
-    tau: usize,
-    radius: f64,
-    theiler: usize,
-) -> PyRqaResult {
+pub fn py_crqa(x: Vec<f64>, y: Vec<f64>, m: usize, tau: usize, radius: f64, theiler: usize) -> PyRqaResult {
     let res = crqa(&x, &y, m, tau, radius, theiler);
     PyRqaResult::from(res)
 }

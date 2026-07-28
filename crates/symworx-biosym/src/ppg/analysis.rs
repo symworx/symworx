@@ -56,8 +56,7 @@ pub fn ppg_peak_finder<'a>(
 
 /// Detect systolic peaks (no bandpass).
 pub fn detect_ppg_peaks(ts: &PPGTimeSeries) -> IntervalSeries {
-    detect_ppg_peaks_with(ts, &PhysiologyProcessingParams::none())
-        .expect("default detection has no bandpass")
+    detect_ppg_peaks_with(ts, &PhysiologyProcessingParams::none()).expect("default detection has no bandpass")
 }
 
 /// Detect peaks with optional bandpass and peak overrides.
@@ -66,10 +65,7 @@ pub fn detect_ppg_peaks_with(
     processing: &PhysiologyProcessingParams,
 ) -> Result<IntervalSeries, &'static str> {
     let signal = preprocess_signal(ppg_signal(ts), processing)?;
-    Ok(detect_intervals(
-        &signal,
-        ppg_peak_finder(&signal, processing),
-    ))
+    Ok(detect_intervals(&signal, ppg_peak_finder(&signal, processing)))
 }
 
 /// Summarize a PPG recording (raw waveform, no filtering).
@@ -79,8 +75,7 @@ pub fn summarize_ppg(ts: &PPGTimeSeries) -> PhysiologySummary {
 
 /// Full analysis without bandpass (backward compatible).
 pub fn analyze_ppg(ts: &PPGTimeSeries) -> PpgAnalysis {
-    analyze_ppg_with(ts, &PhysiologyProcessingParams::none())
-        .expect("default analysis has no bandpass")
+    analyze_ppg_with(ts, &PhysiologyProcessingParams::none()).expect("default analysis has no bandpass")
 }
 
 /// Full analysis with explicit processing parameters.
@@ -110,8 +105,7 @@ pub fn analyze_ppg_with(
 
 /// Analysis using quality-preset bandpass and peak settings.
 pub fn analyze_ppg_with_quality(ts: &PPGTimeSeries, quality: &PPGSignalQuality) -> PpgAnalysis {
-    analyze_ppg_with(ts, &ppg_processing_for_quality(quality))
-        .expect("quality presets use valid bandpass cutoffs")
+    analyze_ppg_with(ts, &ppg_processing_for_quality(quality)).expect("quality presets use valid bandpass cutoffs")
 }
 
 #[cfg(test)]
@@ -130,8 +124,7 @@ mod tests {
             let t = i as f64 / fs;
             times.push(t);
             values.push(
-                (2.0 * std::f64::consts::PI * 1.0 * t).sin()
-                    + 0.5 * (2.0 * std::f64::consts::PI * 2.0 * t).sin(),
+                (2.0 * std::f64::consts::PI * 1.0 * t).sin() + 0.5 * (2.0 * std::f64::consts::PI * 2.0 * t).sin(),
             );
         }
         PPGTimeSeries {
@@ -155,10 +148,7 @@ mod tests {
     fn detect_ppg_peaks_on_sine() {
         let ts = synthetic_sine_ppg(100.0, 1.0);
         let intervals = detect_ppg_peaks(&ts);
-        assert!(
-            !intervals.peak_indices.is_empty(),
-            "expected peaks on synthetic sine"
-        );
+        assert!(!intervals.peak_indices.is_empty(), "expected peaks on synthetic sine");
         assert_eq!(intervals.peak_times.len(), intervals.peak_indices.len());
     }
 
@@ -222,9 +212,7 @@ mod tests {
     #[test]
     fn analyze_ppg_hrv_on_variable_rr() {
         let fs = 250.0;
-        let rr_intervals: Vec<f64> = (0..15)
-            .map(|i| 0.8 + 0.05 * ((i as f64) * 0.5).sin())
-            .collect();
+        let rr_intervals: Vec<f64> = (0..15).map(|i| 0.8 + 0.05 * ((i as f64) * 0.5).sin()).collect();
         let ts = generate_ppg_timeseries(
             0.0,
             &rr_intervals,

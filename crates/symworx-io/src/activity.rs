@@ -72,18 +72,12 @@ impl ActivityData {
 
     /// Heart-rate series (bpm); missing → 0.0.
     pub fn hr_series(&self) -> Vec<f64> {
-        self.heart_rate_bpm
-            .iter()
-            .map(|v| v.unwrap_or(0.0))
-            .collect()
+        self.heart_rate_bpm.iter().map(|v| v.unwrap_or(0.0)).collect()
     }
 
     /// Speed series in km/h; missing → 0.0.
     pub fn speed_kmh_series(&self) -> Vec<f64> {
-        self.speed_mps
-            .iter()
-            .map(|v| v.unwrap_or(0.0) * 3.6)
-            .collect()
+        self.speed_mps.iter().map(|v| v.unwrap_or(0.0) * 3.6).collect()
     }
 
     /// Cadence series; missing → 0.0.
@@ -113,9 +107,7 @@ impl ActivityData {
 
     /// Any positive heart-rate samples.
     pub fn has_hr(&self) -> bool {
-        self.heart_rate_bpm
-            .iter()
-            .any(|v| v.is_some_and(|h| h > 0.0))
+        self.heart_rate_bpm.iter().any(|v| v.is_some_and(|h| h > 0.0))
     }
 
     /// Any positive speed samples.
@@ -130,9 +122,7 @@ impl ActivityData {
 
     /// Any finite altitude samples.
     pub fn has_altitude(&self) -> bool {
-        self.altitude_m
-            .iter()
-            .any(|v| v.is_some_and(|a| a.is_finite()))
+        self.altitude_m.iter().any(|v| v.is_some_and(|a| a.is_finite()))
     }
 
     /// Calendar date `YYYY-MM-DD` (UTC) from [`Self::start_time_unix`], if known.
@@ -260,9 +250,7 @@ pub fn load_fit_activity(path: &str) -> Result<ActivityData, SymError> {
         }
 
         // Session / activity often carry a reliable start_time
-        if kind == fitparser::profile::MesgNum::Session
-            || kind == fitparser::profile::MesgNum::Activity
-        {
+        if kind == fitparser::profile::MesgNum::Session || kind == fitparser::profile::MesgNum::Activity {
             for f in rec.fields() {
                 if matches!(f.name(), "start_time" | "timestamp") {
                     if let Some(u) = fit_value_to_unix(f.value()) {
@@ -359,9 +347,7 @@ pub fn load_fit_activity(path: &str) -> Result<ActivityData, SymError> {
 
     let n = times_raw.len();
     if n == 0 {
-        return Err(SymError::UnsupportedFormat(
-            "no record messages found in FIT".into(),
-        ));
+        return Err(SymError::UnsupportedFormat("no record messages found in FIT".into()));
     }
 
     // Make times strictly relative starting at 0
@@ -456,10 +442,7 @@ fn fit_value_display(v: &fitparser::Value) -> String {
         other => {
             let s = format!("{:?}", other);
             // Strip common Debug wrappers: String("x") / "x"
-            if let Some(inner) = s
-                .strip_prefix("String(\"")
-                .and_then(|t| t.strip_suffix("\")"))
-            {
+            if let Some(inner) = s.strip_prefix("String(\"").and_then(|t| t.strip_suffix("\")")) {
                 inner.to_string()
             } else if s.starts_with('"') && s.ends_with('"') && s.len() >= 2 {
                 s[1..s.len() - 1].to_string()
@@ -533,8 +516,7 @@ fn load_activity_from_csv(path: &str) -> Result<ActivityData, SymError> {
         let rec = result.map_err(|e| SymError::UnsupportedFormat(format!("csv: {}", e)))?;
 
         let get_f64 = |col: Option<usize>| -> Option<f64> {
-            col.and_then(|i| rec.get(i))
-                .and_then(|s| s.trim().parse::<f64>().ok())
+            col.and_then(|i| rec.get(i)).and_then(|s| s.trim().parse::<f64>().ok())
         };
 
         if let Some(c) = col_time
@@ -602,11 +584,7 @@ mod tests {
                 let dur = act.duration_s();
                 let has_p = act.has_power();
                 let p = act.power_series();
-                let avg_p = if n > 0 {
-                    p.iter().sum::<f64>() / n as f64
-                } else {
-                    0.0
-                };
+                let avg_p = if n > 0 { p.iter().sum::<f64>() / n as f64 } else { 0.0 };
                 let max_p = p.iter().copied().fold(0.0_f64, f64::max);
 
                 eprintln!("\n=== Loaded real ride from user ===");
@@ -614,12 +592,7 @@ mod tests {
                 eprintln!("manufacturer: {:?}", act.manufacturer);
                 eprintln!("product: {:?}", act.product);
                 eprintln!("sport: {:?}", act.sport);
-                eprintln!(
-                    "samples: {}   duration: {:.1} s   (~{:.1} min)",
-                    n,
-                    dur,
-                    dur / 60.0
-                );
+                eprintln!("samples: {}   duration: {:.1} s   (~{:.1} min)", n, dur, dur / 60.0);
                 eprintln!(
                     "has_power: {}   avg_power: {:.1} W   max_power: {:.0} W",
                     has_p, avg_p, max_p

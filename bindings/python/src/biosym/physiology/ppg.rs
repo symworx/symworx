@@ -71,10 +71,7 @@ pub fn py_analyze_ppg(ts: PyPPGTimeSeries) -> PyPpgAnalysis {
 }
 
 #[pyfunction(name = "analyze_ppg_with_quality")]
-pub fn py_analyze_ppg_with_quality(
-    ts: PyPPGTimeSeries,
-    quality: PyPPGSignalQuality,
-) -> PyPpgAnalysis {
+pub fn py_analyze_ppg_with_quality(ts: PyPPGTimeSeries, quality: PyPPGSignalQuality) -> PyPpgAnalysis {
     let rust_ts = ppg_timeseries_from_py(ts);
     let quality: PPGSignalQuality = quality.into();
     PyPpgAnalysis::from(analyze_ppg_with_quality(&rust_ts, &quality))
@@ -137,15 +134,7 @@ pub fn py_generate_ppg_timeseries(
     noise_cfg: PyPPGNoiseConfig,
 ) -> PyPPGTimeSeries {
     let cfg = PPGNoiseConfig::from(noise_cfg);
-    let ts = generate_ppg_timeseries(
-        start_time,
-        &rr_intervals,
-        count,
-        beat_duration,
-        fs,
-        beat_params,
-        &cfg,
-    );
+    let ts = generate_ppg_timeseries(start_time, &rr_intervals, count, beat_duration, fs, beat_params, &cfg);
     PyPPGTimeSeries::from(ts)
 }
 

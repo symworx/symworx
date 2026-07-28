@@ -68,8 +68,7 @@ pub fn render_import_tab(frame: &mut Frame, app: &mut App, area: Rect) {
         let mut lines = vec![
             format!("\n\nFile: {}\n", pending.path.display()),
             format!("This file contains {} columns.\n\n", pending.columns),
-            "Press the number key for the column you want to load as the main series:\n\n"
-                .to_string(),
+            "Press the number key for the column you want to load as the main series:\n\n".to_string(),
         ];
 
         if let Some(headers) = &pending.headers {
@@ -138,11 +137,7 @@ pub fn render_import_tab(frame: &mut Frame, app: &mut App, area: Rect) {
 
     let list = List::new(items)
         .block(block)
-        .highlight_style(
-            Style::default()
-                .fg(Color::Cyan)
-                .add_modifier(Modifier::BOLD),
-        )
+        .highlight_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
         .highlight_symbol("> ");
 
     frame.render_stateful_widget(list, list_area, &mut app.list_state);

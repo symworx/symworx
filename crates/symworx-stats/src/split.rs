@@ -239,10 +239,7 @@ impl fmt::Display for SplitError {
                     MIN_SPLIT_FRACTION * 100.0
                 )?;
                 if let Some(max_k) = max_folds {
-                    write!(
-                        f,
-                        "; maximum number of training folds for this split: {max_k}"
-                    )?;
+                    write!(f, "; maximum number of training folds for this split: {max_k}")?;
                 }
                 Ok(())
             }
@@ -482,17 +479,10 @@ pub fn repeated_train_test_split(
 ///
 /// Fold sizes must meet [`min_split_size`]`(n_train)`. Guarantees
 /// `max(len) − min(len) ≤ 1` across folds.
-fn build_train_folds(
-    train_idx: &[usize],
-    k: usize,
-    n: usize,
-) -> Result<Vec<Vec<usize>>, SplitError> {
+fn build_train_folds(train_idx: &[usize], k: usize, n: usize) -> Result<Vec<Vec<usize>>, SplitError> {
     let n_train = train_idx.len();
     if k < 2 || k > n_train {
-        return Err(SplitError::InvalidFoldCount {
-            n_folds: k,
-            n_train,
-        });
+        return Err(SplitError::InvalidFoldCount { n_folds: k, n_train });
     }
 
     let min_fold_req = min_split_size(n_train);
@@ -895,10 +885,7 @@ mod tests {
             },
         )
         .unwrap_err();
-        assert!(matches!(
-            err,
-            SplitError::InvalidFoldCount { n_folds: 1, .. }
-        ));
+        assert!(matches!(err, SplitError::InvalidFoldCount { n_folds: 1, .. }));
     }
 
     #[test]
@@ -940,13 +927,7 @@ mod tests {
         .unwrap();
         assert_eq!(split.train_idx.len(), 71);
         assert_eq!(split.test_idx.len(), 30);
-        let sizes: Vec<usize> = split
-            .folds
-            .as_ref()
-            .unwrap()
-            .iter()
-            .map(|f| f.len())
-            .collect();
+        let sizes: Vec<usize> = split.folds.as_ref().unwrap().iter().map(|f| f.len()).collect();
         assert_eq!(sizes, vec![15, 14, 14, 14, 14]);
         assert!(folds_balanced(split.folds.as_ref().unwrap()));
     }
@@ -992,9 +973,6 @@ mod tests {
     #[test]
     fn repeated_zero_errors() {
         let err = repeated_train_test_split(50, &SplitConfig::default(), 0).unwrap_err();
-        assert!(matches!(
-            err,
-            SplitError::InvalidRepeatCount { n_repeats: 0 }
-        ));
+        assert!(matches!(err, SplitError::InvalidRepeatCount { n_repeats: 0 }));
     }
 }

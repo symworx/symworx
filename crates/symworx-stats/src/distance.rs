@@ -15,11 +15,7 @@ pub fn euclidean(a: &[f64], b: &[f64]) -> f64 {
         return 0.0;
     }
 
-    a.iter()
-        .zip(b.iter())
-        .map(|(x, y)| (x - y).powi(2))
-        .sum::<f64>()
-        .sqrt()
+    a.iter().zip(b.iter()).map(|(x, y)| (x - y).powi(2)).sum::<f64>().sqrt()
 }
 
 /// Manhattan distance (L1 norm) between two vectors.
@@ -55,10 +51,7 @@ pub fn chebyshev(a: &[f64], b: &[f64]) -> f64 {
     if a.len() != b.len() {
         return f64::NAN;
     }
-    a.iter()
-        .zip(b.iter())
-        .map(|(x, y)| (x - y).abs())
-        .fold(0.0, f64::max)
+    a.iter().zip(b.iter()).map(|(x, y)| (x - y).abs()).fold(0.0, f64::max)
 }
 
 // ——— Tests ———

@@ -44,8 +44,7 @@ pub fn parse_json_line(line: &str) -> Result<Option<StreamSample>> {
         return Ok(None);
     }
 
-    let v: Value = serde_json::from_str(line)
-        .map_err(|e| EmbedError::Protocol(format!("invalid JSON: {e}")))?;
+    let v: Value = serde_json::from_str(line).map_err(|e| EmbedError::Protocol(format!("invalid JSON: {e}")))?;
 
     let obj = v
         .as_object()
@@ -96,10 +95,7 @@ pub fn sample_to_json_line(sample: &StreamSample) -> Result<String> {
     if let Some(ref sid) = sample.sid {
         map.insert("sid".into(), Value::String(sid.clone()));
     }
-    map.insert(
-        "source".into(),
-        Value::String(sample.source.as_tag().to_string()),
-    );
+    map.insert("source".into(), Value::String(sample.source.as_tag().to_string()));
 
     insert_i64(&mut map, "red", sample.red);
     insert_i64(&mut map, "ir", sample.ir);
@@ -111,8 +107,7 @@ pub fn sample_to_json_line(sample: &StreamSample) -> Result<String> {
         map.insert("ts".into(), Value::Number(ts.into()));
     }
 
-    serde_json::to_string(&Value::Object(map))
-        .map_err(|e| EmbedError::Protocol(format!("serialize failed: {e}")))
+    serde_json::to_string(&Value::Object(map)).map_err(|e| EmbedError::Protocol(format!("serialize failed: {e}")))
 }
 
 /// Enrich a device sample with subject id and source, setting host time if missing.

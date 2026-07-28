@@ -23,11 +23,7 @@ use crate::app::{
 };
 
 pub fn col_name(table: &TableData, i: usize) -> String {
-    table
-        .headers
-        .get(i)
-        .cloned()
-        .unwrap_or_else(|| format!("col{i}"))
+    table.headers.get(i).cloned().unwrap_or_else(|| format!("col{i}"))
 }
 
 pub fn empty_result(task: StatsLabTask) -> StatsLabResult {
@@ -49,11 +45,7 @@ pub fn fold_mean_sd(vals: &[f64], name: &str) -> String {
     }
     let mean_f = vals.iter().sum::<f64>() / vals.len() as f64;
     let var = vals.iter().map(|v| (v - mean_f).powi(2)).sum::<f64>() / vals.len() as f64;
-    format!(
-        "CV {}-fold mean {name}={mean_f:.4}  sd={:.4}",
-        vals.len(),
-        var.sqrt()
-    )
+    format!("CV {}-fold mean {name}={mean_f:.4}  sd={:.4}", vals.len(), var.sqrt())
 }
 
 pub fn seed_active_from_focus(r: &mut StatsLabResult) {
@@ -70,13 +62,7 @@ pub fn seed_active_from_focus(r: &mut StatsLabResult) {
     }
 }
 
-pub fn metrics_row_reg(
-    label: &str,
-    note: &str,
-    y_obs: &[f64],
-    y_hat: &[f64],
-    y_name: &str,
-) -> SplitMetricsRow {
+pub fn metrics_row_reg(label: &str, note: &str, y_obs: &[f64], y_hat: &[f64], y_name: &str) -> SplitMetricsRow {
     let n = y_obs.len().min(y_hat.len());
     let y_obs = &y_obs[..n];
     let y_hat = &y_hat[..n];
@@ -84,16 +70,8 @@ pub fn metrics_row_reg(
     let r2v = r2(y_obs, y_hat);
     let rmsev = rmse(y_obs, y_hat);
     let maev = mae(y_obs, y_hat);
-    let ba: Vec<f64> = y_obs
-        .iter()
-        .zip(y_hat.iter())
-        .map(|(&a, &p)| (a + p) / 2.0)
-        .collect();
-    let mut lo = y_obs
-        .iter()
-        .chain(y_hat.iter())
-        .copied()
-        .fold(f64::INFINITY, f64::min);
+    let ba: Vec<f64> = y_obs.iter().zip(y_hat.iter()).map(|(&a, &p)| (a + p) / 2.0).collect();
+    let mut lo = y_obs.iter().chain(y_hat.iter()).copied().fold(f64::INFINITY, f64::min);
     let mut hi = y_obs
         .iter()
         .chain(y_hat.iter())
