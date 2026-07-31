@@ -1,4 +1,5 @@
 use ratatui::{
+    Frame,
     layout::{
         Constraint,
         Layout,
@@ -20,7 +21,6 @@ use ratatui::{
         Padding,
         Paragraph,
     },
-    Frame,
 };
 
 use crate::app::{
@@ -268,12 +268,14 @@ fn render_live_channel_chart(
     y_max += pad;
 
     let x_hi = (n.max(2) - 1) as f64;
-    let datasets = vec![Dataset::default()
-        .name(title.trim())
-        .marker(symbols::Marker::Braille)
-        .graph_type(GraphType::Line)
-        .style(Style::default().fg(color))
-        .data(&data)];
+    let datasets = vec![
+        Dataset::default()
+            .name(title.trim())
+            .marker(symbols::Marker::Braille)
+            .graph_type(GraphType::Line)
+            .style(Style::default().fg(color))
+            .data(&data),
+    ];
 
     let y_labels = if integer_y {
         vec![Line::from(format!("{:.0}", y_min)), Line::from(format!("{:.0}", y_max))]
@@ -369,12 +371,14 @@ fn render_waveform(frame: &mut Frame, app: &App, area: Rect) {
         vec![]
     };
 
-    let mut datasets = vec![Dataset::default()
-        .name("signal")
-        .marker(symbols::Marker::Braille)
-        .graph_type(GraphType::Line)
-        .style(Style::default().fg(Color::LightCyan))
-        .data(&data)];
+    let mut datasets = vec![
+        Dataset::default()
+            .name("signal")
+            .marker(symbols::Marker::Braille)
+            .graph_type(GraphType::Line)
+            .style(Style::default().fg(Color::LightCyan))
+            .data(&data),
+    ];
 
     if !known_primary.is_empty() {
         datasets.push(
@@ -523,12 +527,14 @@ fn render_tachogram(frame: &mut Frame, app: &App, area: Rect) {
         .map(|(i, &v)| ((start + i) as f64, v))
         .collect();
 
-    let datasets = vec![Dataset::default()
-        .name("interval")
-        .marker(symbols::Marker::Braille)
-        .graph_type(GraphType::Line)
-        .style(Style::default().fg(Color::LightMagenta))
-        .data(&data)];
+    let datasets = vec![
+        Dataset::default()
+            .name("interval")
+            .marker(symbols::Marker::Braille)
+            .graph_type(GraphType::Line)
+            .style(Style::default().fg(Color::LightMagenta))
+            .data(&data),
+    ];
 
     let y_title = if tacho.unit_is_sec {
         "Interval (s)"

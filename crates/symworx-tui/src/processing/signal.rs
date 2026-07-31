@@ -1,6 +1,6 @@
 use symworx_core::{
-    successive_differences,
     PeakFinderBuilder,
+    successive_differences,
 };
 
 use crate::{

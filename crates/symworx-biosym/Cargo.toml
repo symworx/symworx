@@ -6,6 +6,7 @@ version          = { workspace = true }
 edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
+authors          = { workspace = true }
 description      = "Biological and biomechanical modeling tools: physiological signals (PPG, respiration), gait analysis, and central pattern generators (CPG)"
 keywords = ["biosignals", "gait", "physiology", "biomechanics", "cpg", "modeling"]
 categories = ["science", "simulation"]
@@ -20,8 +21,8 @@ pyo3         = { workspace = true }
 rand         = { workspace = true }
 rand_distr   = { workspace = true }
 
-symworx-core = { path = "../symworx-core" }
-symworx-math = { path = "../symworx-math" }
+symworx-core = { workspace = true }
+symworx-math = { workspace = true }
 
 [lints]
 workspace = true

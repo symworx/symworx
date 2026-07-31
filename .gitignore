@@ -118,3 +118,4 @@ dist/
 
 /target
 /data
+!publications/README.md

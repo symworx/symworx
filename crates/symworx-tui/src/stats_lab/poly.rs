@@ -5,9 +5,9 @@
 
 use symworx_io::TableData;
 use symworx_stats::{
+    PolynomialSearchConfig,
     fit_polynomial_degrees_with,
     residuals,
-    PolynomialSearchConfig,
 };
 
 use super::util::{

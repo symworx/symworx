@@ -1,4 +1,5 @@
 use ratatui::{
+    Frame,
     layout::Rect,
     style::{
         Color,
@@ -15,7 +16,6 @@ use ratatui::{
         Padding,
         Paragraph,
     },
-    Frame,
 };
 
 use super::util::truncate_str;

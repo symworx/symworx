@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0.
 
 use ratatui::{
+    Frame,
     layout::Rect,
     style::Color,
     widgets::{
@@ -10,7 +11,6 @@ use ratatui::{
         Padding,
         Paragraph,
     },
-    Frame,
 };
 
 mod charts;

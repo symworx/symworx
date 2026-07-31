@@ -6,6 +6,7 @@ version          = { workspace = true }
 edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
+authors          = { workspace = true }
 description      = "Signal processing tools and resources (filters, peaks, sparse sensing, interpolation, resampling)"
 keywords = ["signal-processing", "filters", "peaks", "time-series", "biosignals", "compressed-sensing"]
 categories = ["science"]
@@ -16,10 +17,10 @@ ndarray-linalg = { workspace = true }
 num-complex    = { workspace = true }
 rustfft        = { workspace = true }
 
-symworx-stats  = { path = "../symworx-stats" }
+symworx-stats  = { workspace = true }
 
 [dev-dependencies]
-symworx-math = { path = "../symworx-math" }
+symworx-math = { workspace = true }
 
 [lints]
 workspace = true

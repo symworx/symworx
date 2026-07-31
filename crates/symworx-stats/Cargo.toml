@@ -6,6 +6,7 @@ version          = { workspace = true }
 edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
+authors          = { workspace = true }
 description      = "Statistical tools and resources (basic stats, correlation, variability, autocorrelation, and optional linear algebra)"
 keywords = ["statistics", "correlation", "variability", "time-series", "linear-algebra"]
 categories = ["science", "mathematics"]
@@ -28,7 +29,7 @@ ndarray-linalg = { workspace = true, optional = true }
 openblas-build = { workspace = true, optional = true }
 rand           = { workspace = true }
 
-symworx-math   = { path = "../symworx-math" }
+symworx-math   = { workspace = true }
 
 [build-dependencies]
 openblas-build = { workspace = true }

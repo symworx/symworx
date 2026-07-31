@@ -1,4 +1,5 @@
 use ratatui::{
+    Frame,
     layout::{
         Constraint,
         Layout,
@@ -19,7 +20,6 @@ use ratatui::{
         Padding,
         Paragraph,
     },
-    Frame,
 };
 
 use crate::app::App;

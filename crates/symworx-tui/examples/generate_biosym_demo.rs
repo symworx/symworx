@@ -11,13 +11,13 @@ use std::{
 
 use symworx_biosym::physiology::{
     ppg::{
-        generate_ppg_timeseries,
         PPGNoiseConfig,
         PPGSimulationParams,
+        generate_ppg_timeseries,
     },
     respiration::{
-        generate_respiration_timeseries,
         RespSimulationParams,
+        generate_respiration_timeseries,
     },
 };
 

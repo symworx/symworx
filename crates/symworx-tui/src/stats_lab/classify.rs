@@ -9,10 +9,10 @@ use ndarray::{
 };
 use symworx_io::TableData;
 use symworx_stats::{
+    LogisticConfig,
     classification_report,
     logistic_regression,
     logistic_regression_ovr,
-    LogisticConfig,
 };
 
 use super::util::{

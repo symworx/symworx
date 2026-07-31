@@ -6,18 +6,19 @@ version          = { workspace = true }
 edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
+authors          = { workspace = true }
 description      = "Core re-exports and foundational utilities for the SymWorx ecosystem (math, signal, stats, dynamics, I/O)"
 keywords = ["core", "utilities", "reexports"]
 categories = ["science"]
 
 [dependencies]
-symworx-backend  = { path = "../symworx-backend" }
-symworx-dynamics = { path = "../symworx-dynamics" }
-symworx-error    = { path = "../symworx-error" }
-symworx-io       = { path = "../symworx-io" }
-symworx-math     = { path = "../symworx-math" }
-symworx-signal   = { path = "../symworx-signal" }
-symworx-stats    = { path = "../symworx-stats", features = ["linalg"] }
+symworx-backend  = { workspace = true }
+symworx-dynamics = { workspace = true }
+symworx-error    = { workspace = true }
+symworx-io       = { workspace = true }
+symworx-math     = { workspace = true }
+symworx-signal   = { workspace = true }
+symworx-stats    = { workspace = true, features = ["linalg"] }
 
 [lints]
 workspace = true

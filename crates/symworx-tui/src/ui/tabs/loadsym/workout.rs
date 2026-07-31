@@ -1,4 +1,5 @@
 use ratatui::{
+    Frame,
     layout::{
         Constraint,
         Layout,
@@ -27,7 +28,6 @@ use ratatui::{
         Row,
         Table,
     },
-    Frame,
 };
 use symworx_loadsym::load::{
     compute_ride_metrics,
@@ -328,12 +328,14 @@ pub fn render_workout_line_chart(
         Style::default().fg(Color::DarkGray)
     };
 
-    let datasets = vec![Dataset::default()
-        .name(title.trim())
-        .marker(symbols::Marker::Braille)
-        .graph_type(GraphType::Line)
-        .style(style)
-        .data(&data)];
+    let datasets = vec![
+        Dataset::default()
+            .name(title.trim())
+            .marker(symbols::Marker::Braille)
+            .graph_type(GraphType::Line)
+            .style(style)
+            .data(&data),
+    ];
 
     let chart = Chart::new(datasets)
         .block(

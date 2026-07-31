@@ -9,14 +9,14 @@ use ndarray::{
 };
 use symworx_io::TableData;
 use symworx_stats::{
+    LogisticConfig,
+    SplitConfig,
     classification_report,
     logistic_regression,
     logistic_regression_ovr,
     max_train_folds,
     ols,
     train_test_split,
-    LogisticConfig,
-    SplitConfig,
 };
 
 use super::{

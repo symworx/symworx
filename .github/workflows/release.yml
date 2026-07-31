@@ -1,7 +1,7 @@
-# Release validation for the staging → main path.
+# Release validation for the stage → main path.
 #
 # Branch model (see DEVELOPMENT.md):
-#   develop  →  staging  →  release/vX.Y.Z  →  main  (+ tag vX.Y.Z)
+#   develop  →  stage →  release/vX.Y.Z  →  main  (+ tag vX.Y.Z)
 #
 # This workflow gates releases harder than day-to-day CI:
 #   - PRs into main (especially release/* → main)
@@ -103,7 +103,7 @@ jobs:
               echo "::error::Tag v${TAG_VERSION} does not match Cargo.toml workspace version ${WORKSPACE_VERSION}"
               exit 1
             fi
-            # Final releases should land on main; pre-releases may come from staging.
+            # Final releases should land on main; pre-releases may come from stage.
             if [[ "${IS_PRERELEASE}" != "true" ]]; then
               git fetch --no-tags origin main:refs/remotes/origin/main 2>/dev/null || true
               if git rev-parse --verify origin/main >/dev/null 2>&1; then

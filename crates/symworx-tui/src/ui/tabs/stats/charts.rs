@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0.
 
 use ratatui::{
+    Frame,
     layout::Rect,
     style::{
         Color,
@@ -19,7 +20,6 @@ use ratatui::{
         Padding,
         Paragraph,
     },
-    Frame,
 };
 
 use crate::app::{
@@ -71,12 +71,14 @@ pub fn render_fit_panel(frame: &mut Frame, area: Rect, r: &StatsLabResult) {
     x_max *= 1.02;
     y_max = if y_max > 0.0 { y_max * 1.05 } else { y_max };
 
-    let mut datasets = vec![Dataset::default()
-        .name("observed")
-        .marker(symbols::Marker::Dot)
-        .graph_type(GraphType::Scatter)
-        .style(Style::default().fg(Color::LightCyan))
-        .data(&pts)];
+    let mut datasets = vec![
+        Dataset::default()
+            .name("observed")
+            .marker(symbols::Marker::Dot)
+            .graph_type(GraphType::Scatter)
+            .style(Style::default().fg(Color::LightCyan))
+            .data(&pts),
+    ];
     if line.len() >= 2 {
         datasets.push(
             Dataset::default()
@@ -232,9 +234,9 @@ pub fn render_ba_chart(frame: &mut Frame, area: Rect, pts: &[(f64, f64)], x_lab:
 
 pub fn render_residual_hist(frame: &mut Frame, area: Rect, residuals_data: &[f64]) {
     use symworx_stats::{
-        hist_kde_with,
         HistogramConfig,
         KdeConfig,
+        hist_kde_with,
     };
 
     if residuals_data.is_empty() {

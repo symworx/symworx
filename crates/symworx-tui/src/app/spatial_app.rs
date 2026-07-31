@@ -6,9 +6,9 @@
 use std::path::PathBuf;
 
 use symworx_spatialsym::{
-    synthetic,
     PlayingDimensions,
     Vec2,
+    synthetic,
 };
 
 use super::{
@@ -79,9 +79,9 @@ impl App {
     }
     pub fn load_spatial_csv(&mut self, path: &PathBuf) -> anyhow::Result<()> {
         use symworx_spatialsym::{
-            build_agent_trajectories,
             PlayingDimensions,
             Point2,
+            build_agent_trajectories,
         };
         let path_str = path.to_string_lossy().to_string();
         let (times, trajs) =

@@ -2,9 +2,11 @@
 
 [package]
 name = "symworx-loadsym-db"
-version = { workspace = true }
-edition = { workspace = true }
-license = { workspace = true }
+version          = { workspace = true }
+edition          = { workspace = true }
+license          = { workspace = true }
+repository       = { workspace = true }
+authors          = { workspace = true }
 description = "Reusable SQL schema for personal training-load catalogs (Postgres/SQLite; schema v4 multi-source)"
 documentation = "https://docs.rs/symworx-loadsym-db"
 readme = "README.md"

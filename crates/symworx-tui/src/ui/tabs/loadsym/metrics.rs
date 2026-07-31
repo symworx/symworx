@@ -1,4 +1,5 @@
 use ratatui::{
+    Frame,
     layout::{
         Constraint,
         Layout,
@@ -24,7 +25,6 @@ use ratatui::{
         Padding,
         Paragraph,
     },
-    Frame,
 };
 
 use super::util::truncate_str;
@@ -186,11 +186,7 @@ pub fn render_metrics_view(frame: &mut Frame, app: &App, area: Rect) {
 /// Clamp catalog metric values to non-negative (negatives are noise / N/A for LOADsym).
 #[inline]
 pub fn clamp_metric_nonneg(v: f64) -> f64 {
-    if v.is_finite() {
-        v.max(0.0)
-    } else {
-        0.0
-    }
+    if v.is_finite() { v.max(0.0) } else { 0.0 }
 }
 
 /// Axis max with small headroom; floor at least 1 so a lone 0 still shows a scale.
@@ -201,11 +197,7 @@ pub fn axis_max_from(values: impl Iterator<Item = f64>) -> f64 {
             m = m.max(v);
         }
     }
-    if m < 1e-12 {
-        1.0
-    } else {
-        m * 1.05
-    }
+    if m < 1e-12 { 1.0 } else { m * 1.05 }
 }
 
 /// Tick labels at 0, mid, max for a [0, max] axis.
@@ -256,12 +248,14 @@ pub fn render_metrics_trend_chart(
     let x_max = (rows.len().saturating_sub(1) as f64).max(1.0);
     let y_max = axis_max_from(data.iter().map(|p| p.1));
 
-    let mut datasets = vec![Dataset::default()
-        .name(field.label())
-        .marker(symbols::Marker::Braille)
-        .graph_type(GraphType::Line)
-        .style(Style::default().fg(Color::LightYellow))
-        .data(&data)];
+    let mut datasets = vec![
+        Dataset::default()
+            .name(field.label())
+            .marker(symbols::Marker::Braille)
+            .graph_type(GraphType::Line)
+            .style(Style::default().fg(Color::LightYellow))
+            .data(&data),
+    ];
 
     let focus_data: Vec<(f64, f64)> = focus_pt.into_iter().collect();
     if !focus_data.is_empty() {
@@ -351,12 +345,14 @@ pub fn render_metrics_biplot(
     let y_max = axis_max_from(cloud.iter().map(|p| p.1));
 
     let focus_data: Vec<(f64, f64)> = focus_pt.into_iter().collect();
-    let mut datasets = vec![Dataset::default()
-        .name("rides")
-        .marker(symbols::Marker::Dot)
-        .graph_type(GraphType::Scatter)
-        .style(Style::default().fg(Color::LightMagenta))
-        .data(&cloud)];
+    let mut datasets = vec![
+        Dataset::default()
+            .name("rides")
+            .marker(symbols::Marker::Dot)
+            .graph_type(GraphType::Scatter)
+            .style(Style::default().fg(Color::LightMagenta))
+            .data(&cloud),
+    ];
     if !focus_data.is_empty() {
         datasets.push(
             Dataset::default()

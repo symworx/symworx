@@ -6,6 +6,7 @@ version          = { workspace = true }
 edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
+authors          = { workspace = true }
 description      = "I/O utilities for biosignals and activity data (CSV, Parquet, FIT, email IMAP, Polar AccessLink)"
 keywords = ["io", "csv", "parquet", "fit", "biosignals", "polar"]
 categories = ["science"]
@@ -35,7 +36,7 @@ base64 = { version = "0.22", optional = true }
 serde = { version = "1", optional = true, features = ["derive"] }
 serde_json = { version = "1", optional = true }
 
-symworx-error = { path = "../symworx-error" }
+symworx-error = { workspace = true }
 
 [features]
 default = []

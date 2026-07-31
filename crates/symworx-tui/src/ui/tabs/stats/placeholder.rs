@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0.
 
 use ratatui::{
+    Frame,
     layout::Rect,
     widgets::{
         Block,
@@ -9,7 +10,6 @@ use ratatui::{
         Padding,
         Paragraph,
     },
-    Frame,
 };
 
 pub fn render_placeholder(frame: &mut Frame, area: Rect, title: &str, body: &str) {

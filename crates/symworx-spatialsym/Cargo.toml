@@ -6,6 +6,7 @@ version          = { workspace = true }
 edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
+authors          = { workspace = true }
 description      = "Spatial trajectory analysis, kinematics, and post-hoc decision modeling (sport-agnostic)"
 keywords = ["spatial", "trajectory", "kinematics", "decision-modeling", "sportscience"]
 categories = ["science", "simulation"]
@@ -22,8 +23,8 @@ csv             = { workspace = true }
 ndarray         = { workspace = true }
 thiserror       = { workspace = true }
 
-symworx-loadsym = { path = "../symworx-loadsym" }
-symworx-math    = { path = "../symworx-math" }
+symworx-loadsym = { workspace = true }
+symworx-math    = { workspace = true }
 
 # We don't inherit from workspace here because the workspace pins "full" features.
 # We intentionally use a minimal feature set for the analysis crate.
