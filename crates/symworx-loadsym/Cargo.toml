@@ -6,6 +6,7 @@ version          = { workspace = true }
 edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
+authors          = { workspace = true }
 description      = "Training load quantification, periodization, ACWR, TSS, monotony, strain, and nutrition modeling"
 keywords = ["periodization", "training-load", "acwr", "tss", "load-management", "nutrition"]
 categories = ["science"]
@@ -17,19 +18,19 @@ path = "src/bin/symload.rs"
 # on the symworx-io dependency.
 
 [dependencies]
-ndarray         = { version = "0.15", features = ["std"] }
+ndarray         = { workspace = true }
 thiserror       = { workspace = true }
 
-symworx-core    = { path = "../symworx-core" }
+symworx-core    = { workspace = true }
 
 # Optional I/O support, including FIT loading and (with "email" feature) email fetching.
 # The symload binary uses this.
 # symworx-io is used by the `symload` binary (and can be used by library consumers
 # for loading activity data before feeding into loadsym calculations).
-symworx-io = { path = "../symworx-io" }
+symworx-io = { workspace = true }
 
 # Schema resources for DB initialization (used by `symload db print-schema`).
-symworx-loadsym-db = { path = "../symworx-loadsym-db", optional = true }
+symworx-loadsym-db = { workspace = true, optional = true }
 
 # Optional personal SQLite catalog (file lives under $VELOFIT_HOME — never in-repo).
 rusqlite = { version = "0.32", optional = true, features = ["bundled"] }

@@ -1,4 +1,5 @@
 use ratatui::{
+    Frame,
     layout::{
         Constraint,
         Direction,
@@ -21,16 +22,15 @@ use ratatui::{
         Paragraph,
         Sparkline,
     },
-    Frame,
 };
 use symworx_loadsym::load::{
+    LoadGoal,
+    MAX_HORIZON_DAYS,
+    PulseResponseParams,
     classify_acwr,
     compute_acute_chronic,
     compute_monotony,
     simulate_pulse_response,
-    LoadGoal,
-    PulseResponseParams,
-    MAX_HORIZON_DAYS,
 };
 
 use super::util::truncate_str;

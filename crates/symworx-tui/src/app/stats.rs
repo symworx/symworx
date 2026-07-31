@@ -41,11 +41,7 @@ impl StatsView {
 
     pub fn prev(self) -> Self {
         let i = self.index();
-        if i == 0 {
-            self
-        } else {
-            Self::from_index(i - 1)
-        }
+        if i == 0 { self } else { Self::from_index(i - 1) }
     }
 
     pub fn next(self) -> Self {

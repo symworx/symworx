@@ -53,11 +53,7 @@ impl Tab {
     /// Previous BioSym tab (clamped).
     pub fn biosym_prev(self) -> Tab {
         let i = Self::BIOSYM_TABS.iter().position(|&t| t == self).unwrap_or(0);
-        if i == 0 {
-            Tab::Import
-        } else {
-            Self::BIOSYM_TABS[i - 1]
-        }
+        if i == 0 { Tab::Import } else { Self::BIOSYM_TABS[i - 1] }
     }
 
     /// Next BioSym tab (clamped).

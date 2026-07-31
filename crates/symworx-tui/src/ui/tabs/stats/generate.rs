@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0.
 
 use ratatui::{
+    Frame,
     layout::{
         Constraint,
         Layout,
@@ -22,7 +23,6 @@ use ratatui::{
         Padding,
         Paragraph,
     },
-    Frame,
 };
 
 use crate::app::App;

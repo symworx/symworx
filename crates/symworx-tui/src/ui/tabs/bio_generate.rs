@@ -4,6 +4,7 @@
 //! BioSym Generate tab — synthetic biosignal demos (Ctrl+G).
 
 use ratatui::{
+    Frame,
     layout::{
         Constraint,
         Layout,
@@ -24,7 +25,6 @@ use ratatui::{
         Padding,
         Paragraph,
     },
-    Frame,
 };
 
 use crate::{

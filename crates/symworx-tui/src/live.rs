@@ -8,6 +8,7 @@
 
 use std::{
     sync::{
+        Arc,
         atomic::{
             AtomicBool,
             Ordering,
@@ -17,7 +18,6 @@ use std::{
             Receiver,
             TryRecvError,
         },
-        Arc,
     },
     thread::{
         self,
@@ -27,7 +27,6 @@ use std::{
 };
 
 use symworx_embed::{
-    analyze_vitals,
     Channel,
     SampleRing,
     SimulatorConfig,
@@ -35,6 +34,7 @@ use symworx_embed::{
     StreamSample,
     StreamSource,
     VitalsStatus,
+    analyze_vitals,
 };
 
 /// Nominal sample period for the live simulator (UI ~10 Hz redraw).

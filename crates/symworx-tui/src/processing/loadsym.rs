@@ -195,10 +195,10 @@ pub fn invalidate_loadsym_plan_cache(app: &mut App) {
 /// Recompute plan only when goal / horizon / loads changed (not every TUI frame).
 pub fn ensure_loadsym_plan(app: &mut App) {
     use symworx_loadsym::load::{
-        optimize_load_plan,
+        MAX_HORIZON_DAYS,
         OptimizationThresholds,
         PulseResponseParams,
-        MAX_HORIZON_DAYS,
+        optimize_load_plan,
     };
     if app.daily_loads.is_empty() {
         invalidate_loadsym_plan_cache(app);
@@ -608,11 +608,11 @@ pub fn open_selected_workout_file(app: &mut App) -> bool {
 /// `force` ignores `loadsym_goal_user_override` (used on first enter).
 pub fn apply_suggested_load_goal(app: &mut App, force: bool) {
     use symworx_loadsym::load::{
+        GoalSuggestParams,
+        PulseResponseParams,
         compute_acute_chronic,
         simulate_pulse_response,
         suggest_load_goal,
-        GoalSuggestParams,
-        PulseResponseParams,
     };
     if app.daily_loads.is_empty() {
         app.loadsym_goal_suggest_note.clear();

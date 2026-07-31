@@ -2,8 +2,11 @@
 
 [package]
 name = "symworx-tui"
-version = "0.1.0"
-edition = "2021"
+version          = { workspace = true }
+edition          = { workspace = true }
+license          = { workspace = true }
+repository       = { workspace = true }
+authors          = { workspace = true }
 description = "Terminal UI (symview) for biosignal exploration, RQA/dynamics, and training load analysis"
 keywords = ["tui", "biosignals", "rqa", "training-load", "visualization"]
 categories = ["command-line-utilities", "science"]
@@ -23,7 +26,7 @@ polars = { workspace = true, optional = true, features = ["csv", "lazy"] }
 # This is the required path per the I/O Layer rule in AGENTS.md and README.
 # Polars (when the "polars" feature below is enabled) is *only* for optional
 # in-memory DataFrame exploration *after* data is loaded via symworx-io.
-symworx-io = { path = "../symworx-io", features = ["parquet", "fit"] }
+symworx-io = { workspace = true, features = ["parquet", "fit"] }
 
 # IMPORTANT ARCHITECTURE RULE (see AGENTS.md "I/O Layer"):
 # The TUI (and all other crates) must load Parquet, CSV, IBI, etc. exclusively
@@ -34,20 +37,20 @@ symworx-io = { path = "../symworx-io", features = ["parquet", "fit"] }
 # Polars is optional and (when enabled) is intended only for in-memory
 # DataFrame exploration after data has been loaded via `symworx-io`.
 
-symworx-core = { path = "../symworx-core" }
-symworx-biosym = { path = "../symworx-biosym" }
-symworx-signal = { path = "../symworx-signal" }
-symworx-spatialsym = { path = "../symworx-spatialsym" }
-symworx-dynamics = { path = "../symworx-dynamics" }
+symworx-core = { workspace = true }
+symworx-biosym = { workspace = true }
+symworx-signal = { workspace = true }
+symworx-spatialsym = { workspace = true }
+symworx-dynamics = { workspace = true }
 # Host live streaming (simulator default; serial later via embed features).
-symworx-embed = { path = "../symworx-embed" }
+symworx-embed = { workspace = true }
 # sqlite: LoadSym Calendar reads personal catalog under $VELOFIT_HOME/db/ (never ships data).
-symworx-loadsym = { path = "../symworx-loadsym", features = ["sqlite"] }
+symworx-loadsym = { workspace = true, features = ["sqlite"] }
 # StatsSym lab + synthetic generators (linalg for OLS/PCA later)
-symworx-stats = { path = "../symworx-stats", features = ["linalg"] }
+symworx-stats = { workspace = true, features = ["linalg"] }
 ndarray = { workspace = true }
-rand = { version = "0.9", features = ["std"] }
-csv = "1.3"
+rand = { workspace = true, features = ["std"] }
+csv = { workspace = true }
 
 # These are activated when the `polars` feature is enabled, to ensure the "std"
 # feature (and thus the alloc::Allocator impls) is enabled on brotli-decompressor.

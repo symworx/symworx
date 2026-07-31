@@ -491,19 +491,19 @@ fn fill_nested_chi2(fits: &mut [PolynomialDegreeFit], n: usize) {
             fits[i].chi2_vs_prev_p = p;
         }
         // vs degree-0 / first fit when this is richer
-        if let (Some(r0), Some(k0), Some(d0)) = (null_rss, null_k, null_deg) {
-            if fits[i].degree > d0 {
-                let df = fits[i].n_params.saturating_sub(k0);
-                let chi = nested_lr_chi2(r0, fits[i].scores.rss, n);
-                let p = if df > 0 && chi.is_finite() {
-                    Some(chi2_sf(chi, df as f64))
-                } else {
-                    None
-                };
-                fits[i].chi2_vs_null = Some(chi);
-                fits[i].chi2_vs_null_df = df;
-                fits[i].chi2_vs_null_p = p;
-            }
+        if let (Some(r0), Some(k0), Some(d0)) = (null_rss, null_k, null_deg)
+            && fits[i].degree > d0
+        {
+            let df = fits[i].n_params.saturating_sub(k0);
+            let chi = nested_lr_chi2(r0, fits[i].scores.rss, n);
+            let p = if df > 0 && chi.is_finite() {
+                Some(chi2_sf(chi, df as f64))
+            } else {
+                None
+            };
+            fits[i].chi2_vs_null = Some(chi);
+            fits[i].chi2_vs_null_df = df;
+            fits[i].chi2_vs_null_p = p;
         }
     }
 }

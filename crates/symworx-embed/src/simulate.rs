@@ -99,9 +99,10 @@ impl SimulatorSource {
 
     /// Convenience: default config with custom `sid`.
     pub fn with_sid(sid: impl Into<String>) -> Self {
-        let mut cfg = SimulatorConfig::default();
-        cfg.sid = sid.into();
-        Self::new(cfg)
+        Self::new(SimulatorConfig {
+            sid: sid.into(),
+            ..Default::default()
+        })
     }
 
     fn next_u32(&mut self) -> u32 {
@@ -117,10 +118,10 @@ impl SimulatorSource {
 
 impl StreamSource for SimulatorSource {
     fn next_sample(&mut self) -> Result<Option<StreamSample>> {
-        if let Some(max) = self.cfg.max_samples {
-            if self.n >= max {
-                return Ok(None);
-            }
+        if let Some(max) = self.cfg.max_samples
+            && self.n >= max
+        {
+            return Ok(None);
         }
 
         if self.n > 0 && !self.cfg.interval.is_zero() {

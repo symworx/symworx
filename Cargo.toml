@@ -1,8 +1,9 @@
-# Copyright (C) 2026 cSYMd, All rights reserved.
+# Copyright (C) 2026 SymWorx, All rights reserved.
 
 [workspace]
 resolver = "2"
 members = [
+    "crates/symworx-error",
     "crates/symworx-backend",
     "crates/symworx-biosym",
     "crates/symworx-core",
@@ -24,30 +25,49 @@ version    = "0.1.0"
 edition    = "2024"
 license    = "Apache-2.0"
 repository = "https://github.com/symworx/symworx"
-authors    = ["nate berry <nate-berry@outlook.com>"]
+authors    = ["nate berry <symworx.dev@gmail.com>"]
 
 [workspace.dependencies]
-csv            = { version = "1.3" }
-ndarray        = { version = "0.15", features = ["std"] }
-ndarray-linalg = { version = "0.16", features = ["openblas"] }
-openblas-build = { version = "0.10", features = ["rustls"] }
-num-complex    = { version = "0.4" }
-parquet        = { version = "52.0", default-features = false }
+csv                 = { version = "1.3" }
+ndarray             = { version = "0.15", features = ["std"] }
+ndarray-linalg      = { version = "0.16", features = ["openblas"] }
+openblas-build      = { version = "0.10", features = ["rustls"] }
+num-complex         = { version = "0.4" }
+parquet             = { version = "52.0", default-features = false }
 brotli-decompressor = { version = "4.0", features = ["std"] }
-brotli = { version = "6.0", features = ["std"] }
+brotli              = { version = "6.0", features = ["std"] }
 alloc-no-stdlib     = { version = "3.0" }
-pyo3           = { version = "0.23", features = ["extension-module", "abi3-py312"] }
-rand           = { version = "0.9" }
-rand_distr     = { version = "0.5" }
-rustfft        = { version = "6.4.1" }
-thiserror      = { version = "2.0.17" }
-tokio          = { version = "1", features = ["full"] }
+pyo3                = { version = "0.23", features = ["extension-module", "abi3-py312"] }
+rand                = { version = "0.9" }
+rand_distr          = { version = "0.5" }
+rustfft             = { version = "6.4.1" }
+thiserror           = { version = "2.0.17" }
+tokio               = { version = "1", features = ["full"] }
 # Polars (dataframes + parquet/csv/lazy) — currently used in symworx-tui.
 # This is a heavy dependency (brings arrow, multiple compression backends, etc.).
 # Keep usage opt-in where possible. We centralize the version here for consistency
 # in case we want/need polars in other crates later.
 polars         = { version = "0.51" }
 fitparser      = { version = "0.11" }
+
+# Internal crates — path for monorepo builds; version for crates.io (path stripped on publish).
+# Keep `version` in lockstep with [workspace.package] version (Cargo does not allow
+# version.workspace = true inside [workspace.dependencies]).
+# Members depend via `{ workspace = true }` (+ optional features).
+symworx-error      = { path = "crates/symworx-error", version = "0.1.0" }
+symworx-math       = { path = "crates/symworx-math", version = "0.1.0" }
+symworx-io         = { path = "crates/symworx-io", version = "0.1.0" }
+symworx-stats      = { path = "crates/symworx-stats", version = "0.1.0" }
+symworx-signal     = { path = "crates/symworx-signal", version = "0.1.0" }
+symworx-dynamics   = { path = "crates/symworx-dynamics", version = "0.1.0" }
+symworx-backend    = { path = "crates/symworx-backend", version = "0.1.0" }
+symworx-embed      = { path = "crates/symworx-embed", version = "0.1.0" }
+symworx-loadsym-db = { path = "crates/symworx-loadsym-db", version = "0.1.0" }
+symworx-core       = { path = "crates/symworx-core", version = "0.1.0" }
+symworx-biosym     = { path = "crates/symworx-biosym", version = "0.1.0" }
+symworx-loadsym    = { path = "crates/symworx-loadsym", version = "0.1.0" }
+symworx-spatialsym = { path = "crates/symworx-spatialsym", version = "0.1.0" }
+symworx-tui        = { path = "crates/symworx-tui", version = "0.1.0" }
 
 [workspace.lints.rust]
 # We use `deny` (not `forbid`) for `unsafe_code` because this workspace
@@ -60,8 +80,6 @@ fitparser      = { version = "0.11" }
 #   enabled by default via `symworx-core` for convenience).
 # - `symworx-signal` imports it directly/unconditionally because advanced LA
 #   (deconvolution, NNLS, etc.) is core to the crate.
-# - The workspace dependency declares `ndarray-linalg = { ..., features = ["openblas"] }`
-#   plus the matching `openblas-build` build-dep.
 #
 # `polars` (dataframes, parquet, csv, lazy) is also heavy (pulls arrow + multiple
 # compression backends). It is centralized here for version consistency (we may

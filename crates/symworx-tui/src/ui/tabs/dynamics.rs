@@ -1,4 +1,5 @@
 use ratatui::{
+    Frame,
     layout::Rect,
     style::{
         Color,
@@ -14,7 +15,6 @@ use ratatui::{
         Padding,
         Paragraph,
     },
-    Frame,
 };
 
 use crate::app::App;

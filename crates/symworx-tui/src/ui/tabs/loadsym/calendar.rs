@@ -1,4 +1,5 @@
 use ratatui::{
+    Frame,
     layout::{
         Constraint,
         Layout,
@@ -20,7 +21,6 @@ use ratatui::{
         Paragraph,
         Sparkline,
     },
-    Frame,
 };
 use symworx_loadsym::load::{
     classify_acwr,

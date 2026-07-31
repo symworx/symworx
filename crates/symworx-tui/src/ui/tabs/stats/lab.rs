@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0.
 
 use ratatui::{
+    Frame,
     layout::{
         Alignment,
         Constraint,
@@ -23,7 +24,6 @@ use ratatui::{
         Padding,
         Paragraph,
     },
-    Frame,
 };
 
 use super::{
@@ -233,11 +233,7 @@ pub fn render_split_metrics_table(frame: &mut Frame, area: Rect, r: &StatsLabRes
     };
     let col0 = if is_poly { "degree" } else { "split" };
     let title = if r.metrics_table_title.is_empty() {
-        if is_poly {
-            " Degrees "
-        } else {
-            " Splits "
-        }
+        if is_poly { " Degrees " } else { " Splits " }
     } else {
         // pad title for block
         return_static_title(&r.metrics_table_title)

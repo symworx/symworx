@@ -7,12 +7,12 @@ use std::path::PathBuf;
 
 use ratatui::widgets::ListState;
 use symworx_spatialsym::{
+    AgentTrajectories,
+    Point2,
     decision::{
         AgentDecision,
         SpaceAction,
     },
-    AgentTrajectories,
-    Point2,
 };
 
 use super::{

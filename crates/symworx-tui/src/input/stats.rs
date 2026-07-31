@@ -329,9 +329,9 @@ pub fn handle_stats_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifiers)
 
 pub fn run_stats_generate(app: &mut App) {
     use symworx_stats::{
-        generate_synthetic,
         SyntheticPreset,
         SyntheticSpec,
+        generate_synthetic,
     };
 
     use crate::app::StatsLabTask;

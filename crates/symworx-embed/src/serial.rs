@@ -91,10 +91,11 @@ impl SerialSource {
 
     /// Open with defaults, overriding port and `sid`.
     pub fn open_port(port: impl Into<String>, sid: impl Into<String>) -> Result<Self> {
-        let mut cfg = SerialConfig::default();
-        cfg.port = port.into();
-        cfg.sid = sid.into();
-        Self::open(cfg)
+        Self::open(SerialConfig {
+            port: port.into(),
+            sid: sid.into(),
+            ..Default::default()
+        })
     }
 }
 

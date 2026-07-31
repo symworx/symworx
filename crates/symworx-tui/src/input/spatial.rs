@@ -216,7 +216,13 @@ pub fn handle_spatial_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                     if let Ok(mut f) = std::fs::File::create(&meta_p) {
                         use std::io::Write;
                         let n_agents = batch.num_times().min(1); // approx
-                        let meta = format!("{{\n  \"source\": \"symview spatial export\",\n  \"num_frames\": {},\n  \"num_agents\": {},\n  \"has_decisions\": {},\n  \"export_ts\": {}\n}}", batch.num_times(), n_agents, app.spatial_decisions.is_some(), ts);
+                        let meta = format!(
+                            "{{\n  \"source\": \"symview spatial export\",\n  \"num_frames\": {},\n  \"num_agents\": {},\n  \"has_decisions\": {},\n  \"export_ts\": {}\n}}",
+                            batch.num_times(),
+                            n_agents,
+                            app.spatial_decisions.is_some(),
+                            ts
+                        );
                         let _ = f.write_all(meta.as_bytes());
                     }
 

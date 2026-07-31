@@ -6,6 +6,7 @@ version          = { workspace = true }
 edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
+authors          = { workspace = true }
 description      = "Backend utilities for SymWorx (process supervision, server infrastructure, and shared components)"
 keywords = ["backend", "process-management", "infrastructure"]
 categories = ["development-tools"]
