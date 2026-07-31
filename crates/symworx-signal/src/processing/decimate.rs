@@ -35,7 +35,7 @@ pub fn min_max_decimate(data: &[f64], max_points: usize) -> Vec<f64> {
 
     // We aim for roughly max_points / 2 buckets, each contributing min + max
     let num_buckets = (max_points / 2).max(1);
-    let bucket_size = (data.len() + num_buckets - 1) / num_buckets; // ceil division
+    let bucket_size = data.len().div_ceil(num_buckets);
 
     let mut i = 0usize;
     while i < data.len() {

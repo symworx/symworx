@@ -57,7 +57,7 @@ pub fn hilbert(signal: &[f64]) -> Array1<Complex<f64>> {
     // rustfft IFFT is unnormalized (forward+inverse gives n*original), so scale
     let scale = 1.0 / n as f64;
     for c in &mut hilbert_spec {
-        *c = *c * scale;
+        *c *= scale;
     }
 
     // Convert back to ndarray
