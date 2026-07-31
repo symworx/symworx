@@ -8,7 +8,7 @@ license          = { workspace = true }
 repository       = { workspace = true }
 authors          = { workspace = true }
 description = "Terminal UI (symview) for biosignal exploration, RQA/dynamics, and training load analysis"
-keywords = ["tui", "biosignals", "rqa", "training-load", "visualization"]
+keywords = ["tui", "biosignals", "nonlinear dynamics", "data visualization"]
 categories = ["command-line-utilities", "science"]
 
 [[bin]]

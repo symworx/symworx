@@ -8,7 +8,7 @@ license          = { workspace = true }
 repository       = { workspace = true }
 authors          = { workspace = true }
 description      = "Mathematical tools and resources for the SymWorx ecosystem (series operations, distributions, integration, and oscillators)"
-keywords = ["mathematics", "series", "distributions", "integration", "oscillators"]
+keywords = ["mathematics", "distributions", "integration", "oscillators"]
 categories = ["science", "mathematics"]
 
 [dependencies]

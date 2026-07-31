@@ -8,7 +8,7 @@ license          = { workspace = true }
 repository       = { workspace = true }
 authors          = { workspace = true }
 description      = "Host-side embedded streaming: PPG sample protocol, serial/simulator sources, ring buffers"
-keywords = ["embedded", "streaming", "ppg", "serial", "biosignals"]
+keywords = ["embedded", "biosignals"]
 categories = ["science", "embedded"]
 
 [features]
