@@ -10,7 +10,7 @@ authors          = { workspace = true }
 description = "Reusable SQL schema for personal training-load catalogs (Postgres/SQLite; schema v4 multi-source)"
 documentation = "https://docs.rs/symworx-loadsym-db"
 readme = "README.md"
-keywords = ["database", "schema", "periodization", "training-load", "loadsym"]
+keywords = ["database", "schema", "periodization", "training-load"]
 categories = ["science"]
 
 [lib]

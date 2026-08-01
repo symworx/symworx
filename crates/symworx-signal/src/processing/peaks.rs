@@ -32,6 +32,9 @@ pub struct PeakFinder {
 
 impl PeakFinder {
     /// Creates a new [`PeakFinderBuilder`] for the given signal.
+    ///
+    /// Named `new` for ergonomics; returns a builder rather than `Self`.
+    #[allow(clippy::new_ret_no_self)]
     pub fn new(signal: ArrayView1<f64>) -> PeakFinderBuilder {
         PeakFinderBuilder {
             signal,

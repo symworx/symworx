@@ -66,11 +66,9 @@ pub fn parse_json_line(line: &str) -> Result<Option<StreamSample>> {
         .unwrap_or(SourceKind::Unknown);
 
     // Optional host timestamp string (ISO-ish) — best-effort; ignore failures.
-    let host_ts = string_field(obj.get("timestamp")).and_then(|_s| {
-        // Keep parsing light: treat presence of timestamp as "now" for host path.
-        // Full ISO parsing can be added later without changing the public field.
-        Some(SystemTime::now())
-    });
+    // Keep parsing light: treat presence of timestamp as "now" for host path.
+    // Full ISO parsing can be added later without changing the public field.
+    let host_ts = string_field(obj.get("timestamp")).map(|_s| SystemTime::now());
 
     Ok(Some(StreamSample {
         red,
@@ -158,10 +156,10 @@ fn insert_i64(map: &mut serde_json::Map<String, Value>, key: &str, v: Option<i64
 }
 
 fn insert_f64(map: &mut serde_json::Map<String, Value>, key: &str, v: Option<f64>) {
-    if let Some(n) = v {
-        if let Some(num) = serde_json::Number::from_f64(n) {
-            map.insert(key.into(), Value::Number(num));
-        }
+    if let Some(n) = v
+        && let Some(num) = serde_json::Number::from_f64(n)
+    {
+        map.insert(key.into(), Value::Number(num));
     }
 }
 

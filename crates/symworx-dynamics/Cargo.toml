@@ -8,7 +8,7 @@ license          = { workspace = true }
 repository       = { workspace = true }
 authors          = { workspace = true }
 description      = "Nonlinear dynamics tools (RQA, embedding, entropy, DMD, Koopman/EDMD, LTI control)"
-keywords = ["rqa", "dmd", "koopman", "nonlinear-dynamics", "control", "embedding"]
+keywords = ["nonlinear-dynamics", "control"] 
 categories = ["science", "mathematics"]
 
 [dependencies]

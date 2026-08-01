@@ -8,7 +8,7 @@ license          = { workspace = true }
 repository       = { workspace = true }
 authors          = { workspace = true }
 description      = "Training load quantification, periodization, ACWR, TSS, monotony, strain, and nutrition modeling"
-keywords = ["periodization", "training-load", "acwr", "tss", "load-management", "nutrition"]
+keywords = ["periodization", "training-load", "nutrition"]
 categories = ["science"]
 
 [[bin]]

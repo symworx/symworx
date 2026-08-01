@@ -61,7 +61,7 @@ pub fn cwt(
     for (i, &scale) in scales.iter().enumerate() {
         for t in 0..n {
             let mut sum = 0.0;
-            for k in 0..n {
+            for (k, &sk) in signal.iter().enumerate() {
                 let tau = (t as f64 - k as f64) / scale;
                 let wavelet_val = match wavelet {
                     WaveletType::Morlet => {
@@ -75,7 +75,7 @@ pub fn cwt(
                         (1.0 - tau * tau) * gauss / (PI.sqrt() * scale.sqrt())
                     }
                 };
-                sum += signal[k] * wavelet_val;
+                sum += sk * wavelet_val;
             }
             coefficients[[i, t]] = sum;
         }

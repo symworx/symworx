@@ -8,7 +8,7 @@ license          = { workspace = true }
 repository       = { workspace = true }
 authors          = { workspace = true }
 description      = "Biological and biomechanical modeling tools: physiological signals (PPG, respiration), gait analysis, and central pattern generators (CPG)"
-keywords = ["biosignals", "gait", "physiology", "biomechanics", "cpg", "modeling"]
+keywords = ["gait", "physiology", "biomechanics", "simulation"] 
 categories = ["science", "simulation"]
 
 [lib]
