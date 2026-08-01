@@ -1,16 +1,15 @@
 # SymWorx-Stats
 
-Statistical analysis and classical data-driven modeling tools for the SymWorx ecosystem (physiological signals, biomechanics, training load, and general scientific 
-data).
-This is a sub-crate to the [`symworx-core`](../symworx-core/README.md) crate.
+Statistical analysis and classical ML tools for the SymWorx ecosystem
+(physiological signals, biomechanics, training load, and general scientific data).
+This is a sub-crate of [`symworx-core`](../symworx-core/README.md).
 
-## Module map (DDSE-aligned)
+## Module map
 
-Methods from *Data-Driven Science and Engineering* (Brunton & Kutz) and related
-classical ML live here unless they are dynamical operators or signal sensing.
+Statistics and machine-learning algorithms. Dynamical operators and signal sensing live elsewhere.
 
 | Module | Methods | `linalg` feature? |
-|--------|---------|-------------------|
+|:-------|:--------|:------------------|
 | `basic`, `variability` | mean, median, MAD, RMSSD, … | No |
 | `correlation`, `autocorrelation` | Pearson, ACF | No |
 | `distance` | Euclidean, Manhattan, cosine, Chebyshev | No |

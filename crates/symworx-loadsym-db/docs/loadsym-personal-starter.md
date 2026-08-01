@@ -54,6 +54,19 @@ $VELOFIT_HOME/              # default: ~/velofit
 
 Flat FITs under `raw/*.fit` still work; subdirs improve **pipeline provenance** (`ingest_pipeline`).
 
+### Bootstrap (new machine)
+
+From the SymWorx workspace root:
+
+```bash
+./scripts/init-velofit.sh
+# optional: VELOFIT_HOME=/path/to/archive ./scripts/init-velofit.sh
+```
+
+Creates the directories above and an **empty** `db/loadsym.sqlite` (schema applied;
+does not overwrite an existing catalog). The TUI runs without this step, but
+LoadSym calendar/metrics stay empty until init + ingest.
+
 ---
 
 ## Schema crate (`symworx-loadsym-db`)

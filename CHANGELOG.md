@@ -10,11 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- tBD
+- `scripts/init-velofit.sh` — create `$VELOFIT_HOME` layout and empty LoadSym catalog for new users
+
+### Changed
+
+- Documentation pass: clearer crate READMEs, fewer redundant sections, aligned TUI keybinding notes
+- Removed external product/book citations from docs and code comments
 
 ### Notes
 
-- tbd
+-
 
 
 ## [0.1.0] - 2026-07-31

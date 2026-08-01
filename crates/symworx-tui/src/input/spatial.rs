@@ -242,7 +242,7 @@ pub fn handle_spatial_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                 }
             }
             KeyCode::Esc => {
-                // SpatialSym root: Esc-Esc quits. (Legacy BioSym jump to Dynamics avoided.)
+                // SpatialSym root: Esc-Esc quits.
                 return app.esc_root_or_quit();
             }
             _ => {}

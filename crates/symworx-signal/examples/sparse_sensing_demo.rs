@@ -3,7 +3,7 @@
 
 //! Sparse / compressed sensing demo: OMP, ISTA, DCT basis, Gaussian Φ.
 //!
-//! Highlights `symworx-signal::processing::sparse_sensing` (Brunton & Kutz style).
+//! Highlights `symworx-signal::processing::sparse_sensing`.
 //!
 //! Run with:
 //! ```bash

@@ -41,7 +41,7 @@ pub fn py_calculate_mechanical_load(force_data: Vec<f64>, velocity_data: Vec<f64
 }
 
 // ==========================================================
-// Optimization (legacy stub + multi-day plan)
+// Optimization (compatibility stub + multi-day plan)
 // ==========================================================
 
 #[pyfunction(name = "optimize_load")]

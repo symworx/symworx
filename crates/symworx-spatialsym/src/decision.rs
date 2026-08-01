@@ -170,7 +170,7 @@ impl SpaceAction {
     }
 }
 
-/// Classify space actions for a single trajectory (legacy single-agent API).
+/// Classify space actions for a single trajectory (single-agent API).
 pub fn classify_single_trajectory(
     positions: &[crate::geometry::Point2],
     times: &[f64],

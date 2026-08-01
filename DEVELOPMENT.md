@@ -25,6 +25,9 @@ cargo build -p symworx-tui
 # Run the TUI (symview)
 cargo run -p symworx-tui --bin symview
 
+# Personal LoadSym archive (empty dirs + catalog under ~/velofit)
+./scripts/init-velofit.sh
+
 # Test
 cargo test --workspace
 

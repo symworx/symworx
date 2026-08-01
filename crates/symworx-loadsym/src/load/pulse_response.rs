@@ -19,12 +19,12 @@
 //! - \(p\) = performance / readiness proxy
 //! - `form` = \(g - h\) (TSB-like when \(k_g = k_h = 1\))
 //!
-//! The PMC (TrainingPeaks-style CTL / ATL / TSB) interpretation uses unit gains
-//! via [`PulseResponseParams::pmc_defaults`]. Full Banister gains use
+//! The PMC (CTL / ATL / TSB) interpretation uses unit gains via
+//! [`PulseResponseParams::pmc_defaults`]. Full Banister gains use
 //! [`PulseResponseParams::banister_defaults`].
 //!
 //! Discrete recursion is preferred for daily catalog series. A continuous ODE
-//! helper is available for teaching / dynamics demos (Kim-style LTI systems).
+//! helper is available for teaching / dynamics demos.
 
 use crate::error::{
     LoadSymError,
@@ -319,7 +319,7 @@ pub fn estimate_recovery_days(
 /// Unit-impulse response of form (and components) for `horizon` days after a unit load day.
 ///
 /// Day 0 applies load=1; subsequent days apply load=0. Useful for teaching LTI
-/// impulse-response behaviour (Kim / Banister).
+/// impulse-response behaviour (Banister update rule).
 pub fn unit_impulse_response(params: &PulseResponseParams, horizon: usize) -> Result<PulseResponseSeries> {
     params.validate()?;
     if horizon == 0 {

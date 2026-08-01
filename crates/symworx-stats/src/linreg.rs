@@ -31,7 +31,7 @@ pub struct LinearModel {
 }
 
 impl LinearModel {
-    /// Build from the legacy packed form `[intercept, β₀, β₁, …]`.
+    /// Build from packed form `[intercept, β₀, β₁, …]`.
     pub fn from_packed(packed: &Array1<f64>) -> Self {
         assert!(!packed.is_empty(), "packed coefficient vector must not be empty");
         Self {
@@ -40,7 +40,7 @@ impl LinearModel {
         }
     }
 
-    /// Pack as `[intercept, β₀, β₁, …]` (legacy `l1` / `l2` layout).
+    /// Pack as `[intercept, β₀, β₁, …]` (`l1` / `l2` layout).
     pub fn to_packed(&self) -> Array1<f64> {
         let mut out = Array1::zeros(self.coefficients.len() + 1);
         out[0] = self.intercept;

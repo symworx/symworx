@@ -55,7 +55,7 @@ pub struct App {
     pub filter_mode: bool,
     /// Import: file delete confirmation (`x` arm · `y` confirm · `n`/Esc cancel).
     pub pending_delete: Option<PathBuf>,
-    /// Legacy overlay flag (prefer `Tab::Generate`); cleared on cancel/nav.
+    /// Overlay flag (prefer `Tab::Generate`); cleared on cancel/nav.
     pub pending_generate: bool,
     /// BioSym Generate tab: which demo preset is highlighted (0..2).
     pub bio_gen_preset: usize,

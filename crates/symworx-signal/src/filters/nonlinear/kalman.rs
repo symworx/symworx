@@ -247,7 +247,7 @@ pub struct FilterRun {
     pub predicted_covs: Vec<Array2<f64>>,
 }
 
-// ——— LTI helper constructors (Kim / textbook state-space forms) ———
+// ——— LTI helper constructors (common state-space forms) ———
 
 impl KalmanFilter {
     /// 1D constant-velocity tracker: state `[position, velocity]`, observe position.
