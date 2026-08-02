@@ -87,10 +87,6 @@ pub mod biomechanics {
     pub use crate::gait;
     // Re-exports so `biomechanics::GaitParams`, `biomechanics::analyze_gait`, etc. continue to work.
     pub use crate::gait::*;
-
-    // Future RunSym modules (e.g. `running` or runner/shoe models) can be added
-    // as top-level peers and re-exported here for namespacing:
-    // pub use crate::running as running;
 }
 
 /// Shared cross-domain primitives.

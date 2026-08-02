@@ -45,9 +45,8 @@ impl SourceKind {
 
 /// One multi-channel vitals / PPG sample from a stream.
 ///
-/// Field names mirror the SentryWard Arduino JSON line where applicable
-/// (`red`, `ir`, `bpm`, `bpm_avg`, device `ts`), with SymWorx host enrichment
-/// using **`sid`** (subject id) instead of `patient_id`.
+/// Field names follow the device JSON line (`red`, `ir`, `bpm`, `bpm_avg`,
+/// device `ts`) with host enrichment using **`sid`** (subject id).
 #[derive(Debug, Clone, PartialEq)]
 pub struct StreamSample {
     /// Red LED ADC count (MAX3010x).
@@ -66,7 +65,7 @@ pub struct StreamSample {
     pub device_ts_ms: Option<u64>,
     /// Host receive / generate time.
     pub host_ts: Option<SystemTime>,
-    /// Subject id (`sid` on the wire). Prefer over legacy patient terminology.
+    /// Subject id (`sid` on the wire).
     pub sid: Option<String>,
     /// Provenance of this sample.
     pub source: SourceKind,

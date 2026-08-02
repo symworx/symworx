@@ -42,6 +42,9 @@ assert!(SCHEMA_VERSION >= 4);
 ```
 
 ```bash
+# One-shot dirs + empty catalog (from workspace root)
+./scripts/init-velofit.sh
+
 # Print SQL only (no driver)
 cargo run -p symworx-loadsym --features db -- db print-schema --sqlite
 

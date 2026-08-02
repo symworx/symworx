@@ -6,7 +6,7 @@ This is a sub-crate to the [`symworx-core`](../symworx-core/README.md) crate.
 ## Modules
 
 | Module | Methods |
-|--------|---------|
+|:-------|:--------|
 | `embedding` | Delay coordinates (`edim`), false nearest neighbors (`fnn`) |
 | `entropy` | Sample entropy, multiscale entropy |
 | `rqa` | Recurrence plots, RQA / cRQA metrics |

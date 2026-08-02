@@ -108,7 +108,7 @@ impl IntervalSeries {
 
     /// Split consecutive intervals into even- and odd-indexed phases.
     ///
-    /// Useful when peaks alternate inspiration/expiration (legacy biosym convention).
+    /// Useful when peaks alternate inspiration/expiration.
     pub fn alternating_phase_intervals(&self) -> (Vec<f64>, Vec<f64>) {
         let mut even = Vec::new();
         let mut odd = Vec::new();

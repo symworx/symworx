@@ -17,8 +17,8 @@
 //!
 //! ## Naming
 //! - **`sid`**: subject id (canonical outbound field).
-//! - Legacy **`patient_id`** is accepted on *ingress* only for SentryWard compatibility.
-//! - Legacy **`heart_rate`** is accepted as an alias for `bpm`.
+//! - On parse only: `patient_id` is accepted as an alias for `sid`; `heart_rate` as an alias for `bpm`.
+//! - Outbound lines always use `sid` / `bpm` (never the aliases).
 
 use std::time::SystemTime;
 
@@ -58,7 +58,7 @@ pub fn parse_json_line(line: &str) -> Result<Option<StreamSample>> {
     let resp = float_field(obj.get("resp")).or_else(|| float_field(obj.get("respiration")));
     let device_ts_ms = u64_field(obj.get("ts"));
 
-    // Canonical `sid`; legacy `patient_id` on ingress only.
+    // Canonical `sid`; accept `patient_id` as ingress alias only.
     let sid = string_field(obj.get("sid")).or_else(|| string_field(obj.get("patient_id")));
 
     let source = string_field(obj.get("source"))
@@ -180,7 +180,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_legacy_patient_id_and_heart_rate() {
+    fn parse_patient_id_and_heart_rate_aliases() {
         let line = r#"{"patient_id":"P001","heart_rate":88,"spo2":98,"source":"simulator"}"#;
         let s = parse_json_line(line).unwrap().unwrap();
         assert_eq!(s.sid.as_deref(), Some("P001"));

@@ -21,7 +21,7 @@ pub struct BandpassParams {
     pub highcut_hz: f64,
     /// Quality factor (0.707 ≈ Butterworth).
     pub q: f64,
-    /// Number of cascaded 2nd-order sections (2 ≈ legacy 4th-order).
+    /// Number of cascaded 2nd-order sections (2 ≈ 4th-order total).
     pub stages: u8,
 }
 

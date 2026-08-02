@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SymWorx
 // Licensed under the Apache License, Version 2.0.
 
-//! Simple threshold status for live vitals (ported from SentryWard `detector.py`).
+//! Simple threshold status for live vitals.
 
 use crate::types::StreamSample;
 
@@ -53,7 +53,7 @@ pub struct VitalsThresholds {
 
 impl Default for VitalsThresholds {
     fn default() -> Self {
-        // Mirrors SentryWard detector defaults (approx):
+        // Default bands:
         // Critical: hr > 120 or hr < 50 or spo2 < 90
         // Warning:  hr > 100 or spo2 < 94
         Self {

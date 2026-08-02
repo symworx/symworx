@@ -16,7 +16,7 @@ pub enum RespSignalQuality {
     Poor,
 }
 
-/// Legacy respiration bandpass: 0.1–0.5 Hz.
+/// Default respiration bandpass: 0.1–0.5 Hz.
 pub fn resp_default_bandpass() -> BandpassParams {
     BandpassParams {
         lowcut_hz: 0.1,

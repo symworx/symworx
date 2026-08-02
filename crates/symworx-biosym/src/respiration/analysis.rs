@@ -36,7 +36,7 @@ pub struct RespAnalysis {
     pub summary: PhysiologySummary,
     pub intervals: IntervalSeries,
     pub mean_brpm: f64,
-    /// Even-indexed inter-peak intervals (legacy insp/exp split on detected peaks).
+    /// Even-indexed inter-peak intervals (optional insp/exp phase split on detected peaks).
     pub insp_intervals_sec: Vec<f64>,
     pub exp_intervals_sec: Vec<f64>,
     pub phase_peaks: RespPhasePeaks,

@@ -3,8 +3,7 @@
 
 //! Clustering algorithms.
 //!
-//! Foundational unsupervised methods for data-driven science and engineering
-//! (Brunton & Kutz style exploratory analysis). Built on
+//! Foundational unsupervised clustering methods. Built on
 //! [`crate::distance`] metrics — no LAPACK required for k-means.
 
 use ndarray::Array2;

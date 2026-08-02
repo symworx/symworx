@@ -1,7 +1,7 @@
 // Copyright (c) 2026 SymWorx
 // Licensed under the Apache License, Version 2.0.
 
-//! Discrete PID controller (textbook / educational form).
+//! Discrete PID controller.
 
 /// PID gains and discrete-time options.
 #[derive(Debug, Clone)]

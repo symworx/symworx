@@ -41,7 +41,7 @@ pub use linear::{
 pub use nonlinear::{
     ExtendedKalmanFilter,
     KalmanFilter,   // the primary general multivariate + RTS version
-    KalmanFilter1D, // the simple legacy 1D constant-velocity tracker
+    KalmanFilter1D, // simple 1D constant-velocity tracker
     RlsFilter,
     UkfParams,
     UnscentedKalmanFilter,

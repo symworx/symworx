@@ -2,7 +2,7 @@
 
 Numerical primitives for the SymWorx ecosystem. This crate is deliberately
 **lightweight** (no LAPACK / OpenBLAS) so it can be shared freely across
-stats, signal, dynamics, and domain crates.
+stats, signal, dynamics, and domain crates without huge compile times.
 
 ## Contents
 
@@ -14,7 +14,7 @@ stats, signal, dynamics, and domain crates.
 | `oscillators` | Van der Pol and related demo plants |
 | `distributions` / `special` / `random` | PDFs, Gamma/Beta, RNG helpers |
 
-## Data-driven science placement
+## Where this crate sits
 
 Optimization primitives here support nonlinear regression in `symworx-stats`
 and parameter fitting for dynamical models. Heavy linear algebra (SVD, PCA)

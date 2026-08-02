@@ -3,15 +3,15 @@
 
 //! # symworx-embed
 //!
-//! Host-side streaming for embedded biosignal devices (Arduino style PPG).
+//! Host-side streaming for embedded biosignal devices (Arduino-style PPG).
 //!
-//! Phase 1 focuses on the **host path**:
-//! - JSON-line protocol compatible with Arduino MAX30102 firmware
-//! - Subject-centric naming (`sid`, not `patient_id`)
+//! Focus is the **host path**:
+//! - JSON-line protocol for device PPG / vitals lines
+//! - Subject-centric naming (`sid` on the wire)
 //! - Ring buffers for live UI / analysis windows
 //! - Simulator and optional serial sources
 //!
-//! Device firmware (Arduino today; Embassy later) stays out of this crate.
+//! Device firmware stays out of this crate.
 //!
 //! ## Features
 //! - `simulate` (default) — synthetic vitals stream

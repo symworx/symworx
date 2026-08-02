@@ -101,7 +101,7 @@ impl PyChebyshevFilter {
 // Nonlinear Filters
 // ==========================================================
 
-// Legacy/simple 1D constant-velocity Kalman filter
+// Simple 1D constant-velocity Kalman filter
 #[pyclass(name = "KalmanFilter1D")]
 pub struct PyKalmanFilter1D {
     inner: KalmanFilter1D,
