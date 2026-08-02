@@ -21,7 +21,7 @@ members = [
 ]
 
 [workspace.package]
-version    = "0.1.0"
+version    = "0.1.1"
 edition    = "2024"
 license    = "Apache-2.0"
 repository = "https://github.com/symworx/symworx"
@@ -54,20 +54,20 @@ fitparser      = { version = "0.11" }
 # Keep `version` in lockstep with [workspace.package] version (Cargo does not allow
 # version.workspace = true inside [workspace.dependencies]).
 # Members depend via `{ workspace = true }` (+ optional features).
-symworx-error      = { path = "crates/symworx-error", version = "0.1.0" }
-symworx-math       = { path = "crates/symworx-math", version = "0.1.0" }
-symworx-io         = { path = "crates/symworx-io", version = "0.1.0" }
-symworx-stats      = { path = "crates/symworx-stats", version = "0.1.0" }
-symworx-signal     = { path = "crates/symworx-signal", version = "0.1.0" }
-symworx-dynamics   = { path = "crates/symworx-dynamics", version = "0.1.0" }
-symworx-backend    = { path = "crates/symworx-backend", version = "0.1.0" }
-symworx-embed      = { path = "crates/symworx-embed", version = "0.1.0" }
-symworx-loadsym-db = { path = "crates/symworx-loadsym-db", version = "0.1.0" }
-symworx-core       = { path = "crates/symworx-core", version = "0.1.0" }
-symworx-biosym     = { path = "crates/symworx-biosym", version = "0.1.0" }
-symworx-loadsym    = { path = "crates/symworx-loadsym", version = "0.1.0" }
-symworx-spatialsym = { path = "crates/symworx-spatialsym", version = "0.1.0" }
-symworx-tui        = { path = "crates/symworx-tui", version = "0.1.0" }
+symworx-error      = { path = "crates/symworx-error", version = "0.1.1" }
+symworx-math       = { path = "crates/symworx-math", version = "0.1.1" }
+symworx-io         = { path = "crates/symworx-io", version = "0.1.1" }
+symworx-stats      = { path = "crates/symworx-stats", version = "0.1.1" }
+symworx-signal     = { path = "crates/symworx-signal", version = "0.1.1" }
+symworx-dynamics   = { path = "crates/symworx-dynamics", version = "0.1.1" }
+symworx-backend    = { path = "crates/symworx-backend", version = "0.1.1" }
+symworx-embed      = { path = "crates/symworx-embed", version = "0.1.1" }
+symworx-loadsym-db = { path = "crates/symworx-loadsym-db", version = "0.1.1" }
+symworx-core       = { path = "crates/symworx-core", version = "0.1.1" }
+symworx-biosym     = { path = "crates/symworx-biosym", version = "0.1.1" }
+symworx-loadsym    = { path = "crates/symworx-loadsym", version = "0.1.1" }
+symworx-spatialsym = { path = "crates/symworx-spatialsym", version = "0.1.1" }
+symworx-tui        = { path = "crates/symworx-tui", version = "0.1.1" }
 
 [workspace.lints.rust]
 # We use `deny` (not `forbid`) for `unsafe_code` because this workspace

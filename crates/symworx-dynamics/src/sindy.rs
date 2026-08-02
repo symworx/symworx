@@ -10,12 +10,11 @@
 //! ```
 //!
 //! (or discrete maps `x⁺ ≈ Θ(x) Ξ`) by sparse regression of time derivatives
-//! (or increments) against a library of candidate functions
-//! (Brunton, Proctor & Kutz; Brunton & Kutz *Data-Driven Science and Engineering*).
+//! (or increments) against a library of candidate functions.
 //!
 //! The library reuses [`crate::koopman::Dictionary`] / [`crate::lift_state`].
 //! Sparse coefficients are obtained by **sequential thresholded least squares
-//! (STLS)** — the classical SINDy algorithm.
+//! (STLS)**.
 
 use ndarray::{
     Array1,

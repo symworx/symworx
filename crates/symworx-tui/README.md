@@ -109,17 +109,14 @@ You can then load them directly in `symview`. This is the best way to quickly ge
 
 - Put generated files in a `data/` directory — they will be discovered automatically.
 - Multi-column CSVs are supported with header awareness: the column picker will show actual names (e.g. "time", "ppg") when a header row is present.
-- **To exit the TUI**: Press `q` at any time. `Esc` will cancel sub-modes (e.g. column selection, RQA params, spatial import) or stay if on Home.
-- **Path selection (new)**: Starts on **Home** landing page. Choose:
-  - 1 / Enter (on first): BioSym path (Import → Explore → Dynamics with real RQA)
-  - 2: LoadSym path (training load / ACWR / NP/TSS/IF for .fit rides + nutrition)
-  - 3: SpatialSym path (synthetic + import of match/game trajectory data inside Spatial tab)
-- **Home always**: `Ctrl+H` or `0` returns to landing. Sub-views inside Spatial (g/i/v).
-- **Tab switching**: `Ctrl+1` / `Ctrl+2` / `Ctrl+3` / `Ctrl+4` or arrows (context-aware; Home overrides).
-- **RQA (Dynamics)**: With signal loaded, `c` opens param editor (m/tau/radius), Enter computes via symworx-dynamics.
-- In the **Import** tab:
-  - `Ctrl+G` → open the generate demo data menu (PPG / Respiration / Stride intervals)
-  - `/` → enter filter mode
+- **Quit:** `Ctrl+Q` anytime; at a root screen, first `Esc` arms quit and second `Esc` exits. Bare `q` is **not** quit (safe while typing).
+- **Home workflows:** `1` BioSym · `2` StatsSym · `3` LoadSym · `4` SpatialSym. `Ctrl+H` or `0` returns to Home.
+- **Tab navigation:** `Ctrl+Left` / `Ctrl+Right` (primary); `Ctrl+1`… also work where applicable.
+- **RQA (Dynamics):** With a signal loaded, `c` opens the param editor (`m` / `tau` / radius); Enter computes via `symworx-dynamics`.
+- **Import tab:**
+  - `Ctrl+G` → generate demo data (PPG / respiration / stride intervals)
+  - `/` → filter mode
   - `c` → convert selected file to CSV
-  - `Ctrl+R` (or `r` / F5) → refresh the file list
-- `cargo run -p symworx-tui --example generate_biosym_demo` is still available as a standalone command.
+  - `Ctrl+R` or `F5` → refresh the file list
+- **LoadSym personal archive:** optional one-time setup: `./scripts/init-velofit.sh` (creates `$VELOFIT_HOME` + empty catalog). The TUI runs without it; calendar/metrics stay empty until init + ingest.
+- Standalone demo generator: `cargo run -p symworx-tui --example generate_biosym_demo`

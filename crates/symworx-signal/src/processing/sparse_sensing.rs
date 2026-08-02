@@ -3,7 +3,7 @@
 
 //! Sparse sensing and compressed sensing recovery.
 //!
-//! Classical tools from data-driven science and engineering (Brunton & Kutz):
+//! Sparse sensing / compressed-sensing reconstruction tools:
 //! undersampled linear measurements `y = Φ x` (or `y = Φ Ψ s` in a sparsity
 //! basis) and recovery of a sparse coefficient vector via
 //!

@@ -3,8 +3,7 @@
 
 //! Linear systems and elementary feedback control.
 //!
-//! Educational / research foundations aligned with Kim-style LTI analysis and
-//! Brunton-style control of dynamical systems. Pair with
+//! Discrete LTI plants, state feedback, and PID. Pair with
 //! `symworx-signal::KalmanFilter` for state estimation (separate crate to
 //! avoid dependency cycles).
 

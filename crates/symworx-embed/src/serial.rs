@@ -5,8 +5,7 @@
 //!
 //! Feature: `serial`.
 //!
-//! Reads one JSON object per line at the configured baud rate (default 115200),
-//! matching SentryWard `ingest_serial.py` / `arduino/medsym-sensor`.
+//! Reads one JSON object per line at the configured baud rate (default 115200).
 
 use std::{
     io::{

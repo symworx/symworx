@@ -11,8 +11,7 @@
 //!
 //! - [`cpg`] — Coupled Van der Pol oscillators (heart + bilateral legs + respiration)
 //!   with dynamic effort (`tau`) modulation.
-//! - Fatigue, intensity, and run performance models (work in progress; ported
-//!   from legacy runsym intent).
+//! - Fatigue, intensity, and run performance models (work in progress).
 //!
 //! Items are also re-exported at the crate root for convenience
 //! (`symworx_biosym::SymCpgModel`, etc.).
