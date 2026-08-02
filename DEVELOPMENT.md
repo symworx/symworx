@@ -101,7 +101,7 @@ We follow a branch-based workflow with a single shared version across the worksp
 4. **Release**:
    - Merge the PR to `main` when release checks are green.
    - **Manually** create and push the annotated tag `vX.Y.Z` on the merge commit (tags are not auto-created in CI).
-   - Tag push runs [`.github/workflows/release.yml`](.github/workflows/release.yml): full validation, then **publish** to crates.io, PyPI, and a GitHub Release (only on `v*` tags after validation succeeds).
+   - Tag push runs [`.github/workflows/release.yml`](.github/workflows/release.yml): full validation, then **publish** to crates.io and create a **GitHub Release** page (only on `v*` tags after validation succeeds). **PyPI is paused** until `publish-python` is re-enabled.
 
 ### Publishing Order
 
@@ -124,17 +124,16 @@ The `symview` binary (from `symworx-tui`) can be installed with `cargo install s
 
 ### CI / Release Automation Notes
 
-- Day-to-day [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on push/PR to **`develop`** and **`main`** only (not `stage`). It formats library crates, clippy + unit-tests the **full science package set** (same crates as release rust-checks, including `symworx-error`, in publish order), and builds Python bindings (`maturin develop` + pytest). The TUI smoke build is **disabled** in CI (too slow / OpenBLAS-heavy); run `cargo build -p symworx-tui --bin symview` locally when touching the TUI.
+- Day-to-day [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on push/PR to **`develop`** and **`main`** only. It formats library crates, clippy + unit-tests the **full science package set**, and builds Python bindings (`maturin develop` + pytest). The TUI smoke build is **disabled**; run `cargo build -p symworx-tui --bin symview` locally when touching the TUI.
 - The release path is gated by [`.github/workflows/release.yml`](.github/workflows/release.yml):
   - **Validation** on PRs into `main`, pushes to `main` / `release/**`, tags `v*`, and `workflow_dispatch`:
     - Release metadata (workspace version matches `release/vX.Y.Z` / tag; `CHANGELOG.md` has a `## [X.Y.Z]` section).
-    - Same science fmt/clippy/test set as day-to-day CI, plus Python **wheel smoke** (build only; no upload in that step).
-  - **Tags are created manually** after a green merge to `main` (no auto-tag job).
+    - Same science fmt/clippy/test set as day-to-day CI, plus Python **wheel smoke** 
+    - **Tags are created manually** after a green merge to `main` (for now, we do not have an auto-tag job).
   - **Publish** runs only on tag `v*` after validation succeeds:
-    - crates.io (`publish-crates`, dependency order starting with `symworx-error`; needs Environment `crates-io` + `CARGO_REGISTRY_TOKEN`)
-    - PyPI (`publish-python`, maturin trusted publishing / OIDC; Environment `pypi`)
-    - GitHub Release notes (`github-release`)
-- Use of `cargo +nightly fmt -- --check` enforces the full formatting rules defined in `rustfmt.toml`.
+    - crates.io
+    - GitHub Release
+    - **PyPI paused:** 
 
 ### Native / Heavy Dependencies
 
@@ -146,19 +145,7 @@ Several optional features pull in native libraries (notably OpenBLAS via `ndarra
 
 ### Python Package Publishing
 
-Higher-level Python packages are published independently on PyPI under the names:
-- `symworx-biosym`
-- `symworx-loadsym`
-- `symworx-spatialsym`
-- `symworx-core`
-
-They are built from the corresponding `pyproject-*.toml` files using maturin. Trusted publishing (GitHub OIDC) is used so that no PyPI API tokens need to be stored as secrets.
-
-### After a Release
-
-- Verify that docs.rs has built the new versions with the correct feature sets.
-- Update any external references (e.g. the personal starter guide) if the public API surface changed.
-- Announce the release (if desired).
+**Paused** in CI until a more stable build is ready. Validation still runs `maturin develop` / wheel smoke.
 
 ## Other Notes
 
