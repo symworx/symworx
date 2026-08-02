@@ -91,17 +91,17 @@ All crates currently share a single version defined in the root `[workspace.pack
 
 We follow a branch-based workflow with a single shared version across the workspace:
 
-1. **Feature development** → merge to `develop` (CI runs nightly `cargo fmt --check`, clippy, tests, TUI build, Python bindings).
-2. **Staging / early access** → merge `develop` to `staging` (same CI gates). Beta releases (e.g. `0.2.0-beta.1`) can be published from here for testing.
+1. **Feature development** → merge to `develop` (day-to-day CI: fmt, clippy, lib tests, Python bindings).
+2. **Stage / early access** → fast-forward `develop` → `stage` when you want a promotion point. Day-to-day CI does **not** run on `stage` (avoids double runs on FF); beta tags can still be cut from here if needed.
 3. **Release preparation**:
-   - Create a branch `release/vX.Y.Z` from `staging`.
-   - Update the version in the root `Cargo.toml` (the only place that needs changing because of `[workspace.package]`).
-   - Update any relevant changelogs or release notes.
+   - Create a branch `release/vX.Y.Z` from `stage` (or from `develop` if stage is not updated yet).
+   - Bump the shared version in the root `Cargo.toml`: `[workspace.package] version` **and** every internal crate `version = "…"` under `[workspace.dependencies]` (must stay in lockstep).
+   - Update `CHANGELOG.md` (require a `## [X.Y.Z]` section for the release branch/tag).
    - Open a PR from `release/vX.Y.Z` to `main`.
 4. **Release**:
-   - Merge the PR to `main`.
-   - Create a git tag `vX.Y.Z`.
-   - CI (triggered by the tag) runs the full release validation matrix (`release.yml`). Publishing to crates.io / PyPI is disabled until explicitly re-enabled.
+   - Merge the PR to `main` when release checks are green.
+   - **Manually** create and push the annotated tag `vX.Y.Z` on the merge commit (tags are not auto-created in CI).
+   - Tag push runs [`.github/workflows/release.yml`](.github/workflows/release.yml): full validation, then **publish** to crates.io and create a **GitHub Release** page (only on `v*` tags after validation succeeds). **PyPI is paused** until `publish-python` is re-enabled.
 
 ### Publishing Order
 
@@ -119,19 +119,21 @@ The `symview` binary (from `symworx-tui`) can be installed with `cargo install s
 
 - We use a single version for the entire workspace.
 - Semantic Versioning (SemVer) is followed.
-- Pre-releases (e.g. `0.2.0-beta.1`, `0.2.0-rc.1`) are published from the `staging` branch.
-- Final releases are cut from `release/vX.Y.Z` branches merged into `main` and tagged.
+- Pre-releases (e.g. `0.2.0-beta.1`, `0.2.0-rc.1`) may be tagged from `stage` or a release branch.
+- Final releases are cut from `release/vX.Y.Z` branches merged into `main`, then **manually** tagged.
 
 ### CI / Release Automation Notes
 
-- Every PR and push to `develop` / `staging` / `main` runs formatting (`cargo +nightly fmt --check` on library crates), clippy, library unit tests, and Python bindings (`maturin` + pytest) via [`.github/workflows/ci.yml`](.github/workflows/ci.yml). The TUI smoke build is currently **disabled** in CI (too slow / OpenBLAS-heavy); run `cargo build -p symworx-tui --bin symview` locally when touching the TUI.
+- Day-to-day [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on push/PR to **`develop`** and **`main`** only. It formats library crates, clippy + unit-tests the **full science package set**, and builds Python bindings (`maturin develop` + pytest). The TUI smoke build is **disabled**; run `cargo build -p symworx-tui --bin symview` locally when touching the TUI.
 - The release path is gated by [`.github/workflows/release.yml`](.github/workflows/release.yml):
-  - **Checks only** on PRs into `main`, pushes to `main` / `release/**`, and tags `v*`:
-    - Release metadata (workspace version matches `release/vX.Y.Z` branch name and/or tag; `CHANGELOG.md` has a `## [X.Y.Z]` section).
-    - Nightly `cargo fmt --check`, a broader clippy + unit-test package set than day-to-day CI, and Python bindings (`maturin develop` + pytest + wheel smoke build).
-  - **Publish is disabled** until a public release is approved. Scaffolded crates.io / PyPI / GitHub Release jobs live commented out at the bottom of `release.yml` (re-enable after trusted publishers and packaging are ready).
-- Use of `cargo +nightly fmt -- --check` is required in the release workflow to enforce the full formatting rules defined in `rustfmt.toml`.
-- Until `main` exists, validation still runs on `release/**` pushes and on tags (with a soft warning if the tag is not yet on `main`).
+  - **Validation** on PRs into `main`, pushes to `main` / `release/**`, tags `v*`, and `workflow_dispatch`:
+    - Release metadata (workspace version matches `release/vX.Y.Z` / tag; `CHANGELOG.md` has a `## [X.Y.Z]` section).
+    - Same science fmt/clippy/test set as day-to-day CI, plus Python **wheel smoke** 
+    - **Tags are created manually** after a green merge to `main` (for now, we do not have an auto-tag job).
+  - **Publish** runs only on tag `v*` after validation succeeds:
+    - crates.io
+    - GitHub Release
+    - **PyPI paused:** 
 
 ### Native / Heavy Dependencies
 
@@ -143,19 +145,7 @@ Several optional features pull in native libraries (notably OpenBLAS via `ndarra
 
 ### Python Package Publishing
 
-Higher-level Python packages are published independently on PyPI under the names:
-- `symworx-biosym`
-- `symworx-loadsym`
-- `symworx-spatialsym`
-- `symworx-core`
-
-They are built from the corresponding `pyproject-*.toml` files using maturin. Trusted publishing (GitHub OIDC) is used so that no PyPI API tokens need to be stored as secrets.
-
-### After a Release
-
-- Verify that docs.rs has built the new versions with the correct feature sets.
-- Update any external references (e.g. the personal starter guide) if the public API surface changed.
-- Announce the release (if desired).
+**Paused** in CI until a more stable build is ready. Validation still runs `maturin develop` / wheel smoke.
 
 ## Other Notes
 

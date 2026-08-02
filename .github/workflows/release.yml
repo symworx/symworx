@@ -1,16 +1,16 @@
-# Release validation for the stage → main path.
+# Release validation + publish (see DEVELOPMENT.md).
 #
-# Branch model (see DEVELOPMENT.md):
-#   develop  →  stage →  release/vX.Y.Z  →  main  (+ tag vX.Y.Z)
+# Branch model:
+#   develop → stage → release/vX.Y.Z → main → manual tag vX.Y.Z
 #
-# This workflow gates releases harder than day-to-day CI:
-#   - PRs into main (especially release/* → main)
-#   - Pushes to release/* and main
-#   - Version tags v* (final + pre-release)
+# Validation (meta, fmt, clippy/tests, Python + wheel smoke) runs on:
+#   - PRs into main
+#   - pushes to main / release/**
+#   - tags v*
+#   - workflow_dispatch (checks only; does not publish)
 #
-# Publishing to crates.io / PyPI / GitHub Releases is DISABLED.
-# Scaffolded publish jobs are commented out at the bottom of this file.
-# Do not uncomment until a public release is explicitly approved.
+# Publish (crates.io, PyPI, GitHub Release) runs only on tags v*, after
+# validation succeeds. Create tags manually after merging release/* → main.
 
 name: Release
 
@@ -23,7 +23,7 @@ on:
       - "release/**"
     tags:
       - "v*"
-  # Manual re-run of checks on a branch (does not publish).
+  # Re-run validation on a branch without publishing.
   workflow_dispatch:
 
 concurrency:
@@ -134,10 +134,14 @@ jobs:
           } >> "${GITHUB_OUTPUT}"
 
           echo "Release metadata: version=${WORKSPACE_VERSION} is_tag=${IS_TAG} is_prerelease=${IS_PRERELEASE}"
-          echo "Publishing is DISABLED — validation only."
+          if [[ "${IS_TAG}" == "true" ]]; then
+            echo "Tag push: publish jobs will run after validation succeeds."
+          else
+            echo "Branch/PR: validation only (publish runs on tags v* only)."
+          fi
 
   # ---------------------------------------------------------------------------
-  # Full validation matrix (stricter than day-to-day CI package coverage)
+  # Validation matrix (same science package set as ci.yml; plus wheel smoke)
   # ---------------------------------------------------------------------------
   fmt:
     name: Format (nightly rustfmt)
@@ -151,22 +155,23 @@ jobs:
         with:
           components: rustfmt
 
-      # Workspace members only (symworx-error is a path dep, not a member yet).
-      # TUI remains excluded (fmt cost / OpenBLAS-heavy graph), same as CI.
+      # Keep in lockstep with ci.yml fmt. TUI excluded (fmt cost / OpenBLAS-heavy).
+      # Order follows crates.io publish order (foundation → mid → products).
       - name: Format check (library + bindings, no TUI)
         run: |
           cargo +nightly fmt --check \
+            -p symworx-error \
             -p symworx-math \
             -p symworx-io \
             -p symworx-stats \
+            -p symworx-signal \
             -p symworx-dynamics \
             -p symworx-backend \
-            -p symworx-signal \
             -p symworx-embed \
+            -p symworx-loadsym-db \
             -p symworx-core \
             -p symworx-biosym \
             -p symworx-loadsym \
-            -p symworx-loadsym-db \
             -p symworx-spatialsym \
             -p symworx-python
 
@@ -201,12 +206,14 @@ jobs:
         with:
           prefix-key: v1-sys-openblas-release
 
-      # Broader package set than day-to-day CI: stats, signal, embed, backend, core.
-      # symworx-error is still typechecked as a path dependency of io/core.
-      - name: Clippy + unit tests (release science set)
+      # Same science set as ci.yml rust-checks (develop catches these early).
+      # Order follows crates.io publish order: error → math → mid → products.
+      # TUI excluded from CI clippy; included in the publish-crates job below.
+      - name: Clippy + unit tests (science set)
         run: |
           set -euo pipefail
           PKGS=(
+            -p symworx-error
             -p symworx-math
             -p symworx-io
             -p symworx-stats
@@ -214,11 +221,11 @@ jobs:
             -p symworx-dynamics
             -p symworx-backend
             -p symworx-embed
+            -p symworx-loadsym-db
+            -p symworx-core
             -p symworx-biosym
             -p symworx-loadsym
-            -p symworx-loadsym-db
             -p symworx-spatialsym
-            -p symworx-core
           )
           cargo clippy --lib --no-deps "${PKGS[@]}" -- -D warnings
           cargo test --lib "${PKGS[@]}" -- --quiet
@@ -302,55 +309,61 @@ jobs:
           test "${{ needs.rust-checks.result }}" = "success"
           test "${{ needs.python-bindings.result }}" = "success"
           echo "All release validation jobs passed for v${{ needs.release-meta.outputs.version }}"
-          echo "Publishing remains DISABLED (no crates.io / PyPI / GitHub Release jobs)."
+          echo "On tag pushes: publish-crates + github-release run next (PyPI paused)."
 
   # ===========================================================================
-  # PUBLISH — DISABLED until a public release is approved
+  # Publish — only on tags v* after validation succeeds
   #
-  # The following jobs are intentionally commented out so GitHub Actions will
-  # never run them. Uncomment only when crates.io / PyPI trusted publishers
-  # are configured and a public release is explicitly approved.
+  # Requires:
+  #   - GitHub Environment `crates-io` with secret CARGO_REGISTRY_TOKEN
+  #   - permissions for softprops/action-gh-release on the default GITHUB_TOKEN
+  #   - (paused) Environment `pypi` + trusted publisher when re-enabling publish-python
   # ===========================================================================
-  #
-  # publish-crates:
-  #   name: Publish crates.io
-  #   runs-on: ubuntu-latest
-  #   needs: [release-meta, release-ready]
-  #   if: needs.release-meta.outputs.is_tag == 'true' && needs.release-ready.result == 'success'
-  #   environment: crates-io
-  #   permissions:
-  #     id-token: write
-  #     contents: read
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: dtolnay/rust-toolchain@stable
-  #     - name: Publish workspace crates in dependency order
-  #       env:
-  #         CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-  #       run: |
-  #         set -euo pipefail
-  #         publish_one() {
-  #           local pkg="$1"
-  #           echo "::group::cargo publish -p ${pkg}"
-  #           cargo publish -p "${pkg}" --no-verify
-  #           echo "::endgroup::"
-  #           sleep 5
-  #         }
-  #         # Order from DEVELOPMENT.md (foundation → mid-layer → products)
-  #         publish_one symworx-math
-  #         publish_one symworx-io
-  #         publish_one symworx-stats
-  #         publish_one symworx-signal
-  #         publish_one symworx-dynamics
-  #         publish_one symworx-backend
-  #         publish_one symworx-embed
-  #         publish_one symworx-loadsym-db
-  #         publish_one symworx-core
-  #         publish_one symworx-biosym
-  #         publish_one symworx-loadsym
-  #         publish_one symworx-spatialsym
-  #         publish_one symworx-tui
-  #
+
+  publish-crates:
+    name: Publish crates.io
+    runs-on: ubuntu-latest
+    needs: [release-meta, release-ready]
+    if: needs.release-meta.outputs.is_tag == 'true' && needs.release-ready.result == 'success'
+    environment: crates-io
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Publish workspace crates in dependency order
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          set -euo pipefail
+          publish_one() {
+            local pkg="$1"
+            echo "::group::cargo publish -p ${pkg}"
+            cargo publish -p "${pkg}" --no-verify
+            echo "::endgroup::"
+            sleep 5
+          }
+          # Order from DEVELOPMENT.md (foundation → mid-layer → products)
+          publish_one symworx-error
+          publish_one symworx-math
+          publish_one symworx-io
+          publish_one symworx-stats
+          publish_one symworx-signal
+          publish_one symworx-dynamics
+          publish_one symworx-backend
+          publish_one symworx-embed
+          publish_one symworx-loadsym-db
+          publish_one symworx-core
+          publish_one symworx-biosym
+          publish_one symworx-loadsym
+          publish_one symworx-spatialsym
+          publish_one symworx-tui
+
+  # ---------------------------------------------------------------------------
+  # PyPI publish — PAUSED. Validation still builds a wheel smoke artifact
+  # in `python-bindings` (no upload).
+  # ---------------------------------------------------------------------------
   # publish-python:
   #   name: Publish PyPI
   #   runs-on: ubuntu-latest
@@ -379,20 +392,20 @@ jobs:
   #         command: publish
   #         args: --manifest-path bindings/python/Cargo.toml --skip-existing
   #         manylinux: auto
-  #
-  # github-release:
-  #   name: GitHub Release
-  #   runs-on: ubuntu-latest
-  #   needs: [release-meta, release-ready]
-  #   if: needs.release-meta.outputs.is_tag == 'true' && needs.release-ready.result == 'success'
-  #   permissions:
-  #     contents: write
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Create GitHub Release
-  #       uses: softprops/action-gh-release@v2
-  #       with:
-  #         tag_name: v${{ needs.release-meta.outputs.version }}
-  #         name: v${{ needs.release-meta.outputs.version }}
-  #         prerelease: ${{ needs.release-meta.outputs.is_prerelease == 'true' }}
-  #         generate_release_notes: true
+
+  github-release:
+    name: GitHub Release
+    runs-on: ubuntu-latest
+    needs: [release-meta, release-ready]
+    if: needs.release-meta.outputs.is_tag == 'true' && needs.release-ready.result == 'success'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.release-meta.outputs.version }}
+          name: v${{ needs.release-meta.outputs.version }}
+          prerelease: ${{ needs.release-meta.outputs.is_prerelease == 'true' }}
+          generate_release_notes: true

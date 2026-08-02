@@ -1,10 +1,16 @@
+# Day-to-day CI (see DEVELOPMENT.md).
+#
+# Runs on develop and main. Stage is FF-promoted from develop and skips this
+# workflow for now (pass-through promotion; re-enable if stage becomes a real
+# integration branch).
+
 name: CI
 
 on:
   push:
-    branches: [develop, main, stage]
+    branches: [develop, main]
   pull_request:
-    branches: [develop, main, stage]
+    branches: [develop, main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -27,6 +33,7 @@ jobs:
         with:
           components: rustfmt
 
+      # Same library set as release.yml (TUI excluded: fmt cost / OpenBLAS-heavy graph).
       - name: Format check (library + bindings, no TUI)
         run: |
           cargo +nightly fmt --check \
@@ -34,13 +41,14 @@ jobs:
             -p symworx-math \
             -p symworx-io \
             -p symworx-stats \
+            -p symworx-signal \
             -p symworx-dynamics \
             -p symworx-backend \
-            -p symworx-signal \
+            -p symworx-embed \
+            -p symworx-loadsym-db \
             -p symworx-core \
             -p symworx-biosym \
             -p symworx-loadsym \
-            -p symworx-loadsym-db \
             -p symworx-spatialsym \
             -p symworx-python
 
@@ -66,7 +74,9 @@ jobs:
     #
     # Policy: keep math light (pure-Rust primitives, no native LA).
     # Heavy LA stays in stats/signal/dynamics. Do not "fix" this by
-    # adding OpenBLAS as a default dependency of symworx-math.
+    # adding OpenBLAS as a default dependency of symworx-math unless
+    # we grow this project and it becomes a critical addition to the
+    # overall functionality and offering.
     # ------------------------------------------------------------------
     env:
       RUSTFLAGS: "-C link-arg=-lopenblas"
@@ -100,14 +110,21 @@ jobs:
           # with local/source openblas builds if keys overlap.
           prefix-key: v1-sys-openblas
 
-      # One compile graph: clippy typechecks libs; tests reuse target/
+      # Same science package set as release.yml rust-checks (publish order; TUI excluded).
       - name: Clippy + unit tests (science crates)
         run: |
           set -euo pipefail
           PKGS=(
+            -p symworx-error
             -p symworx-math
-            -p symworx-dynamics
             -p symworx-io
+            -p symworx-stats
+            -p symworx-signal
+            -p symworx-dynamics
+            -p symworx-backend
+            -p symworx-embed
+            -p symworx-loadsym-db
+            -p symworx-core
             -p symworx-biosym
             -p symworx-loadsym
             -p symworx-spatialsym
