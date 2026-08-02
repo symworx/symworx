@@ -1,4 +1,4 @@
-# Release validation + publish (see DEVELOPMENT.md).
+# Release validation for the stage → main path.
 #
 # Branch model:
 #   develop → stage → release/vX.Y.Z → main → manual tag vX.Y.Z
