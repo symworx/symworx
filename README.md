@@ -5,7 +5,7 @@
 It is aimed at research, education, and portable inference (workstation today; embedded/mobile recipes for exported models).
 
 **License:** [Apache License 2.0](LICENSE)
-**Version:** workspace `0.1.0` (monorepo; see [CHANGELOG.md](CHANGELOG.md))
+**Changelog:** [CHANGELOG.md](CHANGELOG.md)
 
 ---
 
@@ -36,10 +36,13 @@ Model export (C / iOS / Android / web): [crates/symworx-stats/docs/model_export.
 ### Training load (CLI)
 
 ```bash
+# One-time: empty archive + catalog under ~/velofit (or $VELOFIT_HOME)
+./scripts/init-velofit.sh
+
 cargo run -p symworx-loadsym --features "fit,sqlite" -- stats ride.fit --ftp 280
 ```
 
-TUI: `symview` → Home → **LoadSym** (2). Personal catalog (schema v4, multi-source ingest): [crates/symworx-loadsym-db/docs/loadsym-personal-starter.md](crates/symworx-loadsym-db/docs/loadsym-personal-starter.md) · [crate README](crates/symworx-loadsym-db/README.md)
+TUI: `symview` → Home → **LoadSym** (`3`). Personal catalog (schema v4, multi-source ingest): [crates/symworx-loadsym-db/docs/loadsym-personal-starter.md](crates/symworx-loadsym-db/docs/loadsym-personal-starter.md) · [crate README](crates/symworx-loadsym-db/README.md)
 
 ### Python (education / data science)
 
@@ -127,7 +130,7 @@ Much of the original work lived in Python; the long-term engine is **Rust**, wit
 | [symworx-error](crates/symworx-error/README.md) | Shared errors |
 | [bindings/python](bindings/python/README.md) | PyO3 package `symworx` |
 
-Former **RunSym** lives inside **biosym** (gait / run performance), not as a separate crate.
+Gait and run-performance modeling live inside **biosym**, not as a separate crate.
 
 ---
 

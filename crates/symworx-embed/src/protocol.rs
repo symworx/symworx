@@ -17,8 +17,8 @@
 //!
 //! ## Naming
 //! - **`sid`**: subject id (canonical outbound field).
-//! - Legacy **`patient_id`** is accepted on *ingress* only for SentryWard compatibility.
-//! - Legacy **`heart_rate`** is accepted as an alias for `bpm`.
+//! - On parse only: `patient_id` is accepted as an alias for `sid`; `heart_rate` as an alias for `bpm`.
+//! - Outbound lines always use `sid` / `bpm` (never the aliases).
 
 use std::time::SystemTime;
 
@@ -58,7 +58,7 @@ pub fn parse_json_line(line: &str) -> Result<Option<StreamSample>> {
     let resp = float_field(obj.get("resp")).or_else(|| float_field(obj.get("respiration")));
     let device_ts_ms = u64_field(obj.get("ts"));
 
-    // Canonical `sid`; legacy `patient_id` on ingress only.
+    // Canonical `sid`; accept `patient_id` as ingress alias only.
     let sid = string_field(obj.get("sid")).or_else(|| string_field(obj.get("patient_id")));
 
     let source = string_field(obj.get("source"))
@@ -66,11 +66,9 @@ pub fn parse_json_line(line: &str) -> Result<Option<StreamSample>> {
         .unwrap_or(SourceKind::Unknown);
 
     // Optional host timestamp string (ISO-ish) — best-effort; ignore failures.
-    let host_ts = string_field(obj.get("timestamp")).and_then(|_s| {
-        // Keep parsing light: treat presence of timestamp as "now" for host path.
-        // Full ISO parsing can be added later without changing the public field.
-        Some(SystemTime::now())
-    });
+    // Keep parsing light: treat presence of timestamp as "now" for host path.
+    // Full ISO parsing can be added later without changing the public field.
+    let host_ts = string_field(obj.get("timestamp")).map(|_s| SystemTime::now());
 
     Ok(Some(StreamSample {
         red,
@@ -158,10 +156,10 @@ fn insert_i64(map: &mut serde_json::Map<String, Value>, key: &str, v: Option<i64
 }
 
 fn insert_f64(map: &mut serde_json::Map<String, Value>, key: &str, v: Option<f64>) {
-    if let Some(n) = v {
-        if let Some(num) = serde_json::Number::from_f64(n) {
-            map.insert(key.into(), Value::Number(num));
-        }
+    if let Some(n) = v
+        && let Some(num) = serde_json::Number::from_f64(n)
+    {
+        map.insert(key.into(), Value::Number(num));
     }
 }
 
@@ -182,7 +180,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_legacy_patient_id_and_heart_rate() {
+    fn parse_patient_id_and_heart_rate_aliases() {
         let line = r#"{"patient_id":"P001","heart_rate":88,"spo2":98,"source":"simulator"}"#;
         let s = parse_json_line(line).unwrap().unwrap();
         assert_eq!(s.sid.as_deref(), Some("P001"));

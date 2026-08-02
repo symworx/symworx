@@ -3,8 +3,7 @@
 
 //! Clustering algorithms.
 //!
-//! Foundational unsupervised methods for data-driven science and engineering
-//! (Brunton & Kutz style exploratory analysis). Built on
+//! Foundational unsupervised clustering methods. Built on
 //! [`crate::distance`] metrics — no LAPACK required for k-means.
 
 use ndarray::Array2;
@@ -90,7 +89,7 @@ pub fn kmeans(data: &Array2<f64>, config: &KMeansConfig) -> KMeansResult {
         iterations = iter + 1;
 
         // Assignment step
-        for i in 0..n_samples {
+        for (i, label) in labels.iter_mut().enumerate() {
             let row: Vec<f64> = data.row(i).to_vec();
             let mut best = 0usize;
             let mut best_d = f64::INFINITY;
@@ -102,7 +101,7 @@ pub fn kmeans(data: &Array2<f64>, config: &KMeansConfig) -> KMeansResult {
                     best = j;
                 }
             }
-            labels[i] = best;
+            *label = best;
         }
 
         // Update step
@@ -178,7 +177,7 @@ pub fn kmeans_predict(data: &Array2<f64>, centroids: &Array2<f64>) -> Vec<usize>
     if k == 0 {
         return labels;
     }
-    for i in 0..n_samples {
+    for (i, label) in labels.iter_mut().enumerate() {
         let row: Vec<f64> = data.row(i).to_vec();
         let mut best = 0usize;
         let mut best_d = f64::INFINITY;
@@ -190,7 +189,7 @@ pub fn kmeans_predict(data: &Array2<f64>, centroids: &Array2<f64>) -> Vec<usize>
                 best = j;
             }
         }
-        labels[i] = best;
+        *label = best;
     }
     labels
 }
@@ -219,13 +218,13 @@ fn kmeans_pp_init(data: &Array2<f64>, k: usize, seed: u64) -> Array2<f64> {
 
     for c in 1..k {
         // Update min squared distance to nearest chosen center
-        for i in 0..n_samples {
+        for (i, min_d2) in min_dist_sq.iter_mut().enumerate() {
             let row: Vec<f64> = data.row(i).to_vec();
             let center: Vec<f64> = centroids.row(c - 1).to_vec();
             let d = euclidean(&row, &center);
             let d2 = d * d;
-            if d2 < min_dist_sq[i] {
-                min_dist_sq[i] = d2;
+            if d2 < *min_d2 {
+                *min_d2 = d2;
             }
         }
 

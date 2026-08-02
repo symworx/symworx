@@ -10,11 +10,11 @@ It provides tools for simulating and analyzing physiological and biomechanical s
 - **Numerical integration** — Uses RK4 from `symworx-math` for stable simulation.
 - **Python bindings** — via the unified package (`from symworx import biosym`); optional split package `symworx_biosym` may still exist in `bindings/python/`.
 
-## Physiology Analysis
+## Physiological Analysis
 
 The `physiology` module provides generation + analysis for PPG and respiration (flow), built on shared primitives:
 
-- **Common** (`physiology::common`): `PhysiologySignal`, `PhysiologySummary` (mean/std/dur), `IntervalSeries` (peaks, intervals, rates; supports alternating-phase split for legacy-style insp/exp), `HrvMetrics` (SDNN + RMSSD), `PhysiologyProcessingParams` (bandpass via `symworx-signal` biquads + peak overrides), peak detection via `symworx_core::PeakFinderBuilder`.
+- **Common** (`physiology::common`): `PhysiologySignal`, `PhysiologySummary` (mean/std/dur), `IntervalSeries` (peaks, intervals, rates; optional alternating-phase insp/exp split), `HrvMetrics` (SDNN + RMSSD), `PhysiologyProcessingParams` (bandpass via `symworx-signal` biquads + peak overrides), peak detection via `symworx_core::PeakFinderBuilder`.
 - **PPG**: `PpgAnalysis` (summary + intervals + mean HR bpm + HRV). `analyze_ppg*` / `detect_ppg_peaks*` / `summarize_ppg`. Quality presets (`PPGSignalQuality`: Reference/High/Moderate/Poor) drive bandpass (0.5–5 Hz) + tuned peak thresholds for noisy simulated data. Hardcoded default fs 250 Hz for signal wrapper.
 - **Respiration**: `RespAnalysis` (summary + intervals + mean BRPM + insp/exp splits from alt phases + `RespPhasePeaks` from signed flow local maxima + phase-specific intervals). `analyze_respiration*` etc. Bandpass 0.1–0.5 Hz; default fs 50 Hz on flow channel. Volume field present but analysis focuses on flow.
 - **Bindings**: Full `PpgAnalysis` / `RespAnalysis` (flattened for py) + analyze fns exposed.
@@ -23,9 +23,9 @@ See `physiology::{ppg,respiration}::analysis` and tests for details. Heavily reu
 
 **Known gaps** (advanced / future):
 - Waveform morphology (PPG: rise time/notch/augmentation; resp: I:E, peak flows, volume integrals).
-- Extended HRV (pNN50, freq-domain LF/HF, nonlinear — use `symworx-dynamics` entropy + `symworx-stats` spectral for now).
+- Extended HRV analysis (pNN50, freq-domain LF/HF, nonlinear will use `symworx-dynamics` entropy + `symworx-stats` spectral for now).
 - Cardiorespiratory coupling / RSA metrics (CPG has couplings; dedicated cross-analysis pending).
-- Sleep module (legacy only).
+- Sleep module and data simulation.
 - Real-sensor vs sim-tuned quality presets.
 - Streaming / incremental analysis.
 
@@ -33,11 +33,7 @@ These advanced metrics are future work; current focus is clean HR/BR + intervals
 
 ## Biomechanics analysis
 
-Gait event detection, `GaitStats` / `GaitAnalysis`, quality presets, and calculators live under `biomechanics::gait` (also re-exported at the crate root).
-
-## Philosophy
-
-SymWorx emphasizes security, robustness, and scalability. BioSym follows the same principles with strong typing, minimal unsafe code, and clean APIs suitable for embedded systems, research, and education.
+Gait event detection, `GaitStats` / `GaitAnalysis`, quality presets, and calculators live under `biomechanics::gait`.
 
 ## Usage (Rust)
 

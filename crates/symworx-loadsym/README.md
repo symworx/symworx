@@ -21,7 +21,7 @@ println!("Recent monotony: {:.2}", mono);
 Daily load series (e.g. TSLi) drive a two-compartment model:
 
 | Mode | Update | Interpretation |
-|------|--------|----------------|
+|:-----|:--------|:---------------|
 | **PMC** (`PulseResponseParams::pmc_defaults`) | EWMA LTSLi/STSLi | `fitness`→LTSLi, `fatigue`→STSLi, `readiness`→SLBi |
 | **Banister** (`banister_defaults`) | \(x_t = x_{t-1}e^{-1/\tau}+w_t\) | classic impulse-response; use \(k_h > k_g\) |
 
@@ -44,7 +44,7 @@ println!("plan TSLi {:?} success={}", plan.daily_tss, plan.success);
 **Optimization goals** (default horizon **4** days, max **10**) — primary success is **mean planned load vs chronic mean \(C\)** (last ≤28 days of TSLi):
 
 | Goal | Intent | Success (defaults) | Scoring prefers |
-|------|--------|--------------------|-----------------|
+|:-----|:-------|:-------------------|:----------------|
 | `Recovery` | Active recovery | \(0.20\,C \le \bar w \le 0.55\,C\) | ~0.38·C days (not pure rest) |
 | `Maintenance` | Hold load | \(0.85\,C \le \bar w \le 1.15\,C\) | Mean near \(C\) **with day-to-day TSLi variance** (not flat) |
 | `Overload` | Elevated load | \(1.15\,C \le \bar w \le 1.40\,C\), \(\bar w > C\) | ~1.25·C with variety; soft limit consecutive hard days |
@@ -63,12 +63,16 @@ cargo run -p symworx-loadsym --example pulse_response_demo
 ## CLI (`symload`)
 
 ```bash
+# One-time: empty archive layout + SQLite catalog under ~/velofit
+./scripts/init-velofit.sh
+# or: export VELOFIT_HOME=…  then re-run the script
+
 # Stats on a FIT file
 cargo run -p symworx-loadsym --features fit -- stats path/to/ride.fit --ftp 280
 
 # Personal SQLite catalog (file lives under $VELOFIT_HOME — not in this repo)
 export VELOFIT_HOME="$HOME/velofit"   # optional default
-cargo run -p symworx-loadsym --features sqlite -- db init
+cargo run -p symworx-loadsym --features sqlite -- db init   # also done by init-velofit.sh
 cargo run -p symworx-loadsym --features sqlite -- ingest --ftp 280
 # Only files with mtime >= last_ingest_at (watermark in catalog_meta). Full recheck:
 cargo run -p symworx-loadsym --features sqlite -- ingest --all --ftp 280
@@ -105,7 +109,7 @@ cargo run -p symworx-loadsym --features "email,polar,sqlite" -- sync --ftp 280
 ### Features
 
 | Feature | Purpose |
-|---------|---------|
+|:--------|:--------|
 | `fit` | Load `.fit` for `stats` |
 | `email` | IMAP fetch of `.fit` attachments (implies `fit`) |
 | `polar` | Polar AccessLink OAuth + exercise FIT download (implies `fit`) |
@@ -115,7 +119,7 @@ cargo run -p symworx-loadsym --features "email,polar,sqlite" -- sync --ftp 280
 ### Environment
 
 | Variable | Role |
-|----------|------|
+|:---------|:-----|
 | `VELOFIT_HOME` | Archive root (default `~/velofit`) |
 | `SYMLOAD_DB` | SQLite path override |
 | `SYMLOAD_USER` / `SYMLOAD_APP_PASSWORD` | IMAP credentials |

@@ -33,8 +33,8 @@ impl RlsFilter {
         assert!(delta > 0.0);
 
         let mut p = vec![vec![0.0; length]; length];
-        for i in 0..length {
-            p[i][i] = delta;
+        for (i, row) in p.iter_mut().enumerate() {
+            row[i] = delta;
         }
 
         Self {
@@ -59,9 +59,9 @@ impl RlsFilter {
 
         // Compute gain vector k
         let mut pi = vec![0.0; self.length];
-        for i in 0..self.length {
-            for j in 0..self.length {
-                pi[i] += self.p[i][j] * input_vec[j];
+        for (i, pi_i) in pi.iter_mut().enumerate() {
+            for (j, &xj) in input_vec.iter().enumerate() {
+                *pi_i += self.p[i][j] * xj;
             }
         }
 
@@ -74,9 +74,9 @@ impl RlsFilter {
         }
 
         // Update inverse correlation matrix P
-        for i in 0..self.length {
-            for j in 0..self.length {
-                let outer = k[i] * pi[j];
+        for (i, ki) in k.iter().enumerate() {
+            for (j, &pi_j) in pi.iter().enumerate() {
+                let outer = ki * pi_j;
                 self.p[i][j] = (self.p[i][j] - outer) / self.lambda;
             }
         }

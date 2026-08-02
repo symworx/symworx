@@ -11,7 +11,7 @@ use ndarray::Array1;
 use symworx_core::math::series;
 
 /// Aggregated spatiotemporal gait statistics (lightweight analysis result).
-/// Mirrors key fields from legacy GaitStatsData for compatibility/porting.
+/// Summary gait statistics from detected strides.
 #[derive(Debug, Clone, PartialEq)]
 pub struct GaitStats {
     pub n_strides: usize,
@@ -30,7 +30,7 @@ fn array_std(a: &Array1<f64>) -> f64 {
     if a.len() < 2 {
         return 0.0;
     }
-    // Population std (ddof=0) to match common numpy defaults in legacy
+    // Population std (ddof=0), matching common numpy defaults
     a.var(0.0).sqrt()
 }
 

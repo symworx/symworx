@@ -133,10 +133,10 @@ impl KalmanFilter {
     pub fn predict(&mut self, control: Option<&Array1<f64>>) {
         self.x = self.f.dot(&self.x);
 
-        if let (Some(b), Some(u)) = (&self.b, control) {
-            if b.ncols() == u.len() {
-                self.x += &b.dot(u);
-            }
+        if let (Some(b), Some(u)) = (&self.b, control)
+            && b.ncols() == u.len()
+        {
+            self.x += &b.dot(u);
         }
 
         self.p = self.f.dot(&self.p).dot(&self.f.t()) + &self.q;
@@ -198,10 +198,10 @@ impl KalmanFilter {
             // Predict
             let x_pred = self.f.dot(&self.x);
             let mut x_pred = x_pred;
-            if let (Some(b), Some(u)) = (&self.b, u) {
-                if b.ncols() == u.len() {
-                    x_pred += &b.dot(u);
-                }
+            if let (Some(b), Some(u)) = (&self.b, u)
+                && b.ncols() == u.len()
+            {
+                x_pred += &b.dot(u);
             }
             let p_pred = self.f.dot(&self.p).dot(&self.f.t()) + &self.q;
 
@@ -247,7 +247,7 @@ pub struct FilterRun {
     pub predicted_covs: Vec<Array2<f64>>,
 }
 
-// ——— LTI helper constructors (Kim / textbook state-space forms) ———
+// ——— LTI helper constructors (common state-space forms) ———
 
 impl KalmanFilter {
     /// 1D constant-velocity tracker: state `[position, velocity]`, observe position.

@@ -126,9 +126,9 @@ The workspace strongly prefers **minimal, intentional dependencies**. Every new 
 - `symworx-math` is the canonical home for low-level numerical, sequence, and optimization primitives.
 - `symworx-stats` owns statistical descriptors and classical modeling (regression, PCA/SVD, clustering) on top of those primitives.
 - **`symworx-embed`** owns host-side device streaming and framing (JSON-line PPG protocol, serial/simulator sources, rolling buffers, simple vitals thresholds).
-  - Use **subject** terminology: wire/API field **`sid`** (subject id). Accept legacy `patient_id` on ingress only for SentryWard compatibility; never emit `patient_id` outbound.
+  - Use **subject** terminology: wire/API field **`sid`** (subject id). On parse only, accept `patient_id` as an alias for `sid` and `heart_rate` as an alias for `bpm`; never emit those aliases outbound.
   - Feature-gate hardware deps (`serial`); keep default path light (`simulate` only).
-  - Do **not** put Embassy / `no_std` firmware or heavy LA/polars in this crate’s default build. Firmware (Arduino today, Embassy later) stays separate.
+  - Do **not** put Embassy / `no_std` firmware or heavy LA/polars in this crate’s default build. Firmware stays out of tree.
   - Recording streams to disk still goes through **`symworx-io`**. Signal algorithms (peak detect, filters) stay in **`symworx-signal`**.
 - Data-driven dynamical operators (DMD, Koopman, SINDy) belong in **`symworx-dynamics`**, not stats.
   - DMD: `symworx-dynamics::dmd` (uses `symworx-stats` SVD via `linalg`).
@@ -158,9 +158,9 @@ The workspace strongly prefers **minimal, intentional dependencies**. Every new 
 - **Human body linear dimensions** (height, leg length, step length, stride length, etc.) are standardized to **meters** across the workspace.
   - `symworx-biosym` (gait parameters) uses meters.
   - `symworx-loadsym` nutrition functions (`calculate_bmr`, `calculate_weightloss`, `calculate_bmi`) accept height in **meters** (`height_m`).
-- Legacy equations that internally require different units (e.g. Mifflin-St Jeor BMR expects cm) must perform the conversion **inside the function**.
+- Equations that internally require non-SI units (e.g. some BMR formulas expect height in cm) must convert **inside the function** from the workspace convention (height in meters).
 - Mass is consistently expressed in **kilograms (kg)** everywhere.
-- This convention was adopted to reduce cross-crate bugs and follow SI/biomechanics norms. See the 2026 loadsym height migration for rationale.
+- This convention was adopted to reduce cross-crate bugs and follow SI/biomechanics norms.
 
 ## Python Bindings
 
@@ -168,6 +168,6 @@ RQA and RecurrencePlot are exposed via PyO3 in `bindings/python/`. Keep the Rust
 
 ---
 
-**Last updated:** Host-first `symworx-embed` (SentryWard concepts: JSON PPG protocol, `sid` subject naming, serial/simulator sources). Still covers the core I/O rule (`symworx-io` only for on-disk signal I/O), TUI input priority, and `ndarray-linalg` / polars hygiene.
+**Last updated:** Host-first `symworx-embed` (JSON PPG protocol, `sid` subject naming, serial/simulator sources). Still covers the core I/O rule (`symworx-io` only for on-disk signal I/O), TUI input priority, and `ndarray-linalg` / polars hygiene.
 
 When you start a new session, read this file and respect the TUI input priority rules above.

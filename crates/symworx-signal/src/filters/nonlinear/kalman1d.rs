@@ -3,9 +3,9 @@
 
 //! KalmanFilter1D — a simple 1D constant-velocity Kalman filter.
 //!
-//! This is the legacy/simple 1D tracker (previously named `KalmanFilter`).
+//! Simple 1D constant-velocity tracker.
 //! For general multivariate state estimation, control inputs, and RTS smoothing,
-//! use the primary `KalmanFilter` from the `state_space` module.
+//! use the primary `KalmanFilter`.
 
 use ndarray::{
     Array1,

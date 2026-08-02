@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "symworx"
-version = "0.1.0"
+version = "0.1.1"
 description = "LoadSym Rust-backed modeling engine for the C-SYMd ecosystem"
 authors = [{ name = "nate berry", email = "symworx.dev@gmail.com" }]
 requires-python = ">=3.12,<3.14"

@@ -5,8 +5,7 @@
 //!
 //! Feature: `serial`.
 //!
-//! Reads one JSON object per line at the configured baud rate (default 115200),
-//! matching SentryWard `ingest_serial.py` / `arduino/medsym-sensor`.
+//! Reads one JSON object per line at the configured baud rate (default 115200).
 
 use std::{
     io::{
@@ -91,10 +90,11 @@ impl SerialSource {
 
     /// Open with defaults, overriding port and `sid`.
     pub fn open_port(port: impl Into<String>, sid: impl Into<String>) -> Result<Self> {
-        let mut cfg = SerialConfig::default();
-        cfg.port = port.into();
-        cfg.sid = sid.into();
-        Self::open(cfg)
+        Self::open(SerialConfig {
+            port: port.into(),
+            sid: sid.into(),
+            ..Default::default()
+        })
     }
 }
 

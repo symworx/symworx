@@ -8,7 +8,7 @@ license          = { workspace = true }
 repository       = { workspace = true }
 authors          = { workspace = true }
 description      = "Signal processing tools and resources (filters, peaks, sparse sensing, interpolation, resampling)"
-keywords = ["signal-processing", "filters", "peaks", "time-series", "biosignals", "compressed-sensing"]
+keywords = ["signal-processing", "filters", "peak-detection"]
 categories = ["science"]
 
 [dependencies]

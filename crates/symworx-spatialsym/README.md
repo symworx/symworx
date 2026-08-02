@@ -2,7 +2,8 @@
 
 Spatial trajectory analysis and post-hoc movement decision modeling.
 
-**Sport-agnostic by design.** No soccer (or other sport) terminology in public APIs.
+**Sport-agnostic by design.** Sport-specific reporting wrappers (terminology for
+analysis and presentation) are planned on top of this core.
 
 ## Current status
 
@@ -14,8 +15,8 @@ Spatial trajectory analysis and post-hoc movement decision modeling.
 - `SpaceAction`: Expansion, Penetration, Denial, Pressure, Neutral
 - Errors via `SpatialError` + `Result`
 
-Analyses are **post-hoc** labels of agent decisions around space (see `decision` module).
-All lengths are **meters**.
+Analyses are **post-hoc** labels of agent decisions around space (see `decision`
+module); this is not a real-time tool. All lengths are **meters**.
 
 ## Usage
 

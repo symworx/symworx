@@ -8,7 +8,7 @@ license          = { workspace = true }
 repository       = { workspace = true }
 authors          = { workspace = true }
 description      = "I/O utilities for biosignals and activity data (CSV, Parquet, FIT, email IMAP, Polar AccessLink)"
-keywords = ["io", "csv", "parquet", "fit", "biosignals", "polar"]
+keywords = ["io", "csv", "parquet", "fit", "biosignals"]
 categories = ["science"]
 
 [dependencies]

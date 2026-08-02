@@ -3,16 +3,12 @@
 
 //! Dump enriched JSON samples from a serial PPG device.
 //!
-//! Requires feature `serial` and a board running the SentryWard Arduino sketch
-//! (or any device emitting compatible JSON lines).
+//! Requires feature `serial` and a device emitting compatible JSON lines.
 //!
 //! ```bash
 //! cargo run -p symworx-embed --features serial --example serial_dump -- \
 //!   --port /dev/ttyACM0 --sid S001
 //! ```
-//!
-//! On Fedora Silverblue + toolbox, pass the device into the toolbox and ensure
-//! dialout group membership (see crate README).
 
 use symworx_embed::{
     StreamSource,

@@ -6,7 +6,7 @@ pub mod ekf;
 /// Primary general-purpose Kalman filter (multivariate state + observations,
 /// control inputs, and RTS smoothing).
 pub mod kalman;
-/// Simple 1D constant-velocity Kalman filter (legacy / convenience name).
+/// Simple 1D constant-velocity Kalman filter.
 pub mod kalman1d;
 /// Recursive least squares
 pub mod rls;

@@ -20,8 +20,7 @@
 //! - [`control`] — Discrete LTI plants, state feedback, PID
 //!
 //! These tools are especially useful for gait, heart rate, respiration, and
-//! other quasi-periodic biological signals. Data-driven dynamics follow
-//! Brunton & Kutz; LTI/PID follow standard textbook control (e.g. Kim).
+//! other quasi-periodic biological signals.
 
 #![warn(missing_docs)]
 #![doc(html_root_url = "https://docs.rs/symworx-dynamics")]

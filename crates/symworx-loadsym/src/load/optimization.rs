@@ -622,7 +622,7 @@ fn evaluate_candidate(
     })
 }
 
-/// Legacy stub retained for API compatibility (element-wise product).
+/// Compatibility stub (element-wise product).
 #[deprecated(note = "use optimize_load_plan for goal-conditioned multi-day planning")]
 pub fn optimize_load(parameters: &[f64], data: &[f64]) -> Vec<f64> {
     parameters.iter().zip(data.iter()).map(|(p, d)| p * d).collect()
@@ -773,7 +773,7 @@ mod tests {
 
     #[test]
     #[allow(deprecated)]
-    fn legacy_optimize_load_still_works() {
+    fn optimize_load_product_stub_works() {
         let out = optimize_load(&[2.0, 3.0], &[4.0, 5.0]);
         assert_eq!(out, vec![8.0, 15.0]);
     }

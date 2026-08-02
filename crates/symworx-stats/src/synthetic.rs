@@ -223,9 +223,9 @@ fn gen_linear_regression(rng: &mut StdRng, spec: &SyntheticSpec) -> Result<Synth
 
     for _ in 0..spec.n {
         let mut y = 1.0; // intercept
-        for j in 0..p {
+        for (j, col) in columns.iter_mut().take(p).enumerate() {
             let xj = dist::normal(rng, 0.0, 1.0);
-            columns[j].push(xj);
+            col.push(xj);
             y += (j + 1) as f64 * xj;
         }
         y += dist::normal(rng, 0.0, spec.noise.max(1e-9));

@@ -8,7 +8,7 @@ license          = { workspace = true }
 repository       = { workspace = true }
 authors          = { workspace = true }
 description      = "Statistical tools and resources (basic stats, correlation, variability, autocorrelation, and optional linear algebra)"
-keywords = ["statistics", "correlation", "variability", "time-series", "linear-algebra"]
+keywords = ["statistics", "time-series", "linear-algebra"]
 categories = ["science", "mathematics"]
 
 [features]

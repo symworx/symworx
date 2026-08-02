@@ -8,7 +8,7 @@ use crate::common::{
     PhysiologyProcessingParams,
 };
 
-/// Legacy PPG bandpass: 0.5–5.0 Hz (4th-order equivalent via 2 cascaded 2nd-order sections).
+/// Default PPG bandpass: 0.5–5.0 Hz (4th-order equivalent via 2 cascaded 2nd-order sections).
 pub fn ppg_default_bandpass() -> BandpassParams {
     BandpassParams {
         lowcut_hz: 0.5,
