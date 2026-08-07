@@ -13,8 +13,8 @@ ndarray-linalg  = { workspace = true }
 numpy           = { version = "0.23" }
 
 # Not a workspace member — keep path+version in sync with [workspace.package].
-symworx-core    = { path = "../../crates/symworx-core", version = "0.1.2" }
-symworx-biosym  = { path = "../../crates/symworx-biosym", version = "0.1.2" }
-symworx-loadsym = { path = "../../crates/symworx-loadsym", version = "0.1.2" }
+symworx-core    = { path = "../../crates/symworx-core", version = "0.2.0" }
+symworx-biosym  = { path = "../../crates/symworx-biosym", version = "0.2.0" }
+symworx-loadsym = { path = "../../crates/symworx-loadsym", version = "0.2.0" }
 
 # (brotli-decompressor explicit removed; use the workspace one or io's "brotli" feature if needed for checks)
