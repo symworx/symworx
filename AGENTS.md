@@ -112,8 +112,9 @@ The workspace strongly prefers **minimal, intentional dependencies**. Every new 
 ### Linear Algebra & Heavy Dependencies
 - `ndarray-linalg` (and its transitive dependencies such as `cauchy`, `lax`, and LAPACK backends like OpenBLAS) is considered **heavy**.
 - `polars` (and its transitive dependencies: arrow, multiple compression crates, etc.) is also heavy. It is centralized in the workspace for version consistency because we may want/need it in more than just the TUI in the future. Keep usage behind opt-in features in consuming crates.
-- In `symworx-stats`, SVD, PCA, and closed-form regression (`l2`/`ols`/`ridge`) live behind an opt-in **`linalg`** feature.
+- In `symworx-stats`, SVD, PCA, closed-form regression (`l2`/`ols`/`ridge`), and linear mixed models (`mixed` / `lmer`) live behind an opt-in **`linalg`** feature.
   - Lasso / Elastic Net (coordinate descent), k-means clustering, and nonlinear least squares do **not** require `linalg`.
+  - LMM (`crates/symworx-stats/src/mixed/`): single grouping factor; random intercept and linear growth (`Z=[1,t]`, unstructured or diagonal `G`); design helpers in `mixed/design.rs` (time powers, centering, piecewise hinges); multi-factor / residual AR(1) later.
   - The feature is **off by default** in the standalone `symworx-stats` crate. This keeps the dependency footprint small for common use cases (basic statistics, variability metrics, correlations, etc.).
   - `symworx-core` enables the `linalg` feature on `symworx-stats` by default for convenience, since most consumers go through `symworx-core`.
 - Optimization primitives (gradient descent, finite differences) live in **`symworx-math::optimize`** — pure Rust, no LAPACK.
@@ -124,7 +125,7 @@ The workspace strongly prefers **minimal, intentional dependencies**. Every new 
 ### General Rules
 - Prefer pure-Rust or already-present workspace dependencies when possible.
 - `symworx-math` is the canonical home for low-level numerical, sequence, and optimization primitives.
-- `symworx-stats` owns statistical descriptors and classical modeling (regression, PCA/SVD, clustering) on top of those primitives.
+- `symworx-stats` owns statistical descriptors and classical modeling (regression, PCA/SVD, clustering, linear mixed models) on top of those primitives.
 - **`symworx-embed`** owns host-side device streaming and framing (JSON-line PPG protocol, serial/simulator sources, rolling buffers, simple vitals thresholds).
   - Use **subject** terminology: wire/API field **`sid`** (subject id). On parse only, accept `patient_id` as an alias for `sid` and `heart_rate` as an alias for `bpm`; never emit those aliases outbound.
   - Feature-gate hardware deps (`serial`); keep default path light (`simulate` only).
