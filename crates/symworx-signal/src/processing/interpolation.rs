@@ -1,4 +1,4 @@
-// Copyright (c) 2026 SymWorx
+// Copyright (c) 2026 PalEm Dynamics LLC
 // Licensed under the Apache License, Version 2.0.
 
 /// Linear interpolation of y(x) at new points x_new.
