@@ -22,6 +22,7 @@ default = []
 ## because core signal processing (deconvolution etc.) requires it. The opt-in
 ## restriction exists primarily here in stats.
 linalg = ["dep:ndarray-linalg", "dep:openblas-build"]
+mixed = ["linalg"]
 
 [dependencies]
 ndarray        = { workspace = true }
