@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-# Copyright (c) 2026 SymWorx
+# Copyright (c) 2026 PalEm Dynamics LLC
+# Licensed under the Apache License, Version 2.0.
+
 """
-Classical ML via Python bindings (split → scale → logistic OVR).
+Classical ML via Python bindings
 
 Run after:
     maturin develop --manifest-path bindings/python/Cargo.toml

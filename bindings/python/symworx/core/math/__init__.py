@@ -1,4 +1,6 @@
-# Copyright (c) 2026 SymWorx. All rights reserved.
+# Copyright (c) 2026 PalEm Dynamics LLC
+# Licensed under the Apache License, Version 2.0.
+
 """Re-export ``symworx._lib.core.math``."""
 
 from __future__ import annotations
