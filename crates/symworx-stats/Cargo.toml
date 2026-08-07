@@ -55,5 +55,9 @@ required-features = ["linalg"]
 name = "polynomial_degree_search_demo"
 required-features = ["linalg"]
 
+[[example]]
+name = "mixed_models_demo"
+required-features = ["linalg"]
+
 [lints]
 workspace = true

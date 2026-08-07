@@ -31,8 +31,8 @@
 //!
 //! Lasso / Elastic Net, logistic (binary + OVR), Gaussian NB, k-NN, rule lists,
 //! classification metrics (incl. ROC/AUC), preprocessing, and k-means do
-//! **not** require `linalg`. LDA fit and polynomial degree search require
-//! `linalg`.
+//! **not** require `linalg`. LDA fit, polynomial degree search, and linear
+//! mixed models ([`mixed`]) require `linalg`.
 
 #![allow(unused_imports)]
 #![warn(missing_docs)]
@@ -95,6 +95,10 @@ pub mod nlinreg;
 
 /// Univariate polynomial regression and degree search (`linalg` for fits).
 pub mod polyreg;
+
+#[cfg(feature = "linalg")]
+/// Linear mixed models (random-intercept MVP; requires `linalg`).
+pub mod mixed;
 
 #[cfg(feature = "linalg")]
 /// Principal component analysis (requires `linalg` feature).
@@ -221,6 +225,34 @@ pub use logistic::{
     logistic_regression,
     logistic_regression_ovr,
     sigmoid,
+};
+#[cfg(feature = "linalg")]
+pub use mixed::{
+    CovStructure,
+    EstimationMethod,
+    LinearGrowthData,
+    LinearGrowthSimSpec,
+    LmerConfig,
+    MixedError,
+    MixedModel,
+    RandomInterceptData,
+    RandomInterceptSimSpec,
+    RandomTerm,
+    center_time,
+    center_time_at,
+    fixed_piecewise_linear,
+    generate_linear_growth,
+    generate_random_intercept,
+    hstack,
+    lmer,
+    lmer_default,
+    mean_time,
+    piecewise_hinges,
+    time_powers,
+    try_hstack,
+    z_intercept,
+    z_intercept_slope,
+    z_intercept_slope_centered,
 };
 pub use model_select::{
     ModelFitScores,
