@@ -7,15 +7,10 @@ use ndarray::{
     Axis,
 };
 
-/// Computes Pearson correlation coefficient between two columns.
-/// # Arguments
-/// * `data` - 2D array with **rows = observations**, **columns =
-///   variables**
-/// * `col1` - index of first variable (column)
-/// * `col2` - index of second variable (column)
+/// Pearson *r* between two columns.
 ///
-/// # Returns
-/// Pearson correlation coefficient (r) between -1.0 and 1.0
+/// Layout: **rows = observations**, **columns = variables**.
+/// Constant (or near-constant) columns → `0.0`.
 pub fn pearson_correlation(data: &Array2<f64>, col1: usize, col2: usize) -> f64 {
     let n = data.nrows();
     if n < 2 || col1 >= data.ncols() || col2 >= data.ncols() {
@@ -48,13 +43,9 @@ pub fn pearson_correlation(data: &Array2<f64>, col1: usize, col2: usize) -> f64 
     numerator / denominator
 }
 
-/// Generates a full Pearson correlation matrix for any number of variables (columns).
+/// Full Pearson correlation matrix (symmetric, diagonal = 1).
 ///
-/// # Arguments
-/// * `data` - 2D array with **rows = observations**, **columns = variables**
-///
-/// # Returns
-/// Square correlation matrix (symmetric, diagonal = 1.0)
+/// Layout: **rows = observations**, **columns = variables**.
 pub fn correlation_matrix(data: &Array2<f64>) -> Array2<f64> {
     let ncols = data.ncols();
     if ncols == 0 {

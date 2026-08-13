@@ -64,7 +64,6 @@ export PYO3_PYTHON=python3.12
 export PYTHON_SYS_EXECUTABLE=python3.12
 ```
 
-**Note (0.1):** Python exposes biosym, loadsym, and a growing **core.statistics** subset (splits, scaler, logistic binary/OVR, NB, metrics, ROC-AUC). Rule lists, k-NN, LDA, polyreg remain Rust-first for now.
 
 ---
 

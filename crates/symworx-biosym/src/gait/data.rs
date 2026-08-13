@@ -23,7 +23,7 @@ pub struct GaitData {
 }
 
 impl GaitData {
-    /// Initiate a new `GaitData` Record
+    /// Create a new `GaitData` record.
     pub fn new(fs: f64) -> Self {
         Self {
             fs,

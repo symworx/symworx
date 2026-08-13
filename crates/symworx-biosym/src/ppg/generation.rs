@@ -8,7 +8,7 @@ use super::PPGNoiseConfig;
 
 // PPG Generation
 
-/// Represents a PPG time-series signal.
+/// PPG time-series signal.
 #[derive(Debug, Clone)]
 pub struct PPGTimeSeries {
     /// Times associated with PPG time series
