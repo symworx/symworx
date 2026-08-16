@@ -1,26 +1,28 @@
 # Notes — Group phase coherence, in-phase / out-of-phase
 
-Reference notes for measures relevant to multi-person / formation coupling (SymMesh unit regime and related work). Not an implementation plan. Math stays in the dynamics / RQA / SpatialSym crates; these are candidate summaries and literature anchors.
+Reference notes for multi-person / multi-series phase coherence and related measures. Not an implementation plan. Candidates for the dynamics, RQA, and SpatialSym crates; literature anchors only.
 
-## Why this note exists
+## Purpose
 
-SymMesh and similar field kits need coherence and in-/out-of-phase measures that:
+Useful when analyzing groups of time series (movement, physiology, or mixed) where the questions include:
 
-- scale from dyads to small groups (~2–12),
-- support both oscillatory and non-oscillatory series,
-- distinguish **together** / **intended split** / **unintended fragment**,
-- keep univariate regularity and crossed/multi regularity explicit at every layer.
+- overall group synchrony,
+- individual locking strength to a group rhythm,
+- in-phase vs anti-phase (or other stable relative-phase) relations,
+- detection of multiple clusters / subgroups.
+
+Both oscillatory and non-oscillatory series matter; the choice of method should follow the signal structure.
 
 ## Primary recommendations
 
 ### 1. Cluster-phase method (Frank & Richardson)
 
-Best first-line group phase-coherence measure for multivariate movement (and other phase-extractable) series.
+Strong first-line measure for multivariate movement (and other phase-extractable) series.
 
 - **ρ_group** ∈ [0, 1]: overall group synchrony (Kuramoto-based order parameter).
 - **ρ_k** per individual: strength of locking to the group cluster phase.
 - Mean and SD of relative phase to the cluster phase → distinguishes **in-phase** (~0°), **anti-phase** (~180°), or other stable relations.
-- Naturally surfaces multiple clusters → supports intended split vs unintended fragment.
+- Naturally surfaces multiple clusters.
 
 **Key references**
 
@@ -29,42 +31,34 @@ Best first-line group phase-coherence measure for multivariate movement (and oth
 
 ### 2. Multivariate / multidimensional RQA (MdRQA) and joint recurrence
 
-Strong when series are not cleanly oscillatory (HRV/ANS, IMU envelopes, event-like series).
+Prefer when series are not cleanly oscillatory (e.g. HRV/ANS, IMU envelopes, event-like series).
 
 - Group-level recurrence measures, or
 - Pairwise CRQA matrix → network summaries (mean/median DET, diagonal-line entropy, fraction of strong edges, component count / modularity).
 
-These network / MdRQA summaries become the “group descriptors” that can themselves receive entropy or RQA at the unit-regime layer.
+These summaries can themselves be treated as higher-order descriptors (and later receive entropy or RQA if desired).
 
 **Key references**
 
 - Wallot, S., Roepstorff, A., & Mønster, D. (2016). Multidimensional Recurrence Quantification Analysis (MdRQA) for the analysis of multidimensional time-series. *Frontiers in Physiology*.
-- Shockley, K., et al., and the broader interpersonal CRQA literature (Richardson, Dale, Riley, Paxton, sports CRQA papers).
+- Shockley, K., and the broader interpersonal CRQA literature (Richardson, Dale, Riley, Paxton, and sports CRQA papers).
 
 ### 3. Supporting measures
 
 | Goal | Measure | Notes |
 |------|---------|-------|
 | Continuous global coherence | Kuramoto order parameter *R* | Simple baseline when phases are reliable |
-| Fine-grained in-/out-of-phase | Continuous relative phase (Hilbert / wavelet) + circular statistics (mean resultant length) | Pairwise or vs cluster phase |
-| Effort vs direction | Effort-phase (non-directional) vs directional-phase | Already in SpatialSym design notes; keep the distinction |
+| Fine-grained in-/out-of-phase | Continuous relative phase (Hilbert / wavelet) + circular statistics (mean resultant length) | Pairwise or vs a cluster phase |
+| Effort vs direction | Effort-phase (non-directional) vs directional-phase | Distinction already noted in SpatialSym kinematics design |
 | Directional influence (later) | Transfer entropy / cross-entropy style | Secondary; not first-line “coherence” |
-
-## Layer mapping (SymMesh-oriented)
-
-- **L1 / L2 (individual):** univariate entropy / RQA of the person’s series; short-window complexity for possible immediate feedback.
-- **L3 (pairwise):** physio CRQA, movement CRQA, relative phase / phase locking, effort vs directional phase, pairwise cross measures.
-- **L4 (unit regime):** cluster-phase (ρ_group, ρ_k, φ to cluster), network summaries of the CRQA matrix, MdRQA / joint RQA on group descriptors, entropy of those descriptors → regime label.
-
-Univariate and crossed/multi regularity are both assessed at every layer; higher layers may request more detailed series under conditions defined elsewhere.
 
 ## Practical rules
 
-- Extract phases only when the signals support it (clear oscillatory structure or after appropriate filtering / Hilbert). Otherwise lean on MdRQA / pairwise-CRQA + network path.
-- Quality gates can force any phase or coupling score to `unknown`.
-- Do not collapse all edge types into a single “coherence” or “sync” product score.
+- Extract phases only when the signals support it (clear oscillatory structure or after appropriate filtering / Hilbert). Otherwise lean on MdRQA / pairwise-CRQA + network summaries.
+- Quality / validity checks can force any phase or coupling score to an unknown / invalid state rather than a misleading number.
+- Prefer keeping edge types (or modality types) distinct; avoid collapsing everything into a single undifferentiated “coherence” score unless that is the explicit research question.
 
 ## See also
 
-- SymMesh `docs/analytics.md` and `docs/diagrams.md` (csymd/symmesh) for the architectural contract that consumes these measures.
 - SpatialSym kinematics notes for effort-phase vs directional-phase.
+- Existing RQA / CRQA / entropy implementations in the dynamics crate.
