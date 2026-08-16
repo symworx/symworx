@@ -168,5 +168,6 @@ Agent / AI contributors: read [AGENTS.md](AGENTS.md) and own all submitted code.
 |-----|---------|
 | [DEVELOPMENT.md](DEVELOPMENT.md) | Build, test, format |
 | [AGENTS.md](AGENTS.md) | Crate boundaries, TUI keys, dependency hygiene |
+| [docs/projects.md](docs/projects.md) | Slated vs considered development items |
 | [crates/symworx-stats/docs/model_export.md](crates/symworx-stats/docs/model_export.md) | Export models to C / iOS / Android / web |
 | [publications/joss/2026/](publications/joss/2026/) | JOSS paper draft + tracking notes |

@@ -152,7 +152,7 @@ Several optional features pull in native libraries (notably OpenBLAS via `ndarra
 
 ## Other Notes
 
-- The `docs/` directory contains higher-level guides. The LoadSym personal catalog starter **redirects** to the canonical copy under `crates/symworx-loadsym-db/docs/` (schema v4, multi-source ingest). These are not part of the generated `cargo doc` output.
+- The `docs/` directory contains higher-level guides. [docs/projects.md](docs/projects.md) lists slated vs considered work. The LoadSym personal catalog starter **redirects** to the canonical copy under `crates/symworx-loadsym-db/docs/` (schema v4, multi-source ingest). These are not part of the generated `cargo doc` output.
 - Internal agent guidelines live in `AGENTS.md`.
 - Feel free to open issues or discussions for anything unclear in this document.
 
@@ -161,6 +161,7 @@ Several optional features pull in native libraries (notably OpenBLAS via `ndarra
 **Quick links**
 - [AGENTS.md](AGENTS.md) – guidelines for agentic development
 - [CONTRIBUTING.md](CONTRIBUTING.md)
+- [Projects](docs/projects.md) – slated vs considered development items
 - [LoadSym personal catalog](crates/symworx-loadsym-db/docs/loadsym-personal-starter.md) – `$VELOFIT_HOME`, ingest, Polar, sync
 - [symworx-loadsym-db README](crates/symworx-loadsym-db/README.md) – schema versions / API
 - Root `Cargo.toml` for the full list of workspace members and shared dependencies
