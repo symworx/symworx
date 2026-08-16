@@ -50,6 +50,9 @@ cargo run -p symworx-dynamics --example data_driven_dynamics_demo
 - **`symworx-stats`** — SVD, regression, clustering, `regression_report`
 - **`symworx-signal`** — Kalman / EKF / UKF, sparse sensing
 
+Design notes (not shipped APIs): [notes/group-phase-coherence.md](notes/group-phase-coherence.md)
+— cluster-phase, MdRQA, and group-level CRQA summaries.
+
 ### SINDy / SINDYc
 
 ```rust

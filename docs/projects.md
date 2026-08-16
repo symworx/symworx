@@ -15,7 +15,7 @@ Called out in existing docs as planned, partial, or paused with intent
 to finish.
 
 | Area | Item | Notes |
-|------|------|-------|
+|:------|:------|:-------|
 | Dynamics | Full CRQA API | README marks CRQA as **Planned**. Pairwise / cross-recurrence exists in pieces; a complete public API does not. |
 | Stats | Welch PSD (`stats::spectral`) | Stub / placeholder. Do not rely on it for analysis until replaced. |
 | Python | Broader `core.statistics` surface | Rust-first today. Still unbound: LMM, rule lists, k-NN, LDA, polyreg, full OLS/ridge objects. |
@@ -28,14 +28,14 @@ Candidates and research notes. No implementation plan unless a linked
 note says otherwise.
 
 | Area | Item | Notes |
-|------|------|-------|
-| Dynamics / SpatialSym | Group phase coherence | Cluster-phase, MdRQA / pairwise CRQA networks, relative phase. See [notes-group-phase-coherence.md](notes-group-phase-coherence.md). |
-| SpatialSym | Accel / decel as pairwise (and group) phase | Today's APIs **count** speed-ups and slow-downs. A later pass could score in-phase vs out-of-phase effort and heading. Detailed notes stay local until they are ready to land. |
+|:------|:------|:-------|
+| Dynamics / SpatialSym | Group phase coherence | Cluster-phase, MdRQA / pairwise CRQA networks, relative phase. Literature: [group-phase-coherence.md](../crates/symworx-dynamics/notes/group-phase-coherence.md). SpatialSym application: [phase-coherence.md](../crates/symworx-spatialsym/notes/phase-coherence.md). |
+| SpatialSym | Accel / decel as pairwise (and group) phase | Today's APIs **count** speed-ups and slow-downs. A later pass could score in-phase vs out-of-phase effort and heading. Design notes: [phase-coherence.md](../crates/symworx-spatialsym/notes/phase-coherence.md). |
 | BioSym | Advanced physiology metrics | Waveform morphology, extended HRV, cardiorespiratory coupling / RSA, sleep sim, real-sensor quality presets, streaming analysis ([biosym README](../crates/symworx-biosym/README.md)). |
 | TUI | Explore / Dynamics depth | Filtering, processing, embedding / FNN in Explore; more nonlinear tools in Dynamics ([AGENTS.md](../AGENTS.md)). TUI smoke build in CI is still off. |
 | Backend | Real process supervision | `symworx-backend` is experimental; `ProcessManager` is a placeholder API. |
 | Bindings | R package | Stub only. |
-| Stats / signal | Spectral / coupling follow-ons | Transfer entropy and related directional measures are secondary to first-line coherence (see group-phase notes). |
+| Stats / signal | Spectral / coupling follow-ons | Transfer entropy and related directional measures are secondary to first-line coherence ([group-phase notes](../crates/symworx-dynamics/notes/group-phase-coherence.md)). |
 
 ## How to update
 
