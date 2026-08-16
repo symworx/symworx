@@ -127,9 +127,9 @@ The `symview` binary (from `symworx-tui`) can be installed with `cargo install s
 
 ### CI / Release Automation Notes
 
-- Day-to-day [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on push/PR to **`develop`** and **`main`** only. It formats library crates, clippy + unit-tests the **full science package set**, and builds Python bindings (`maturin develop` + pytest). The TUI smoke build is **disabled**; run `cargo build -p symworx-tui --bin symview` locally when touching the TUI.
+- Day-to-day [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on push/PR to **`develop`** only. It formats library crates, clippy + unit-tests the **full science package set**, and builds Python bindings (`maturin develop` + pytest). The TUI smoke build is **disabled**; run `cargo build -p symworx-tui --bin symview` locally when touching the TUI.
 - The release path is gated by [`.github/workflows/release.yml`](.github/workflows/release.yml):
-  - **Validation** on PRs into `main`, pushes to `main` / `release/**`, tags `v*`, and `workflow_dispatch`:
+  - **Validation** on PRs into `main`, pushes to `release/**`, tags `v*`, and `workflow_dispatch` (not on push to `main`; the PR already ran this workflow):
     - Release metadata (workspace version matches `release/vX.Y.Z` / tag; `CHANGELOG.md` has a `## [X.Y.Z]` section).
     - Same science fmt/clippy/test set as day-to-day CI, plus Python **wheel smoke** 
     - **Tags are created manually** after a green merge to `main` (for now, we do not have an auto-tag job).
