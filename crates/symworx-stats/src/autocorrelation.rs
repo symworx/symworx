@@ -1,14 +1,9 @@
 // Copyright (c) 2026 PalEm Dynamics LLC
 // Licensed under the Apache License, Version 2.0.
 
-/// Calculates the autocorrelation of a given signal.
+/// Autocorrelation function at lags `0..n−1` (mean-centered).
 ///
-/// # Arguments
-/// * `signal` - A slice of f64 values representing the input signal.
-/// * `lag` - The lag for which to calculate the autocorrelation.
-///
-/// # Returns
-/// The autocorrelation value for the specified lag.
+/// `unbiased` divides lag-*k* by `n−k`; otherwise by `n`.
 pub fn acf(signal: &[f64], unbiased: bool) -> Vec<f64> {
     let n = signal.len();
     let mean = signal.iter().sum::<f64>() / n as f64;

@@ -3,14 +3,7 @@
 
 use std::cmp::Ordering;
 
-/// Calculates the mean of a time series of f64 values.
-///
-/// # Arguments
-/// * `data` - A slice of f64 values for which the mean is to be
-///   calculated.
-///
-/// # Returns
-/// The mean value as an f64. If the input slice is empty, it returns NaN.
+/// Arithmetic mean. Empty input → `NaN`.
 pub fn mean(data: &[f64]) -> f64 {
     if data.is_empty() {
         return f64::NAN;
@@ -18,13 +11,7 @@ pub fn mean(data: &[f64]) -> f64 {
     data.iter().sum::<f64>() / (data.len() as f64)
 }
 
-/// Calculates the median of a slice of f64 values.
-///
-/// # Arguments
-/// * `data` - A slice of f64 values for which the median is to be calculated.
-///
-/// # Returns
-/// The median value as an f64. If the input slice is empty, it returns NaN.
+/// Median (sorts a copy). Empty input → `NaN`.
 pub fn median(data: &[f64]) -> f64 {
     let n = data.len();
     if n == 0 {
@@ -42,15 +29,9 @@ pub fn median(data: &[f64]) -> f64 {
     }
 }
 
-/// Compute Median Absolute Deviation (MAD)
-/// MAD = median(|x - median|) for x in data
+/// Median absolute deviation: `median(|x − med|)` for each `x`.
 ///
-/// # Arguments
-/// * `data` - Input data slice
-/// * `med` - Precomputed median of `data`
-///
-/// # Returns
-/// * MAD value
+/// `med` is a precomputed median of `data`.
 pub fn mad(data: &[f64], med: f64) -> f64 {
     let deviations: Vec<f64> = data.iter().map(|x| (x - med).abs()).collect();
     median(&deviations)

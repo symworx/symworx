@@ -1,29 +1,14 @@
 // Copyright (c) 2026 PalEm Dynamics LLC
 // Licensed under the Apache License, Version 2.0.
 
-/// Min-Max normalization scales the data to a fixed range, typically [0, 1]
-///
-/// # Arguments
-/// * `data` - A vector of f64 values to be normalized
-///
-/// # Returns
-/// A vector of f64 values normalized to the range [0, 1]
+/// Min-max normalize to [0, 1].
 pub fn normalize(data: &[f64]) -> Vec<f64> {
     let min = data.iter().cloned().fold(f64::INFINITY, f64::min);
     let max = data.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
     data.iter().map(|x| (x - min) / (max - min)).collect()
 }
 
-/// Scale/normalize the time series data to a percentage scale [0, 100].
-/// The minimum value maps to 0 and the maximum (length) always maps to 100.
-///
-/// # Arguments
-/// * `data` - A vector of f64 values to be normalized
-///
-/// # Returns
-/// A vector of f64 values normalized to percent.
-/// These data can be re-interpolated using the `Resample` method.
-/// TODO: add docs on resample
+/// Scale to percent [0, 100] (min → 0, max → 100). Constant series → all zeros.
 pub fn scale_to_percent(data: &[f64]) -> Vec<f64> {
     if data.is_empty() {
         return Vec::new();
@@ -40,13 +25,7 @@ pub fn scale_to_percent(data: &[f64]) -> Vec<f64> {
     }
 }
 
-/// Z-score normalization standardizes the data to have a mean of 0 and a standard deviation of 1
-///
-/// # Arguments
-/// * `data` - A vector of f64 values to be normalized
-///
-/// # Returns
-/// A vector of f64 values normalized to have a mean of 0 and a standard deviation of 1
+/// Z-score normalize (mean 0, population std 1).
 pub fn zscore(data: &[f64]) -> Vec<f64> {
     let mean = data.iter().sum::<f64>() / data.len() as f64;
     let std_dev = (data.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / data.len() as f64).sqrt();

@@ -6,7 +6,7 @@ For guidelines when working with AI/agentic development tools, see [AGENTS.md](A
 
 ## Prerequisites
 
-- Rust (stable + nightly toolchain recommended for formatting)
+- Rust (stable + nightly toolchain recommended for formatting; MSRV `1.85`, same as edition 2024)
 - Cargo
 - For full native linear algebra features: OpenBLAS development headers (optional for most development)
 - Python 3.12+ and maturin (for Python bindings development)
@@ -127,7 +127,7 @@ The `symview` binary (from `symworx-tui`) can be installed with `cargo install s
 
 ### CI / Release Automation Notes
 
-- Day-to-day [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on push/PR to **`develop`** only. It formats library crates, clippy + unit-tests the **full science package set**, and builds Python bindings (`maturin develop` + pytest). The TUI smoke build is **disabled**; run `cargo build -p symworx-tui --bin symview` locally when touching the TUI.
+- Day-to-day [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on push/PR to **`develop`** only, plus **`workflow_dispatch`** (manual re-run of this gate; no publish). It formats library crates, clippy + unit-tests the **full science package set**, and builds Python bindings (`maturin develop` + pytest). The TUI smoke build is **disabled**; run `cargo build -p symworx-tui --bin symview` locally when touching the TUI.
 - The release path is gated by [`.github/workflows/release.yml`](.github/workflows/release.yml):
   - **Validation** on PRs into `main`, pushes to `release/**`, tags `v*`, and `workflow_dispatch` (not on push to `main`; the PR already ran this workflow):
     - Release metadata (workspace version matches `release/vX.Y.Z` / tag; `CHANGELOG.md` has a `## [X.Y.Z]` section).
@@ -152,7 +152,7 @@ Several optional features pull in native libraries (notably OpenBLAS via `ndarra
 
 ## Other Notes
 
-- The `docs/` directory contains higher-level guides. The LoadSym personal catalog starter **redirects** to the canonical copy under `crates/symworx-loadsym-db/docs/` (schema v4, multi-source ingest). These are not part of the generated `cargo doc` output.
+- The `docs/` directory contains higher-level guides. [docs/projects.md](docs/projects.md) lists slated vs considered work. The LoadSym personal catalog starter **redirects** to the canonical copy under `crates/symworx-loadsym-db/docs/` (schema v4, multi-source ingest). These are not part of the generated `cargo doc` output.
 - Internal agent guidelines live in `AGENTS.md`.
 - Feel free to open issues or discussions for anything unclear in this document.
 
@@ -161,6 +161,7 @@ Several optional features pull in native libraries (notably OpenBLAS via `ndarra
 **Quick links**
 - [AGENTS.md](AGENTS.md) – guidelines for agentic development
 - [CONTRIBUTING.md](CONTRIBUTING.md)
+- [Projects](docs/projects.md) – slated vs considered development items
 - [LoadSym personal catalog](crates/symworx-loadsym-db/docs/loadsym-personal-starter.md) – `$VELOFIT_HOME`, ingest, Polar, sync
 - [symworx-loadsym-db README](crates/symworx-loadsym-db/README.md) – schema versions / API
 - Root `Cargo.toml` for the full list of workspace members and shared dependencies
