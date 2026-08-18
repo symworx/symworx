@@ -6,7 +6,7 @@ For guidelines when working with AI/agentic development tools, see [AGENTS.md](A
 
 ## Prerequisites
 
-- Rust (stable + nightly toolchain recommended for formatting)
+- Rust (stable + nightly toolchain recommended for formatting; MSRV `1.85`, same as edition 2024)
 - Cargo
 - For full native linear algebra features: OpenBLAS development headers (optional for most development)
 - Python 3.12+ and maturin (for Python bindings development)
