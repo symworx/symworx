@@ -2,6 +2,7 @@
 #
 # Day-to-day CI on develop only. stage/main are FF promotions of that SHA.
 # Tag / release.yml re-runs the full gate before publish.
+# workflow_dispatch re-runs this gate on a branch (checks only; no publish).
 
 name: CI
 
@@ -10,6 +11,7 @@ on:
     branches: [develop]
   pull_request:
     branches: [develop]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
