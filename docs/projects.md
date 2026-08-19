@@ -29,8 +29,7 @@ note says otherwise.
 
 | Area | Item | Notes |
 |:------|:------|:-------|
-| Dynamics / SpatialSym | Group phase coherence | Cluster-phase, MdRQA / pairwise CRQA networks, relative phase. Literature: [group-phase-coherence.md](../crates/symworx-dynamics/notes/group-phase-coherence.md). SpatialSym application: [phase-coherence.md](../crates/symworx-spatialsym/notes/phase-coherence.md). |
-| SpatialSym | Accel / decel as pairwise (and group) phase | Today's APIs **count** speed-ups and slow-downs. A later pass could score in-phase vs out-of-phase effort and heading. Design notes: [phase-coherence.md](../crates/symworx-spatialsym/notes/phase-coherence.md). |
+| Dynamics | MdRQA / CRQA network summaries | Pairwise `crqa` and cluster-phase / relative phase have landed. Group recurrence networks and true MdRQA remain. Literature: [group-phase-coherence.md](../crates/symworx-dynamics/notes/group-phase-coherence.md). |
 | BioSym | Advanced physiology metrics | Waveform morphology, extended HRV, cardiorespiratory coupling / RSA, sleep sim, real-sensor quality presets, streaming analysis ([biosym README](../crates/symworx-biosym/README.md)). |
 | TUI | Explore / Dynamics depth | Filtering, processing, embedding / FNN in Explore; more nonlinear tools in Dynamics ([AGENTS.md](../AGENTS.md)). TUI smoke build in CI is still off. |
 | Backend | Real process supervision | `symworx-backend` is experimental; `ProcessManager` is a placeholder API. |
