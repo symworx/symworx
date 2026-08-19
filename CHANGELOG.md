@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `symworx-math::circular` — wrap, circular mean, mean resultant length, circular SD
 - `symworx-spatialsym` path linearity (`path_linearity`, `path_linearity_windows`) and pairwise effort / directional phase
 - Spatial Visualize: plan-view canvas (auto-fit, pair edges, focused path vs chord) and A0–A1 effort-in strip with frame playhead
+- Spatial generate uses a 105×68 m playing area; plan view locks the camera to those bounds. Agents panel lists all three demo agents.
+- Spatial Visualize: stats on the left, field on the right (attack +x drawn upward).
 - Spatial TUI summary shows path efficiency / RMS deviation and pairwise effort / directional phase
 - Windowed pairwise phase (`*_series` / `*_at`) and signed closing acceleration (`a_close`); TUI `Now` line uses a 1 s window
 - `path_and_phase` example: straight vs weave, together / opposed / one-go-one-brake drills

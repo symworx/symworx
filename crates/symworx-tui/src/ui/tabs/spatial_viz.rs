@@ -65,6 +65,15 @@ fn edge_color(dominant: Option<symworx_spatialsym::DirectionalRelation>) -> Colo
     }
 }
 
+/// World (x along length, y across) → canvas (across, along) so attack (+x) is up.
+fn attack_up(x: f64, y: f64) -> (f64, f64) {
+    (y, x)
+}
+
+fn attack_up_pts(pts: &[(f64, f64)]) -> Vec<(f64, f64)> {
+    pts.iter().map(|&(x, y)| attack_up(x, y)).collect()
+}
+
 fn padded_bounds(xs: &[f64], ys: &[f64]) -> ([f64; 2], [f64; 2]) {
     let (mut xmin, mut xmax) = match (xs.iter().copied().reduce(f64::min), xs.iter().copied().reduce(f64::max)) {
         (Some(a), Some(b)) => (a, b),
@@ -133,7 +142,30 @@ pub fn render_spatial_plan(
         None
     };
 
-    let (x_bounds, y_bounds) = padded_bounds(&xs, &ys);
+    let field = batch.playing_dimensions.map(|d| d.bounds());
+    let rotate = field.is_some();
+    let (x_bounds, y_bounds) = if let Some((xmin, xmax, ymin, ymax)) = field {
+        let pad_x = (ymax - ymin) * 0.02;
+        let pad_y = (xmax - xmin) * 0.02;
+        // Canvas X = field y (width); canvas Y = field x (length, attack up).
+        ([ymin - pad_x, ymax + pad_x], [xmin - pad_y, xmax + pad_y])
+    } else {
+        padded_bounds(&xs, &ys)
+    };
+
+    let trails: Vec<Vec<(f64, f64)>> = if rotate {
+        trails.iter().map(|t| attack_up_pts(t)).collect()
+    } else {
+        trails
+    };
+    let path_pts = if rotate { attack_up_pts(&path_pts) } else { path_pts };
+    let chord = chord.map(|((x1, y1), (x2, y2))| {
+        if rotate {
+            (attack_up(x1, y1), attack_up(x2, y2))
+        } else {
+            ((x1, y1), (x2, y2))
+        }
+    });
 
     let cfg = now_phase_cfg();
     let effort = batch.pairwise_effort_phase_at(idx, &cfg).ok();
@@ -165,7 +197,14 @@ pub fn render_spatial_plan(
                     } else {
                         Color::DarkGray
                     };
-                    edges.push((a.x, a.y, b.x, b.y, color));
+                    let (x1, y1, x2, y2) = if rotate {
+                        let (cx1, cy1) = attack_up(a.x, a.y);
+                        let (cx2, cy2) = attack_up(b.x, b.y);
+                        (cx1, cy1, cx2, cy2)
+                    } else {
+                        (a.x, a.y, b.x, b.y)
+                    };
+                    edges.push((x1, y1, x2, y2, color));
                     shown += 1;
                 }
             }
@@ -178,31 +217,52 @@ pub fn render_spatial_plan(
             f.agent_positions
                 .iter()
                 .enumerate()
-                .map(|(i, p)| (p.x, p.y, format!("A{i}")))
+                .map(|(i, p)| {
+                    let (x, y) = if rotate { attack_up(p.x, p.y) } else { (p.x, p.y) };
+                    (x, y, format!("A{i}"))
+                })
                 .collect()
         })
         .unwrap_or_default();
     let agent_pts: Vec<(f64, f64)> = agents.iter().map(|(x, y, _)| (*x, *y)).collect();
-    let focal_pt = focal.get(idx).map(|p| (p.x, p.y));
+    let focal_pt = focal
+        .get(idx)
+        .map(|p| if rotate { attack_up(p.x, p.y) } else { (p.x, p.y) });
 
-    let field = batch.playing_dimensions.map(|d| d.bounds());
+    let field_label = batch
+        .playing_dimensions
+        .map(|d| format!("{:.0}×{:.0} m", d.length_m, d.width_m))
+        .unwrap_or_else(|| "auto".into());
 
     let canvas = Canvas::default()
-        .block(
-            Block::new()
-                .borders(Borders::TOP)
-                .title(format!(" Plan  t={t:.2}s  A{focus} path/chord ")),
-        )
+        .block(Block::new().borders(Borders::TOP).title(format!(
+            " Plan  {field_label}  attack ↑  t={t:.2}s  A{focus} path/chord "
+        )))
         .x_bounds(x_bounds)
         .y_bounds(y_bounds)
         .marker(symbols::Marker::Braille)
         .paint(move |ctx| {
             if let Some((xmin, xmax, ymin, ymax)) = field {
+                // Rotated: canvas X = field y, canvas Y = field x.
                 ctx.draw(&Rectangle {
-                    x: xmin,
-                    y: ymin,
-                    width: xmax - xmin,
-                    height: ymax - ymin,
+                    x: ymin,
+                    y: xmin,
+                    width: ymax - ymin,
+                    height: xmax - xmin,
+                    color: Color::DarkGray,
+                });
+                ctx.draw(&CanvasLine {
+                    x1: ymin,
+                    y1: 0.0,
+                    x2: ymax,
+                    y2: 0.0,
+                    color: Color::DarkGray,
+                });
+                ctx.draw(&CanvasLine {
+                    x1: 0.0,
+                    y1: xmin,
+                    x2: 0.0,
+                    y2: xmax,
                     color: Color::DarkGray,
                 });
                 ctx.layer();
@@ -361,6 +421,7 @@ pub fn compact_agent_lines(app: &App, idx: usize, focal: &[symworx_spatialsym::P
             let f = &d.features;
             let mut parts = vec![
                 format!("{mark}A{i}"),
+                format!("({:.0},{:.0})", p.x, p.y),
                 format!("CL:{:?}", d.action),
                 format!("spd={:.1}", f.speed),
                 format!("ball={}", if f.is_ball_carrier { "Y" } else { "N" }),
@@ -373,7 +434,7 @@ pub fn compact_agent_lines(app: &App, idx: usize, focal: &[symworx_spatialsym::P
             }
             lines.push(format!("  {}", parts.join("  ")));
         } else {
-            lines.push(format!("  {mark}A{i}"));
+            lines.push(format!("  {mark}A{i}  ({:.0},{:.0})", p.x, p.y));
         }
     }
     lines

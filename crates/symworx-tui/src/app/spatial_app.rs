@@ -18,34 +18,53 @@ use super::{
     Workflow,
 };
 
+/// Demo playing area (meters), origin at center. Matches `PlayingDimensions::bounds`.
+const DEMO_FIELD_LENGTH_M: f64 = 105.0;
+const DEMO_FIELD_WIDTH_M: f64 = 68.0;
+
+fn clamp_to_dims(p: symworx_spatialsym::Point2, dims: &PlayingDimensions) -> symworx_spatialsym::Point2 {
+    let (xmin, xmax, ymin, ymax) = dims.bounds();
+    let m = 1.0;
+    symworx_spatialsym::Point2::new(p.x.clamp(xmin + m, xmax - m), p.y.clamp(ymin + m, ymax - m))
+}
+
 impl App {
     pub fn seed_spatial_demo(&mut self) {
         use symworx_spatialsym::Point2;
-        let init = vec![Point2::new(0., 0.), Point2::new(1.2, 2.5), Point2::new(0.7, -0.5)];
+        let dims = PlayingDimensions::new(DEMO_FIELD_LENGTH_M, DEMO_FIELD_WIDTH_M);
+        // Attacking toward +x (right-hand end). Spread is tens of meters so the
+        // locked field camera still shows who is where.
+        let init = vec![
+            clamp_to_dims(Point2::new(28.0, -8.0), &dims),  // A0 passer
+            clamp_to_dims(Point2::new(34.0, 10.0), &dims),  // A1 runner
+            clamp_to_dims(Point2::new(40.0, -16.0), &dims), // A2 closer
+        ];
         let evs = vec![
             synthetic::SpatialEvent::StartRun {
                 agent: 1,
-                target: Point2::new(6.3, 2.5),
-                speed: 4.0,
+                target: clamp_to_dims(Point2::new(48.0, 4.0), &dims),
+                speed: 7.0,
                 start_time: 0.2,
             },
             synthetic::SpatialEvent::Pass {
                 from: 0,
                 to: 1,
-                time: 0.6,
+                time: 0.8,
             },
             synthetic::SpatialEvent::Close {
                 agent: 2,
                 target: 1,
-                speed: 5.2,
-                start_time: 0.7,
+                speed: 8.0,
+                start_time: 0.9,
             },
         ];
-        let (ev_t, ev_p, ev_f) = synthetic::generate_event_driven(init, Point2::new(0.25, 0.), &evs, 1.4, 0.1);
+        let (ev_t, ev_p, ev_f) =
+            synthetic::generate_event_driven(init, clamp_to_dims(Point2::new(30.0, -6.0), &dims), &evs, 2.4, 0.1);
         let groups = vec![0u32, 0, 1];
         let att = vec![Vec2::new(1., 0.), Vec2::new(1., 0.), Vec2::new(-1., 0.)];
-        let dims = Some(PlayingDimensions::new(105.0, 68.0));
-        let goal_pos = vec![Point2::new(52.5, 0.0), Point2::new(52.5, 0.0), Point2::new(-52.5, 0.0)];
+        let dims = Some(dims);
+        let (xmin, xmax, _, _) = PlayingDimensions::new(DEMO_FIELD_LENGTH_M, DEMO_FIELD_WIDTH_M).bounds();
+        let goal_pos = vec![Point2::new(xmax, 0.0), Point2::new(xmax, 0.0), Point2::new(xmin, 0.0)];
         let (batch, focal) = symworx_spatialsym::build_agent_trajectories(
             ev_t.clone(),
             ev_p,
@@ -73,8 +92,8 @@ impl App {
         self.spatial_events = vec![
             (0, "start".to_string()),
             (2, "run".to_string()),
-            (6, "pass".to_string()),
-            (7, "close".to_string()),
+            (8, "pass".to_string()),
+            (9, "close".to_string()),
         ];
     }
     pub fn load_spatial_csv(&mut self, path: &PathBuf) -> anyhow::Result<()> {

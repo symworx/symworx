@@ -41,7 +41,8 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
                e                   export CSV + JSON + meta → data/\n\
                l                   refresh status / legend\n\n\
              Panels: plan view · A0–A1 effort strip · compact agents · events · summaries.\n\
-             Plan auto-fits the data. Pair edges: cyan=in yellow=opp red=out.\n\
+             Layout: stats left, field right (attack +x is up). 105×68 m when generated.\n\
+             Pair edges: cyan=in yellow=opp red=out.\n\
              Focused agent (on-ball, else A0): blue path, green start→now chord (matches eff/rms).\n\n\
              \n\
              GLOBAL\n\n\
@@ -80,16 +81,7 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
     ))
     .style(Style::default().fg(Color::Yellow));
 
-    let chunks = Layout::vertical([
-        Constraint::Length(1),
-        Constraint::Length(1),
-        Constraint::Min(10),
-        Constraint::Length(5),
-        Constraint::Length(4),
-        Constraint::Length(4),
-        Constraint::Length(6),
-    ])
-    .split(inner);
+    let chunks = Layout::vertical([Constraint::Length(1), Constraint::Length(1), Constraint::Min(12)]).split(inner);
 
     frame.render_widget(sub_header, chunks[0]);
 
@@ -114,8 +106,16 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
         let n_times = batch.num_times();
         let idx = app.spatial_frame_idx.min(n_times.saturating_sub(1));
         if batch.frame(idx).is_some() {
-            super::spatial_viz::render_spatial_plan(frame, app, batch, focal, idx, chunks[2]);
-            super::spatial_viz::render_pair_strip(frame, batch, idx, chunks[3]);
+            let cols = Layout::horizontal([Constraint::Percentage(38), Constraint::Percentage(62)]).split(chunks[2]);
+            let left = Layout::vertical([
+                Constraint::Length(5),
+                Constraint::Min(7),
+                Constraint::Length(5),
+                Constraint::Min(8),
+            ])
+            .split(cols[0]);
+
+            super::spatial_viz::render_pair_strip(frame, batch, idx, left[0]);
 
             let mut agent_lines = vec![format!(
                 "Frame {}/{}  t={:.2}s",
@@ -126,25 +126,27 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
             agent_lines.extend(super::spatial_viz::compact_agent_lines(app, idx, focal));
             let agents_p =
                 Paragraph::new(agent_lines.join("\n")).block(Block::new().borders(Borders::TOP).title(" Agents "));
-            frame.render_widget(agents_p, chunks[4]);
+            frame.render_widget(agents_p, left[1]);
 
             let mut ev_lines = vec!["Events (< > or 1-9):".to_string()];
             if app.spatial_events.is_empty() {
                 ev_lines.push("  (no events tagged)".into());
             } else {
-                for (i, (f, desc)) in app.spatial_events.iter().enumerate().take(6) {
+                for (i, (f, desc)) in app.spatial_events.iter().enumerate().take(8) {
                     let marker = if *f == idx { "▶ " } else { "  " };
                     ev_lines.push(format!("{}{}: f{} {}", marker, i, f, desc));
                 }
             }
             let events_p =
                 Paragraph::new(ev_lines.join("\n")).block(Block::new().borders(Borders::TOP).title(" Event Tags "));
-            frame.render_widget(events_p, chunks[5]);
+            frame.render_widget(events_p, left[2]);
 
             let sum_lines = format_spatial_summaries(batch, focal, idx);
             let sum_p =
                 Paragraph::new(sum_lines.join("\n")).block(Block::new().borders(Borders::TOP).title(" Summary Data "));
-            frame.render_widget(sum_p, chunks[6]);
+            frame.render_widget(sum_p, left[3]);
+
+            super::spatial_viz::render_spatial_plan(frame, app, batch, focal, idx, cols[1]);
         } else {
             let content = Paragraph::new("No frame data");
             frame.render_widget(content, chunks[2]);
