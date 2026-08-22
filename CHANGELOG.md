@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2026-08-22
+
+Same contents as 0.3.0. crates.io republish after a partial 0.3.1 upload.
+
+### Notes
+
+- `v0.3.0` GitHub tag did not publish to crates.io (registry token 403).
+- `0.3.1` was uploaded for most crates from a local `cargo publish` on develop; `symworx-spatialsym` and `symworx-tui` never landed. That number is burned.
+- All workspace crates are 0.3.2 so spatialsym/tui can depend on published siblings.
+
 ## [0.3.0] - 2026-08-22
 
 ### Added
@@ -71,6 +81,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version Links
 
+[0.3.2]: https://github.com/symworx/symworx/releases/tag/v0.3.2
+[0.3.0]: https://github.com/symworx/symworx/releases/tag/v0.3.0
 [0.2.0]: https://github.com/symworx/symworx/releases/tag/v0.2.0
 [0.1.1]: https://github.com/symworx/symworx/releases/tag/v0.1.1
 [0.1.0]: https://github.com/symworx/symworx/releases/tag/v0.1.0
