@@ -5,4 +5,5 @@ pub mod home;
 pub mod import;
 pub mod loadsym;
 pub mod spatial;
+pub mod spatial_viz;
 pub mod stats;

@@ -328,6 +328,8 @@ pub struct AgentTrajectories {
     pub attacking_directions: Option<Vec<Vec2>>,
     /// Optional playing area dimensions (meters). Part of the spatial metadata (alongside goals).
     pub playing_dimensions: Option<crate::space::PlayingDimensions>,
+    /// Optional stock markings (goal, end boxes, circle). Independent of pitch size.
+    pub play_area_markings: Option<crate::space::PlayAreaMarkings>,
     /// Optional goal position (the target "goal" or scoring area) per agent.
     /// Parallel to attacking_directions. Used for better detection of
     /// Creation / Conversion / Prevention (scoring opportunity) actions.
@@ -348,6 +350,7 @@ impl AgentTrajectories {
             groups: None,
             attacking_directions: None,
             playing_dimensions: None,
+            play_area_markings: None,
             goal_positions: None,
         })
     }
@@ -380,6 +383,12 @@ impl AgentTrajectories {
         self
     }
 
+    /// Attach stock play-area markings (goal / end boxes / circle).
+    pub fn with_play_area_markings(mut self, marks: crate::space::PlayAreaMarkings) -> Self {
+        self.play_area_markings = Some(marks);
+        self
+    }
+
     /// Attach explicit goal positions (one per agent, their attacking target).
     /// Used to improve Creation/Conversion/Prevention detection.
     pub fn with_goal_positions(mut self, goals: Vec<Point2>) -> crate::error::Result<Self> {
@@ -401,6 +410,7 @@ impl AgentTrajectories {
                 groups: None,
                 attacking_directions: None,
                 playing_dimensions: None,
+                play_area_markings: None,
                 goal_positions: None,
             });
         }
@@ -518,6 +528,10 @@ impl AgentTrajectories {
 
         let mut batch = Self::new(new_times, new_positions)?;
         batch.groups = new_groups;
+        batch.playing_dimensions = self.playing_dimensions;
+        batch.play_area_markings = self.play_area_markings;
+        batch.attacking_directions = self.attacking_directions.clone();
+        batch.goal_positions = self.goal_positions.clone();
         Ok(batch)
     }
 
@@ -627,6 +641,90 @@ impl AgentTrajectories {
             .map(|sp| crate::kinematics::normalize_to_peak_pace(&sp))
             .collect()
     }
+
+    /// Session-level path linearity per agent (start→end chord).
+    pub fn path_linearity(&self) -> Vec<Option<crate::metrics::PathLinearity>> {
+        self.positions
+            .iter()
+            .map(|p| crate::metrics::path_linearity(p))
+            .collect()
+    }
+
+    /// Pairwise effort-phase matrix (`n × n`, diagonal `None`).
+    pub fn pairwise_effort_phase(
+        &self,
+        cfg: &crate::phase::PhaseWindow,
+    ) -> crate::error::Result<Vec<Vec<Option<crate::phase::PairwiseEffortPhase>>>> {
+        let n = self.num_agents();
+        let mut mat = vec![vec![None; n]; n];
+        // Upper-triangle fill needs both indices; range loops stay clearer than split borrows.
+        #[allow(clippy::needless_range_loop)]
+        for i in 0..n {
+            for j in (i + 1)..n {
+                let score =
+                    crate::phase::pairwise_effort_phase(&self.positions[i], &self.positions[j], &self.times, cfg)?;
+                mat[i][j] = score.clone();
+                mat[j][i] = score;
+            }
+        }
+        Ok(mat)
+    }
+
+    /// Pairwise effort-phase at one position-frame index.
+    pub fn pairwise_effort_phase_at(
+        &self,
+        frame_idx: usize,
+        cfg: &crate::phase::PhaseWindow,
+    ) -> crate::error::Result<Vec<Vec<Option<crate::phase::PairwiseEffortPhase>>>> {
+        crate::phase::pairwise_effort_phase_at(&self.positions, &self.times, frame_idx, cfg)
+    }
+
+    /// Pairwise directional-phase at one position-frame index.
+    pub fn pairwise_directional_phase_at(
+        &self,
+        frame_idx: usize,
+        cfg: &crate::phase::PhaseWindow,
+    ) -> crate::error::Result<Vec<Vec<Option<crate::phase::PairwiseDirectionalPhase>>>> {
+        crate::phase::pairwise_directional_phase_at(&self.positions, &self.times, frame_idx, cfg)
+    }
+
+    /// Pairwise closing at one position-frame index.
+    pub fn pairwise_closing_at(
+        &self,
+        frame_idx: usize,
+        cfg: &crate::phase::PhaseWindow,
+    ) -> crate::error::Result<Vec<Vec<Option<crate::phase::PairwiseClosing>>>> {
+        crate::phase::pairwise_closing_at(&self.positions, &self.times, frame_idx, cfg)
+    }
+
+    /// Effort-phase series for agents `i` and `j`.
+    pub fn pairwise_effort_phase_series(
+        &self,
+        i: usize,
+        j: usize,
+        cfg: &crate::phase::PhaseWindow,
+    ) -> crate::error::Result<Vec<Option<crate::phase::PairwiseEffortPhase>>> {
+        crate::phase::pairwise_effort_phase_series(&self.positions[i], &self.positions[j], &self.times, cfg)
+    }
+
+    /// Pairwise directional-phase matrix (`n × n`, diagonal `None`).
+    pub fn pairwise_directional_phase(
+        &self,
+        cfg: &crate::phase::PhaseWindow,
+    ) -> crate::error::Result<Vec<Vec<Option<crate::phase::PairwiseDirectionalPhase>>>> {
+        let n = self.num_agents();
+        let mut mat = vec![vec![None; n]; n];
+        #[allow(clippy::needless_range_loop)]
+        for i in 0..n {
+            for j in (i + 1)..n {
+                let score =
+                    crate::phase::pairwise_directional_phase(&self.positions[i], &self.positions[j], &self.times, cfg)?;
+                mat[i][j] = score.clone();
+                mat[j][i] = score;
+            }
+        }
+        Ok(mat)
+    }
 }
 
 /// Summary for a single player/agent.
@@ -651,7 +749,10 @@ pub struct PlayerSummary {
     pub estimated_load: f64,
     /// Average distance to focal object across the session (if focal provided).
     pub avg_dist_to_focal: Option<f64>,
-    // Future: time_as_on_ball_carrier, high_speed_distance, etc.
+    /// Session path efficiency (net displacement / path length). `None` if unusable.
+    pub path_efficiency: Option<f64>,
+    /// RMS perpendicular deviation from the start→end chord (meters).
+    pub path_rms_dev_m: Option<f64>,
 }
 
 /// Team/group level aggregate.
@@ -673,6 +774,11 @@ pub struct GroupSummary {
     pub total_estimated_load: f64,
     /// Average pairwise distance between members of this group (cohesion / spread metric).
     pub avg_intra_group_distance: f64,
+    /// Mean pairwise effort in-phase fraction (events, else sign agreement).
+    /// `None` when the group has fewer than two scored pairs.
+    pub mean_effort_in_phase: Option<f64>,
+    /// Fraction of scored pairs whose directional dominant cell is in-phase.
+    pub mean_directional_in_phase: Option<f64>,
 }
 
 impl AgentTrajectories {
@@ -698,6 +804,10 @@ impl AgentTrajectories {
 
                 let group = self.groups.as_ref().and_then(|g| g.get(i).copied());
 
+                let path = crate::metrics::path_linearity(&self.positions[i]);
+                let path_efficiency = path.map(|p| p.efficiency);
+                let path_rms_dev_m = path.and_then(|p| p.rms_dev_m);
+
                 let avg_dist_to_focal = focal.map(|f| {
                     let mut sum = 0.0;
                     let mut n = 0;
@@ -720,6 +830,8 @@ impl AgentTrajectories {
                     decel_count: metrics.decel_count,
                     estimated_load: metrics.estimated_load,
                     avg_dist_to_focal,
+                    path_efficiency,
+                    path_rms_dev_m,
                 }
             })
             .collect()
@@ -786,6 +898,52 @@ impl AgentTrajectories {
                     0.0
                 };
 
+                let phase_cfg = crate::phase::PhaseWindow {
+                    accel_threshold,
+                    ..crate::phase::PhaseWindow::default()
+                };
+                let mut effort_sum = 0.0;
+                let mut effort_n = 0usize;
+                let mut dir_in = 0usize;
+                let mut dir_n = 0usize;
+                for ii in 0..group_indices.len() {
+                    for jj in (ii + 1)..group_indices.len() {
+                        let i = group_indices[ii];
+                        let j = group_indices[jj];
+                        if let Ok(Some(e)) = crate::phase::pairwise_effort_phase(
+                            &self.positions[i],
+                            &self.positions[j],
+                            &self.times,
+                            &phase_cfg,
+                        ) && let Some(f) = e.event_in_phase_fraction.or(e.sign_agree_fraction)
+                        {
+                            effort_sum += f;
+                            effort_n += 1;
+                        }
+                        if let Ok(Some(d)) = crate::phase::pairwise_directional_phase(
+                            &self.positions[i],
+                            &self.positions[j],
+                            &self.times,
+                            &phase_cfg,
+                        ) {
+                            dir_n += 1;
+                            if d.dominant == Some(crate::phase::DirectionalRelation::InPhase) {
+                                dir_in += 1;
+                            }
+                        }
+                    }
+                }
+                let mean_effort_in_phase = if effort_n > 0 {
+                    Some(effort_sum / effort_n as f64)
+                } else {
+                    None
+                };
+                let mean_directional_in_phase = if dir_n > 0 {
+                    Some(dir_in as f64 / dir_n as f64)
+                } else {
+                    None
+                };
+
                 GroupSummary {
                     group,
                     num_players: num,
@@ -795,6 +953,8 @@ impl AgentTrajectories {
                     total_decels: total_dc,
                     total_estimated_load: total_load,
                     avg_intra_group_distance: avg_intra,
+                    mean_effort_in_phase,
+                    mean_directional_in_phase,
                 }
             })
             .collect()

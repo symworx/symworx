@@ -1,57 +1,30 @@
 // Copyright (c) 2026 PalEm Dynamics LLC
 // Licensed under the Apache License, Version 2.0.
 
-//! Kalman filtering and smoothing using linear-Gaussian state-space models.
+//! Linear-Gaussian Kalman filter and RTS smoother.
 //!
-//! This is the primary, general-purpose `KalmanFilter` implementation in SymWorx.
-//! It is suitable for a wide range of biosignal and dynamical systems applications
-//! (far beyond the specific sleep adaptability analysis), including:
+//! Primary multivariate `KalmanFilter` for biosignal / dynamical-systems work:
+//! multi-channel latent state estimation, sensor fusion, optional control inputs,
+//! and offline Rauch–Tung–Striebel smoothing via `run_forward` + `rts_smooth`.
 //!
-//! - Latent state estimation from multiple noisy observation channels
-//!   (e.g. combining HRV features, respiration, movement, delta power, etc.)
-//! - Sensor fusion and tracking of physiological or biomechanical states
-//! - Offline batch analysis where Rauch–Tung–Striebel (RTS) smoothing is desired
-//!   for the best estimates given the entire time series
-//! - Systems with known control inputs (interventions, exercise bouts, etc.)
-//!
-//! The simple 1D constant-velocity tracker lives in `kalman1d.rs` as `KalmanFilter1D`
-//! for backward compatibility and very lightweight use cases.
-//!
-//! ## Relationship to KalmanFilter1D
-//!
-//! `KalmanFilter1D` is kept under a new name so that the primary `KalmanFilter`
-//! type can be the flexible, multivariate, smoothable version that most new
-//! work should use.
-//!
-//! You can still emulate the old 1D CV behavior with this general `KalmanFilter`
-//! (see the test `test_general_reproduces_old_1d_cv`).
+//! The lightweight 1D constant-velocity tracker is `KalmanFilter1D` in
+//! `kalman1d.rs` (old 1D CV can also be emulated here; see
+//! `test_general_reproduces_old_1d_cv`).
 //!
 //! ## Typical usage
 //!
 //! ```ignore
 //! use ndarray::array;
-//! use symworx_signal::filters::nonlinear::KalmanFilter;  // the general one
+//! use symworx_signal::filters::nonlinear::KalmanFilter;
 //!
-//! // Example: 2D state (level + drift) observed through 3 features
 //! let f = array![[1.0, dt], [0.0, 1.0]];
-//! let h = array![[1.0, 0.0],
-//!                [1.0, 0.1],
-//!                [0.8, 0.0]];
-//! let q = ...;
-//! let r = ...;
-//! let x0 = array![0.0, 0.0];
-//! let p0 = Array2::eye(2) * 1000.0;
-//!
+//! let h = array![[1.0, 0.0], [1.0, 0.1], [0.8, 0.0]];
 //! let mut kf = KalmanFilter::new(f, h, q, r, x0, p0);
 //!
-//! let mut filtered = Vec::new();
-//! for z in window_features {   // each z is Array1 of length 3
+//! for z in window_features {
 //!     kf.predict(None);
 //!     kf.update(&z);
-//!     filtered.push(kf.state().clone());
 //! }
-//!
-//! // For best offline estimates of the whole trajectory:
 //! let run = kf.run_forward(&all_zs);
 //! let smoothed = rts_smooth(&run, &f);
 //! ```

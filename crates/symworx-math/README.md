@@ -9,6 +9,7 @@ stats, signal, dynamics, and domain crates without huge compile times.
 | Module | Role |
 |--------|------|
 | `series` | Successive differences, rolling stats, sliding windows (canonical home for sequence ops) |
+| `circular` | Wrap to (−π, π], circular mean, mean resultant length, circular SD |
 | `integration` | Trapezoidal integration, RK4 ODE step/integrate |
 | `optimize` | Gradient descent, Armijo line search, finite-difference gradients |
 | `oscillators` | Van der Pol and related demo plants |

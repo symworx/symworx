@@ -3,43 +3,14 @@
 
 //! Series and sequential operations.
 //!
-//! This module is the **canonical home** in the SymWorx ecosystem for
-//! low-level, allocation-minimal operations on ordered sequences
-//! (time series, stride intervals, inter-beat intervals, RR intervals, etc.).
+//! **Canonical home** for low-level, allocation-minimal ops on ordered sequences
+//! (time series, stride/IBI/RR intervals, etc.).
 //!
-//! ## Design Principles
-//!
-//! - **Signed by default**: The primary operation (`successive_differences`)
-//!   returns signed deltas. This preserves directional information
-//!   (e.g. speeding up vs slowing down).
-//! - **Explicit absolute variant**: When only magnitude matters, use
-//!   `successive_absolute_differences`.
-//! - **Low-level & reusable**: These primitives are deliberately kept
-//!   simple and allocation-minimal so they can be used by both
-//!   modeling crates (`symworx-biosym`) and analysis crates
-//!   (`symworx-stats`, `symworx-dynamics`).
-//! - **Single source of truth**: Do not re-implement successive difference
-//!   logic elsewhere. Depend on `symworx-math` (usually via `symworx-core`)
-//!   instead.
-//!
-//! ## Relationship to Other Crates
-//!
-//! - `symworx-stats` re-exports these primitives and builds higher-level
-//!   variability descriptors (`rmssd`, `sd_successive_differences`, etc.)
-//!   on top of them.
-//! - `symworx-biosym` uses them for gait and physiological interval
-//!   calculations.
-//! - `symworx-signal` (when it needs them) should depend on this module
-//!   rather than duplicating logic.
-//!
-//! ## Adding New Operations
-//!
-//! New general-purpose sequence operations (e.g. cumulative sums,
-//! forward/backward differences, simple rolling statistics, sliding windows,
-//! and time-based segmentation) should be added here rather than in
-//! `symworx-stats` or domain crates. The windowing primitives here are
-//! intended for use cases such as 30 s / 60 s feature windows on resampled
-//! HRV series before computing RMSSD or sample entropy.
+//! - **Signed by default**: [`successive_differences`] returns signed deltas
+//!   (direction preserved). Use [`successive_absolute_differences`] for magnitude only.
+//! - Do not re-implement successive differences elsewhere — depend on this module
+//!   (usually via `symworx-core`). Higher-level variability lives in `symworx-stats`;
+//!   new general sequence ops (windows, cumulative sums, …) should be implemented here.
 
 /// Computes the signed successive differences between consecutive elements.
 ///

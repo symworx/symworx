@@ -30,7 +30,7 @@ pub struct NlmsFilter {
 }
 
 impl LmsFilter {
-    /// Initiate a new LMS Filter
+    /// Create a new LMS filter.
     pub fn new(length: usize, mu: f64) -> Self {
         assert!(length > 0);
         assert!(mu > 0.0);
@@ -75,7 +75,7 @@ impl LmsFilter {
 }
 
 impl NlmsFilter {
-    /// Initiate a new NLMS filter
+    /// Create a new NLMS filter.
     pub fn new(length: usize, mu: f64, epsilon: f64) -> Self {
         assert!(length > 0);
         assert!(mu > 0.0);

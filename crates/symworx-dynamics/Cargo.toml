@@ -17,6 +17,7 @@ ndarray        = { workspace = true }
 ndarray-linalg = { workspace = true }
 num-complex    = { workspace = true }
 # SVD for DMD (and shared distance metrics for embedding) — enable linalg for Svd.
+symworx-math   = { workspace = true }
 symworx-stats  = { workspace = true, features = ["linalg"] }
 
 [lints]

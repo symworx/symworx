@@ -7,7 +7,7 @@ use rand::{
     rngs::StdRng,
 };
 
-/// Represents a respiration time-series signal.
+/// Respiration time-series signal.
 #[derive(Debug, Clone)]
 pub struct RespTimeSeries {
     /// Sample times (seconds)

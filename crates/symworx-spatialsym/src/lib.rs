@@ -14,9 +14,10 @@
 //! - [`geometry`] — `Point2`, `Vec2`, bearing/angle, basic ops (Copy-friendly).
 //! - [`trajectory`] — Time-stamped position sequences (single + batched).
 //! - [`kinematics`] — Velocity, speed, heading derivation using `symworx-math` series primitives.
-//! - [`metrics`] — Pairwise distances etc. (implemented locally for Point2 ergonomics).
+//! - [`metrics`] — Pairwise distances and single-agent path linearity (vs the start→end chord).
+//! - [`phase`] — Pairwise in-phase / out-of-phase effort and directional scoring.
 //! - Space geometry primitives and decision classification are co-evolving (see high-priority work).
-//! - [`space`] — Arena/bounds, generic zoning (no soccer terminology).
+//! - [`space`] — Play-area bounds plus sport-agnostic markings; [`soccer`] has IFAB Law 1 presets.
 //! - [`decision`] — `SpaceAction` enum and classifiers using historical + future windows.
 //!
 //! ## Design Notes
@@ -41,6 +42,7 @@ pub mod geometry;
 pub mod kinematics;
 pub mod load;
 pub mod metrics;
+pub mod phase;
 pub mod space;
 pub mod synthetic;
 pub mod trajectory;
@@ -65,8 +67,14 @@ pub use geometry::{
     bearing_between,
 };
 pub use kinematics::{
+    EffortEvent,
+    accel_decel_events,
     bearing_to_cardinal,
     count_accelerations_decelerations,
+    derive_along_track_accels,
+    derive_closing_accels,
+    derive_headings,
+    derive_scalar_accels,
     derive_speeds,
     derive_velocities,
     derive_velocities_from_times,
@@ -78,11 +86,44 @@ pub use kinematics::{
 pub use load::load_trajectories_csv;
 #[cfg(feature = "async")]
 pub use load::load_trajectories_csv_async;
-pub use metrics::pairwise_distances;
-pub use space::PlayingDimensions;
+pub use metrics::{
+    PathLinearity,
+    distances_to_focal,
+    pairwise_distances,
+    path_length,
+    path_linearity,
+    path_linearity_windows,
+};
+pub use phase::{
+    DirectionalRelation,
+    PairwiseClosing,
+    PairwiseDirectionalPhase,
+    PairwiseEffortPhase,
+    PhaseWindow,
+    accel_index_for_frame,
+    pairwise_closing,
+    pairwise_closing_at,
+    pairwise_closing_series,
+    pairwise_directional_phase,
+    pairwise_directional_phase_at,
+    pairwise_directional_phase_series,
+    pairwise_effort_phase,
+    pairwise_effort_phase_at,
+    pairwise_effort_phase_series,
+};
+pub use space::{
+    CenterCircle,
+    EndBox,
+    GoalSpec,
+    PenaltyMark,
+    PlayAreaMarkings,
+    PlayingDimensions,
+    soccer,
+};
 pub use synthetic::{
     SpatialEvent,
     build_agent_trajectories,
+    generate_3v3_attack,
     generate_curved_trajectory,
     generate_event_driven,
     generate_ground_truth,

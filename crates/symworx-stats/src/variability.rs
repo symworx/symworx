@@ -25,17 +25,9 @@ pub use series::successive_absolute_differences;
 pub use series::successive_differences;
 use symworx_math::series;
 
-/// Computes the mean of successive absolute differences (MSD).
+/// Mean of successive absolute differences (MSD).
 ///
-/// This uses the absolute differences internally, as is conventional
-/// for many variability measures (e.g. in heart rate variability and gait
-/// analysis).
-///
-/// # Arguments
-/// * `data` - Input signal
-///
-/// # Returns
-/// Mean successive absolute difference. Returns `NaN` if `data` is empty.
+/// Uses absolute diffs (conventional for HRV / gait variability). Empty → `NaN`.
 pub fn mean_successive_differences(data: &[f64]) -> f64 {
     let diffs = successive_absolute_differences(data);
     if diffs.is_empty() {
@@ -44,15 +36,9 @@ pub fn mean_successive_differences(data: &[f64]) -> f64 {
     diffs.iter().sum::<f64>() / diffs.len() as f64
 }
 
-/// Root Mean Square of Successive Differences (RMSSD)
+/// Root mean square of successive differences (RMSSD).
 ///
-/// A common measure of short-term variability.
-///
-/// # Arguments
-/// * `data` - Input signal
-///
-/// # Returns
-/// RMSSD value. Returns `NaN` if `data.len() < 3`.
+/// Short-term variability. `len < 3` → `NaN`.
 pub fn rmssd(data: &[f64]) -> f64 {
     if data.len() < 3 {
         return f64::NAN;
@@ -62,13 +48,7 @@ pub fn rmssd(data: &[f64]) -> f64 {
     (sum_sq / (data.len() - 1) as f64).sqrt()
 }
 
-/// Standard Deviation of Successive Differences (often called SDSD)
-///
-/// # Arguments
-/// * `data` - Input signal
-///
-/// # Returns
-/// Standard deviation of successive differences. Returns `NaN` if `data.len() < 2`.
+/// Standard deviation of successive differences (SDSD). `len < 2` → `NaN`.
 pub fn sd_successive_differences(data: &[f64]) -> f64 {
     if data.len() < 2 {
         return f64::NAN;
