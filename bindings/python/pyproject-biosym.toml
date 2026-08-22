@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "symworx-biosym"
-version = "0.3.2"
+version = "0.3.3"
 description = "Biological and biomechanical modeling tools: physiological signals (PPG, respiration), gait analysis, and central pattern generators (CPG) with Rust + PyO3"
 requires-python = ">=3.12"
 license = { text = "Apache-2.0" }
