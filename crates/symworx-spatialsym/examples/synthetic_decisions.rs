@@ -2,8 +2,6 @@
 // Licensed under the Apache License, Version 2.0.
 
 use symworx_spatialsym::{
-    AgentTrajectories,
-    PlayingDimensions,
     Point2,
     Vec2,
 };

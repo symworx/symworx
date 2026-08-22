@@ -12,6 +12,7 @@ use symworx_spatialsym::{
     PhaseWindow,
     Point2,
     Vec2,
+    generate_3v3_attack,
     generate_curved_trajectory,
     generate_linear_trajectory,
     pairwise_closing,
@@ -155,6 +156,88 @@ fn main() {
         "\nClosing (A speeds up at standing B): mean a_close i→j = {:?}",
         close.as_ref().and_then(|c| c.mean_i_toward_j)
     );
+
+    let (batch3, focal3, _) = generate_3v3_attack();
+    let dims = batch3.playing_dimensions.expect("3v3 pitch");
+    let marks = batch3.play_area_markings.expect("IFAB markings");
+    println!(
+        "\n3v3 attack (+x / up on plan), FIFA {:.0}×{:.0} m + IFAB markings:",
+        dims.length_m, dims.width_m
+    );
+    println!(
+        "  outer box {:.1}×{:.1} m  inner {:.1}×{:.1} m  goal {:.2} m  PK {:.0} m  circle r={:.2} m",
+        marks.outer_end.depth_m,
+        marks.outer_end.width_m,
+        marks.inner_end.depth_m,
+        marks.inner_end.width_m,
+        marks.goal.width_m,
+        marks.penalty_mark.from_goal_line_m,
+        marks.center_circle.radius_m
+    );
+    let players = batch3.per_player_summaries(0.8, 1.0, Some(&focal3));
+    println!("  Players:");
+    for s in &players {
+        let g = s.group.map(|g| format!("G{g}")).unwrap_or_else(|| "—".into());
+        println!(
+            "    A{} {g}  dist={:.1} m  spd={:.2}  acc={}  dec={}  eff={:.2}",
+            s.player_idx,
+            s.total_distance,
+            s.avg_speed,
+            s.accel_count,
+            s.decel_count,
+            s.path_efficiency.unwrap_or(f64::NAN)
+        );
+    }
+    let cfg3 = PhaseWindow {
+        accel_threshold: 0.8,
+        ..PhaseWindow::default()
+    };
+    if let Ok(effort) = batch3.pairwise_effort_phase(&cfg3) {
+        let dir = batch3.pairwise_directional_phase(&cfg3).ok();
+        let groups = batch3.groups.as_deref();
+        let mut within = Vec::new();
+        let mut versus = Vec::new();
+        let n = batch3.num_agents();
+        for i in 0..n {
+            for j in (i + 1)..n {
+                let ev = effort[i][j]
+                    .as_ref()
+                    .and_then(|p| p.event_in_phase_fraction.or(p.sign_agree_fraction))
+                    .map(|f| format!("{f:.2}"))
+                    .unwrap_or_else(|| "—".into());
+                let dlab = dir
+                    .as_ref()
+                    .and_then(|m| m[i][j].as_ref())
+                    .and_then(|d| d.dominant)
+                    .map(|r| r.short_label())
+                    .unwrap_or("—");
+                let same = match groups {
+                    Some(g) => g.get(i) == g.get(j),
+                    None => true,
+                };
+                if same {
+                    within.push(format!("A{i}–A{j} e={ev} d={dlab}"));
+                } else {
+                    versus.push(format!("A{i}×A{j} e={ev} d={dlab}"));
+                }
+            }
+        }
+        println!("  Within  {}", within.join("  "));
+        println!("  Versus  {}", versus.join("  "));
+    }
+    for g in batch3.per_group_summaries(0.8, 1.0, Some(&focal3)) {
+        println!(
+            "  Team G{}  n={}  dist={:.0} m  acc={}  dec={}  effort-in={:?}  dir-in={:?}  spread={:.1} m",
+            g.group,
+            g.num_players,
+            g.total_distance,
+            g.total_accels,
+            g.total_decels,
+            g.mean_effort_in_phase,
+            g.mean_directional_in_phase,
+            g.avg_intra_group_distance
+        );
+    }
 
     println!("\nDone.");
 }

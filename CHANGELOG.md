@@ -12,9 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Python `symworx.core.statistics.lmer` / `MixedModel` and `simulate_random_intercept` (random intercept or linear growth)
 - `symworx-math::circular` — wrap, circular mean, mean resultant length, circular SD
 - `symworx-spatialsym` path linearity (`path_linearity`, `path_linearity_windows`) and pairwise effort / directional phase
+- Spatial Visualize: plan-view canvas (pair edges, focused path vs chord) and A0–A1 effort-in strip with frame playhead
+- Spatial generate is a 3v3 (`generate_3v3_attack`) on a FIFA 105×68 m pitch (camera locked to bounds): G0 attacks +x (up, white), G1 defends (magenta). Summary lists team roll-ups and within/versus pairs
+- `symworx-spatialsym::soccer` IFAB Law 1 presets (length 90–120 m, width 45–90 m; fixed 16.5/5.5 m boxes, 7.32 m goal, 11 m PK, 9.15 m circle). Generic `PlayAreaMarkings` drawn on the Spatial plan
+- Spatial Visualize: stats on the left, field on the right (attack +x drawn upward). Phase edges stay cyan/yellow/red
 - Spatial TUI summary shows path efficiency / RMS deviation and pairwise effort / directional phase
 - Windowed pairwise phase (`*_series` / `*_at`) and signed closing acceleration (`a_close`); TUI `Now` line uses a 1 s window
-- `path_and_phase` example: straight vs weave, together / opposed / one-go-one-brake drills
+- `path_and_phase` example: straight vs weave, together / opposed / one-go-one-brake drills, plus 3v3 player/team print
 - `symworx-dynamics::phase` — relative phase, Kuramoto order, cluster-phase (pre-extracted phases)
 
 ## [0.2.0] - 2026-08-07

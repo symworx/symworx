@@ -17,7 +17,7 @@
 //! - [`metrics`] — Pairwise distances and single-agent path linearity (vs the start→end chord).
 //! - [`phase`] — Pairwise in-phase / out-of-phase effort and directional scoring.
 //! - Space geometry primitives and decision classification are co-evolving (see high-priority work).
-//! - [`space`] — Arena/bounds, generic zoning (no soccer terminology).
+//! - [`space`] — Play-area bounds plus sport-agnostic markings; [`soccer`] has IFAB Law 1 presets.
 //! - [`decision`] — `SpaceAction` enum and classifiers using historical + future windows.
 //!
 //! ## Design Notes
@@ -111,10 +111,19 @@ pub use phase::{
     pairwise_effort_phase_at,
     pairwise_effort_phase_series,
 };
-pub use space::PlayingDimensions;
+pub use space::{
+    CenterCircle,
+    EndBox,
+    GoalSpec,
+    PenaltyMark,
+    PlayAreaMarkings,
+    PlayingDimensions,
+    soccer,
+};
 pub use synthetic::{
     SpatialEvent,
     build_agent_trajectories,
+    generate_3v3_attack,
     generate_curved_trajectory,
     generate_event_driven,
     generate_ground_truth,

@@ -328,6 +328,8 @@ pub struct AgentTrajectories {
     pub attacking_directions: Option<Vec<Vec2>>,
     /// Optional playing area dimensions (meters). Part of the spatial metadata (alongside goals).
     pub playing_dimensions: Option<crate::space::PlayingDimensions>,
+    /// Optional stock markings (goal, end boxes, circle). Independent of pitch size.
+    pub play_area_markings: Option<crate::space::PlayAreaMarkings>,
     /// Optional goal position (the target "goal" or scoring area) per agent.
     /// Parallel to attacking_directions. Used for better detection of
     /// Creation / Conversion / Prevention (scoring opportunity) actions.
@@ -348,6 +350,7 @@ impl AgentTrajectories {
             groups: None,
             attacking_directions: None,
             playing_dimensions: None,
+            play_area_markings: None,
             goal_positions: None,
         })
     }
@@ -380,6 +383,12 @@ impl AgentTrajectories {
         self
     }
 
+    /// Attach stock play-area markings (goal / end boxes / circle).
+    pub fn with_play_area_markings(mut self, marks: crate::space::PlayAreaMarkings) -> Self {
+        self.play_area_markings = Some(marks);
+        self
+    }
+
     /// Attach explicit goal positions (one per agent, their attacking target).
     /// Used to improve Creation/Conversion/Prevention detection.
     pub fn with_goal_positions(mut self, goals: Vec<Point2>) -> crate::error::Result<Self> {
@@ -401,6 +410,7 @@ impl AgentTrajectories {
                 groups: None,
                 attacking_directions: None,
                 playing_dimensions: None,
+                play_area_markings: None,
                 goal_positions: None,
             });
         }
@@ -518,6 +528,10 @@ impl AgentTrajectories {
 
         let mut batch = Self::new(new_times, new_positions)?;
         batch.groups = new_groups;
+        batch.playing_dimensions = self.playing_dimensions;
+        batch.play_area_markings = self.play_area_markings;
+        batch.attacking_directions = self.attacking_directions.clone();
+        batch.goal_positions = self.goal_positions.clone();
         Ok(batch)
     }
 
