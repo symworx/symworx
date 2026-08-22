@@ -223,6 +223,99 @@ pub fn build_agent_trajectories(
     (batch, focal)
 }
 
+fn clamp_to_dims(p: Point2, dims: &crate::space::PlayingDimensions) -> Point2 {
+    let (xmin, xmax, ymin, ymax) = dims.bounds();
+    let m = 1.0;
+    Point2::new(p.x.clamp(xmin + m, xmax - m), p.y.clamp(ymin + m, ymax - m))
+}
+
+/// 3v3 attacking-third drill: G0 attacks +x (up on Spatial Visualize), G1 defends that goal.
+///
+/// FIFA 105×68 m pitch plus IFAB-fixed boxes, goal, penalty marks, and center circle.
+/// Event tags are frame indices at `dt = 0.1` s.
+pub fn generate_3v3_attack() -> (AgentTrajectories, Vec<Point2>, Vec<(usize, String)>) {
+    let (dims, marks) = crate::space::soccer::default_pitch();
+    let init = vec![
+        clamp_to_dims(Point2::new(22.0, -10.0), &dims),
+        clamp_to_dims(Point2::new(28.0, 8.0), &dims),
+        clamp_to_dims(Point2::new(24.0, -2.0), &dims),
+        clamp_to_dims(Point2::new(38.0, 6.0), &dims),
+        clamp_to_dims(Point2::new(42.0, -8.0), &dims),
+        clamp_to_dims(Point2::new(46.0, 0.0), &dims),
+    ];
+    let evs = vec![
+        SpatialEvent::StartRun {
+            agent: 0,
+            target: clamp_to_dims(Point2::new(38.0, -6.0), &dims),
+            speed: 5.5,
+            start_time: 0.2,
+        },
+        SpatialEvent::StartRun {
+            agent: 1,
+            target: clamp_to_dims(Point2::new(45.0, 4.0), &dims),
+            speed: 7.0,
+            start_time: 0.2,
+        },
+        SpatialEvent::StartRun {
+            agent: 2,
+            target: clamp_to_dims(Point2::new(42.0, -8.0), &dims),
+            speed: 6.0,
+            start_time: 0.2,
+        },
+        SpatialEvent::Pass {
+            from: 0,
+            to: 1,
+            time: 0.9,
+        },
+        SpatialEvent::Close {
+            agent: 3,
+            target: 1,
+            speed: 7.0,
+            start_time: 1.0,
+        },
+        SpatialEvent::Close {
+            agent: 4,
+            target: 1,
+            speed: 8.0,
+            start_time: 1.0,
+        },
+        SpatialEvent::Close {
+            agent: 5,
+            target: 1,
+            speed: 7.5,
+            start_time: 1.0,
+        },
+    ];
+    let (ev_t, ev_p, ev_f) = generate_event_driven(init, clamp_to_dims(Point2::new(24.0, -8.0), &dims), &evs, 2.8, 0.1);
+    let groups = vec![0u32, 0, 0, 1, 1, 1];
+    let att = vec![
+        Vec2::new(1., 0.),
+        Vec2::new(1., 0.),
+        Vec2::new(1., 0.),
+        Vec2::new(-1., 0.),
+        Vec2::new(-1., 0.),
+        Vec2::new(-1., 0.),
+    ];
+    let (xmin, xmax, _, _) = dims.bounds();
+    let goal_pos = vec![
+        Point2::new(xmax, 0.0),
+        Point2::new(xmax, 0.0),
+        Point2::new(xmax, 0.0),
+        Point2::new(xmin, 0.0),
+        Point2::new(xmin, 0.0),
+        Point2::new(xmin, 0.0),
+    ];
+    let (mut batch, focal) = build_agent_trajectories(ev_t, ev_p, groups, att, ev_f, Some(dims), Some(goal_pos));
+    batch = batch.with_play_area_markings(marks);
+    let events = vec![
+        (0usize, "start".to_string()),
+        (2, "run".to_string()),
+        (9, "pass".to_string()),
+        (10, "close".to_string()),
+    ];
+    (batch, focal, events)
+}
+
 /// Ground truth labels for testing the classifier against known scenarios.
 /// Returns per-agent expected SpaceAction over time.
 pub fn generate_ground_truth(
@@ -291,4 +384,30 @@ pub fn generate_ground_truth(
         _ => {}
     }
     labels
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn three_v_three_has_two_teams_and_ifab_marks() {
+        let (batch, focal, events) = generate_3v3_attack();
+        assert_eq!(batch.num_agents(), 6);
+        assert_eq!(batch.groups.as_deref(), Some(&[0, 0, 0, 1, 1, 1][..]));
+        assert!(batch.playing_dimensions.is_some());
+        let marks = batch.play_area_markings.expect("IFAB markings");
+        assert!((marks.outer_end.depth_m - 16.5).abs() < 1e-9);
+        assert_eq!(focal.len(), batch.num_times());
+        assert_eq!(events[0].0, 0);
+        let players = batch.per_player_summaries(0.8, 1.0, Some(&focal));
+        assert_eq!(players.len(), 6);
+        let groups = batch.per_group_summaries(0.8, 1.0, Some(&focal));
+        assert_eq!(groups.len(), 2);
+        assert_eq!(groups[0].num_players, 3);
+        assert_eq!(groups[1].num_players, 3);
+        assert_eq!(groups[0].mean_effort_in_phase, Some(1.0));
+        assert_eq!(groups[1].mean_effort_in_phase, Some(1.0));
+        assert!(players.iter().all(|p| p.total_distance > 0.0));
+    }
 }

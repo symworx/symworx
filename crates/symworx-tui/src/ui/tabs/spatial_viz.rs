@@ -11,7 +11,10 @@ use ratatui::{
         Style,
     },
     symbols,
-    text::Line,
+    text::{
+        Line,
+        Span,
+    },
     widgets::{
         Axis,
         Block,
@@ -21,6 +24,7 @@ use ratatui::{
         GraphType,
         canvas::{
             Canvas,
+            Circle,
             Line as CanvasLine,
             Points,
             Rectangle,
@@ -31,7 +35,20 @@ use ratatui::{
 use crate::app::App;
 
 const TRAIL_FRAMES: usize = 8;
-const PAIR_CAP: usize = 6;
+/// C(6,2) = 15 covers a 3v3; extra pairs are dropped.
+const PAIR_CAP: usize = 15;
+
+/// G0 (attack) white; G1 (defend) magenta — avoids cyan/yellow/red used for phase edges.
+pub fn team_color(group: Option<u32>) -> Color {
+    match group {
+        Some(1) => Color::LightMagenta,
+        _ => Color::White,
+    }
+}
+
+fn group_of(batch: &symworx_spatialsym::AgentTrajectories, i: usize) -> Option<u32> {
+    batch.groups.as_ref().and_then(|g| g.get(i).copied())
+}
 
 fn focused_agent_idx(app: Option<&App>, batch: &symworx_spatialsym::AgentTrajectories, idx: usize) -> usize {
     if let Some(app) = app
@@ -211,7 +228,7 @@ pub fn render_spatial_plan(
         }
     }
 
-    let agents: Vec<(f64, f64, String)> = batch
+    let agents: Vec<(f64, f64, String, Color)> = batch
         .frame(idx)
         .map(|f| {
             f.agent_positions
@@ -219,12 +236,64 @@ pub fn render_spatial_plan(
                 .enumerate()
                 .map(|(i, p)| {
                     let (x, y) = if rotate { attack_up(p.x, p.y) } else { (p.x, p.y) };
-                    (x, y, format!("A{i}"))
+                    (x, y, format!("A{i}"), team_color(group_of(batch, i)))
                 })
                 .collect()
         })
         .unwrap_or_default();
-    let agent_pts: Vec<(f64, f64)> = agents.iter().map(|(x, y, _)| (*x, *y)).collect();
+    let g0_pts: Vec<(f64, f64)> = agents
+        .iter()
+        .filter(|(_, _, _, c)| *c == Color::White)
+        .map(|(x, y, _, _)| (*x, *y))
+        .collect();
+    let g1_pts: Vec<(f64, f64)> = agents
+        .iter()
+        .filter(|(_, _, _, c)| *c == Color::LightMagenta)
+        .map(|(x, y, _, _)| (*x, *y))
+        .collect();
+
+    let mut mark_rects: Vec<Rectangle> = Vec::new();
+    let mut mark_lines: Vec<CanvasLine> = Vec::new();
+    let mut mark_spots: Vec<(f64, f64)> = Vec::new();
+    let mut mark_circles: Vec<Circle> = Vec::new();
+    if let (Some(dims), Some(marks)) = (batch.playing_dimensions, batch.play_area_markings) {
+        for plus_x in [true, false] {
+            for inner in [false, true] {
+                let (x, y, w, h) = marks.end_box_rect(dims, plus_x, inner);
+                let (cx, cy, cw, ch) = if rotate { (y, x, h, w) } else { (x, y, w, h) };
+                mark_rects.push(Rectangle {
+                    x: cx,
+                    y: cy,
+                    width: cw,
+                    height: ch,
+                    color: Color::DarkGray,
+                });
+            }
+            let (ga, gb) = marks.goal_segment(dims, plus_x);
+            let (x1, y1) = if rotate { attack_up(ga.x, ga.y) } else { (ga.x, ga.y) };
+            let (x2, y2) = if rotate { attack_up(gb.x, gb.y) } else { (gb.x, gb.y) };
+            mark_lines.push(CanvasLine {
+                x1,
+                y1,
+                x2,
+                y2,
+                color: Color::Gray,
+            });
+            let spot = marks.penalty_spot(dims, plus_x);
+            mark_spots.push(if rotate {
+                attack_up(spot.x, spot.y)
+            } else {
+                (spot.x, spot.y)
+            });
+        }
+        let (cx, cy) = if rotate { attack_up(0.0, 0.0) } else { (0.0, 0.0) };
+        mark_circles.push(Circle {
+            x: cx,
+            y: cy,
+            radius: marks.center_circle.radius_m,
+            color: Color::DarkGray,
+        });
+    }
     let focal_pt = focal
         .get(idx)
         .map(|p| if rotate { attack_up(p.x, p.y) } else { (p.x, p.y) });
@@ -267,6 +336,22 @@ pub fn render_spatial_plan(
                 });
                 ctx.layer();
             }
+            for r in &mark_rects {
+                ctx.draw(r);
+            }
+            for ln in &mark_lines {
+                ctx.draw(ln);
+            }
+            if !mark_spots.is_empty() {
+                ctx.draw(&Points {
+                    coords: &mark_spots,
+                    color: Color::Gray,
+                });
+            }
+            for c in &mark_circles {
+                ctx.draw(c);
+            }
+            ctx.layer();
             for trail in &trails {
                 if trail.len() >= 2 {
                     ctx.draw(&Points {
@@ -301,10 +386,16 @@ pub fn render_spatial_plan(
                 ctx.draw(&CanvasLine { x1, y1, x2, y2, color });
             }
             ctx.layer();
-            if !agent_pts.is_empty() {
+            if !g0_pts.is_empty() {
                 ctx.draw(&Points {
-                    coords: &agent_pts,
+                    coords: &g0_pts,
                     color: Color::White,
+                });
+            }
+            if !g1_pts.is_empty() {
+                ctx.draw(&Points {
+                    coords: &g1_pts,
+                    color: Color::LightMagenta,
                 });
             }
             if let Some((fx, fy)) = focal_pt {
@@ -314,8 +405,12 @@ pub fn render_spatial_plan(
                 });
                 ctx.print(fx, fy, Line::from("+"));
             }
-            for (x, y, label) in &agents {
-                ctx.print(*x, *y, Line::from(label.clone()));
+            for (x, y, label, color) in &agents {
+                ctx.print(
+                    *x,
+                    *y,
+                    Line::from(Span::styled(label.clone(), Style::default().fg(*color))),
+                );
             }
         });
     frame.render_widget(canvas, area);
@@ -411,7 +506,18 @@ pub fn compact_agent_lines(app: &App, idx: usize, focal: &[symworx_spatialsym::P
         return lines;
     };
     let focus = focused_agent_idx(Some(app), batch, idx);
+    let mut last_g: Option<Option<u32>> = None;
     for (i, p) in frame.agent_positions.iter().enumerate() {
+        let g = group_of(batch, i);
+        if last_g != Some(g) {
+            lines.push(match g {
+                Some(0) => "  G0 attack (white)".into(),
+                Some(1) => "  G1 defend (magenta)".into(),
+                Some(n) => format!("  G{n}"),
+                None => "  agents".into(),
+            });
+            last_g = Some(g);
+        }
         let mark = if i == focus { "*" } else { " " };
         if let Some(d) = app
             .spatial_decisions

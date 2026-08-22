@@ -1,7 +1,29 @@
 // Copyright (c) 2026 PalEm Dynamics LLC
 // Licensed under the Apache License, Version 2.0.
 
-//! Generic spatial dimensions and bounds for the playing area (sport-agnostic).
+//! Play-area dimensions and markings.
+//!
+//! - [`PlayingDimensions`] — outer rectangle (meters), origin-centered.
+//! - [`markings`] — sport-agnostic goal / end-box / circle geometry.
+//! - [`soccer`] — IFAB Law 1 stock numbers (variable pitch, fixed boxes).
+//!
+//! Further sports should add `space/<sport>.rs` (or `space/<sport>/`) that
+//! fill [`PlayAreaMarkings`] rather than introducing sport names in the
+//! generic types.
+
+/// Sport-agnostic end-zone and midfield markings.
+pub mod markings;
+/// Soccer IFAB Law 1 presets (meters).
+pub mod soccer;
+
+pub use markings::{
+    CenterCircle,
+    EndBox,
+    GoalSpec,
+    PenaltyMark,
+    PlayAreaMarkings,
+    WorldRect,
+};
 
 /// Rectangular playing area dimensions (in meters). Sport-agnostic metadata for field size.
 ///
@@ -16,7 +38,7 @@ pub struct PlayingDimensions {
 }
 
 impl PlayingDimensions {
-    /// Create new playing dimensions.
+    /// Create new playing dimensions (no sport-specific range check).
     pub fn new(length_m: f64, width_m: f64) -> Self {
         Self { length_m, width_m }
     }

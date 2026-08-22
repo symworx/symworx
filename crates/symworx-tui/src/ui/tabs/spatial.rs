@@ -41,8 +41,8 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
                e                   export CSV + JSON + meta → data/\n\
                l                   refresh status / legend\n\n\
              Panels: plan view · A0–A1 effort strip · compact agents · events · summaries.\n\
-             Layout: stats left, field right (attack +x is up). 105×68 m when generated.\n\
-             Pair edges: cyan=in yellow=opp red=out.\n\
+             Layout: stats left, field right (attack +x is up). 3v3 on IFAB 105×68 m + boxes.\n\
+             Teams: G0 white (attack ↑), G1 magenta. Pair edges: cyan=in yellow=opp red=out.\n\
              Focused agent (on-ball, else A0): blue path, green start→now chord (matches eff/rms).\n\n\
              \n\
              GLOBAL\n\n\
@@ -109,9 +109,9 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
             let cols = Layout::horizontal([Constraint::Percentage(38), Constraint::Percentage(62)]).split(chunks[2]);
             let left = Layout::vertical([
                 Constraint::Length(5),
-                Constraint::Min(7),
+                Constraint::Min(10),
                 Constraint::Length(5),
-                Constraint::Min(8),
+                Constraint::Min(12),
             ])
             .split(cols[0]);
 
@@ -154,7 +154,7 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
     } else {
         let help = Paragraph::new(
             "No spatial data loaded.\n\n\
-             • g  — generate synthetic demo (pass / press sequence)\n\
+             • g  — generate 3v3 demo (G0 attack ↑, G1 defend)\n\
              • i  — import CSV from ./data/ (time,agent_id,x,y)\n\
              • M-? — full help\n\n\
              After data loads: ←→ n/p frames, < > events, b ball carrier, e export.",
@@ -215,7 +215,7 @@ fn render_spatial_import_menu(frame: &mut Frame, app: &App, area: Rect) {
     let import_text = format!(
         "Spatial Import / Generate\n\n\
          Keys:\n\
-           1 / g     Generate synthetic demo (pass → press sequence)\n\
+           1 / g     Generate 3v3 demo (G0 attack ↑, G1 defend)\n\
            2 / Enter Load first suitable .csv from ./data/\n\
            Esc / v   Back to visualize\n\n\
          Discovered in ./data/:\n{}\n\n\
@@ -239,49 +239,50 @@ fn format_spatial_summaries(
 ) -> Vec<String> {
     const THRESH: f64 = 0.8;
     let summaries = batch.per_player_summaries(THRESH, 1.0, Some(focal));
-    let mut lines = vec!["Per-agent summary (full trajectory):".to_string()];
-    for s in &summaries {
-        let focal_str = s
-            .avg_dist_to_focal
-            .map(|d| format!("  dfoc={:.2}", d))
-            .unwrap_or_default();
-        let eff_str = s
-            .path_efficiency
-            .map(|e| format!("  eff={:.2}", e))
-            .unwrap_or_else(|| "  eff=—".into());
-        let rms_str = s
-            .path_rms_dev_m
-            .map(|d| format!("  rms={:.2}", d))
-            .unwrap_or_else(|| "  rms=—".into());
-        lines.push(format!(
-            "  A{}: dist={:.1}  spd={:.2}  max={:.1}  acc={}  dec={}  load={:.2}{}{}{}",
-            s.player_idx,
-            s.total_distance,
-            s.avg_speed,
-            s.max_speed,
-            s.accel_count,
-            s.decel_count,
-            s.estimated_load,
-            eff_str,
-            rms_str,
-            focal_str
-        ));
+    let mut lines = Vec::new();
+
+    let groups = batch.per_group_summaries(THRESH, 1.0, Some(focal));
+    if groups.is_empty() {
+        lines.push("Teams: (no group ids on batch)".into());
+    } else {
+        lines.push("Teams (full trajectory):".into());
+        for g in &groups {
+            let e = g
+                .mean_effort_in_phase
+                .map(|f| format!("{:.2}", f))
+                .unwrap_or_else(|| "—".into());
+            let d = g
+                .mean_directional_in_phase
+                .map(|f| format!("{:.2}", f))
+                .unwrap_or_else(|| "—".into());
+            lines.push(format!(
+                "  G{} n={}  dist={:.0}  max={:.1}  acc={}  dec={}  load={:.1}  effort-in={}  dir-in={}  spread={:.0}m",
+                g.group,
+                g.num_players,
+                g.total_distance,
+                g.avg_max_speed,
+                g.total_accels,
+                g.total_decels,
+                g.total_estimated_load,
+                e,
+                d,
+                g.avg_intra_group_distance
+            ));
+        }
     }
 
     let cfg = symworx_spatialsym::PhaseWindow {
         accel_threshold: THRESH,
         ..symworx_spatialsym::PhaseWindow::default()
     };
+    let groups_idx = batch.groups.as_deref();
     if let Ok(effort) = batch.pairwise_effort_phase(&cfg) {
         let dir = batch.pairwise_directional_phase(&cfg).ok();
         let n = batch.num_agents();
-        let mut pair_bits = Vec::new();
-        let mut shown = 0usize;
+        let mut within = Vec::new();
+        let mut versus = Vec::new();
         for i in 0..n {
             for j in (i + 1)..n {
-                if shown >= 6 {
-                    break;
-                }
                 let ev = effort[i][j]
                     .as_ref()
                     .and_then(|p| p.event_in_phase_fraction.or(p.sign_agree_fraction))
@@ -293,12 +294,22 @@ fn format_spatial_summaries(
                     .and_then(|d| d.dominant)
                     .map(|r| r.short_label())
                     .unwrap_or("—");
-                pair_bits.push(format!("A{}–A{} e={} d={}", i, j, ev, dlab));
-                shown += 1;
+                let same = match groups_idx {
+                    Some(g) => g.get(i) == g.get(j),
+                    None => true,
+                };
+                if same {
+                    within.push(format!("A{i}–A{j} e={ev} d={dlab}"));
+                } else {
+                    versus.push(format!("A{i}×A{j} e={ev} d={dlab}"));
+                }
             }
         }
-        if !pair_bits.is_empty() {
-            lines.push(format!("  Pairs  {}", pair_bits.join("  ")));
+        if !within.is_empty() {
+            lines.push(format!("  Pairs (within)  {}", within.join("  ")));
+        }
+        if !versus.is_empty() {
+            lines.push(format!("  Pairs (versus)  {}", versus.join("  ")));
         }
     }
 
@@ -307,13 +318,10 @@ fn format_spatial_summaries(
         let now_d = batch.pairwise_directional_phase_at(frame_idx, &now_cfg).ok();
         let now_c = batch.pairwise_closing_at(frame_idx, &now_cfg).ok();
         let n = batch.num_agents();
-        let mut bits = Vec::new();
-        let mut shown = 0usize;
+        let mut within = Vec::new();
+        let mut versus = Vec::new();
         for i in 0..n {
             for j in (i + 1)..n {
-                if shown >= 6 {
-                    break;
-                }
                 let ev = now_e[i][j]
                     .as_ref()
                     .and_then(|p| p.event_in_phase_fraction.or(p.sign_agree_fraction))
@@ -331,28 +339,53 @@ fn format_spatial_summaries(
                     .and_then(|c| c.mean_i_toward_j)
                     .map(|v| format!("{:+.2}", v))
                     .unwrap_or_else(|| "—".into());
-                bits.push(format!("A{}–A{} e={} d={} c={}", i, j, ev, dlab, clab));
-                shown += 1;
+                let same = match groups_idx {
+                    Some(g) => g.get(i) == g.get(j),
+                    None => true,
+                };
+                let bit = format!("A{i}–A{j} e={ev} d={dlab} c={clab}");
+                if same {
+                    within.push(bit);
+                } else {
+                    versus.push(bit);
+                }
             }
         }
+        let mut bits = Vec::new();
+        bits.extend(within.into_iter().take(4));
+        bits.extend(versus.into_iter().take(4));
         if !bits.is_empty() {
             lines.push(format!("  Now    {}", bits.join("  ")));
         }
     }
 
-    let groups = batch.per_group_summaries(THRESH, 1.0, Some(focal));
-    for g in groups {
-        let e = g
-            .mean_effort_in_phase
-            .map(|f| format!("{:.2}", f))
-            .unwrap_or_else(|| "—".into());
-        let d = g
-            .mean_directional_in_phase
-            .map(|f| format!("{:.2}", f))
-            .unwrap_or_else(|| "—".into());
+    lines.push("Players (full trajectory):".into());
+    for s in &summaries {
+        let g = s.group.map(|g| format!("G{g}")).unwrap_or_else(|| "—".into());
+        let focal_str = s
+            .avg_dist_to_focal
+            .map(|d| format!("  dfoc={:.1}", d))
+            .unwrap_or_default();
+        let eff_str = s
+            .path_efficiency
+            .map(|e| format!("  eff={:.2}", e))
+            .unwrap_or_else(|| "  eff=—".into());
+        let rms_str = s
+            .path_rms_dev_m
+            .map(|d| format!("  rms={:.1}", d))
+            .unwrap_or_else(|| "  rms=—".into());
         lines.push(format!(
-            "  Group {}  n={}  effort-in={}  dir-in={}",
-            g.group, g.num_players, e, d
+            "  A{} {g}: dist={:.1}  spd={:.2}  max={:.1}  acc={}  dec={}  load={:.1}{}{}{}",
+            s.player_idx,
+            s.total_distance,
+            s.avg_speed,
+            s.max_speed,
+            s.accel_count,
+            s.decel_count,
+            s.estimated_load,
+            eff_str,
+            rms_str,
+            focal_str
         ));
     }
     lines
