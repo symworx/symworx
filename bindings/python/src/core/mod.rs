@@ -7,6 +7,7 @@ pub mod dynamics;
 pub mod filters;
 pub mod io;
 pub mod math;
+pub mod mixed;
 pub mod processing;
 pub mod statistics;
 // pub mod backend;

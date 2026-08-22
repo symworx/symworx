@@ -12,6 +12,7 @@
 //!
 //! - [`series`] — Low-level operations on ordered sequences
 //!   (the canonical home for successive differences and similar primitives).
+//! - [`circular`] — Wrap, circular mean, mean resultant length, circular SD.
 //! - [`optimize`] — Gradient descent and finite-difference gradients
 //!   (no LAPACK; used by nonlinear regression and teaching demos).
 
@@ -38,10 +39,20 @@ pub mod random;
 /// Special functions (e.g., beta, gamma).  
 pub mod special;
 
+/// Circular (angular) statistics.
+pub mod circular;
+
 /// Series and sequential operations (differences, etc.).
 pub mod series;
 
 // Re-exports
+pub use circular::{
+    angular_diff,
+    circular_mean,
+    circular_sd,
+    mean_resultant_length,
+    wrap_pi,
+};
 pub use distributions::{
     beta_kernel,
     beta_pdf,

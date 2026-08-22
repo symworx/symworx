@@ -13,6 +13,7 @@
 //! - [`embedding`] — Phase space reconstruction (`edim`, false nearest neighbors)
 //! - [`entropy`] — Sample entropy and multiscale entropy
 //! - [`rqa`] — Recurrence Quantification Analysis (RQA) and cross-recurrence (cRQA)
+//! - [`phase`] — Relative phase, Kuramoto order, cluster-phase (pre-extracted phases)
 //! - [`dmd`] — Dynamic Mode Decomposition (data-driven linear operators)
 //! - [`koopman`] — Extended DMD / finite-dimensional Koopman operators
 //! - [`sindy`] — Sparse identification of nonlinear dynamics (STLS)
@@ -36,6 +37,8 @@ pub mod embedding;
 pub mod entropy;
 /// Extended DMD / Koopman operator approximation.
 pub mod koopman;
+/// Relative phase, Kuramoto order, and cluster-phase synchrony.
+pub mod phase;
 /// Recurrence and cross-recurrence calculations.
 pub mod rqa;
 /// Sparse Identification of Nonlinear Dynamics (SINDy).
@@ -75,6 +78,17 @@ pub use koopman::{
     edmd_pair,
     lift_snapshots,
     lift_state,
+};
+pub use phase::{
+    ClusterPhaseResult,
+    PhaseError,
+    PhaseRelation,
+    RelativePhaseSummary,
+    cluster_phase,
+    kuramoto_order,
+    kuramoto_order_series,
+    relative_phase,
+    summarize_relative_phase,
 };
 pub use rqa::{
     CrossRecurrencePlot,

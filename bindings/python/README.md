@@ -47,6 +47,8 @@ Rust `symworx-stats` surface exposed for 0.1 (in addition to basic mean/corr/l1/
 | `logistic_regression` / `LogisticModel` | Binary logistic |
 | `logistic_regression_ovr` / `MulticlassLogisticModel` | One-vs-rest multiclass |
 | `gaussian_nb` / `GaussianNb` | Gaussian Naive Bayes |
+| `lmer` / `MixedModel` | Linear mixed model (random intercept or linear growth) |
+| `simulate_random_intercept` | Balanced LMM sim for tests / demos |
 | `accuracy`, `classification_report` | Classification metrics |
 | `roc_auc`, `roc_auc_ovr` | ROC-AUC binary / macro OVR |
 

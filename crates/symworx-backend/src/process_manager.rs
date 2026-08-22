@@ -17,7 +17,7 @@ impl Default for ProcessManager {
 }
 
 impl ProcessManager {
-    /// Initiate a new process.
+    /// Create a new process manager.
     pub fn new() -> Self {
         Self { server: Server::new() }
     }

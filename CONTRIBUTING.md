@@ -32,10 +32,18 @@ If you see something that needs fixing, feel free to open a PR directly—no nee
 
 1. **Fork the repository** and clone your fork.
 2. Set up the development environment (see [DEVELOPMENT.md](DEVELOPMENT.md) for detailed instructions, including Rust toolchain, Python bindings via PyO3, and testing).
-3. Create a new branch for your changes (`git checkout -b feature/your-feature-name`).
+3. Create a focused branch from **`develop`** (`git checkout -b feature/your-feature-name`).
 4. Make your changes, ensuring they follow our coding standards and pass all tests.
 5. Commit your changes with clear, descriptive messages.
-6. Push your branch and open a Pull Request.
+6. Push your branch and open a Pull Request against **`develop`**.
+
+## Release path
+
+Do **not** open feature PRs straight to `main`. Releases follow:
+
+`develop` → `stage` (FF) → `release/vX.Y.Z` → PR to `main` → merge → **manual** tag `vX.Y.Z`
+
+Details: [DEVELOPMENT.md](DEVELOPMENT.md#releasing).
 
 ## Submitting Pull Requests
 
@@ -51,6 +59,8 @@ We ask that you stay engaged with your PR—respond to comments and keep the con
 
 This project follows the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/).
 By participating, you agree to uphold this code in all project spaces.
+
+Copyright is PalEm Dynamics LLC (Apache-2.0). See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md).
 
 ## Questions or Need Help?
 

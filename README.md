@@ -64,7 +64,6 @@ export PYO3_PYTHON=python3.12
 export PYTHON_SYS_EXECUTABLE=python3.12
 ```
 
-**Note (0.1):** Python exposes biosym, loadsym, and a growing **core.statistics** subset (splits, scaler, logistic binary/OVR, NB, metrics, ROC-AUC). Rule lists, k-NN, LDA, polyreg remain Rust-first for now.
 
 ---
 
@@ -169,5 +168,6 @@ Agent / AI contributors: read [AGENTS.md](AGENTS.md) and own all submitted code.
 |-----|---------|
 | [DEVELOPMENT.md](DEVELOPMENT.md) | Build, test, format |
 | [AGENTS.md](AGENTS.md) | Crate boundaries, TUI keys, dependency hygiene |
+| [docs/projects.md](docs/projects.md) | Slated vs considered development items |
 | [crates/symworx-stats/docs/model_export.md](crates/symworx-stats/docs/model_export.md) | Export models to C / iOS / Android / web |
 | [publications/joss/2026/](publications/joss/2026/) | JOSS paper draft + tracking notes |

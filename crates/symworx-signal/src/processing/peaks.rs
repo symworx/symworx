@@ -6,7 +6,7 @@ use ndarray::{
     ArrayView1,
 };
 
-/// Represents a detected peak in a 1D signal.
+/// Detected peak in a 1D signal.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Peak {
     /// Index of the peak in org signal.

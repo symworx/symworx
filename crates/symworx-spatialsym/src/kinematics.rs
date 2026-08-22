@@ -152,34 +152,149 @@ pub fn derive_speeds(positions: &[Point2], times: &[f64]) -> Vec<f64> {
         .collect()
 }
 
+/// Signed scalar acceleration (m/s²) from a speed series.
+///
+/// Uses the same `Δspeed / Δt` rule as [`count_accelerations_decelerations`]:
+/// sample `j` (0-based) is `(speeds[j+1] - speeds[j]) / (times[j+2] - times[j+1])`
+/// and is stamped at `times[j+2]`. Length is `speeds.len().saturating_sub(1)`.
+///
+/// Returns an empty vec when there are fewer than two speeds or `times` is too short.
+pub fn derive_scalar_accels(speeds: &[f64], times: &[f64]) -> Vec<f64> {
+    if speeds.len() < 2 || times.len() < speeds.len() + 1 {
+        return Vec::new();
+    }
+
+    let mut out = Vec::with_capacity(speeds.len() - 1);
+    for i in 1..speeds.len() {
+        let dt = times[i + 1] - times[i];
+        if dt <= 0.0 {
+            out.push(0.0);
+        } else {
+            out.push((speeds[i] - speeds[i - 1]) / dt);
+        }
+    }
+    out
+}
+
+/// Thresholded effort event at one acceleration sample.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EffortEvent {
+    /// `a > accel_threshold`.
+    Accel,
+    /// `a < -accel_threshold`.
+    Decel,
+    /// `|a|` at or below the threshold (or unusable dt).
+    None,
+}
+
+/// Event flags from [`derive_scalar_accels`] at `accel_threshold` (m/s²).
+pub fn accel_decel_events(speeds: &[f64], times: &[f64], accel_threshold: f64) -> Vec<EffortEvent> {
+    derive_scalar_accels(speeds, times)
+        .into_iter()
+        .map(|a| {
+            if a > accel_threshold {
+                EffortEvent::Accel
+            } else if a < -accel_threshold {
+                EffortEvent::Decel
+            } else {
+                EffortEvent::None
+            }
+        })
+        .collect()
+}
+
 /// Count high-intensity accelerations and decelerations from a speed series.
 ///
 /// `accel_threshold`: change in speed per second (m/s²) to count as significant (e.g. 2.0-3.0).
 /// Returns (num_accelerations, num_decelerations)
 pub fn count_accelerations_decelerations(speeds: &[f64], times: &[f64], accel_threshold: f64) -> (usize, usize) {
-    if speeds.len() < 2 || times.len() < speeds.len() + 1 {
-        return (0, 0);
-    }
-
     let mut accels = 0usize;
     let mut decels = 0usize;
-
-    for i in 1..speeds.len() {
-        let dt = times[i + 1] - times[i]; // dt for this speed interval? adjust for consecutive speeds
-        // speeds[i-1] between t[i-1],t[i]; speeds[i] between t[i],t[i+1]
-        // use average or the dt between mid points; for simplicity use dt of current
-        if dt <= 0.0 {
-            continue;
-        }
-        let ds = speeds[i] - speeds[i - 1];
-        let a = ds / dt;
-        if a > accel_threshold {
-            accels += 1;
-        } else if a < -accel_threshold {
-            decels += 1;
+    for ev in accel_decel_events(speeds, times, accel_threshold) {
+        match ev {
+            EffortEvent::Accel => accels += 1,
+            EffortEvent::Decel => decels += 1,
+            EffortEvent::None => {}
         }
     }
     (accels, decels)
+}
+
+/// Heading (radians) per velocity sample. `None` when speed ≤ `min_speed`.
+pub fn derive_headings(velocities: &[Vec2], min_speed: f64) -> Vec<Option<f64>> {
+    velocities
+        .iter()
+        .map(|v| if v.norm() > min_speed { Some(v.bearing()) } else { None })
+        .collect()
+}
+
+/// Along-track acceleration `a_vec · unit(heading)` (m/s²).
+///
+/// Length matches [`derive_scalar_accels`] for the same series. `None` when the
+/// later interval's speed is ≤ `min_speed`. `times` is the position time base
+/// (length `velocities.len() + 1`).
+pub fn derive_along_track_accels(velocities: &[Vec2], times: &[f64], min_speed: f64) -> Vec<Option<f64>> {
+    if velocities.len() < 2 || times.len() < velocities.len() + 1 {
+        return Vec::new();
+    }
+    let mut out = Vec::with_capacity(velocities.len() - 1);
+    for i in 1..velocities.len() {
+        let dt = times[i + 1] - times[i];
+        let speed = velocities[i].norm();
+        if dt <= 0.0 || speed <= min_speed {
+            out.push(None);
+            continue;
+        }
+        let a_vec = Vec2 {
+            x: (velocities[i].x - velocities[i - 1].x) / dt,
+            y: (velocities[i].y - velocities[i - 1].y) / dt,
+        };
+        let heading = velocities[i] * (1.0 / speed);
+        out.push(Some(a_vec.dot(heading)));
+    }
+    out
+}
+
+/// Closing acceleration of `pos_self` toward `pos_other` (m/s²).
+///
+/// `a_close = a_vec · unit(other − me)` on the same time base as
+/// [`derive_scalar_accels`]. Positive = accelerating toward the partner.
+/// `None` when dt is unusable or the pair is nearly coincident.
+pub fn derive_closing_accels(
+    pos_self: &[Point2],
+    pos_other: &[Point2],
+    times: &[f64],
+    min_sep: f64,
+) -> Vec<Option<f64>> {
+    if pos_self.len() != pos_other.len() || times.len() != pos_self.len() {
+        return Vec::new();
+    }
+    let vels = derive_velocities_from_times(pos_self, times);
+    if vels.len() < 2 || times.len() < vels.len() + 1 {
+        return Vec::new();
+    }
+    let mut out = Vec::with_capacity(vels.len() - 1);
+    for i in 1..vels.len() {
+        let dt = times[i + 1] - times[i];
+        if dt <= 0.0 {
+            out.push(None);
+            continue;
+        }
+        let a_vec = Vec2 {
+            x: (vels[i].x - vels[i - 1].x) / dt,
+            y: (vels[i].y - vels[i - 1].y) / dt,
+        };
+        // Accel sample j = i-1 is stamped at times[i+1] → position index i+1.
+        let me = pos_self[i + 1];
+        let other = pos_other[i + 1];
+        let sep = other - me;
+        if sep.norm() <= min_sep {
+            out.push(None);
+            continue;
+        }
+        out.push(Some(a_vec.dot(sep.normalize())));
+    }
+    out
 }
 
 /// Post-hoc normalization of an individual's peak pace/speed.
@@ -245,6 +360,9 @@ mod tests {
         let (acc, _dec) = count_accelerations_decelerations(&speeds, &times, 0.5);
         assert!(acc >= 1); // 1->2 accel
         // decel may or not depending exact
+        let series = derive_scalar_accels(&speeds, &times);
+        assert_eq!(series.len(), speeds.len() - 1);
+        assert!(series[0] > 0.5);
     }
 
     #[test]
