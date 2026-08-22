@@ -45,7 +45,7 @@ println!("{}  outer box depth={:.1} m", action.description(), marks.outer_end.de
 let _ = (pitch, marks);
 ```
 
-Path linearity and pairwise phase (synthetic drills):
+Path linearity, pairwise phase, and a 3v3 on the FIFA/IFAB default pitch:
 
 ```bash
 cargo run -p symworx-spatialsym --example path_and_phase

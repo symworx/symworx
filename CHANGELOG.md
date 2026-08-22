@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Python `symworx.core.statistics.lmer` / `MixedModel` and `simulate_random_intercept` (random intercept or linear growth)
 - `symworx-math::circular` — wrap, circular mean, mean resultant length, circular SD
 - `symworx-spatialsym` path linearity (`path_linearity`, `path_linearity_windows`) and pairwise effort / directional phase
 - Spatial Visualize: plan-view canvas (pair edges, focused path vs chord) and A0–A1 effort-in strip with frame playhead
