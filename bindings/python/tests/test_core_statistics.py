@@ -77,6 +77,24 @@ def test_roc_auc_perfect():
     assert abs(st.roc_auc(y, s) - 1.0) < 1e-9
 
 
+def test_lmer_random_intercept():
+    y, x, groups = st.simulate_random_intercept(
+        n_groups=40, n_per_group=5, intercept=2.0, coefficients=[1.5],
+        sigma2=1.0, sigma_u2=4.0, seed=42,
+    )
+    fit = st.lmer(y, x, groups, name="subject", kind="intercept")
+    assert fit.n == 200
+    assert fit.n_groups() == 40
+    assert abs(fit.intercept - 2.0) < 0.6
+    assert abs(fit.coefficients[0] - 1.5) < 0.4
+    assert fit.sigma_u2() > 1.0
+    yhat = fit.predict(x)
+    assert len(yhat) == len(y)
+    yhat_g = fit.predict_conditional(x, groups)
+    assert len(yhat_g) == len(y)
+    assert fit.summary()
+
+
 def test_gaussian_nb():
     x = [
         [0.0, 0.0],

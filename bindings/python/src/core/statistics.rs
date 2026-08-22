@@ -1050,5 +1050,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_roc_auc_ovr, m)?)?;
     m.add_function(wrap_pyfunction!(py_gaussian_nb, m)?)?;
 
+    crate::core::mixed::register(m)?;
+
     Ok(())
 }

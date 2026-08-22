@@ -18,7 +18,7 @@ to finish.
 |:------|:------|:-------|
 | Dynamics | Full CRQA API | README marks CRQA as **Planned**. Pairwise / cross-recurrence exists in pieces; a complete public API does not. |
 | Stats | Welch PSD (`stats::spectral`) | Stub / placeholder. Do not rely on it for analysis until replaced. |
-| Python | Broader `core.statistics` surface | Rust-first today. Still unbound: LMM, rule lists, k-NN, LDA, polyreg, full OLS/ridge objects. |
+| Python | Broader `core.statistics` surface | Rust-first today. Still unbound: rule lists, k-NN, LDA, polyreg, full OLS/ridge objects. LMM (`lmer`) is bound. |
 | Release | Re-enable PyPI publish | Trusted publishing + `publish-python` in [release.yml](../.github/workflows/release.yml). Validation already builds a wheel smoke artifact. |
 | SpatialSym | Sport-specific reporting wrappers | Core stays sport-agnostic. Named wrappers for analysis/presentation are planned on top ([spatialsym README](../crates/symworx-spatialsym/README.md)). |
 
