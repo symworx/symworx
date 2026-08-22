@@ -10,6 +10,7 @@ This is a sub-crate to the [`symworx-core`](../symworx-core/README.md) crate.
 | `embedding` | Delay coordinates (`edim`), false nearest neighbors (`fnn`) |
 | `entropy` | Sample entropy, multiscale entropy |
 | `rqa` | Recurrence plots, RQA / cRQA metrics |
+| `phase` | Relative phase, Kuramoto *R*, cluster-phase (Richardson et al. 2012); input is pre-extracted phases |
 | `dmd` | Dynamic Mode Decomposition (exact / SVD-based) |
 | `koopman` | EDMD with identity / polynomial dictionaries |
 | `sindy` | Sparse identification of nonlinear dynamics (STLS) |

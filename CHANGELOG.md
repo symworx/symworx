@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Python `symworx.core.statistics.lmer` / `MixedModel` and `simulate_random_intercept` (random intercept or linear growth)
+- `symworx-math::circular` — wrap, circular mean, mean resultant length, circular SD
+- `symworx-spatialsym` path linearity (`path_linearity`, `path_linearity_windows`) and pairwise effort / directional phase
+- Spatial TUI summary shows path efficiency / RMS deviation and pairwise effort / directional phase
+- Windowed pairwise phase (`*_series` / `*_at`) and signed closing acceleration (`a_close`); TUI `Now` line uses a 1 s window
+- `path_and_phase` example: straight vs weave, together / opposed / one-go-one-brake drills
+- `symworx-dynamics::phase` — relative phase, Kuramoto order, cluster-phase (pre-extracted phases)
 
 ## [0.2.0] - 2026-08-07
 

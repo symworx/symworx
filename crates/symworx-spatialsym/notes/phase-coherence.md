@@ -1,6 +1,12 @@
 # SpatialSym — phase coherence (effort, heading, group)
 
-Status: design / research notes. Not an implementation plan and **not** a shipped API.
+Shipped in `symworx-spatialsym::phase` / `metrics`: pairwise effort-phase and
+directional-phase (session and `W`-second windows via `*_series` / `*_at`),
+signed closing accel (`a_close`), plus path linearity vs the start→end chord.
+`PhaseWindow.window_sec` is the analysis half-width; `max_gap_sec` is the clock
+check. Group cluster-phase still lives in `symworx-dynamics::phase`.
+
+Status: pairwise APIs shipped; group cluster-phase / MdRQA remain design notes.
 Date: 2026-08-16
 
 Consolidates the former crate note on accel/decel phase with the SpatialSym-facing

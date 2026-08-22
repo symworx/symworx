@@ -1,5 +1,8 @@
 # Notes — Group phase coherence, in-phase / out-of-phase
 
+Shipped in `symworx-dynamics::phase`: relative phase, Kuramoto *R*, cluster-phase
+(`ρ_group`, `ρ_k`, mean relative phase). MdRQA / CRQA networks are still notes only.
+
 Reference notes for multi-person / multi-series phase coherence and related
 measures. Not an implementation plan. Literature anchors for cluster-phase,
 MdRQA, and CRQA networks — methods that would live in this crate if implemented.

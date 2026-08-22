@@ -40,7 +40,7 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
                b                   infer ball carrier (current frame)\n\
                e                   export CSV + JSON + meta → data/\n\
                l                   refresh status / legend\n\n\
-             Panels: frame details · event tags · per-player summaries.\n\n\
+             Panels: frame details · event tags · summaries (load, path efficiency, pair phase, Now).\n\n\
              \n\
              GLOBAL\n\n\
                Ctrl+H              Home\n\
@@ -252,29 +252,7 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
                 Paragraph::new(ev_lines.join("\n")).block(Block::new().borders(Borders::TOP).title(" Event Tags "));
             frame.render_widget(events_p, chunks[3]);
 
-            let summaries = app
-                .spatial_batch
-                .as_ref()
-                .map(|b| b.per_player_summaries(0.8, 1.0, Some(focal)))
-                .unwrap_or_default();
-            let mut sum_lines = vec!["Per-agent summary (full trajectory):".to_string()];
-            for s in &summaries {
-                let focal_str = s
-                    .avg_dist_to_focal
-                    .map(|d| format!("  dfoc_avg={:.2}", d))
-                    .unwrap_or_default();
-                sum_lines.push(format!(
-                    "  A{}: dist={:.1}  spd={:.2}  max={:.1}  acc={}  dec={}  load={:.2}{}",
-                    s.player_idx,
-                    s.total_distance,
-                    s.avg_speed,
-                    s.max_speed,
-                    s.accel_count,
-                    s.decel_count,
-                    s.estimated_load,
-                    focal_str
-                ));
-            }
+            let sum_lines = format_spatial_summaries(batch, focal, idx);
             let sum_p =
                 Paragraph::new(sum_lines.join("\n")).block(Block::new().borders(Borders::TOP).title(" Summary Data "));
             frame.render_widget(sum_p, chunks[4]);
@@ -361,4 +339,134 @@ fn render_spatial_import_menu(frame: &mut Frame, app: &App, area: Rect) {
             .title(" Import / Generate "),
     );
     frame.render_widget(p, chunks[1]);
+}
+
+fn format_spatial_summaries(
+    batch: &symworx_spatialsym::AgentTrajectories,
+    focal: &[symworx_spatialsym::Point2],
+    frame_idx: usize,
+) -> Vec<String> {
+    const THRESH: f64 = 0.8;
+    let summaries = batch.per_player_summaries(THRESH, 1.0, Some(focal));
+    let mut lines = vec!["Per-agent summary (full trajectory):".to_string()];
+    for s in &summaries {
+        let focal_str = s
+            .avg_dist_to_focal
+            .map(|d| format!("  dfoc={:.2}", d))
+            .unwrap_or_default();
+        let eff_str = s
+            .path_efficiency
+            .map(|e| format!("  eff={:.2}", e))
+            .unwrap_or_else(|| "  eff=—".into());
+        let rms_str = s
+            .path_rms_dev_m
+            .map(|d| format!("  rms={:.2}", d))
+            .unwrap_or_else(|| "  rms=—".into());
+        lines.push(format!(
+            "  A{}: dist={:.1}  spd={:.2}  max={:.1}  acc={}  dec={}  load={:.2}{}{}{}",
+            s.player_idx,
+            s.total_distance,
+            s.avg_speed,
+            s.max_speed,
+            s.accel_count,
+            s.decel_count,
+            s.estimated_load,
+            eff_str,
+            rms_str,
+            focal_str
+        ));
+    }
+
+    let cfg = symworx_spatialsym::PhaseWindow {
+        accel_threshold: THRESH,
+        ..symworx_spatialsym::PhaseWindow::default()
+    };
+    if let Ok(effort) = batch.pairwise_effort_phase(&cfg) {
+        let dir = batch.pairwise_directional_phase(&cfg).ok();
+        let n = batch.num_agents();
+        let mut pair_bits = Vec::new();
+        let mut shown = 0usize;
+        for i in 0..n {
+            for j in (i + 1)..n {
+                if shown >= 6 {
+                    break;
+                }
+                let ev = effort[i][j]
+                    .as_ref()
+                    .and_then(|p| p.event_in_phase_fraction.or(p.sign_agree_fraction))
+                    .map(|f| format!("{:.2}", f))
+                    .unwrap_or_else(|| "—".into());
+                let dlab = dir
+                    .as_ref()
+                    .and_then(|m| m[i][j].as_ref())
+                    .and_then(|d| d.dominant)
+                    .map(|r| r.short_label())
+                    .unwrap_or("—");
+                pair_bits.push(format!("A{}–A{} e={} d={}", i, j, ev, dlab));
+                shown += 1;
+            }
+        }
+        if !pair_bits.is_empty() {
+            lines.push(format!("  Pairs  {}", pair_bits.join("  ")));
+        }
+    }
+
+    let now_cfg = symworx_spatialsym::PhaseWindow {
+        accel_threshold: THRESH,
+        window_sec: 1.0,
+        ..symworx_spatialsym::PhaseWindow::default()
+    };
+    if let Ok(now_e) = batch.pairwise_effort_phase_at(frame_idx, &now_cfg) {
+        let now_d = batch.pairwise_directional_phase_at(frame_idx, &now_cfg).ok();
+        let now_c = batch.pairwise_closing_at(frame_idx, &now_cfg).ok();
+        let n = batch.num_agents();
+        let mut bits = Vec::new();
+        let mut shown = 0usize;
+        for i in 0..n {
+            for j in (i + 1)..n {
+                if shown >= 6 {
+                    break;
+                }
+                let ev = now_e[i][j]
+                    .as_ref()
+                    .and_then(|p| p.event_in_phase_fraction.or(p.sign_agree_fraction))
+                    .map(|f| format!("{:.2}", f))
+                    .unwrap_or_else(|| "—".into());
+                let dlab = now_d
+                    .as_ref()
+                    .and_then(|m| m[i][j].as_ref())
+                    .and_then(|d| d.dominant)
+                    .map(|r| r.short_label())
+                    .unwrap_or("—");
+                let clab = now_c
+                    .as_ref()
+                    .and_then(|m| m[i][j].as_ref())
+                    .and_then(|c| c.mean_i_toward_j)
+                    .map(|v| format!("{:+.2}", v))
+                    .unwrap_or_else(|| "—".into());
+                bits.push(format!("A{}–A{} e={} d={} c={}", i, j, ev, dlab, clab));
+                shown += 1;
+            }
+        }
+        if !bits.is_empty() {
+            lines.push(format!("  Now    {}", bits.join("  ")));
+        }
+    }
+
+    let groups = batch.per_group_summaries(THRESH, 1.0, Some(focal));
+    for g in groups {
+        let e = g
+            .mean_effort_in_phase
+            .map(|f| format!("{:.2}", f))
+            .unwrap_or_else(|| "—".into());
+        let d = g
+            .mean_directional_in_phase
+            .map(|f| format!("{:.2}", f))
+            .unwrap_or_else(|| "—".into());
+        lines.push(format!(
+            "  Group {}  n={}  effort-in={}  dir-in={}",
+            g.group, g.num_players, e, d
+        ));
+    }
+    lines
 }
