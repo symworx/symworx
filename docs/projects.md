@@ -21,6 +21,7 @@ to finish.
 | Python | Broader `core.statistics` surface | Rust-first today. Still unbound: rule lists, k-NN, LDA, polyreg, full OLS/ridge objects. LMM (`lmer`) is bound. |
 | Release | Re-enable PyPI publish | Trusted publishing + `publish-python` in [release.yml](../.github/workflows/release.yml). Validation already builds a wheel smoke artifact. |
 | SpatialSym | Sport-specific reporting wrappers | Core stays sport-agnostic. Named wrappers for analysis/presentation are planned on top ([spatialsym README](../crates/symworx-spatialsym/README.md)). |
+| Backend | HTTP `/healthz` + feature-gated AWS/Azure store | Task table, `HealthReport`, and `LocalFsStore` landed on `feature/backend-work`. SDK I/O and a listener wait for a consumer. See [cloud notes](../crates/symworx-backend/notes/cloud.md). |
 
 ## Considered
 
@@ -32,9 +33,9 @@ note says otherwise.
 | Dynamics | MdRQA / CRQA network summaries | Pairwise `crqa` and cluster-phase / relative phase have landed. Group recurrence networks and true MdRQA remain. Literature: [group-phase-coherence.md](../crates/symworx-dynamics/notes/group-phase-coherence.md). |
 | BioSym | Advanced physiology metrics | Waveform morphology, extended HRV, cardiorespiratory coupling / RSA, sleep sim, real-sensor quality presets, streaming analysis ([biosym README](../crates/symworx-biosym/README.md)). |
 | TUI | Explore / Dynamics depth | Filtering, processing, embedding / FNN in Explore; more nonlinear tools in Dynamics ([AGENTS.md](../AGENTS.md)). TUI smoke build in CI is still off. |
-| Backend | Real process supervision | `symworx-backend` is experimental; `ProcessManager` is a placeholder API. |
 | Bindings | R package | Stub only. |
 | Stats / signal | Spectral / coupling follow-ons | Transfer entropy and related directional measures are secondary to first-line coherence ([group-phase notes](../crates/symworx-dynamics/notes/group-phase-coherence.md)). |
+| Backend | Queues / secrets | SQS vs Storage Queues, Secrets Manager / Key Vault — only after a real job exists. |
 
 ## How to update
 
