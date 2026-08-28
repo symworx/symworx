@@ -9,8 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Notes
 
+- Transfer entropy is a discrete quantile-binned estimator on `feature/transfer-entropy`. Not yet bound in Python or `symview`.
+
 ### Added
 
+- `symworx-dynamics` discrete transfer entropy: `transfer_entropy` / `transfer_entropy_with` (bivariate), `transfer_entropy_mv` (joint sources), `transfer_entropy_conditional` (partial TE), plus `TeConfig`
 
 ## [0.3.2] - 2026-08-22
 
