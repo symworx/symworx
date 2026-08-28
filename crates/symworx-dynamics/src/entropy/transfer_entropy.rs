@@ -27,7 +27,7 @@ pub struct TeConfig {
     pub tau: usize,
     /// Prediction horizon (samples ahead of the last history point).
     pub horizon: usize,
-    /// Number of quantile bins per channel (≥ 2).
+    /// Number of quantile bins per channel (>= 2).
     pub bins: usize,
 }
 
@@ -49,7 +49,7 @@ impl TeConfig {
     }
 }
 
-/// Bivariate transfer entropy `TE(source → target)`.
+/// Bivariate transfer entropy `TE(source -> target)`.
 ///
 /// Uses [`TeConfig::default`] (`k = l = tau = horizon = 1`, 4 bins).
 /// Returns `0.0` when the series are too short, constant, or otherwise
@@ -63,7 +63,7 @@ pub fn transfer_entropy_with(source: &[f64], target: &[f64], cfg: &TeConfig) -> 
     transfer_entropy_mv(&[source], target, cfg)
 }
 
-/// Joint multi-source transfer entropy `TE((X₁,…,Xₚ) → Y)`.
+/// Joint multi-source transfer entropy `TE((X1,...,Xp) -> Y)`.
 ///
 /// All source histories are concatenated into one conditioning block.
 /// An empty source list returns `0.0`.
@@ -71,7 +71,7 @@ pub fn transfer_entropy_mv(sources: &[&[f64]], target: &[f64], cfg: &TeConfig) -
     transfer_entropy_conditional(&[], sources, target, cfg)
 }
 
-/// Conditional (partial) transfer entropy `TE((X₁,…,Xₚ) → Y | Z₁,…,Z_q)`.
+/// Conditional (partial) transfer entropy `TE((X1,...,Xp) -> Y | Z1,...,Zq)`.
 ///
 /// `condition` is the set held fixed; `sources` is the set whose extra
 /// predictive information is measured. `sources` empty returns `0.0`.
@@ -204,7 +204,6 @@ fn quantize(x: &[f64], n_bins: usize) -> Vec<u8> {
         return Vec::new();
     }
 
-    // Interior cut points at i / n_bins, i = 1 .. n_bins-1.
     let mut cuts = Vec::with_capacity(n_bins - 1);
     for i in 1..n_bins {
         let pos = (i as f64) / (n_bins as f64) * ((finite.len() - 1) as f64);
@@ -234,7 +233,6 @@ fn quantize(x: &[f64], n_bins: usize) -> Vec<u8> {
 }
 
 fn cond_entropy(a: &[Vec<u8>], b: &[Vec<u8>]) -> f64 {
-    // H(A|B) = H(A,B) - H(B)
     let hab = joint_entropy_pair(a, b);
     let hb = entropy_of(b);
     let h = hab - hb;
@@ -245,6 +243,153 @@ fn cond_entropy(a: &[Vec<u8>], b: &[Vec<u8>]) -> f64 {
     }
 }
 
-fn joint_entropy_pair(a: &[Vec<u8>], b: &[Vec<u8>]) -> Vec<f64> {
-    unreachable!()
+fn joint_entropy_pair(a: &[Vec<u8>], b: &[Vec<u8>]) -> f64 {
+    let mut keys = Vec::with_capacity(a.len());
+    for (left, right) in a.iter().zip(b.iter()) {
+        let mut k = left.clone();
+        k.extend_from_slice(right);
+        keys.push(k);
+    }
+    entropy_of(&keys)
+}
+
+fn entropy_of(states: &[Vec<u8>]) -> f64 {
+    if states.is_empty() {
+        return 0.0;
+    }
+    let mut counts: HashMap<&[u8], usize> = HashMap::new();
+    for s in states {
+        *counts.entry(s.as_slice()).or_insert(0) += 1;
+    }
+    let n = states.len() as f64;
+    let mut h = 0.0;
+    for &c in counts.values() {
+        let p = c as f64 / n;
+        if p > 0.0 {
+            h -= p * p.ln();
+        }
+    }
+    h
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn almost_eq(a: f64, b: f64, eps: f64) -> bool {
+        (a - b).abs() < eps
+    }
+
+    fn drive_series(n: usize, seed: u64) -> (Vec<f64>, Vec<f64>) {
+        let mut s = seed;
+        let mut next = || {
+            s = s.wrapping_mul(6364136223846793005).wrapping_add(1);
+            ((s >> 33) as f64) / (u32::MAX as f64) - 0.5
+        };
+        let mut x = Vec::with_capacity(n);
+        let mut y = Vec::with_capacity(n);
+        let mut x_prev = 0.0;
+        for _ in 0..n {
+            let xi = next();
+            let yi = 0.85 * x_prev + 0.15 * next();
+            x.push(xi);
+            y.push(yi);
+            x_prev = xi;
+        }
+        (x, y)
+    }
+
+    #[test]
+    fn short_or_mismatched_returns_zero() {
+        let x = vec![0.1, 0.2];
+        let y = vec![0.3, 0.4];
+        assert_eq!(transfer_entropy(&x, &y), 0.0);
+        let long = vec![0.0; 50];
+        assert_eq!(transfer_entropy(&x, &long), 0.0);
+    }
+
+    #[test]
+    fn constant_returns_zero() {
+        let x = vec![1.0; 80];
+        let y = vec![2.0; 80];
+        assert_eq!(transfer_entropy(&x, &y), 0.0);
+    }
+
+    #[test]
+    fn invalid_config_returns_zero() {
+        let x = vec![0.0; 80];
+        let y: Vec<f64> = (0..80).map(|i| i as f64).collect();
+        let mut cfg = TeConfig::default();
+        cfg.bins = 1;
+        assert_eq!(transfer_entropy_with(&x, &y, &cfg), 0.0);
+    }
+
+    #[test]
+    fn coupled_source_predicts_target() {
+        let (x, y) = drive_series(400, 7);
+        let cfg = TeConfig {
+            k: 1,
+            l: 1,
+            tau: 1,
+            horizon: 1,
+            bins: 4,
+        };
+        let te_xy = transfer_entropy_with(&x, &y, &cfg);
+        let te_yx = transfer_entropy_with(&y, &x, &cfg);
+        assert!(te_xy > 0.0, "expected TE(x->y) > 0, got {te_xy}");
+        assert!(te_xy > te_yx, "expected TE(x->y)={te_xy} > TE(y->x)={te_yx}");
+    }
+
+    #[test]
+    fn independent_series_near_zero() {
+        let n = 300usize;
+        let mut s = 99u64;
+        let mut next = || {
+            s = s.wrapping_mul(6364136223846793005).wrapping_add(1);
+            ((s >> 33) as f64) / (u32::MAX as f64)
+        };
+        let x: Vec<f64> = (0..n).map(|_| next()).collect();
+        let y: Vec<f64> = (0..n).map(|_| next()).collect();
+        let te = transfer_entropy_with(&x, &y, &TeConfig::default());
+        assert!(te < 0.15, "independent TE should be small, got {te}");
+    }
+
+    #[test]
+    fn multivariate_joint_detects_the_driver() {
+        let (x, y) = drive_series(400, 11);
+        let n = y.len();
+        let mut s = 123u64;
+        let mut next = || {
+            s = s.wrapping_mul(6364136223846793005).wrapping_add(1);
+            ((s >> 33) as f64) / (u32::MAX as f64) - 0.5
+        };
+        let z: Vec<f64> = (0..n).map(|_| next()).collect();
+        let cfg = TeConfig::default();
+
+        let te_x = transfer_entropy_with(&x, &y, &cfg);
+        let te_z = transfer_entropy_with(&z, &y, &cfg);
+        let te_joint = transfer_entropy_mv(&[&x, &z], &y, &cfg);
+        let te_x_given_z = transfer_entropy_conditional(&[&z], &[&x], &y, &cfg);
+        let te_z_given_x = transfer_entropy_conditional(&[&x], &[&z], &y, &cfg);
+
+        assert!(te_x > te_z, "driver x should beat noise z: {te_x} vs {te_z}");
+        assert!(te_joint > 0.0);
+        assert!(
+            te_x_given_z > te_z_given_x,
+            "partial TE should keep the driver: {te_x_given_z} vs {te_z_given_x}"
+        );
+    }
+
+    #[test]
+    fn mv_empty_sources_zero() {
+        let y = vec![0.1; 50];
+        assert_eq!(transfer_entropy_mv(&[], &y, &TeConfig::default()), 0.0);
+    }
+
+    #[test]
+    fn entropy_nonnegative() {
+        let states = vec![vec![0u8], vec![0], vec![1], vec![1]];
+        assert!(entropy_of(&states) > 0.0);
+        assert!(almost_eq(entropy_of(&[vec![3u8], vec![3], vec![3]]), 0.0, 1e-12));
+    }
 }
