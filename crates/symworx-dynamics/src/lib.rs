@@ -33,7 +33,7 @@ pub mod control;
 pub mod dmd;
 /// Embedding dimension calculations (e.g., edim, fnn).
 pub mod embedding;
-/// Entropy measures (e.g., sample entropy, multiscale entropy).
+/// Entropy measures (e.g., sample entropy, multiscale entropy, transfer entropy).
 pub mod entropy;
 /// Extended DMD / Koopman operator approximation.
 pub mod koopman;
@@ -69,6 +69,10 @@ pub use entropy::{
     multiscale_entropy,
     sample_entropy,
     transfer_entropy,
+    transfer_entropy_conditional,
+    transfer_entropy_mv,
+    transfer_entropy_with,
+    TeConfig,
 };
 pub use koopman::{
     Dictionary,
