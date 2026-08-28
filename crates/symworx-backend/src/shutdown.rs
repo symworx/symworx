@@ -6,14 +6,16 @@
 use tokio::signal;
 use tokio_util::sync::CancellationToken;
 
-/// Creates a cancellation token that gets cancelled on Ctrl+C or SIGTERM.
+/// Cancellation token that fires on Ctrl+C or SIGTERM.
 pub async fn graceful_shutdown() -> CancellationToken {
     let token = CancellationToken::new();
     let cloned = token.clone();
 
     tokio::spawn(async move {
         let ctrl_c = async {
-            signal::ctrl_c().await.expect("failed to install Ctrl+C handler");
+            signal::ctrl_c()
+                .await
+                .expect("failed to install Ctrl+C handler");
         };
 
         #[cfg(unix)]
