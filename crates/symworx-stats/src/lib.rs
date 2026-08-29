@@ -63,6 +63,9 @@ pub mod error_metrics;
 /// Univariate histogram and Gaussian KDE (for any 1-D sample, incl. residuals).
 pub mod density;
 
+/// Grouped relative discretization (within-group range + pooled k-means cuts).
+pub mod discretize;
+
 /// Model comparison / selection (AIC, BIC, nested χ² / F, adjusted R²).
 pub mod model_select;
 
@@ -174,6 +177,15 @@ pub use density::{
     kde_gaussian,
     kde_gaussian_default,
     silverman_bandwidth,
+};
+pub use discretize::{
+    DiscretizeError,
+    GroupRange,
+    GroupedRangeScaler,
+    RangeMethod,
+    RelativeKMeansDiscretizer,
+    fit_group_range,
+    scale_one,
 };
 pub use distance::{
     chebyshev,
@@ -307,6 +319,7 @@ pub use split::{
     SplitError,
     SplitPart,
     TrainTestSplit,
+    grouped_train_test_split,
     max_train_folds,
     min_split_size,
     repeated_train_test_split,

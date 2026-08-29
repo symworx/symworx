@@ -75,6 +75,7 @@ pub use optimize::{
 pub use oscillators::VanDerPol;
 pub use random::*;
 pub use series::{
+    discretize,
     ewma,
     rolling_mean,
     rolling_std,

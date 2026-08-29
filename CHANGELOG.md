@@ -11,11 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `symworx-backend` still has no HTTP listener and no AWS/Azure SDK. Cloud I/O is reserved behind `CloudDisabled`.
 - Transfer entropy is a discrete quantile-binned estimator on `feature/transfer-entropy`. Not yet bound in Python or `symview`.
+- Shared relative discretization (grouped k-means cuts) lives on `feature/discretize-pipeline`. HRV/sleep is an example use, not a typed API.
 
 ### Added
 
 - `symworx-backend`: `BackendConfig` / `CloudProvider` (`SYMWORX_CLOUD=local|aws|azure`), `ProcessManager` task table, `HealthReport`, `LocalFsStore` / `ObjectStore`
 - `symworx-dynamics` discrete transfer entropy: `transfer_entropy` / `transfer_entropy_with` (bivariate), `transfer_entropy_mv` (joint sources), `transfer_entropy_conditional` (partial TE), plus `TeConfig`
+- `symworx-math::series::discretize` — apply interior cuts to a series (`u8` bins)
+- `symworx-stats::discretize` — `GroupedRangeScaler` + `RelativeKMeansDiscretizer` (per-user range, pooled k-means cuts on `[0, 1]`)
+- `symworx-stats::grouped_train_test_split` — hold out whole groups (users)
+- `transfer_entropy_discrete` / `_mv` / `_conditional` — TE on pre-binned labels (sleep stages, relative HRV bins); `TeConfig::bins` ignored
+- `relative_te_demo` example — synthetic multi-user relative bins + per-night TE
 
 ## [0.3.2] - 2026-08-22
 
