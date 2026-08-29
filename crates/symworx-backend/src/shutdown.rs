@@ -6,7 +6,7 @@
 use tokio::signal;
 use tokio_util::sync::CancellationToken;
 
-/// Creates a cancellation token that gets cancelled on Ctrl+C or SIGTERM.
+/// Cancellation token that fires on Ctrl+C or SIGTERM.
 pub async fn graceful_shutdown() -> CancellationToken {
     let token = CancellationToken::new();
     let cloned = token.clone();

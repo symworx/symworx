@@ -31,9 +31,10 @@ let te_joint = transfer_entropy_mv(&[&x, &z], &y, &cfg);
 let te_x_given_z = transfer_entropy_conditional(&[&z], &[&x], &y, &cfg);
 ```
 
-- `transfer_entropy` / `transfer_entropy_with` — bivariate `X → Y` (per-channel quantile bins)
+- `transfer_entropy` / `transfer_entropy_with` — bivariate `X → Y`
 - `transfer_entropy_mv` — joint sources `(X1,...,Xp) → Y`
 - `transfer_entropy_conditional` — partial `X → Y | Z`
+
 - `transfer_entropy_discrete*` — same estimator on already-discrete series (`u8` labels). `TeConfig::bins` is ignored. Use this for sleep stages or for HRV after `symworx_stats::RelativeKMeansDiscretizer`.
 
 Returns `0.0` for short, constant, or mismatched series. Do **not** concatenate users or disconnected nights into one TE series — compute per contiguous record, then summarize.
@@ -41,6 +42,51 @@ Returns `0.0` for short, constant, or mismatched series. Do **not** concatenate 
 Shared relative cuts (per-user min/max, k-means on the pooled unit interval) live in `symworx-stats::discretize`. Example: `cargo run -p symworx-dynamics --example relative_te_demo`.
 
 No TUI or Python binding yet.
+
+## DMD / EDMD
+
+```rust
+use symworx_dynamics::{dmd, edmd, DmdConfig, EdmdConfig, Dictionary};
+
+let dmd_model = dmd(&snapshots, &DmdConfig { rank: Some(4), ..Default::default() });
+let edmd_model = edmd(&snapshots, &EdmdConfig {
+    dictionary: Dictionary::Polynomial { max_degree: 2, include_constant: true },
+    ridge: 1e-8,
+});
+```
+
+## LTI + PID
+
+```rust
+use symworx_dynamics::{LtiDiscrete, Pid, PidConfig};
+use ndarray::array;
+
+
+- `transfer_entropy_discrete*` — same estimator on already-discrete series (`u8` labels). `TeConfig::bins` is ignored. Use this for sleep stages or for HRV after `symworx_stats::RelativeKMeansDiscretizer`.
+
+Returns `0.0` for short, constant, or mismatched series. Do **not** concatenate users or disconnected nights into one TE series — compute per contiguous record, then summarize.
+
+Shared relative cuts (per-user min/max, k-means on the pooled unit interval) live in `symworx-stats::discretize`. Example: `cargo run -p symworx-dynamics --example relative_te_demo`.
+
+No TUI or Python binding yet.
+
+## DMD / EDMD
+
+```rust
+use symworx_dynamics::{dmd, edmd, DmdConfig, EdmdConfig, Dictionary};
+
+let dmd_model = dmd(&snapshots, &DmdConfig { rank: Some(4), ..Default::default() });
+let edmd_model = edmd(&snapshots, &EdmdConfig {
+    dictionary: Dictionary::Polynomial { max_degree: 2, include_constant: true },
+    ridge: 1e-8,
+});
+```
+
+## LTI + PID
+
+```rust
+use symworx_dynamics::{LtiDiscrete, Pid, PidConfig};
+use ndarray::array;
 
 ## DMD / EDMD
 
