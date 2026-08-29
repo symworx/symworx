@@ -7,7 +7,7 @@
 //! (partial) TE. Continuous series are quantized with per-channel
 //! quantile bins, then delay-embedded. Entropy is in nats (`ln`).
 //!
-//! For series that are already discrete (sleep stages, or HRV after
+//! For series that are already discrete (e.g., sleep stages, or HRV after
 //! [`symworx_stats::discretize::RelativeKMeansDiscretizer`]), use the
 //! `transfer_entropy_discrete*` entry points — they skip re-binning.
 //! Do not concatenate users or disconnected nights into one TE series.
