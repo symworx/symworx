@@ -138,8 +138,7 @@ impl BackendConfig {
 }
 
 fn first_env(keys: &[&str]) -> Option<String> {
-    keys.iter()
-        .find_map(|k| env::var(k).ok().and_then(|v| if v.is_empty() { None } else { Some(v) }))
+    keys.iter().find_map(|k| env::var(k).ok().filter(|v| !v.is_empty()))
 }
 
 #[cfg(test)]
