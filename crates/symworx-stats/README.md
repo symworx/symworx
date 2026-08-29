@@ -16,10 +16,11 @@ Statistics and machine-learning algorithms. Dynamical operators and signal sensi
 | `error_metrics` | MAE/MSE/RMSE, R², bias, residuals, `RegressionReport` | No |
 | `classification_metrics` | Accuracy, confusion, F1, balanced acc, **ROC/AUC** (+ OVR) | No |
 | `preprocess` | `StandardScaler`, `MinMaxScaler` (fit on train only) | No |
+| `discretize` | Grouped range + relative k-means cuts (`RelativeKMeansDiscretizer`) | No |
 | `knn` | Multiclass k-NN (Euclidean/Manhattan/Cosine; vote proba) | No |
 | `rules` | Threshold conditions, first-match rule lists, decision stump | No |
 | `cluster` | k-means (+ k-means++), inertia, predict | No |
-| `split` | Index-based train/test (+ folds / repeated resplits); min = max(10, 10% parent) | No |
+| `split` | Index-based train/test (+ folds / repeated / **grouped** user hold-out); min = max(10, 10% parent) | No |
 | `linreg` | OLS, Ridge, Lasso, Elastic Net, soft-threshold | OLS/Ridge yes; Lasso/EN no |
 | `logistic` | Binary + **multiclass OVR** logistic (GD; L2 optional) | No |
 | `naive_bayes` | Gaussian Naive Bayes | No |

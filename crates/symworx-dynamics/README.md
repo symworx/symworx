@@ -19,7 +19,7 @@ This is a sub-crate to the [`symworx-core`](../symworx-core/README.md) crate.
 
 ## Transfer entropy
 
-Discrete (quantile-binned) Schreiber TE. Entropy in nats. Not a kNN / Kraskov estimator.
+Discrete (histogram) Schreiber TE. Entropy in nats. Not a kNN / Kraskov estimator.
 
 ```rust
 use symworx_dynamics::{transfer_entropy, transfer_entropy_mv, transfer_entropy_conditional, TeConfig};
@@ -31,11 +31,16 @@ let te_joint = transfer_entropy_mv(&[&x, &z], &y, &cfg);
 let te_x_given_z = transfer_entropy_conditional(&[&z], &[&x], &y, &cfg);
 ```
 
-- `transfer_entropy` / `transfer_entropy_with` — bivariate `X → Y`
+- `transfer_entropy` / `transfer_entropy_with` — bivariate `X → Y` (per-channel quantile bins)
 - `transfer_entropy_mv` — joint sources `(X1,...,Xp) → Y`
 - `transfer_entropy_conditional` — partial `X → Y | Z`
+- `transfer_entropy_discrete*` — same estimator on already-discrete series (`u8` labels). `TeConfig::bins` is ignored. Use this for sleep stages or for HRV after `symworx_stats::RelativeKMeansDiscretizer`.
 
-Returns `0.0` for short, constant, or mismatched series. No TUI or Python binding yet.
+Returns `0.0` for short, constant, or mismatched series. Do **not** concatenate users or disconnected nights into one TE series — compute per contiguous record, then summarize.
+
+Shared relative cuts (per-user min/max, k-means on the pooled unit interval) live in `symworx-stats::discretize`. Example: `cargo run -p symworx-dynamics --example relative_te_demo`.
+
+No TUI or Python binding yet.
 
 ## DMD / EDMD
 

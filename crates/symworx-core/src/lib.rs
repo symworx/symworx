@@ -50,6 +50,7 @@ pub use symworx_io::traits::*;
 pub use symworx_math as math;
 // Convenience re-exports for common series/sequence operations
 pub use symworx_math::series::{
+    discretize,
     ewma,
     rolling_apply,
     rolling_mean,

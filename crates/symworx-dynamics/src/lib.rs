@@ -66,13 +66,16 @@ pub use embedding::{
     fnn,
 };
 pub use entropy::{
+    TeConfig,
     multiscale_entropy,
     sample_entropy,
     transfer_entropy,
     transfer_entropy_conditional,
+    transfer_entropy_discrete,
+    transfer_entropy_discrete_conditional,
+    transfer_entropy_discrete_mv,
     transfer_entropy_mv,
     transfer_entropy_with,
-    TeConfig,
 };
 pub use koopman::{
     Dictionary,
