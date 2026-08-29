@@ -27,12 +27,25 @@ pub mod store;
 #[cfg(feature = "supervision")]
 pub mod shutdown;
 
-pub use config::{BackendConfig, CloudProvider};
+pub use config::{
+    BackendConfig,
+    CloudProvider,
+};
 pub use error::BackendError;
-pub use health::{HealthReport, HealthState};
-pub use process_manager::{ProcessManager, TaskInfo};
+pub use health::{
+    HealthReport,
+    HealthState,
+};
+pub use process_manager::{
+    ProcessManager,
+    TaskInfo,
+};
 pub use server::Server;
-pub use store::{open_store, LocalFsStore, ObjectStore};
+pub use store::{
+    LocalFsStore,
+    ObjectStore,
+    open_store,
+};
 
 /// Crate version string.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

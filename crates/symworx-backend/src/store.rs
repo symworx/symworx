@@ -9,11 +9,21 @@
 //! `symworx-io`; this store is for opaque backend blobs (models, job
 //! artifacts, de-identified exports).
 
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::{
+    fs,
+    path::{
+        Path,
+        PathBuf,
+    },
+};
 
-use crate::config::{BackendConfig, CloudProvider};
-use crate::error::BackendError;
+use crate::{
+    config::{
+        BackendConfig,
+        CloudProvider,
+    },
+    error::BackendError,
+};
 
 /// Put / get / list opaque objects by key.
 pub trait ObjectStore: Send + Sync {

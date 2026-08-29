@@ -3,7 +3,10 @@
 
 //! Liveness / readiness snapshots for ECS, App Service, and local runs.
 
-use crate::config::{BackendConfig, CloudProvider};
+use crate::config::{
+    BackendConfig,
+    CloudProvider,
+};
 
 /// Coarse health for probes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -48,12 +51,7 @@ pub struct HealthReport {
 
 impl HealthReport {
     /// Build a report from config and task counts.
-    pub fn from_parts(
-        cfg: &BackendConfig,
-        tasks_running: usize,
-        tasks_total: usize,
-        ready: bool,
-    ) -> Self {
+    pub fn from_parts(cfg: &BackendConfig, tasks_running: usize, tasks_total: usize, ready: bool) -> Self {
         let state = if ready {
             HealthState::Ready
         } else if tasks_total == 0 {

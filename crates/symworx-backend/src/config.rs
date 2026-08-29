@@ -6,9 +6,11 @@
 //! Reads a small set of environment variables that map onto local disk,
 //! AWS S3, or Azure Blob without pulling in either vendor SDK.
 
-use std::env;
-use std::path::PathBuf;
-use std::str::FromStr;
+use std::{
+    env,
+    path::PathBuf,
+    str::FromStr,
+};
 
 use crate::error::BackendError;
 
@@ -112,12 +114,7 @@ impl BackendConfig {
                 cfg.endpoint = Some(v);
             }
         }
-        cfg.region = first_env(&[
-            "SYMWORX_REGION",
-            "AWS_REGION",
-            "AWS_DEFAULT_REGION",
-            "AZURE_LOCATION",
-        ]);
+        cfg.region = first_env(&["SYMWORX_REGION", "AWS_REGION", "AWS_DEFAULT_REGION", "AZURE_LOCATION"]);
         cfg.validate()?;
         Ok(cfg)
     }
@@ -141,11 +138,8 @@ impl BackendConfig {
 }
 
 fn first_env(keys: &[&str]) -> Option<String> {
-    keys.iter().find_map(|k| {
-        env::var(k)
-            .ok()
-            .and_then(|v| if v.is_empty() { None } else { Some(v) })
-    })
+    keys.iter()
+        .find_map(|k| env::var(k).ok().and_then(|v| if v.is_empty() { None } else { Some(v) }))
 }
 
 #[cfg(test)]

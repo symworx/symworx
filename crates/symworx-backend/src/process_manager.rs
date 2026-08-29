@@ -3,10 +3,12 @@
 
 use std::collections::BTreeMap;
 
-use crate::config::BackendConfig;
-use crate::error::BackendError;
-use crate::health::HealthReport;
-use crate::server::Server;
+use crate::{
+    config::BackendConfig,
+    error::BackendError,
+    health::HealthReport,
+    server::Server,
+};
 
 /// Snapshot of one named task.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -69,20 +71,19 @@ impl ProcessManager {
     /// Register a named task (idempotent). Does not start it.
     pub fn register(&mut self, name: &str) -> Result<(), BackendError> {
         let name = require_name(name)?;
-        self.tasks.entry(name.clone()).or_insert(TaskInfo {
-            name,
-            running: false,
-        });
+        self.tasks
+            .entry(name.clone())
+            .or_insert(TaskInfo { name, running: false });
         Ok(())
     }
 
     /// Mark `name` running. Registers first if needed.
     pub fn start_task(&mut self, name: &str) -> Result<(), BackendError> {
         let name = require_name(name)?;
-        let task = self.tasks.entry(name.clone()).or_insert(TaskInfo {
-            name,
-            running: false,
-        });
+        let task = self
+            .tasks
+            .entry(name.clone())
+            .or_insert(TaskInfo { name, running: false });
         task.running = true;
         if !self.server.is_running() {
             self.server.start();
