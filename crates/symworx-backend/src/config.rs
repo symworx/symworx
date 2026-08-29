@@ -6,9 +6,11 @@
 //! Reads a small set of environment variables that map onto local disk,
 //! AWS S3, or Azure Blob without pulling in either vendor SDK.
 
-use std::env;
-use std::path::PathBuf;
-use std::str::FromStr;
+use std::{
+    env,
+    path::PathBuf,
+    str::FromStr,
+};
 
 use crate::error::BackendError;
 
@@ -89,35 +91,30 @@ impl BackendConfig {
         if let Ok(v) = env::var("SYMWORX_CLOUD") {
             cfg.provider = v.parse()?;
         }
-        if let Ok(v) = env::var("SYMWORX_BIND") {
-            if !v.is_empty() {
-                cfg.bind = v;
-            }
+        if let Ok(v) = env::var("SYMWORX_BIND")
+            && !v.is_empty()
+        {
+            cfg.bind = v;
         }
-        if let Ok(v) = env::var("SYMWORX_OBJECT_ROOT") {
-            if !v.is_empty() {
-                cfg.object_root = PathBuf::from(v);
-            }
+        if let Ok(v) = env::var("SYMWORX_OBJECT_ROOT")
+            && !v.is_empty()
+        {
+            cfg.object_root = PathBuf::from(v);
         }
-        if let Ok(v) = env::var("SYMWORX_OBJECT_BUCKET") {
-            if !v.is_empty() {
-                cfg.bucket = Some(v);
-            }
+        if let Ok(v) = env::var("SYMWORX_OBJECT_BUCKET")
+            && !v.is_empty()
+        {
+            cfg.bucket = Some(v);
         }
         if let Ok(v) = env::var("SYMWORX_OBJECT_PREFIX") {
             cfg.prefix = v.trim_matches('/').to_string();
         }
-        if let Ok(v) = env::var("SYMWORX_OBJECT_ENDPOINT") {
-            if !v.is_empty() {
-                cfg.endpoint = Some(v);
-            }
+        if let Ok(v) = env::var("SYMWORX_OBJECT_ENDPOINT")
+            && !v.is_empty()
+        {
+            cfg.endpoint = Some(v);
         }
-        cfg.region = first_env(&[
-            "SYMWORX_REGION",
-            "AWS_REGION",
-            "AWS_DEFAULT_REGION",
-            "AZURE_LOCATION",
-        ]);
+        cfg.region = first_env(&["SYMWORX_REGION", "AWS_REGION", "AWS_DEFAULT_REGION", "AZURE_LOCATION"]);
         cfg.validate()?;
         Ok(cfg)
     }
@@ -141,11 +138,7 @@ impl BackendConfig {
 }
 
 fn first_env(keys: &[&str]) -> Option<String> {
-    keys.iter().find_map(|k| {
-        env::var(k)
-            .ok()
-            .and_then(|v| if v.is_empty() { None } else { Some(v) })
-    })
+    keys.iter().find_map(|k| env::var(k).ok().filter(|v| !v.is_empty()))
 }
 
 #[cfg(test)]

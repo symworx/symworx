@@ -11,7 +11,7 @@
 //! ## Modules
 //!
 //! - [`embedding`] — Phase space reconstruction (`edim`, false nearest neighbors)
-//! - [`entropy`] — Sample entropy and multiscale entropy
+//! - [`entropy`] — Sample entropy, multiscale entropy, and transfer entropy
 //! - [`rqa`] — Recurrence Quantification Analysis (RQA) and cross-recurrence (cRQA)
 //! - [`phase`] — Relative phase, Kuramoto order, cluster-phase (pre-extracted phases)
 //! - [`dmd`] — Dynamic Mode Decomposition (data-driven linear operators)
@@ -33,7 +33,7 @@ pub mod control;
 pub mod dmd;
 /// Embedding dimension calculations (e.g., edim, fnn).
 pub mod embedding;
-/// Entropy measures (e.g., sample entropy, multiscale entropy).
+/// Entropy measures (e.g., sample entropy, multiscale entropy, transfer entropy).
 pub mod entropy;
 /// Extended DMD / Koopman operator approximation.
 pub mod koopman;
@@ -66,8 +66,13 @@ pub use embedding::{
     fnn,
 };
 pub use entropy::{
+    TeConfig,
     multiscale_entropy,
     sample_entropy,
+    transfer_entropy,
+    transfer_entropy_conditional,
+    transfer_entropy_mv,
+    transfer_entropy_with,
 };
 pub use koopman::{
     Dictionary,

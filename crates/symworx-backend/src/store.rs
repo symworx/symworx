@@ -9,11 +9,21 @@
 //! `symworx-io`; this store is for opaque backend blobs (models, job
 //! artifacts, de-identified exports).
 
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::{
+    fs,
+    path::{
+        Path,
+        PathBuf,
+    },
+};
 
-use crate::config::{BackendConfig, CloudProvider};
-use crate::error::BackendError;
+use crate::{
+    config::{
+        BackendConfig,
+        CloudProvider,
+    },
+    error::BackendError,
+};
 
 /// Put / get / list opaque objects by key.
 pub trait ObjectStore: Send + Sync {
@@ -97,10 +107,10 @@ impl ObjectStore for LocalFsStore {
         let mut out = Vec::new();
         for ent in fs::read_dir(&dir).map_err(|e| BackendError::store(e.to_string()))? {
             let ent = ent.map_err(|e| BackendError::store(e.to_string()))?;
-            if ent.path().is_file() {
-                if let Some(name) = ent.file_name().to_str() {
-                    out.push(name.to_string());
-                }
+            if ent.path().is_file()
+                && let Some(name) = ent.file_name().to_str()
+            {
+                out.push(name.to_string());
             }
         }
         out.sort();

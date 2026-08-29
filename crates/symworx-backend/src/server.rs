@@ -26,10 +26,7 @@ impl Server {
 
     /// Server with explicit config.
     pub fn with_config(config: BackendConfig) -> Self {
-        Self {
-            config,
-            running: false,
-        }
+        Self { config, running: false }
     }
 
     /// Config used at construction (env snapshot).

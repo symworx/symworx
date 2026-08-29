@@ -8,7 +8,7 @@ This is a sub-crate to the [`symworx-core`](../symworx-core/README.md) crate.
 | Module | Methods |
 |:-------|:--------|
 | `embedding` | Delay coordinates (`edim`), false nearest neighbors (`fnn`) |
-| `entropy` | Sample entropy, multiscale entropy |
+| `entropy` | Sample entropy, multiscale entropy, discrete transfer entropy |
 | `rqa` | Recurrence plots, RQA / cRQA metrics |
 | `phase` | Relative phase, Kuramoto *R*, cluster-phase (Richardson et al. 2012); input is pre-extracted phases |
 | `dmd` | Dynamic Mode Decomposition (exact / SVD-based) |
@@ -16,6 +16,26 @@ This is a sub-crate to the [`symworx-core`](../symworx-core/README.md) crate.
 | `sindy` | Sparse identification of nonlinear dynamics (STLS) |
 | `sindyc` | SINDYc — SINDy with control (`Θ(x,u)`) |
 | `control` | Discrete LTI plants, state feedback, PID |
+
+## Transfer entropy
+
+Discrete (quantile-binned) Schreiber TE. Entropy in nats. Not a kNN / Kraskov estimator.
+
+```rust
+use symworx_dynamics::{transfer_entropy, transfer_entropy_mv, transfer_entropy_conditional, TeConfig};
+
+let te_xy = transfer_entropy(&x, &y);
+
+let cfg = TeConfig { k: 1, l: 1, tau: 1, horizon: 1, bins: 4 };
+let te_joint = transfer_entropy_mv(&[&x, &z], &y, &cfg);
+let te_x_given_z = transfer_entropy_conditional(&[&z], &[&x], &y, &cfg);
+```
+
+- `transfer_entropy` / `transfer_entropy_with` — bivariate `X → Y`
+- `transfer_entropy_mv` — joint sources `(X1,...,Xp) → Y`
+- `transfer_entropy_conditional` — partial `X → Y | Z`
+
+Returns `0.0` for short, constant, or mismatched series. No TUI or Python binding yet.
 
 ## DMD / EDMD
 
