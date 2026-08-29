@@ -107,10 +107,10 @@ impl ObjectStore for LocalFsStore {
         let mut out = Vec::new();
         for ent in fs::read_dir(&dir).map_err(|e| BackendError::store(e.to_string()))? {
             let ent = ent.map_err(|e| BackendError::store(e.to_string()))?;
-            if ent.path().is_file() {
-                if let Some(name) = ent.file_name().to_str() {
-                    out.push(name.to_string());
-                }
+            if ent.path().is_file()
+                && let Some(name) = ent.file_name().to_str()
+            {
+                out.push(name.to_string());
             }
         }
         out.sort();

@@ -91,28 +91,28 @@ impl BackendConfig {
         if let Ok(v) = env::var("SYMWORX_CLOUD") {
             cfg.provider = v.parse()?;
         }
-        if let Ok(v) = env::var("SYMWORX_BIND") {
-            if !v.is_empty() {
-                cfg.bind = v;
-            }
+        if let Ok(v) = env::var("SYMWORX_BIND")
+            && !v.is_empty()
+        {
+            cfg.bind = v;
         }
-        if let Ok(v) = env::var("SYMWORX_OBJECT_ROOT") {
-            if !v.is_empty() {
-                cfg.object_root = PathBuf::from(v);
-            }
+        if let Ok(v) = env::var("SYMWORX_OBJECT_ROOT")
+            && !v.is_empty()
+        {
+            cfg.object_root = PathBuf::from(v);
         }
-        if let Ok(v) = env::var("SYMWORX_OBJECT_BUCKET") {
-            if !v.is_empty() {
-                cfg.bucket = Some(v);
-            }
+        if let Ok(v) = env::var("SYMWORX_OBJECT_BUCKET")
+            && !v.is_empty()
+        {
+            cfg.bucket = Some(v);
         }
         if let Ok(v) = env::var("SYMWORX_OBJECT_PREFIX") {
             cfg.prefix = v.trim_matches('/').to_string();
         }
-        if let Ok(v) = env::var("SYMWORX_OBJECT_ENDPOINT") {
-            if !v.is_empty() {
-                cfg.endpoint = Some(v);
-            }
+        if let Ok(v) = env::var("SYMWORX_OBJECT_ENDPOINT")
+            && !v.is_empty()
+        {
+            cfg.endpoint = Some(v);
         }
         cfg.region = first_env(&["SYMWORX_REGION", "AWS_REGION", "AWS_DEFAULT_REGION", "AZURE_LOCATION"]);
         cfg.validate()?;
