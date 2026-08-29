@@ -13,9 +13,9 @@ mod transfer_entropy;
 pub use multiscale_entropy::multiscale_entropy;
 pub use sample_entropy::sample_entropy;
 pub use transfer_entropy::{
+    TeConfig,
     transfer_entropy,
     transfer_entropy_conditional,
     transfer_entropy_mv,
     transfer_entropy_with,
-    TeConfig,
 };

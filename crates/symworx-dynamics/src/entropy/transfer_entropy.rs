@@ -75,12 +75,7 @@ pub fn transfer_entropy_mv(sources: &[&[f64]], target: &[f64], cfg: &TeConfig) -
 ///
 /// `condition` is the set held fixed; `sources` is the set whose extra
 /// predictive information is measured. `sources` empty returns `0.0`.
-pub fn transfer_entropy_conditional(
-    condition: &[&[f64]],
-    sources: &[&[f64]],
-    target: &[f64],
-    cfg: &TeConfig,
-) -> f64 {
+pub fn transfer_entropy_conditional(condition: &[&[f64]], sources: &[&[f64]], target: &[f64], cfg: &TeConfig) -> f64 {
     if !cfg.is_valid() || sources.is_empty() {
         return 0.0;
     }
@@ -133,20 +128,12 @@ pub fn transfer_entropy_conditional(
     let h_yf_given_yz = cond_entropy(&y_fut, &join_states(&y_past, &z_past));
     let h_yf_given_yxz = cond_entropy(&y_fut, &join_states(&y_past, &xz_past));
     let te = h_yf_given_yz - h_yf_given_yxz;
-    if te.is_finite() && te > 0.0 {
-        te
-    } else {
-        0.0
-    }
+    if te.is_finite() && te > 0.0 { te } else { 0.0 }
 }
 
 fn history_start(k: usize, l: usize, tau: usize, n_aux: usize) -> usize {
     let y_need = (k.saturating_sub(1)) * tau;
-    let x_need = if n_aux == 0 {
-        0
-    } else {
-        (l.saturating_sub(1)) * tau
-    };
+    let x_need = if n_aux == 0 { 0 } else { (l.saturating_sub(1)) * tau };
     y_need.max(x_need)
 }
 
@@ -236,11 +223,7 @@ fn cond_entropy(a: &[Vec<u8>], b: &[Vec<u8>]) -> f64 {
     let hab = joint_entropy_pair(a, b);
     let hb = entropy_of(b);
     let h = hab - hb;
-    if h.is_finite() && h > 0.0 {
-        h
-    } else {
-        0.0
-    }
+    if h.is_finite() && h > 0.0 { h } else { 0.0 }
 }
 
 fn joint_entropy_pair(a: &[Vec<u8>], b: &[Vec<u8>]) -> f64 {
