@@ -2,9 +2,9 @@
 
 This guide explains how to **train in SymWorx (Rust / workstation)** and **run inference** on other platforms. The design goal is:
 
-> Fit offline → ship a small bundle of numbers (or rules) → predict with a few multiplies and compares.
+> Fit offline → ship a small bundle of numbers (or rules) **plus an eval policy** → predict with a few multiplies and compares → flag / percentile on a local window.
 
-You do **not** need OpenBLAS, `ndarray`, or the full `symworx-stats` crate on the target. Only the **predict** math.
+You do **not** need OpenBLAS, `ndarray`, or the full `symworx-stats` crate on the target. Only the **predict** math and the **eval** compare (thresholds + optional Gaussian CDF).
 
 ---
 
@@ -12,9 +12,10 @@ You do **not** need OpenBLAS, `ndarray`, or the full `symworx-stats` crate on th
 
 | Term | Meaning here |
 |------|----------------|
-| **Train** | Fit models in Rust (`logistic_regression`, `lda`, `RuleListClassifier`, …) |
-| **Export** | Copy fitted parameters into constants / JSON / assets for another runtime |
+| **Train** | Fit models in Rust (`logistic_regression`, `lda`, `RuleListClassifier`, `LinearModel`, …) |
+| **Export** | Copy fitted **predict** parameters **and** a shared [`EvalPolicy`](../src/eval.rs) into JSON / constants |
 | **Infer** | Apply the same formulas on device / app / browser |
+| **Evaluate** | Compare local `score` to shipped thresholds / residual CDF → [`EvalReport`](../src/eval.rs) upstream |
 
 Export is **not** (yet) automatic codegen. You print or serialize coefficients once, paste them into the target, and keep feature order/units identical.
 
@@ -23,6 +24,7 @@ Export is **not** (yet) automatic codegen. You print or serialize coefficients o
 | Model | Payload | On-device cost |
 |-------|---------|----------------|
 | `StandardScaler` | `mean[]`, `scale[]` | O(p) |
+| Linear / ridge / lasso (`LinearModel`) | `intercept`, `beta[]` | O(p) |
 | Binary logistic | `intercept`, `beta[]` | O(p) + sigmoid |
 | Multiclass OVR logistic | per-class `intercept`, `beta[]` | O(K·p) |
 | LDA | per-class `coef[]`, `intercept` | O(K·p) |
@@ -525,6 +527,8 @@ Example parity table:
 | Rust type | Module |
 |-----------|--------|
 | `StandardScaler` | `symworx_stats::preprocess` |
+| `LinearModel` | `symworx_stats::linreg` |
+| `EvalPolicy` / `EvalReport` / `ModelEval` | `symworx_stats::eval` |
 | `LogisticModel` / `logistic_regression` | `symworx_stats::logistic` |
 | `MulticlassLogisticModel` / `logistic_regression_ovr` | `symworx_stats::logistic` |
 | `LdaModel` / `lda` | `symworx_stats::lda` |
@@ -542,4 +546,104 @@ cargo run -p symworx-stats --example lda_demo --features linalg
 
 ---
 
-*Last updated: export guide for embedded C, iOS (Swift), Android (Kotlin), and web (TypeScript).*
+## 10. Local evaluation (one envelope, not per-model structs)
+
+Predict parameters stay **per kind** (logistic β, `LinearModel` β, pulse τ, Kalman `F,H,Q,R`, …). Evaluation does **not**.
+
+Upstream (mobile from edge, cloud from mobile) must parse a packet **without** a `LinearEvalReport` vs `KalmanEvalReport` vs `PulseEvalReport`. One schema:
+
+| Direction | Type | Role |
+|-----------|------|------|
+| Down (lab → device) | `EvalPolicy` | `model_id`, `version`, `mode`, warning/critical cuts, optional Gaussian residual reference, window, min quality |
+| Down (lab → device) | `ModelEval` | `policy` + optional training `RegressionReport` (`fit`). Lab errors are metadata; `evaluate()` does not read them |
+| Up (device → mobile/cloud) | `EvalReport` | `flag`, optional `pct`, `n`, `valid`, copied `model_id` / `version` / `mode` |
+
+`sid` and `ts` belong on the **packet envelope**, not on `EvalReport`.
+
+### Modes (the `score` that is compared)
+
+| `mode` | `score` | Examples |
+|--------|---------|----------|
+| `residual` | MAE / RMSE / `|e|` / innovation | `LinearModel`, nlin, pulse, Kalman |
+| `score` | `p`, `1−p`, margin | logistic, LDA, Gaussian NB, rules |
+| `band` | raw feature vs shipped cuts | HR/SpO₂ (today’s embed `VitalsStatus`), RQA/SampEn bands |
+
+Authoring: fit thresholds and the Gaussian on **hold-out scores** (typical cuts: 90th / 99th of `|e|`). Percentile is vs the **shipped** reference, not a live local rolling rank.
+
+### JSON (`serde` feature)
+
+```json
+{
+  "policy": {
+    "model_id": "hr_rest_linear_v1",
+    "version": 1,
+    "mode": "residual",
+    "thresholds": { "warning": 5.0, "critical": 12.0 },
+    "residual_ref": { "kind": "gaussian", "mean": 2.0, "sd": 1.0 },
+    "window_n": 250,
+    "min_quality": 0.6
+  },
+  "fit": {
+    "n": 400,
+    "mae": 1.2,
+    "mse": 2.1,
+    "rmse": 1.45,
+    "r2": 0.81,
+    "bias": 0.04,
+    "max_abs_error": 6.2
+  }
+}
+```
+
+Runtime report (window rate, not 50 Hz):
+
+```json
+{
+  "model_id": "hr_rest_linear_v1",
+  "version": 1,
+  "mode": "residual",
+  "valid": true,
+  "flag": "warning",
+  "pct": 92.4,
+  "n": 250,
+  "quality": 0.88,
+  "score": 6.2
+}
+```
+
+Invalid windows (`n` too small, quality too low, NaN score) set `valid: false` and `flag: "normal"` so they do not trigger UX or upstream jobs.
+
+### Rust apply
+
+```rust
+use symworx_stats::{EvalPolicy, evaluate_residuals, model_eval_from_predictions};
+
+// Author from a hold-out pair:
+let bundle = model_eval_from_predictions("hr_rest_linear_v1", 1, &y, &yhat, 90.0, 99.0);
+
+// Runtime (same policy on device / mobile):
+let report = evaluate_residuals(&bundle.policy, &y_window, &yhat_window, Some(0.9));
+// report.flag, report.pct → packet
+```
+
+Enable JSON: `symworx-stats` feature `serde`.
+
+### Triggers
+
+| Hop | Who evaluates | Who is notified |
+|-----|---------------|-----------------|
+| Edge → mobile | MCU or host-side embed | Phone UX |
+| Mobile on mobile | Phone | Same phone (offline must still flag) |
+| Mobile → cloud | Phone forwards `EvalReport` | Coach / job / retrain — waveform not required |
+
+Debounce (N consecutive warnings, hold-off after critical) is a policy field to add later, not a per-screen constant.
+
+Embed vitals JSON-line does **not** yet carry eval fields. When it does, prefer a **separate eval line at window rate** over piggybacking on every PPG sample.
+
+### Not yet in this envelope
+
+Per-kind **predict** dumps for pulse-response, Kalman, SINDy, mixed-model BLUPs, PCA reconstruction, RQA metric bands — candidates, not shipped exporters. Quantile-knot / histogram residual references — Gaussian only for now.
+
+---
+
+*Last updated: shared `EvalPolicy` / `EvalReport` / `ModelEval` envelope plus C/MCU, iOS, Android, and web predict snippets.*
