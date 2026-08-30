@@ -42,7 +42,7 @@ pub struct LmerConfig {
     pub method: EstimationMethod,
     /// Maximum iterations per variance-component search (each multi-start).
     pub max_iter: usize,
-    /// Convergence tolerance (1-D golden section on `log θ`, or GD grad/param tol).
+    /// Convergence tolerance (`symworx_math::golden_section_minimize` on `log θ`, or GD grad/param tol).
     pub tol: f64,
     /// If `true` (default), add an intercept column (same convention as OLS).
     pub fit_intercept: bool,
