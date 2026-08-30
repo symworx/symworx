@@ -87,9 +87,11 @@ pub use series::{
 };
 pub use special::{
     beta,
+    erf,
     gamma,
     ln_beta,
     ln_gamma,
+    standard_normal_cdf,
 };
 
 // Namespaced re-exports (for convenience)
