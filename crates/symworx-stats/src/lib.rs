@@ -63,6 +63,9 @@ pub mod error_metrics;
 /// Shared local-eval envelope (policy down, flag/percentile report up).
 pub mod eval;
 
+/// Band-power summaries of a PSD (Welch itself lives in `symworx-signal`).
+pub mod spectral;
+
 /// Univariate histogram and Gaussian KDE (for any 1-D sample, incl. residuals).
 pub mod density;
 
@@ -326,6 +329,7 @@ pub use rules::{
     ThresholdCondition,
     fit_decision_stump,
 };
+pub use spectral::bandpower;
 pub use split::{
     MIN_SPLIT_FRACTION,
     MIN_SPLIT_SAMPLES,

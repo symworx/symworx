@@ -30,7 +30,7 @@ Statistics and machine-learning algorithms. Dynamical operators and signal sensi
 | `nlinreg` | Nonlinear least squares (via `symworx-math::optimize`) | No |
 | `svd` | SVD, rank-k truncate/reconstruct | **Yes** |
 | `pca` | PCA fit/transform/whiten (uses SVD) | **Yes** |
-| `spectral` | Welch PSD (stub → full implementation planned) | No |
+| `spectral` | `bandpower` on a PSD (Welch estimator is in `symworx-signal`) | No |
 | `synthetic` | Teaching presets (Normal1D, bivariate, linear, class blobs, clusters) | No |
 
 ### Feature flag
