@@ -22,6 +22,7 @@ to finish.
 | Release | Re-enable PyPI publish | Trusted publishing + `publish-python` in [release.yml](../.github/workflows/release.yml). Validation already builds a wheel smoke artifact. |
 | SpatialSym | Sport-specific reporting wrappers | Core stays sport-agnostic. Named wrappers for analysis/presentation are planned on top ([spatialsym README](../crates/symworx-spatialsym/README.md)). |
 | Backend | HTTP `/healthz` + feature-gated AWS/Azure store | Task table, `HealthReport`, and `LocalFsStore` landed on `feature/backend-work`. SDK I/O and a listener wait for a consumer. See [cloud notes](../crates/symworx-backend/notes/cloud.md). |
+| Stats / embed | Eval packet on the live stream | Shared `EvalPolicy`/`EvalReport` types shipped in stats. Remaining: window-rate eval JSON-line in `symworx-embed`, TUI flag display, pulse-response / Kalman 1D exporters. See [model_export.md](../crates/symworx-stats/docs/model_export.md) §10. |
 
 ## Considered
 

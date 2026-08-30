@@ -14,6 +14,7 @@ Statistics and machine-learning algorithms. Dynamical operators and signal sensi
 | `correlation`, `autocorrelation` | Pearson, ACF | No |
 | `distance` | Euclidean, Manhattan, cosine, Chebyshev | No |
 | `error_metrics` | MAE/MSE/RMSE, R², bias, residuals, `RegressionReport` | No |
+| `eval` | Shared `EvalPolicy` / `EvalReport` / `ModelEval` (flag + percentile) | No (`serde` opt-in for JSON) |
 | `classification_metrics` | Accuracy, confusion, F1, balanced acc, **ROC/AUC** (+ OVR) | No |
 | `preprocess` | `StandardScaler`, `MinMaxScaler` (fit on train only) | No |
 | `discretize` | Grouped range + relative k-means cuts (`RelativeKMeansDiscretizer`) | No |
@@ -43,9 +44,9 @@ symworx-stats = { path = "...", features = ["linalg"] }
 
 ## Model export (embedded / mobile / web)
 
-Train in Rust, ship coefficients or rules, run **predict-only** elsewhere:
+Train in Rust, ship coefficients or rules **and** a shared eval policy, run **predict + local eval** elsewhere:
 
-→ **[docs/model_export.md](docs/model_export.md)** — C/MCU, iOS (Swift), Android (Kotlin), and TypeScript/web examples for scaler + logistic (binary/OVR), LDA, and rule lists.
+→ **[docs/model_export.md](docs/model_export.md)** — C/MCU, iOS (Swift), Android (Kotlin), and TypeScript/web examples for scaler + logistic (binary/OVR), LDA, and rule lists. Shared `EvalPolicy` / `EvalReport` JSON for flags and percentile ranks (feature `serde` to derive).
 
 ## Related crates
 
