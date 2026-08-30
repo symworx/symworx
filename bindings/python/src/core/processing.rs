@@ -56,13 +56,11 @@ pub fn py_interp1(x: Vec<f64>, y: Vec<f64>, x_new: Vec<f64>) -> PyResult<Vec<f64
 
 #[pyfunction(name = "interp_cubic")]
 pub fn py_interp_cubic(x: Vec<f64>, y: Vec<f64>, x_new: Vec<f64>) -> PyResult<Vec<f64>> {
-    eprintln!("Warning: cubic interpolation not implemented");
     Ok(interp_cubic(&x, &y, &x_new))
 }
 
 #[pyfunction(name = "interp_spline")]
 pub fn py_interp_spline(x: Vec<f64>, y: Vec<f64>, x_new: Vec<f64>) -> PyResult<Vec<f64>> {
-    eprintln!("Warning: spline interpolation not implemented");
     Ok(interp_spline(&x, &y, &x_new))
 }
 

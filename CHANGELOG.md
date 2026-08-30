@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `symworx-signal`: natural cubic spline interpolation (`interp_spline` / `interp_cubic`) and resample Cubic/Spline methods (clamp outside the knot interval)
 - `symworx-stats::eval` — shared `EvalPolicy` / `EvalReport` / `ModelEval` (one envelope for all model kinds: flag + percentile). Optional `serde` feature for JSON. See [model_export.md](crates/symworx-stats/docs/model_export.md) §10
 - `symworx-backend`: `BackendConfig` / `CloudProvider` (`SYMWORX_CLOUD=local|aws|azure`), `ProcessManager` task table, `HealthReport`, `LocalFsStore` / `ObjectStore`
 - `symworx-dynamics` discrete transfer entropy: `transfer_entropy` / `transfer_entropy_with` (bivariate), `transfer_entropy_mv` (joint sources), `transfer_entropy_conditional` (partial TE), plus `TeConfig`
