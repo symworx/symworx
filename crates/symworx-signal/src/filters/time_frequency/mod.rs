@@ -10,6 +10,10 @@ pub mod stft;
 /// Wavelet Transform
 pub mod wavelet_transform;
 
+/// Welch power spectral density.
+pub mod welch;
+
 pub use hilbert::*;
 pub use stft::*;
 pub use wavelet_transform::*;
+pub use welch::*;

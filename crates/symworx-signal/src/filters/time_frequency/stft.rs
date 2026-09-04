@@ -27,6 +27,26 @@ pub enum WindowType {
     Rectangular,
 }
 
+/// Taper samples of length `n` for STFT / Welch.
+pub fn window_samples(kind: WindowType, n: usize) -> Vec<f64> {
+    if n == 0 {
+        return Vec::new();
+    }
+    if n == 1 {
+        return vec![1.0];
+    }
+    let nm1 = (n - 1) as f64;
+    match kind {
+        WindowType::Hann => (0..n)
+            .map(|i| 0.5 * (1.0 - (2.0 * std::f64::consts::PI * i as f64 / nm1).cos()))
+            .collect(),
+        WindowType::Hamming => (0..n)
+            .map(|i| 0.54 - 0.46 * (2.0 * std::f64::consts::PI * i as f64 / nm1).cos())
+            .collect(),
+        WindowType::Rectangular => vec![1.0; n],
+    }
+}
+
 /// Result of an STFT computation.
 pub struct StftResult {
     /// Spectrogram: magnitude (time × frequency)
@@ -76,16 +96,7 @@ pub fn stft(signal: &[f64], fs: f64, window_length: usize, overlap: usize, windo
     let mut planner = FftPlanner::new();
     let fft = planner.plan_fft_forward(window_length);
 
-    // Generate window
-    let window: Vec<f64> = match window_type {
-        WindowType::Hann => (0..window_length)
-            .map(|i| 0.5 * (1.0 - (2.0 * std::f64::consts::PI * i as f64 / (window_length - 1) as f64).cos()))
-            .collect(),
-        WindowType::Hamming => (0..window_length)
-            .map(|i| 0.54 - 0.46 * (2.0 * std::f64::consts::PI * i as f64 / (window_length - 1) as f64).cos())
-            .collect(),
-        WindowType::Rectangular => vec![1.0; window_length],
-    };
+    let window = window_samples(window_type, window_length);
 
     for (i, win_start) in (0..n_windows).map(|i| i * hop).enumerate() {
         let segment: Vec<Complex<f64>> = (0..window_length)
