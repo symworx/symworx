@@ -8,21 +8,22 @@ edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
 authors          = { workspace = true }
-description      = "Backend utilities for SymWorx (process supervision, server infrastructure, and shared components)"
+description      = "Backend utilities for SymWorx (process supervision, health, object store)"
 keywords = ["backend", "process-management", "infrastructure"]
 categories = ["development-tools"]
 
 [dependencies]
 tokio = { workspace = true }
-
-[features]
-supervision = ["dep:thiserror", "dep:tokio-util"]
-
-[dependencies.thiserror]
-version = "1"
-optional = true
+thiserror = { workspace = true }
 
 [dependencies.tokio-util]
 version = "0.7"
 optional = true
 features = ["rt"]
+
+[features]
+default = []
+supervision = ["dep:tokio-util"]
+
+[lints]
+workspace = true

@@ -10,9 +10,10 @@ This is a sub-crate of [`symworx-core`](../symworx-core/README.md).
 | Area | Modules |
 |------|---------|
 | Linear / adaptive filters | FIR/IIR, LMS/NLMS, Savitzky–Golay, RLS |
+| Time-frequency | STFT, Hilbert, CWT, **Welch PSD** (`welch` / `welch_default`) |
 | State estimation | `KalmanFilter` (+ RTS), `KalmanFilter1D`, **EKF**, **UKF** |
 | Sparse sensing | ISTA, OMP, Gaussian Φ, DCT basis (`processing::sparse_sensing`) |
-| Processing | peaks, resample, outliers, windows, deconvolution (NNLS/Wiener) |
+| Processing | peaks, resample (linear / cubic spline), outliers, windows, deconvolution (NNLS/Wiener) |
 
 ## Examples
 

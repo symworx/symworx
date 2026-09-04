@@ -1,10 +1,14 @@
 // Copyright (c) 2026 PalEm Dynamics LLC
 // Licensed under the Apache License, Version 2.0.
 
-use crate::processing::interpolation::interp_linear;
+use crate::processing::interpolation::{
+    interp_linear,
+    interp_spline,
+};
+
+type InterpFn = fn(&[f64], &[f64], &[f64]) -> Vec<f64>;
 
 /// Resampling structure.
-/// Includes Linear, Cubic (not implemented), and Splined (not implemented) methods.
 #[derive(Debug, Clone, Copy)]
 pub enum ResampleMethod {
     /// Linear interpolation.
@@ -59,14 +63,12 @@ impl<'a> Resample<'a> {
     /// Resamples the signal using specified method.
     pub fn method(&self, method: ResampleMethod) -> Vec<f64> {
         match method {
-            ResampleMethod::Linear => self.linear_impl(),
-            ResampleMethod::Cubic => todo!("Cubic resampling not implemented yet"),
-            ResampleMethod::Spline => todo!("Spline resampling not implemented yet"),
+            ResampleMethod::Linear => self.resample_with(interp_linear),
+            ResampleMethod::Cubic | ResampleMethod::Spline => self.resample_with(interp_spline),
         }
     }
 
-    /// Internal linear interpolation method.
-    fn linear_impl(&self) -> Vec<f64> {
+    fn resample_with(&self, interp: InterpFn) -> Vec<f64> {
         let old_len = self.y.len();
         let new_len = self.target_len.expect("target length not set");
 
@@ -75,16 +77,38 @@ impl<'a> Resample<'a> {
         }
 
         let x: Vec<f64> = (0..old_len).map(|i| i as f64).collect();
-        let x_new: Vec<f64> = (0..new_len)
-            .map(|i| i as f64 * (old_len - 1) as f64 / (new_len - 1) as f64)
-            .collect();
+        let x_new: Vec<f64> = if new_len == 1 {
+            vec![0.0]
+        } else {
+            (0..new_len)
+                .map(|i| i as f64 * (old_len - 1) as f64 / (new_len - 1) as f64)
+                .collect()
+        };
 
-        interp_linear(&x, self.y, &x_new)
+        interp(&x, self.y, &x_new)
     }
 
     /// Quick implementation of the linear interpolation method.
     #[inline]
     pub fn linear(&self) -> Vec<f64> {
         self.method(ResampleMethod::Linear)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn spline_resample_length() {
+        let y = [0.0, 1.0, 0.0, 1.0, 0.0];
+        let mut r = Resample::new(&y);
+        r.to_len(11);
+        let out = r.method(ResampleMethod::Spline);
+        assert_eq!(out.len(), 11);
+        assert!((out[0] - 0.0).abs() < 1e-12);
+        assert!((out[10] - 0.0).abs() < 1e-12);
+        let cubic = r.method(ResampleMethod::Cubic);
+        assert_eq!(cubic, out);
     }
 }

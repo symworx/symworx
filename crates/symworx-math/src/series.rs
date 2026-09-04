@@ -10,7 +10,7 @@
 //!   (direction preserved). Use [`successive_absolute_differences`] for magnitude only.
 //! - Do not re-implement successive differences elsewhere — depend on this module
 //!   (usually via `symworx-core`). Higher-level variability lives in `symworx-stats`;
-//!   new general sequence ops (windows, cumulative sums, …) should be implemented here.
+//!   new general sequence ops (windows, cumulative sums, discretize, …) should be implemented here.
 
 /// Computes the signed successive differences between consecutive elements.
 ///
@@ -261,6 +261,49 @@ pub fn time_windows(times: &[f64], window_sec: f64, step_sec: f64) -> Vec<(usize
     segments
 }
 
+/// Assign each value to a bin given strictly increasing interior cuts.
+///
+/// `cuts` are the `n_bins - 1` edges that separate bins `0..n_bins`. Assignment
+/// matches the transfer-entropy quantizer: `v >= cuts[i]` raises the bin index
+/// to `i + 1`. The result is clamped to `0..=cuts.len()` (so `n_bins = cuts.len() + 1`).
+///
+/// - Empty `x` → empty output.
+/// - Empty `cuts` → all zeros (a single bin).
+/// - Non-finite values → bin `0`.
+///
+/// Callers must pass cuts in increasing order. This function does not sort.
+///
+/// # Example
+/// ```
+/// use symworx_math::series::discretize;
+///
+/// let x = [0.1, 0.5, 0.9];
+/// let bins = discretize(&x, &[0.33, 0.66]);
+/// assert_eq!(bins, vec![0, 1, 2]);
+/// ```
+pub fn discretize(x: &[f64], cuts: &[f64]) -> Vec<u8> {
+    if x.is_empty() {
+        return Vec::new();
+    }
+    let max_bin = cuts.len() as u8;
+    x.iter()
+        .map(|&v| {
+            if !v.is_finite() {
+                return 0;
+            }
+            let mut b = 0u8;
+            for (i, &c) in cuts.iter().enumerate() {
+                if v >= c {
+                    b = (i as u8) + 1;
+                } else {
+                    break;
+                }
+            }
+            b.min(max_bin)
+        })
+        .collect()
+}
+
 // TESTS
 
 #[cfg(test)]
@@ -409,5 +452,29 @@ mod tests {
         assert!(time_windows(&[0.0], 1.0, 1.0).is_empty());
         let empty: Vec<f64> = vec![];
         assert!(time_windows(&empty, 1.0, 1.0).is_empty());
+    }
+
+    #[test]
+    fn discretize_assigns_by_ge_cuts() {
+        let x = [0.0, 0.32, 0.33, 0.5, 0.66, 0.9];
+        let bins = discretize(&x, &[0.33, 0.66]);
+        assert_eq!(bins, vec![0, 0, 1, 1, 2, 2]);
+    }
+
+    #[test]
+    fn discretize_nan_and_inf_are_bin_zero() {
+        let x = [f64::NAN, f64::INFINITY, f64::NEG_INFINITY, 1.0];
+        let bins = discretize(&x, &[0.5]);
+        assert_eq!(bins, vec![0, 0, 0, 1]);
+    }
+
+    #[test]
+    fn discretize_empty_x_is_empty() {
+        assert!(discretize(&[], &[0.5]).is_empty());
+    }
+
+    #[test]
+    fn discretize_empty_cuts_are_all_zeros() {
+        assert_eq!(discretize(&[1.0, 2.0, 3.0], &[]), vec![0, 0, 0]);
     }
 }

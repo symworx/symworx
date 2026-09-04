@@ -8,7 +8,7 @@ This is a sub-crate to the [`symworx-core`](../symworx-core/README.md) crate.
 | Module | Methods |
 |:-------|:--------|
 | `embedding` | Delay coordinates (`edim`), false nearest neighbors (`fnn`) |
-| `entropy` | Sample entropy, multiscale entropy |
+| `entropy` | Sample entropy, multiscale entropy, discrete transfer entropy |
 | `rqa` | Recurrence plots, RQA / cRQA metrics |
 | `phase` | Relative phase, Kuramoto *R*, cluster-phase (Richardson et al. 2012); input is pre-extracted phases |
 | `dmd` | Dynamic Mode Decomposition (exact / SVD-based) |
@@ -16,6 +16,77 @@ This is a sub-crate to the [`symworx-core`](../symworx-core/README.md) crate.
 | `sindy` | Sparse identification of nonlinear dynamics (STLS) |
 | `sindyc` | SINDYc — SINDy with control (`Θ(x,u)`) |
 | `control` | Discrete LTI plants, state feedback, PID |
+
+## Transfer entropy
+
+Discrete (histogram) Schreiber TE. Entropy in nats. Not a kNN / Kraskov estimator.
+
+```rust
+use symworx_dynamics::{transfer_entropy, transfer_entropy_mv, transfer_entropy_conditional, TeConfig};
+
+let te_xy = transfer_entropy(&x, &y);
+
+let cfg = TeConfig { k: 1, l: 1, tau: 1, horizon: 1, bins: 4 };
+let te_joint = transfer_entropy_mv(&[&x, &z], &y, &cfg);
+let te_x_given_z = transfer_entropy_conditional(&[&z], &[&x], &y, &cfg);
+```
+
+- `transfer_entropy` / `transfer_entropy_with` — bivariate `X → Y`
+- `transfer_entropy_mv` — joint sources `(X1,...,Xp) → Y`
+- `transfer_entropy_conditional` — partial `X → Y | Z`
+
+- `transfer_entropy_discrete*` — same estimator on already-discrete series (`u8` labels). `TeConfig::bins` is ignored. Use this for sleep stages or for HRV after `symworx_stats::RelativeKMeansDiscretizer`.
+
+Returns `0.0` for short, constant, or mismatched series. Do **not** concatenate users or disconnected nights into one TE series — compute per contiguous record, then summarize.
+
+Shared relative cuts (per-user min/max, k-means on the pooled unit interval) live in `symworx-stats::discretize`. Example: `cargo run -p symworx-dynamics --example relative_te_demo`.
+
+No TUI or Python binding yet.
+
+## DMD / EDMD
+
+```rust
+use symworx_dynamics::{dmd, edmd, DmdConfig, EdmdConfig, Dictionary};
+
+let dmd_model = dmd(&snapshots, &DmdConfig { rank: Some(4), ..Default::default() });
+let edmd_model = edmd(&snapshots, &EdmdConfig {
+    dictionary: Dictionary::Polynomial { max_degree: 2, include_constant: true },
+    ridge: 1e-8,
+});
+```
+
+## LTI + PID
+
+```rust
+use symworx_dynamics::{LtiDiscrete, Pid, PidConfig};
+use ndarray::array;
+
+
+- `transfer_entropy_discrete*` — same estimator on already-discrete series (`u8` labels). `TeConfig::bins` is ignored. Use this for sleep stages or for HRV after `symworx_stats::RelativeKMeansDiscretizer`.
+
+Returns `0.0` for short, constant, or mismatched series. Do **not** concatenate users or disconnected nights into one TE series — compute per contiguous record, then summarize.
+
+Shared relative cuts (per-user min/max, k-means on the pooled unit interval) live in `symworx-stats::discretize`. Example: `cargo run -p symworx-dynamics --example relative_te_demo`.
+
+No TUI or Python binding yet.
+
+## DMD / EDMD
+
+```rust
+use symworx_dynamics::{dmd, edmd, DmdConfig, EdmdConfig, Dictionary};
+
+let dmd_model = dmd(&snapshots, &DmdConfig { rank: Some(4), ..Default::default() });
+let edmd_model = edmd(&snapshots, &EdmdConfig {
+    dictionary: Dictionary::Polynomial { max_degree: 2, include_constant: true },
+    ridge: 1e-8,
+});
+```
+
+## LTI + PID
+
+```rust
+use symworx_dynamics::{LtiDiscrete, Pid, PidConfig};
+use ndarray::array;
 
 ## DMD / EDMD
 

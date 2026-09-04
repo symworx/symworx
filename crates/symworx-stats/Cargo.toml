@@ -24,14 +24,21 @@ default = []
 ## restriction exists primarily here in stats.
 linalg = ["dep:ndarray-linalg", "dep:openblas-build"]
 mixed = ["linalg"]
+## `Serialize`/`Deserialize` on `EvalPolicy`, `EvalReport`, `ModelEval`,
+## and `RegressionReport` for JSON bundles and upstream packets.
+serde = ["dep:serde"]
 
 [dependencies]
 ndarray        = { workspace = true }
 ndarray-linalg = { workspace = true, optional = true }
 openblas-build = { workspace = true, optional = true }
 rand           = { workspace = true }
+serde          = { version = "1", optional = true, features = ["derive"] }
 
 symworx-math   = { workspace = true }
+
+[dev-dependencies]
+serde_json     = { version = "1" }
 
 [build-dependencies]
 openblas-build = { workspace = true }

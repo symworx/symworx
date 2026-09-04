@@ -1,71 +1,72 @@
 // Copyright (c) 2026 PalEm Dynamics LLC
 // Licensed under the Apache License, Version 2.0.
 
-//! Spectral analysis utilities
+//! Spectral summaries that consume a PSD (no FFT).
 //!
-//! Functions for frequency-domain analysis of physiological and biomechanical signals.
+//! The Welch estimator lives in `symworx-signal` (`welch` / `welch_default`).
+//! This module integrates a onesided density over a frequency band.
 
-/// Compute Power Spectral Density (PSD) using the Welch method.
+/// Integrate `psd` over `[f_lo, f_hi]` with the trapezoid rule on `freqs`.
 ///
-/// **Note:** This is currently a placeholder implementation.
-/// A full Welch implementation (with overlapping windows, Hann tapering, and FFT)
-/// should be added in the future.
-///
-/// # Arguments
-/// * `signal` - Input signal slice
-/// * `fs` - Sampling frequency in Hz
-///
-/// # Returns
-/// Tuple of `(frequencies, psd)` where:
-/// - `frequencies` are in Hz
-/// - `psd` contains the power spectral density values
-pub fn welch_psd(signal: &[f64], fs: f64) -> (Vec<f64>, Vec<f64>) {
-    let n = signal.len();
-    if n == 0 {
-        return (vec![], vec![]);
+/// `freqs` must be nondecreasing. Overlapping bin edges are clipped to the
+/// requested band. Length mismatch, empty input, or `f_hi <= f_lo` → `NaN`.
+pub fn bandpower(freqs: &[f64], psd: &[f64], f_lo: f64, f_hi: f64) -> f64 {
+    if freqs.len() != psd.len() || freqs.len() < 2 || !f_lo.is_finite() || !f_hi.is_finite() || f_hi <= f_lo {
+        return f64::NAN;
     }
 
-    // Placeholder: returns frequency axis and zero PSD
-    // TODO: Implement proper Welch method with:
-    //       - Segmenting with overlap
-    //       - Window function (Hann, Hamming, etc.)
-    //       - FFT per segment
-    //       - Averaging of periodograms
-
-    let n_freq = n / 2 + 1;
-    let freqs: Vec<f64> = (0..n_freq)
-        .map(|i| i as f64 * fs / n as f64)
-        .collect();
-
-    let psd: Vec<f64> = vec![0.0; n_freq];
-
-    (freqs, psd)
+    let mut acc = 0.0;
+    let mut any = false;
+    for i in 1..freqs.len() {
+        let mut x0 = freqs[i - 1];
+        let mut x1 = freqs[i];
+        if !x0.is_finite() || !x1.is_finite() || x1 <= x0 {
+            continue;
+        }
+        let y0 = psd[i - 1];
+        let y1 = psd[i];
+        if !y0.is_finite() || !y1.is_finite() {
+            continue;
+        }
+        if x1 <= f_lo || x0 >= f_hi {
+            continue;
+        }
+        let mut v0 = y0;
+        let mut v1 = y1;
+        if x0 < f_lo {
+            let t = (f_lo - x0) / (x1 - x0);
+            v0 = y0 + t * (y1 - y0);
+            x0 = f_lo;
+        }
+        if x1 > f_hi {
+            let t = (f_hi - freqs[i - 1]) / (freqs[i] - freqs[i - 1]);
+            v1 = psd[i - 1] + t * (psd[i] - psd[i - 1]);
+            x1 = f_hi;
+        }
+        acc += 0.5 * (v0 + v1) * (x1 - x0);
+        any = true;
+    }
+    if any { acc } else { f64::NAN }
 }
-
-
-// TESTS
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_welch_psd_basic() {
-        let signal = vec![0.0; 1024];
-        let fs = 100.0;
-
-        let (freqs, psd) = welch_psd(&signal, fs);
-
-        assert_eq!(freqs.len(), 513);   // n/2 + 1 for real FFT
-        assert_eq!(psd.len(), 513);
-        assert_eq!(freqs[0], 0.0);      // DC component
-        assert!((freqs.last().unwrap() - fs / 2.0).abs() < 1e-6);
+    fn bandpower_flat_psd() {
+        let freqs = [0.0, 1.0, 2.0, 3.0];
+        let psd = [2.0, 2.0, 2.0, 2.0];
+        let p = bandpower(&freqs, &psd, 0.0, 3.0);
+        assert!((p - 6.0).abs() < 1e-12, "{p}");
+        let mid = bandpower(&freqs, &psd, 1.0, 2.0);
+        assert!((mid - 2.0).abs() < 1e-12, "{mid}");
     }
 
     #[test]
-    fn test_welch_psd_empty() {
-        let (freqs, psd) = welch_psd(&[], 100.0);
-        assert!(freqs.is_empty());
-        assert!(psd.is_empty());
+    fn bandpower_bad_inputs() {
+        assert!(bandpower(&[0.0], &[1.0], 0.0, 1.0).is_nan());
+        assert!(bandpower(&[0.0, 1.0], &[1.0, 1.0], 1.0, 0.0).is_nan());
+        assert!(bandpower(&[0.0, 1.0], &[1.0], 0.0, 1.0).is_nan());
     }
 }

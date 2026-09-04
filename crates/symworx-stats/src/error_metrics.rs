@@ -145,6 +145,7 @@ pub fn r2(actual: &[f64], predicted: &[f64]) -> f64 {
 
 /// Bundle of continuous predicted-vs-expected metrics.
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct RegressionReport {
     /// Number of paired samples (`0` if inputs were invalid).
     pub n: usize,
