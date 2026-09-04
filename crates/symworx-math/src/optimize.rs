@@ -3,10 +3,11 @@
 
 //! Lightweight optimization primitives.
 //!
-//! Pure-Rust gradient methods for teaching and nonlinear regression.
-//! Intentionally free of LAPACK / `ndarray-linalg` — keep this crate light.
+//! Pure-Rust gradient methods and 1-D bounded search. Intentionally free of
+//! LAPACK / `ndarray-linalg` — keep this crate light.
 //!
-//! Typical use: nonlinear least squares in `symworx-stats`, parameter fitting
+//! Typical use: nonlinear least squares in `symworx-stats`, scalar variance
+//! search in mixed models ([`golden_section_minimize`]), parameter fitting
 //! for dynamical models, and educational demos of gradient descent.
 
 use ndarray::Array1;
@@ -165,6 +166,105 @@ where
     }
 }
 
+/// Result of a 1-D bounded scalar search ([`golden_section_minimize`]).
+#[derive(Debug, Clone, PartialEq)]
+pub struct ScalarSearchResult {
+    /// Location of the reported extremum (NaN if the interval was invalid).
+    pub x: f64,
+    /// Objective value `f(x)` (NaN if invalid).
+    pub fx: f64,
+    /// Iterations performed.
+    pub iterations: usize,
+    /// `true` if the interval width shrank below `tol`.
+    pub converged: bool,
+}
+
+fn golden_section_invalid() -> ScalarSearchResult {
+    ScalarSearchResult {
+        x: f64::NAN,
+        fx: f64::NAN,
+        iterations: 0,
+        converged: false,
+    }
+}
+
+/// Golden-section search for a minimum of a unimodal `f` on `[lo, hi]`.
+///
+/// Invalid interval (`lo >= hi` or non-finite bounds) returns
+/// `converged: false` and NaN `x` / `fx` (no panic).
+pub fn golden_section_minimize<F>(f: F, lo: f64, hi: f64, tol: f64, max_iter: usize) -> ScalarSearchResult
+where
+    F: Fn(f64) -> f64,
+{
+    if !lo.is_finite() || !hi.is_finite() || !tol.is_finite() || lo >= hi || max_iter == 0 {
+        return golden_section_invalid();
+    }
+
+    let gr = (5.0_f64.sqrt() - 1.0) / 2.0;
+    let mut a = lo;
+    let mut b = hi;
+    let mut c = b - gr * (b - a);
+    let mut d = a + gr * (b - a);
+    let mut fc = f(c);
+    let mut fd = f(d);
+    let mut iterations = 0usize;
+    let mut converged = false;
+
+    for _ in 0..max_iter {
+        iterations += 1;
+        if (b - a).abs() < tol {
+            converged = true;
+            break;
+        }
+        if fc < fd {
+            b = d;
+            d = c;
+            fd = fc;
+            c = b - gr * (b - a);
+            fc = f(c);
+        } else {
+            a = c;
+            c = d;
+            fc = fd;
+            d = a + gr * (b - a);
+            fd = f(d);
+        }
+    }
+
+    let (x, fx) = if fc < fd { (c, fc) } else { (d, fd) };
+    let mid = 0.5 * (a + b);
+    let fm = f(mid);
+    if fm < fx {
+        ScalarSearchResult {
+            x: mid,
+            fx: fm,
+            iterations,
+            converged,
+        }
+    } else {
+        ScalarSearchResult {
+            x,
+            fx,
+            iterations,
+            converged,
+        }
+    }
+}
+
+/// Golden-section search for a maximum of a unimodal `f` on `[lo, hi]`.
+///
+/// Implemented as [`golden_section_minimize`] of `-f`. `fx` is `f(x)`, not `-f(x)`.
+pub fn golden_section_maximize<F>(f: F, lo: f64, hi: f64, tol: f64, max_iter: usize) -> ScalarSearchResult
+where
+    F: Fn(f64) -> f64,
+{
+    let mut r = golden_section_minimize(|x| -f(x), lo, hi, tol, max_iter);
+    if r.fx.is_finite() {
+        r.fx = -r.fx;
+    }
+    r
+}
+
 /// Convenience: gradient descent with finite-difference gradients only.
 pub fn gradient_descent_fd<F>(f: F, x0: Array1<f64>, config: &GradientDescentConfig) -> GradientDescentResult
 where
@@ -263,5 +363,32 @@ mod tests {
         let result = gradient_descent_fd(f, array![5.0], &cfg);
         assert!(result.loss < 1e-8);
         assert!(result.params[0].abs() < 1e-4);
+    }
+
+    #[test]
+    fn golden_section_quadratic_min() {
+        let f = |x: f64| (x - 3.0).powi(2);
+        let r = golden_section_minimize(f, 0.0, 5.0, 1e-10, 80);
+        assert!(r.converged);
+        assert!((r.x - 3.0).abs() < 1e-8);
+        assert!(r.fx.abs() < 1e-14);
+    }
+
+    #[test]
+    fn golden_section_quadratic_max() {
+        let f = |x: f64| -(x - 3.0).powi(2);
+        let r = golden_section_maximize(f, 0.0, 5.0, 1e-10, 80);
+        assert!(r.converged);
+        assert!((r.x - 3.0).abs() < 1e-8);
+        assert!(r.fx.abs() < 1e-14);
+    }
+
+    #[test]
+    fn golden_section_invalid_interval() {
+        let f = |x: f64| x * x;
+        let r = golden_section_minimize(f, 2.0, 1.0, 1e-8, 20);
+        assert!(!r.converged);
+        assert!(r.x.is_nan());
+        assert_eq!(r.iterations, 0);
     }
 }

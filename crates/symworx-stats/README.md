@@ -14,12 +14,14 @@ Statistics and machine-learning algorithms. Dynamical operators and signal sensi
 | `correlation`, `autocorrelation` | Pearson, ACF | No |
 | `distance` | Euclidean, Manhattan, cosine, Chebyshev | No |
 | `error_metrics` | MAE/MSE/RMSE, R², bias, residuals, `RegressionReport` | No |
+| `eval` | Shared `EvalPolicy` / `EvalReport` / `ModelEval` (flag + percentile) | No (`serde` opt-in for JSON) |
 | `classification_metrics` | Accuracy, confusion, F1, balanced acc, **ROC/AUC** (+ OVR) | No |
 | `preprocess` | `StandardScaler`, `MinMaxScaler` (fit on train only) | No |
+| `discretize` | Grouped range + relative k-means cuts (`RelativeKMeansDiscretizer`) | No |
 | `knn` | Multiclass k-NN (Euclidean/Manhattan/Cosine; vote proba) | No |
 | `rules` | Threshold conditions, first-match rule lists, decision stump | No |
 | `cluster` | k-means (+ k-means++), inertia, predict | No |
-| `split` | Index-based train/test (+ folds / repeated resplits); min = max(10, 10% parent) | No |
+| `split` | Index-based train/test (+ folds / repeated / **grouped** user hold-out); min = max(10, 10% parent) | No |
 | `linreg` | OLS, Ridge, Lasso, Elastic Net, soft-threshold | OLS/Ridge yes; Lasso/EN no |
 | `logistic` | Binary + **multiclass OVR** logistic (GD; L2 optional) | No |
 | `naive_bayes` | Gaussian Naive Bayes | No |
@@ -28,7 +30,7 @@ Statistics and machine-learning algorithms. Dynamical operators and signal sensi
 | `nlinreg` | Nonlinear least squares (via `symworx-math::optimize`) | No |
 | `svd` | SVD, rank-k truncate/reconstruct | **Yes** |
 | `pca` | PCA fit/transform/whiten (uses SVD) | **Yes** |
-| `spectral` | Welch PSD (stub → full implementation planned) | No |
+| `spectral` | `bandpower` on a PSD (Welch estimator is in `symworx-signal`) | No |
 | `synthetic` | Teaching presets (Normal1D, bivariate, linear, class blobs, clusters) | No |
 
 ### Feature flag
@@ -42,9 +44,9 @@ symworx-stats = { path = "...", features = ["linalg"] }
 
 ## Model export (embedded / mobile / web)
 
-Train in Rust, ship coefficients or rules, run **predict-only** elsewhere:
+Train in Rust, ship coefficients or rules **and** a shared eval policy, run **predict + local eval** elsewhere:
 
-→ **[docs/model_export.md](docs/model_export.md)** — C/MCU, iOS (Swift), Android (Kotlin), and TypeScript/web examples for scaler + logistic (binary/OVR), LDA, and rule lists.
+→ **[docs/model_export.md](docs/model_export.md)** — C/MCU, iOS (Swift), Android (Kotlin), and TypeScript/web examples for scaler + logistic (binary/OVR), LDA, and rule lists. Shared `EvalPolicy` / `EvalReport` JSON for flags and percentile ranks (feature `serde` to derive).
 
 ## Related crates
 

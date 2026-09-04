@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "symworx"
-version = "0.3.2"
+version = "0.4.0"
 description = "SymWorx - Rust core with Python bindings (cSYM-d ecosystem)"
 readme = "README.md"
 requires-python = ">=3.12"

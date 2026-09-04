@@ -7,6 +7,11 @@
 //! indices into `0..n` that can later be applied to slices, `ndarray`s,
 //! DataFrames, or any aligned multi-column table.
 //!
+//! [`grouped_train_test_split`] assigns **whole groups** (e.g. users) to
+//! train or test. Size floors still use [`min_split_size`], but the parent
+//! is the **group count**, not the row count. Fold balance is on groups;
+//! row counts per fold may differ if groups are uneven.
+//!
 //! ## Minimum split size
 //!
 //! Each part must satisfy **both**:
@@ -40,7 +45,10 @@
 //! (or loop [`train_test_split`] with different seeds). Each repeat is an
 //! independent shuffle of the same outer ratio and fold count.
 
-use std::fmt;
+use std::{
+    collections::HashSet,
+    fmt,
+};
 
 /// Minimum allowed size of a part as a fraction of its **parent** set.
 ///
@@ -473,6 +481,73 @@ pub fn repeated_train_test_split(
         plans.push(train_test_split(n, &cfg)?);
     }
     Ok(plans)
+}
+
+/// Train/test split that keeps every `group_id` on one side.
+///
+/// Unique groups are collected in first-seen order, then partitioned with
+/// the same rules as [`train_test_split`] **on the group count**. Row
+/// indices in the returned plan follow the original sample order.
+///
+/// A 70/30 split therefore needs at least ~34 groups so both sides meet
+/// [`min_split_size`]. Training folds, when requested, are also by group.
+///
+/// # Errors
+/// Same as [`train_test_split`], with `n` in size errors equal to the
+/// number of unique groups.
+pub fn grouped_train_test_split(group_ids: &[usize], config: &SplitConfig) -> Result<TrainTestSplit, SplitError> {
+    if group_ids.is_empty() {
+        return Err(SplitError::EmptyDataset);
+    }
+
+    let unique = unique_groups_first_seen(group_ids);
+    let group_plan = train_test_split(unique.len(), config)?;
+
+    let train_groups: HashSet<usize> = group_plan.train_idx.iter().map(|&i| unique[i]).collect();
+    let test_groups: HashSet<usize> = group_plan.test_idx.iter().map(|&i| unique[i]).collect();
+
+    let mut train_idx = Vec::new();
+    let mut test_idx = Vec::new();
+    for (i, &g) in group_ids.iter().enumerate() {
+        if train_groups.contains(&g) {
+            train_idx.push(i);
+        } else if test_groups.contains(&g) {
+            test_idx.push(i);
+        }
+    }
+
+    let folds = group_plan.folds.as_ref().map(|gf| {
+        gf.iter()
+            .map(|fold| {
+                let set: HashSet<usize> = fold.iter().map(|&i| unique[i]).collect();
+                group_ids
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, g)| if set.contains(g) { Some(i) } else { None })
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>()
+    });
+
+    Ok(TrainTestSplit {
+        n: group_ids.len(),
+        train_idx,
+        test_idx,
+        folds,
+        shuffled: group_plan.shuffled,
+        seed: group_plan.seed,
+    })
+}
+
+fn unique_groups_first_seen(group_ids: &[usize]) -> Vec<usize> {
+    let mut unique = Vec::new();
+    let mut seen = HashSet::new();
+    for &g in group_ids {
+        if seen.insert(g) {
+            unique.push(g);
+        }
+    }
+    unique
 }
 
 /// Partition `train_idx` into `k` folds in original index space.
@@ -974,5 +1049,84 @@ mod tests {
     fn repeated_zero_errors() {
         let err = repeated_train_test_split(50, &SplitConfig::default(), 0).unwrap_err();
         assert!(matches!(err, SplitError::InvalidRepeatCount { n_repeats: 0 }));
+    }
+
+    fn groups_n(n_groups: usize, rows_per: usize) -> Vec<usize> {
+        let mut ids = Vec::with_capacity(n_groups * rows_per);
+        for g in 0..n_groups {
+            ids.extend(std::iter::repeat_n(g, rows_per));
+        }
+        ids
+    }
+
+    #[test]
+    fn grouped_split_keeps_whole_groups_together() {
+        let ids = groups_n(40, 3);
+        let split = grouped_train_test_split(
+            &ids,
+            &SplitConfig {
+                test_ratio: 0.3,
+                n_train_folds: None,
+                shuffle: true,
+                seed: 7,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(split.n, 120);
+        assert_eq!(split.train_idx.len() + split.test_idx.len(), 120);
+
+        let mut group_side = vec![None; 40];
+        for &i in &split.train_idx {
+            let g = ids[i];
+            assert!(group_side[g].is_none() || group_side[g] == Some("train"));
+            group_side[g] = Some("train");
+        }
+        for &i in &split.test_idx {
+            let g = ids[i];
+            assert!(group_side[g].is_none() || group_side[g] == Some("test"));
+            assert_ne!(group_side[g], Some("train"), "group {g} leaked across the split");
+            group_side[g] = Some("test");
+        }
+        assert!(group_side.iter().all(|s| s.is_some()));
+    }
+
+    #[test]
+    fn grouped_split_folds_are_by_group() {
+        let ids = groups_n(40, 2);
+        let split = grouped_train_test_split(
+            &ids,
+            &SplitConfig {
+                test_ratio: 0.3,
+                n_train_folds: Some(2),
+                shuffle: true,
+                seed: 3,
+            },
+        )
+        .unwrap();
+        assert_eq!(split.n_folds(), 2);
+
+        let mut group_fold = vec![None; 40];
+        for (k, fold) in split.folds.as_ref().unwrap().iter().enumerate() {
+            for &i in fold {
+                let g = ids[i];
+                assert!(
+                    group_fold[g].is_none() || group_fold[g] == Some(k),
+                    "group {g} in more than one fold"
+                );
+                group_fold[g] = Some(k);
+            }
+        }
+        for &i in &split.test_idx {
+            assert!(group_fold[ids[i]].is_none());
+        }
+    }
+
+    #[test]
+    fn grouped_split_empty_errors() {
+        assert!(matches!(
+            grouped_train_test_split(&[], &SplitConfig::default()),
+            Err(SplitError::EmptyDataset)
+        ));
     }
 }

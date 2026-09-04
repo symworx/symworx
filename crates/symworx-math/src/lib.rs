@@ -68,13 +68,17 @@ pub use integration::{
 pub use optimize::{
     GradientDescentConfig,
     GradientDescentResult,
+    ScalarSearchResult,
     finite_difference_gradient,
+    golden_section_maximize,
+    golden_section_minimize,
     gradient_descent,
     gradient_descent_fd,
 };
 pub use oscillators::VanDerPol;
 pub use random::*;
 pub use series::{
+    discretize,
     ewma,
     rolling_mean,
     rolling_std,
@@ -83,9 +87,11 @@ pub use series::{
 };
 pub use special::{
     beta,
+    erf,
     gamma,
     ln_beta,
     ln_gamma,
+    standard_normal_cdf,
 };
 
 // Namespaced re-exports (for convenience)

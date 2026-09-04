@@ -51,18 +51,18 @@ pub use nonlinear::{
 // Time-frequency analysis
 pub use time_frequency::{
     AnalyticSignal,
-
     CwtResult,
     StftResult,
     WaveletType,
+    WelchConfig,
+    WelchResult,
     WindowType,
-
-    // Wavelet
     cwt,
     cwt_mexhat,
     cwt_morlet,
-    // Hilbert
     hilbert,
-    // STFT
     stft,
+    welch,
+    welch_default,
+    window_samples,
 };

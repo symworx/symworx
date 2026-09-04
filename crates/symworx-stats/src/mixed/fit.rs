@@ -11,6 +11,7 @@ use ndarray::{
 };
 use symworx_math::optimize::{
     GradientDescentConfig,
+    golden_section_minimize,
     gradient_descent_fd,
 };
 
@@ -19,7 +20,6 @@ use super::{
         augment_x,
         build_grouped_design,
         gamma_from_theta,
-        golden_section_minimize,
         n_theta_params,
         near_zero_gamma,
         profile_fit,
@@ -194,15 +194,14 @@ fn optimize_variance(
             let g = Array2::from_elem((1, 1), log_theta.exp().max(1e-12));
             profile_objective(y, x_aug, design, &g, method).unwrap_or(f64::INFINITY)
         };
-        let (log_hat, obj_hat, iters, search_ok) =
-            golden_section_minimize(obj, -12.0, 8.0, config.tol, config.max_iter);
+        let search = golden_section_minimize(obj, -12.0, 8.0, config.tol, config.max_iter);
 
-        if obj0 <= obj_hat {
-            return Ok((Array1::from(vec![-20.0]), gamma0, iters, true));
+        if obj0 <= search.fx {
+            return Ok((Array1::from(vec![-20.0]), gamma0, search.iterations, true));
         }
-        let theta = Array1::from(vec![log_hat]);
+        let theta = Array1::from(vec![search.x]);
         let gamma = gamma_from_theta(&theta, 1, CovStructure::Diagonal)?;
-        return Ok((theta, gamma, iters, search_ok));
+        return Ok((theta, gamma, search.iterations, search.converged));
     }
 
     // Multi-parameter: multi-start FD gradient descent

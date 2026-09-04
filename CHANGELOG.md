@@ -5,15 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Notes
+
+### Added 
+
+## [0.4.0] - 2026-09-04
+
+### Notes
+
+- `symworx-backend` still has no HTTP listener and no AWS/Azure SDK. Cloud I/O is reserved behind `CloudDisabled`.
+- Transfer entropy is a discrete quantile-binned estimator on `feature/transfer-entropy`. Not yet bound in Python or `symview`.
+- Shared relative discretization (grouped k-means cuts) lives on `feature/discretize-pipeline`. HRV/sleep is an example use, not a typed API.
+
+### Added
+
+- `symworx-signal`: Welch PSD (`welch` / `welch_default`, Hann, density scaling). `symworx-stats::bandpower` integrates a PSD over a frequency band (no FFT in stats).
+- `symworx-signal`: natural cubic spline interpolation (`interp_spline` / `interp_cubic`) and resample Cubic/Spline methods (clamp outside the knot interval)
+- `symworx-math::special`: `erf` and `standard_normal_cdf` (Abramowitz & Stegun 7.1.26). `EvalPolicy` percentile ranks use this instead of a private copy.
+- `symworx-math::optimize`: `golden_section_minimize` / `golden_section_maximize` (`ScalarSearchResult`). Mixed-model scalar REML now calls this instead of a local copy.
+- `symworx-stats::eval` — shared `EvalPolicy` / `EvalReport` / `ModelEval` (one envelope for all model kinds: flag + percentile). Optional `serde` feature for JSON. See [model_export.md](crates/symworx-stats/docs/model_export.md) §10
+- `symworx-backend`: `BackendConfig` / `CloudProvider` (`SYMWORX_CLOUD=local|aws|azure`), `ProcessManager` task table, `HealthReport`, `LocalFsStore` / `ObjectStore`
+- `symworx-dynamics` discrete transfer entropy: `transfer_entropy` / `transfer_entropy_with` (bivariate), `transfer_entropy_mv` (joint sources), `transfer_entropy_conditional` (partial TE), plus `TeConfig`
+- `symworx-math::series::discretize` — apply interior cuts to a series (`u8` bins)
+- `symworx-stats::discretize` — `GroupedRangeScaler` + `RelativeKMeansDiscretizer` (per-user range, pooled k-means cuts on `[0, 1]`)
+- `symworx-stats::grouped_train_test_split` — hold out whole groups (users)
+- `transfer_entropy_discrete` / `_mv` / `_conditional` — TE on pre-binned labels (sleep stages, relative HRV bins); `TeConfig::bins` ignored
+- `relative_te_demo` example — synthetic multi-user relative bins + per-night TE
+
 ## [0.3.2] - 2026-08-22
 
 Same contents as 0.3.0. crates.io republish after a partial 0.3.1 upload.
 
 ### Notes
 
-- `v0.3.0` GitHub tag did not publish to crates.io (registry token 403).
-- `0.3.1` was uploaded for most crates from a local `cargo publish` on develop; `symworx-spatialsym` and `symworx-tui` never landed. That number is burned.
-- All workspace crates are 0.3.2 so spatialsym/tui can depend on published siblings.
+- `v0.3.0` GitHub tag did not publish.
+- `0.3.1` was uploaded for most crates from a local `cargo publish` on develop; That number is burned.
+- All workspace crates are now 0.3.2
 
 ## [0.3.0] - 2026-08-22
 

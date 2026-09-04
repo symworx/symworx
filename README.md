@@ -90,18 +90,17 @@ Much of the original work lived in Python; the long-term engine is **Rust**, wit
 
 ---
 
-## Supported vs experimental (0.1)
+## Supported vs experimental
 
 | Surface | Status |
 |---------|--------|
 | I/O via `symworx-io` (CSV, Parquet, IBI, activity/FIT) | **Supported** |
-| Signal filters, peaks, many processing tools | **Supported** |
+| Signal filters, peaks, Welch PSD, cubic spline resample | **Supported** |
 | RQA, embedding, entropy, DMD/SINDy (dynamics) | **Supported** |
-| Stats: basic, splits, logistic (binary + OVR), NB, k-NN, rules, metrics, ROC/AUC | **Supported** (pure Rust paths) |
+| Stats: basic, splits, logistic (binary + OVR), NB, k-NN, rules, metrics, ROC/AUC, `bandpower` | **Supported** (pure Rust paths) |
 | Stats OLS/Ridge/PCA/SVD/LDA/polyreg (`linalg` + OpenBLAS) | **Supported** with native build deps |
 | TUI Import / Explore / Dynamics (RQA) / LoadSym / Spatial | **Supported** (early UX) |
 | Host embed streaming (`symworx-embed`) | **Supported** (simulate default) |
-| Welch PSD (`stats::spectral`) | **Experimental** (placeholder) |
 | CRQA full API | **Planned** |
 | `symworx-backend` server | **Experimental** (stubs) |
 | R bindings | **Stub** |
@@ -114,9 +113,9 @@ Much of the original work lived in Python; the long-term engine is **Rust**, wit
 | Crate | Role |
 |-------|------|
 | [symworx-core](crates/symworx-core/README.md) | Re-exports + convenience |
-| [symworx-math](crates/symworx-math/README.md) | Series, integrate, optimize, distributions |
-| [symworx-stats](crates/symworx-stats/README.md) | Statistics + classical ML |
-| [symworx-signal](crates/symworx-signal/README.md) | Filters, peaks, sparse sensing, Kalman |
+| [symworx-math](crates/symworx-math/README.md) | Series, integrate, optimize, erf / CDF, distributions |
+| [symworx-stats](crates/symworx-stats/README.md) | Statistics + classical ML (`bandpower` on a PSD) |
+| [symworx-signal](crates/symworx-signal/README.md) | Filters, peaks, Welch PSD, cubic spline, sparse sensing, Kalman |
 | [symworx-dynamics](crates/symworx-dynamics/README.md) | RQA, embedding, DMD, SINDy, control |
 | [symworx-io](crates/symworx-io/README.md) | **Canonical** signal file I/O |
 | [symworx-biosym](crates/symworx-biosym/README.md) | PPG, respiration, gait, CPG |

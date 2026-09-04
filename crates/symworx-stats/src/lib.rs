@@ -30,9 +30,9 @@
 //! without extra configuration.
 //!
 //! Lasso / Elastic Net, logistic (binary + OVR), Gaussian NB, k-NN, rule lists,
-//! classification metrics (incl. ROC/AUC), preprocessing, and k-means do
-//! **not** require `linalg`. LDA fit, polynomial degree search, and linear
-//! mixed models ([`mixed`]) require `linalg`.
+//! classification metrics (incl. ROC/AUC), preprocessing, k-means, and the
+//! shared local-eval envelope ([`eval`]) do **not** require `linalg`. LDA fit,
+//! polynomial degree search, and linear mixed models ([`mixed`]) require `linalg`.
 
 #![allow(unused_imports)]
 #![warn(missing_docs)]
@@ -60,8 +60,17 @@ pub mod distance;
 /// Predicted-vs-expected error metrics (MAE, RMSE, R², residuals, regression report).
 pub mod error_metrics;
 
+/// Shared local-eval envelope (policy down, flag/percentile report up).
+pub mod eval;
+
+/// Band-power summaries of a PSD (Welch itself lives in `symworx-signal`).
+pub mod spectral;
+
 /// Univariate histogram and Gaussian KDE (for any 1-D sample, incl. residuals).
 pub mod density;
+
+/// Grouped relative discretization (within-group range + pooled k-means cuts).
+pub mod discretize;
 
 /// Model comparison / selection (AIC, BIC, nested χ² / F, adjusted R²).
 pub mod model_select;
@@ -175,6 +184,15 @@ pub use density::{
     kde_gaussian_default,
     silverman_bandwidth,
 };
+pub use discretize::{
+    DiscretizeError,
+    GroupRange,
+    GroupedRangeScaler,
+    RangeMethod,
+    RelativeKMeansDiscretizer,
+    fit_group_range,
+    scale_one,
+};
 pub use distance::{
     chebyshev,
     cosine_distance,
@@ -192,6 +210,17 @@ pub use error_metrics::{
     residual_errors,
     residuals,
     rmse,
+};
+pub use eval::{
+    EvalFlag,
+    EvalMode,
+    EvalPolicy,
+    EvalReport,
+    EvalThresholds,
+    ModelEval,
+    ResidualRef,
+    evaluate_residuals,
+    model_eval_from_predictions,
 };
 pub use knn::{
     KnnClassifier,
@@ -300,6 +329,7 @@ pub use rules::{
     ThresholdCondition,
     fit_decision_stump,
 };
+pub use spectral::bandpower;
 pub use split::{
     MIN_SPLIT_FRACTION,
     MIN_SPLIT_SAMPLES,
@@ -307,6 +337,7 @@ pub use split::{
     SplitError,
     SplitPart,
     TrainTestSplit,
+    grouped_train_test_split,
     max_train_folds,
     min_split_size,
     repeated_train_test_split,
