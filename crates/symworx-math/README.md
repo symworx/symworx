@@ -11,9 +11,9 @@ stats, signal, dynamics, and domain crates without huge compile times.
 | `series` | Successive differences, rolling stats, sliding windows (canonical home for sequence ops) |
 | `circular` | Wrap to (−π, π], circular mean, mean resultant length, circular SD |
 | `integration` | Trapezoidal integration, RK4 ODE step/integrate |
-| `optimize` | Gradient descent, Armijo line search, finite-difference gradients |
+| `optimize` | Gradient descent, Armijo line search, finite-difference gradients, 1-D golden-section min/max |
 | `oscillators` | Van der Pol and related demo plants |
-| `distributions` / `special` / `random` | PDFs, Gamma/Beta, RNG helpers |
+| `distributions` / `special` / `random` | PDFs, Gamma/Beta, erf / standard normal CDF, RNG helpers |
 
 ## Where this crate sits
 

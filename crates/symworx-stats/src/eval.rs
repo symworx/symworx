@@ -16,6 +16,8 @@
 //! JSON field names (enable the `serde` feature to derive them) are the
 //! canonical wire shape. See `docs/model_export.md`.
 
+use symworx_math::standard_normal_cdf;
+
 use crate::{
     RegressionReport,
     mae,
@@ -308,26 +310,6 @@ pub fn model_eval_from_predictions(
     let e = residuals(actual, predicted);
     let policy = EvalPolicy::from_abs_residuals(model_id, version, &e, warning_percentile, critical_percentile);
     ModelEval::with_fit(policy, regression_report(actual, predicted))
-}
-
-/// Abramowitz & Stegun 7.1.26; |err| ≲ 1.5e-7. Enough for percentile ranks.
-fn erf_approx(x: f64) -> f64 {
-    let sign = if x < 0.0 { -1.0 } else { 1.0 };
-    let ax = x.abs();
-    let t = 1.0 / (1.0 + 0.327_591_1 * ax);
-    let y = 1.0
-        - (((((1.061_405_429_f64).mul_add(t, -1.453_152_027)).mul_add(t, 1.421_413_741)).mul_add(t, -0.284_496_736))
-            .mul_add(t, 0.254_829_592))
-            * t
-            * (-ax * ax).exp();
-    sign * y
-}
-
-fn standard_normal_cdf(z: f64) -> f64 {
-    if !z.is_finite() {
-        return f64::NAN;
-    }
-    0.5 * (1.0 + erf_approx(z / std::f64::consts::SQRT_2))
 }
 
 impl std::fmt::Display for EvalReport {
