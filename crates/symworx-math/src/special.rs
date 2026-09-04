@@ -76,6 +76,35 @@ pub fn ln_beta(a: f64, b: f64) -> f64 {
     ln_gamma(a) + ln_gamma(b) - ln_gamma(a + b)
 }
 
+/// Error function, Abramowitz & Stegun 7.1.26 (`|err|` ≲ 1.5e-7).
+#[inline]
+pub fn erf(x: f64) -> f64 {
+    if !x.is_finite() {
+        return f64::NAN;
+    }
+    if x == 0.0 {
+        return 0.0;
+    }
+    let sign = if x < 0.0 { -1.0 } else { 1.0 };
+    let ax = x.abs();
+    let t = 1.0 / (1.0 + 0.327_591_1 * ax);
+    let y = 1.0
+        - (((((1.061_405_429_f64).mul_add(t, -1.453_152_027)).mul_add(t, 1.421_413_741)).mul_add(t, -0.284_496_736))
+            .mul_add(t, 0.254_829_592))
+            * t
+            * (-ax * ax).exp();
+    sign * y
+}
+
+/// Standard normal CDF `Φ(z) = ½ (1 + erf(z / √2))`.
+#[inline]
+pub fn standard_normal_cdf(z: f64) -> f64 {
+    if !z.is_finite() {
+        return f64::NAN;
+    }
+    0.5 * (1.0 + erf(z / std::f64::consts::SQRT_2))
+}
+
 // TESTS
 #[cfg(test)]
 mod tests {
@@ -95,5 +124,16 @@ mod tests {
         assert!((beta(1.0, 1.0) - 1.0).abs() < 1e-9);
         // B(2,2) = 1/6
         assert!((beta(2.0, 2.0) - 1.0 / 6.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn test_erf_and_norm_cdf() {
+        assert!((erf(0.0)).abs() < 1e-12);
+        assert!((standard_normal_cdf(0.0) - 0.5).abs() < 1e-12);
+        // Φ(1) ≈ 0.841344746
+        assert!((standard_normal_cdf(1.0) - 0.841_344_746).abs() < 1e-6);
+        assert!((standard_normal_cdf(-1.0) - (1.0 - 0.841_344_746)).abs() < 1e-6);
+        assert!(erf(f64::NAN).is_nan());
+        assert!(standard_normal_cdf(f64::NAN).is_nan());
     }
 }

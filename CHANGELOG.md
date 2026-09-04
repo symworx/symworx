@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `symworx-signal`: Welch PSD (`welch` / `welch_default`, Hann, density scaling). `symworx-stats::bandpower` integrates a PSD over a frequency band (no FFT in stats).
 - `symworx-signal`: natural cubic spline interpolation (`interp_spline` / `interp_cubic`) and resample Cubic/Spline methods (clamp outside the knot interval)
+- `symworx-math::special`: `erf` and `standard_normal_cdf` (Abramowitz & Stegun 7.1.26). `EvalPolicy` percentile ranks use this instead of a private copy.
+- `symworx-math::optimize`: `golden_section_minimize` / `golden_section_maximize` (`ScalarSearchResult`). Mixed-model scalar REML now calls this instead of a local copy.
 - `symworx-stats::eval` — shared `EvalPolicy` / `EvalReport` / `ModelEval` (one envelope for all model kinds: flag + percentile). Optional `serde` feature for JSON. See [model_export.md](crates/symworx-stats/docs/model_export.md) §10
 - `symworx-backend`: `BackendConfig` / `CloudProvider` (`SYMWORX_CLOUD=local|aws|azure`), `ProcessManager` task table, `HealthReport`, `LocalFsStore` / `ObjectStore`
 - `symworx-dynamics` discrete transfer entropy: `transfer_entropy` / `transfer_entropy_with` (bivariate), `transfer_entropy_mv` (joint sources), `transfer_entropy_conditional` (partial TE), plus `TeConfig`
