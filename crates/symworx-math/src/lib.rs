@@ -68,7 +68,10 @@ pub use integration::{
 pub use optimize::{
     GradientDescentConfig,
     GradientDescentResult,
+    ScalarSearchResult,
     finite_difference_gradient,
+    golden_section_maximize,
+    golden_section_minimize,
     gradient_descent,
     gradient_descent_fd,
 };
