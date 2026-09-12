@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Notes
 
-### Added 
+### Added
+
+- Software citation: root [`CITATION.cff`](CITATION.cff) (GitHub “Cite this repository”) plus APA/BibTeX in the workspace and crate READMEs 
 
 ## [0.4.0] - 2026-09-04
 
