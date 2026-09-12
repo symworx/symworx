@@ -164,14 +164,7 @@ Agent / AI contributors: read [AGENTS.md](AGENTS.md) and own all submitted code.
 
 ## Citation
 
-If you use SymWorx in published work, please cite the **software** — one work,
-title **SymWorx**. The crates (`symworx-stats`, `symworx-dynamics`, …) are
-modules of that work: name them in the text if useful, but do not split the
-bibliography into per-crate titles like “SymWorx: stats”.
-
-GitHub **Cite this repository** (from [`CITATION.cff`](CITATION.cff) on the
-default branch) is the versioned form. crates.io has no cite button; crate
-READMEs carry the same unversioned entry so a copy-paste still works.
+If you use this software in published work, please cite it:
 
 Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/symworx
 
@@ -185,8 +178,10 @@ Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/s
 }
 ```
 
-Add the version you actually used (crate version, git tag, or the `version` in
-`CITATION.cff`). There is no software DOI yet; the GitHub URL is the locator.
+Add the version you actually used (git tag or the `version` in `CITATION.cff`).
+GitHub **Cite this repository** (from [`CITATION.cff`](CITATION.cff) on the
+default branch) is the versioned form. There is no software DOI yet; the GitHub
+URL is the locator.
 
 ---
 

@@ -153,8 +153,7 @@ println!("SEPi={} TSLi={:.1}", m.np, m.tss);
 
 ## Citation
 
-If you use this software, please cite **SymWorx**, not this crate alone.
-Name the crate in the paper if it helps; the bibliography title is still *SymWorx*.
+If you use this software, please cite it:
 
 Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/symworx
 
