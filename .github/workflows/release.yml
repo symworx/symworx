@@ -173,6 +173,7 @@ jobs:
             -p symworx-backend \
             -p symworx-embed \
             -p symworx-loadsym-db \
+            -p symworx-dbsym \
             -p symworx-core \
             -p symworx-biosym \
             -p symworx-loadsym \
@@ -226,6 +227,7 @@ jobs:
             -p symworx-backend
             -p symworx-embed
             -p symworx-loadsym-db
+            -p symworx-dbsym
             -p symworx-core
             -p symworx-biosym
             -p symworx-loadsym
@@ -233,6 +235,8 @@ jobs:
           )
           cargo clippy --lib --no-deps "${PKGS[@]}" -- -D warnings
           cargo test --lib "${PKGS[@]}" -- --quiet
+          cargo clippy --lib --no-deps -p symworx-dbsym --features sqlite -- -D warnings
+          cargo test --lib -p symworx-dbsym --features sqlite -- --quiet
 
   python-bindings:
     name: Python bindings
@@ -358,6 +362,7 @@ jobs:
           publish_one symworx-backend
           publish_one symworx-embed
           publish_one symworx-loadsym-db
+          publish_one symworx-dbsym
           publish_one symworx-core
           publish_one symworx-biosym
           publish_one symworx-loadsym

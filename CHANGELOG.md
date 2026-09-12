@@ -9,7 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Notes
 
-### Added 
+- `symworx-dbsym` generic ingest / export / TUI workflow are not started.
+
+### Added
+
+- `symworx-dbsym` — per-study / edge catalog: SQLite schema v1 (`subjects`, `sessions`, `file_records`, EAV `observations`), `StoreProfile`, `symdb init` / `apply` / `presets` / `status` (`--features sqlite`). Init copies `.dbsym/schema.sqlite.sql` for the study to edit; never overwrites an existing copy.
 
 ## [0.4.0] - 2026-09-04
 

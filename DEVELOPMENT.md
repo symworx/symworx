@@ -112,7 +112,7 @@ Low-level crates must be published before crates that depend on them:
 
 1. `symworx-error`
 2. `symworx-math`
-3. `symworx-io`, `symworx-stats`, `symworx-signal`, `symworx-dynamics`, `symworx-backend`, `symworx-embed`, `symworx-loadsym-db`
+3. `symworx-io`, `symworx-stats`, `symworx-signal`, `symworx-dynamics`, `symworx-backend`, `symworx-embed`, `symworx-loadsym-db`, `symworx-dbsym`
 4. Grouping crates: `symworx-core`, `symworx-biosym`, `symworx-loadsym`, `symworx-spatialsym`, `symworx-tui`
 5. Python packages (via the corresponding `pyproject-*.toml` files): `symworx-biosym`, `symworx-loadsym`, `symworx-spatialsym`, `symworx-core`
 
