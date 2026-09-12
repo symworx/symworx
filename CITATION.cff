@@ -1,0 +1,26 @@
+# Copyright (c) 2026 PalEm Dynamics LLC
+# Licensed under the Apache License, Version 2.0.
+
+cff-version: 1.2.0
+message: If you use this software, please cite it using these metadata.
+type: software
+title: SymWorx
+abstract: >
+  Open-source computational stack for biosignal analysis, training load,
+  nonlinear dynamics, and classical ML, with a Rust kernel, Python bindings,
+  and a keyboard-driven TUI (symview).
+authors:
+  - family-names: Berry
+    given-names: Nathaniel T.
+    affiliation: PalEm Dynamics LLC
+version: "0.4.1"
+date-released: "2026-09-12"
+license: Apache-2.0
+repository-code: "https://github.com/symworx/symworx"
+url: "https://github.com/symworx/symworx"
+keywords:
+  - biosignal
+  - nonlinear dynamics
+  - recurrence quantification
+  - training load
+  - rust

@@ -6,6 +6,7 @@ It is aimed at research, education, and portable inference (workstation today; e
 
 **License:** [Apache License 2.0](LICENSE)
 **Changelog:** [CHANGELOG.md](CHANGELOG.md)
+**Cite:** [Citation](#citation) · [`CITATION.cff`](CITATION.cff)
 
 ---
 
@@ -161,10 +162,34 @@ Agent / AI contributors: read [AGENTS.md](AGENTS.md) and own all submitted code.
 
 ---
 
+## Citation
+
+If you use this software in published work, please cite it:
+
+Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/symworx
+
+```bibtex
+@software{Berry_SymWorx_2026,
+  author  = {Berry, Nathaniel T.},
+  license = {Apache-2.0},
+  title   = {{SymWorx}},
+  url     = {https://github.com/symworx/symworx},
+  year    = {2026}
+}
+```
+
+Add the version you actually used (git tag or the `version` in `CITATION.cff`).
+GitHub **Cite this repository** (from [`CITATION.cff`](CITATION.cff) on the
+default branch) is the versioned form. There is no software DOI yet; the GitHub
+URL is the locator.
+
+---
+
 ## Documentation map
 
 | Doc | Content |
 |-----|---------|
+| [CITATION.cff](CITATION.cff) | Software citation metadata (GitHub “Cite this repository”) |
 | [DEVELOPMENT.md](DEVELOPMENT.md) | Build, test, format |
 | [AGENTS.md](AGENTS.md) | Crate boundaries, TUI keys, dependency hygiene |
 | [docs/projects.md](docs/projects.md) | Slated vs considered development items |
