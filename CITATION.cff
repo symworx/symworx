@@ -11,7 +11,7 @@ abstract: >
   and a keyboard-driven TUI (symview).
 authors:
   - family-names: Berry
-    given-names: Nathaniel T
+    given-names: Nathaniel T.
     affiliation: PalEm Dynamics LLC
 version: "0.4.0"
 date-released: "2026-09-04"

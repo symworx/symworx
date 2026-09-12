@@ -126,11 +126,11 @@ You can then load them directly in `symview`. This is the best way to quickly ge
 If you use this software, please cite **SymWorx**, not this crate alone.
 Name the crate in the paper if it helps; the bibliography title is still *SymWorx*.
 
-Berry, N. (2026). *SymWorx* [Computer software]. https://github.com/symworx/symworx
+Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/symworx
 
 ```bibtex
 @software{Berry_SymWorx_2026,
-  author  = {Berry, Nate},
+  author  = {Berry, Nathaniel T.},
   license = {Apache-2.0},
   title   = {{SymWorx}},
   url     = {https://github.com/symworx/symworx},

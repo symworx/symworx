@@ -173,11 +173,11 @@ GitHub **Cite this repository** (from [`CITATION.cff`](CITATION.cff) on the
 default branch) is the versioned form. crates.io has no cite button; crate
 READMEs carry the same unversioned entry so a copy-paste still works.
 
-Berry, N. (2026). *SymWorx* [Computer software]. https://github.com/symworx/symworx
+Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/symworx
 
 ```bibtex
 @software{Berry_SymWorx_2026,
-  author  = {Berry, Nate},
+  author  = {Berry, Nathaniel T.},
   license = {Apache-2.0},
   title   = {{SymWorx}},
   url     = {https://github.com/symworx/symworx},
