@@ -98,7 +98,8 @@ We follow a branch-based workflow with a single shared version across the worksp
 2. **Stage / early access** → fast-forward `develop` → `stage` when you want a promotion point. Day-to-day CI does **not** run on `stage` (avoids double runs on FF); beta tags can still be cut from here if needed.
 3. **Release preparation**:
    - Create a branch `release/vX.Y.Z` from `stage` (or from `develop` if stage is not updated yet).
-   - Bump the shared version in the root `Cargo.toml`: `[workspace.package] version` **and** every internal crate `version = "…"` under `[workspace.dependencies]` (must stay in lockstep).
+   - Bump the shared version in the root `Cargo.toml`: `[workspace.package] version` **and** every internal crate `version = "…"` under `[workspace.dependencies]` (must stay in lockstep). `./scripts/bump-version.sh` also updates `CITATION.cff` `version`. README citation blocks stay unversioned on purpose.
+   - Set `date-released` in `CITATION.cff` to the release date.
    - Update `CHANGELOG.md` (require a `## [X.Y.Z]` section for the release branch/tag).
    - Open a PR from `release/vX.Y.Z` to `main`.
 4. **Release**:
