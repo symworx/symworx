@@ -11,10 +11,13 @@
 #   3. Python package versions: bindings/python/pyproject*.toml
 #      and bindings/python/symworx/loadsym/pyproject.toml
 #   4. bindings/r path deps that pin symworx-* versions
+#   5. CITATION.cff  version: "…"  (GitHub / software citation metadata)
 #
 # Does NOT touch:
 #   - third-party dependency versions (ndarray, polars, …)
 #   - historical CHANGELOG entries (optional --changelog only adds a stub section)
+#   - CITATION.cff date-released (set by hand on the release)
+#   - README citation blocks (intentionally unversioned; version lives in CITATION.cff)
 #   - LoadSym schema versions, demo file names, docs “v4”, etc.
 #
 # Usage:
@@ -242,6 +245,20 @@ read_cargo_internal_versions() {
   ' Cargo.toml
 }
 
+# Top-level CFF version (quoted string).
+read_cff_version() {
+  local f="CITATION.cff"
+  [[ -f "$f" ]] || return 0
+  awk '
+    $0 ~ /^version:/ {
+      if (match($0, /"[^"]+"/)) {
+        print substr($0, RSTART + 1, RLENGTH - 2)
+        exit
+      }
+    }
+  ' "$f"
+}
+
 # Print "name\tversion" for R path pins.
 read_r_pin_versions() {
   local f="bindings/r/Cargo.toml"
@@ -332,6 +349,19 @@ report_versions() {
     echo
   fi
 
+  if [[ -f CITATION.cff ]]; then
+    ver="$(read_cff_version)"
+    if [[ "$ver" == "$expected" ]]; then
+      echo "CITATION.cff: version ${ver}"
+    else
+      echo "CITATION.cff: version ${ver:-missing} (want ${expected})"
+      ok=0
+    fi
+  else
+    echo "CITATION.cff: missing"
+    ok=0
+  fi
+
   if grep -Eq "^## \[${expected}\]" CHANGELOG.md 2>/dev/null; then
     echo "CHANGELOG.md: has ## [${expected}] section"
   else
@@ -399,6 +429,18 @@ print_change_plan() {
     fi
     echo
   fi
+
+  if [[ -f CITATION.cff ]]; then
+    cur="$(read_cff_version)"
+    echo "Citation"
+    table_hdr "file" "old" "new"
+    if [[ "$cur" != "$new" ]]; then
+      table_row "CITATION.cff" "${cur:--}" "$new"
+    else
+      table_row "(no CFF changes)" "-" "-"
+    fi
+    echo
+  fi
 }
 
 # ---------------------------------------------------------------------------
@@ -453,6 +495,13 @@ bump_python_pyprojects() {
     # Replace whatever is currently on the project version line.
     sed_i "s/^(version[[:space:]]*=[[:space:]]*)\"[^\"]+\"/\1\"${new}\"/" "$f"
   done
+}
+
+bump_citation_cff() {
+  local new="$1"
+  local f="CITATION.cff"
+  [[ -f "$f" ]] || return 0
+  sed_i "s/^(version:[[:space:]]*)\"[^\"]+\"/\1\"${new}\"/" "$f"
 }
 
 bump_r_bindings() {
@@ -636,6 +685,7 @@ fi
 bump_cargo_toml "$NEW"
 bump_python_pyprojects "$NEW"
 bump_r_bindings "$NEW"
+bump_citation_cff "$NEW"
 
 echo "Updated. Consistency check:"
 echo
