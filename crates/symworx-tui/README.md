@@ -120,3 +120,22 @@ You can then load them directly in `symview`. This is the best way to quickly ge
   - `Ctrl+R` or `F5` → refresh the file list
 - **LoadSym personal archive:** optional one-time setup: `./scripts/init-velofit.sh` (creates `$VELOFIT_HOME` + empty catalog). The TUI runs without it; calendar/metrics stay empty until init + ingest.
 - Standalone demo generator: `cargo run -p symworx-tui --example generate_biosym_demo`
+
+## Citation
+
+If you use this software, please cite **SymWorx**, not this crate alone.
+Name the crate in the paper if it helps; the bibliography title is still *SymWorx*.
+
+Berry, N. (2026). *SymWorx* [Computer software]. https://github.com/symworx/symworx
+
+```bibtex
+@software{Berry_SymWorx_2026,
+  author  = {Berry, Nate},
+  license = {Apache-2.0},
+  title   = {{SymWorx}},
+  url     = {https://github.com/symworx/symworx},
+  year    = {2026}
+}
+```
+
+Add the version you used. [`CITATION.cff`](https://github.com/symworx/symworx/blob/main/CITATION.cff) and GitHub **Cite this repository** carry the current release.

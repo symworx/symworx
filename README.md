@@ -6,6 +6,7 @@ It is aimed at research, education, and portable inference (workstation today; e
 
 **License:** [Apache License 2.0](LICENSE)
 **Changelog:** [CHANGELOG.md](CHANGELOG.md)
+**Cite:** [Citation](#citation) · [`CITATION.cff`](CITATION.cff)
 
 ---
 
@@ -161,10 +162,39 @@ Agent / AI contributors: read [AGENTS.md](AGENTS.md) and own all submitted code.
 
 ---
 
+## Citation
+
+If you use SymWorx in published work, please cite the **software** — one work,
+title **SymWorx**. The crates (`symworx-stats`, `symworx-dynamics`, …) are
+modules of that work: name them in the text if useful, but do not split the
+bibliography into per-crate titles like “SymWorx: stats”.
+
+GitHub **Cite this repository** (from [`CITATION.cff`](CITATION.cff) on the
+default branch) is the versioned form. crates.io has no cite button; crate
+READMEs carry the same unversioned entry so a copy-paste still works.
+
+Berry, N. (2026). *SymWorx* [Computer software]. https://github.com/symworx/symworx
+
+```bibtex
+@software{Berry_SymWorx_2026,
+  author  = {Berry, Nate},
+  license = {Apache-2.0},
+  title   = {{SymWorx}},
+  url     = {https://github.com/symworx/symworx},
+  year    = {2026}
+}
+```
+
+Add the version you actually used (crate version, git tag, or the `version` in
+`CITATION.cff`). There is no software DOI yet; the GitHub URL is the locator.
+
+---
+
 ## Documentation map
 
 | Doc | Content |
 |-----|---------|
+| [CITATION.cff](CITATION.cff) | Software citation metadata (GitHub “Cite this repository”) |
 | [DEVELOPMENT.md](DEVELOPMENT.md) | Build, test, format |
 | [AGENTS.md](AGENTS.md) | Crate boundaries, TUI keys, dependency hygiene |
 | [docs/projects.md](docs/projects.md) | Slated vs considered development items |
