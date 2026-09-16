@@ -80,9 +80,11 @@ impl PeakDetectParams {
                 match_tol: 5,
             },
             SignalKind::Respiration => Self {
-                height_frac: 0.25,
-                prom_frac: 0.08,
-                min_interval_sec: 1.5, // ~40 brpm upper
+                // Volume peaks sit near the top of the range; a low height_frac
+                // lets falling-edge noise count as extra breaths (often 2x).
+                height_frac: 0.75,
+                prom_frac: 0.20,
+                min_interval_sec: 2.0, // ~30 brpm upper
                 match_tol: 8,
             },
             SignalKind::Stride | SignalKind::Unknown => Self {
