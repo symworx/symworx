@@ -9,6 +9,7 @@ members = [
     "crates/symworx-biosym",
     "crates/symworx-core",
     "crates/symworx-dynamics",
+    "crates/symworx-dbsym",
     "crates/symworx-embed",
     "crates/symworx-io",
     "crates/symworx-loadsym",

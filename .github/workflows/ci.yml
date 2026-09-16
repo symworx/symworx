@@ -50,6 +50,7 @@ jobs:
             -p symworx-backend \
             -p symworx-embed \
             -p symworx-loadsym-db \
+            -p symworx-dbsym \
             -p symworx-core \
             -p symworx-biosym \
             -p symworx-loadsym \
@@ -128,6 +129,7 @@ jobs:
             -p symworx-backend
             -p symworx-embed
             -p symworx-loadsym-db
+            -p symworx-dbsym
             -p symworx-core
             -p symworx-biosym
             -p symworx-loadsym
@@ -135,6 +137,8 @@ jobs:
           )
           cargo clippy --lib --no-deps "${PKGS[@]}" -- -D warnings
           cargo test --lib "${PKGS[@]}" -- --quiet
+          cargo clippy --lib --no-deps -p symworx-dbsym --features sqlite -- -D warnings
+          cargo test --lib -p symworx-dbsym --features sqlite -- --quiet
 
   python-bindings:
     runs-on: ubuntu-latest

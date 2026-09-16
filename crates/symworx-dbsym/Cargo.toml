@@ -1,0 +1,29 @@
+# Copyright (c) 2026 PalEm Dynamics LLC
+# Licensed under the Apache License, Version 2.0.
+
+[package]
+name = "symworx-dbsym"
+version          = { workspace = true }
+edition          = { workspace = true }
+license          = { workspace = true }
+repository       = { workspace = true }
+authors          = { workspace = true }
+description      = "Per-study (or edge) research catalog: subjects, sessions, attributes, file provenance"
+keywords = ["sql", "database", "research-schema"]
+categories = ["science"]
+
+[[bin]]
+name = "symdb"
+path = "src/bin/symdb.rs"
+
+[dependencies]
+thiserror = { workspace = true }
+# Same pin/features as symworx-loadsym (personal catalog). Not on the default path.
+rusqlite = { version = "0.32", optional = true, features = ["bundled"] }
+
+[features]
+default = []
+sqlite = ["dep:rusqlite"]
+
+[lints]
+workspace = true

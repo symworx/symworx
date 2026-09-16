@@ -22,6 +22,7 @@ to finish.
 | SpatialSym | Sport-specific reporting wrappers | Core stays sport-agnostic. Named wrappers for analysis/presentation are planned on top ([spatialsym README](../crates/symworx-spatialsym/README.md)). |
 | Backend | HTTP `/healthz` + feature-gated AWS/Azure store | Task table, `HealthReport`, and `LocalFsStore` landed on `feature/backend-work`. SDK I/O and a listener wait for a consumer. See [cloud notes](../crates/symworx-backend/notes/cloud.md). |
 | Stats / embed | Eval packet on the live stream | Shared `EvalPolicy`/`EvalReport` types shipped in stats. Remaining: window-rate eval JSON-line in `symworx-embed`, TUI flag display, pulse-response / Kalman 1D exporters. See [model_export.md](../crates/symworx-stats/docs/model_export.md) §10. |
+| dbSym | Study / edge catalog | Schema v1 + `symdb init` in [`symworx-dbsym`](../crates/symworx-dbsym/README.md). Next: file register, CSV ingest, export. Separate from LoadSym’s personal catalog. Design: [notes/design.md](../crates/symworx-dbsym/notes/design.md). |
 
 ## Considered
 
