@@ -61,10 +61,6 @@ cargo run -p symworx-dbsym --features sqlite --bin symdb -- init ./scratch --pro
 # edit ./scratch/.dbsym/schema.sqlite.sql  then:
 cargo run -p symworx-dbsym --features sqlite --bin symdb -- apply ./scratch
 cargo run -p symworx-dbsym --features sqlite --bin symdb -- status ./scratch
-
-# Throwaway loopback demo (synthetic rows, temp dir, not an API)
-cargo run -p symworx-dbsym --example local_server --features sqlite
-# then http://127.0.0.1:8765/  or  curl -s 'http://127.0.0.1:8765/generate?n=3'
 ```
 
 ## Schema version

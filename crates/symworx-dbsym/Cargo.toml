@@ -25,9 +25,5 @@ rusqlite = { version = "0.32", optional = true, features = ["bundled"] }
 default = []
 sqlite = ["dep:rusqlite"]
 
-[[example]]
-name = "local_server"
-required-features = ["sqlite"]
-
 [lints]
 workspace = true
