@@ -237,17 +237,22 @@ mod tests {
                 .unwrap()
                 .contains("CREATE TABLE IF NOT EXISTS subjects")
         );
-        fs::write(&report.schema, "-- study owned\nCREATE TABLE IF NOT EXISTS subjects (id TEXT PRIMARY KEY);\nCREATE TABLE IF NOT EXISTS chp_extra (id INTEGER PRIMARY KEY);\n")
-            .unwrap();
+        fs::write(
+            &report.schema,
+            "-- study owned\nCREATE TABLE IF NOT EXISTS subjects (id TEXT PRIMARY KEY);\nCREATE TABLE IF NOT EXISTS study_extra (id INTEGER PRIMARY KEY);\n",
+        )
+        .unwrap();
         init(&root, StoreProfile::Study, &[]).expect("re-init");
         let sql = fs::read_to_string(&report.schema).unwrap();
-        assert!(sql.contains("chp_extra"), "init must not clobber study schema");
+        assert!(sql.contains("study_extra"), "init must not clobber study schema");
         apply(&root).expect("apply");
         let conn = open(&report.db).expect("open");
         let n: i32 = conn
-            .query_row("SELECT COUNT(*) FROM sqlite_master WHERE name = 'chp_extra'", [], |r| {
-                r.get(0)
-            })
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE name = 'study_extra'",
+                [],
+                |r| r.get(0),
+            )
             .unwrap();
         assert_eq!(n, 1);
         let _ = fs::remove_dir_all(&root);

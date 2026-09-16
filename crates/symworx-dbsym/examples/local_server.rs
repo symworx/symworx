@@ -238,9 +238,7 @@ fn generate(root: &Path, n: u32) -> Result<String, Box<dyn std::error::Error>> {
     let conn = open(&db_path(root))?;
     let objects = root.join(DEFAULT_OBJECTS_RELATIVE);
     fs::create_dir_all(&objects)?;
-    let cort_id = attr_id(&conn, "cort")?;
-    let sample_id = attr_id(&conn, "sample")?;
-    let tp_id = attr_id(&conn, "timepoint")?;
+    let vo2_id = attr_id(&conn, "vo2_max")?;
     let cond_id = attr_id(&conn, "condition")?;
     let visit_id = attr_id(&conn, "visit")?;
 
@@ -262,9 +260,8 @@ fn generate(root: &Path, n: u32) -> Result<String, Box<dyn std::error::Error>> {
         )?;
 
         for (label, kind, condition, date) in [
-            ("s1", "screening", "rest", "2024-01-15"),
-            ("p1", "profile", "rest", "2024-02-01"),
-            ("p2", "profile", "exercise", "2024-02-08"),
+            ("v1", "baseline", "rest", "2024-01-15"),
+            ("v2", "followup", "exercise", "2024-02-08"),
         ] {
             conn.execute(
                 "INSERT INTO sessions (subject_id, label, kind, condition, started_at)
@@ -273,43 +270,33 @@ fn generate(root: &Path, n: u32) -> Result<String, Box<dyn std::error::Error>> {
             )?;
             let session_id = conn.last_insert_rowid();
 
-            if label != "s1" {
-                // Fake overnight RR file (not real IBI).
-                let fname = format!("{coded}_{label}_{condition}_rr_demo.txt");
-                let obj = objects.join(&fname);
-                fs::write(&obj, "0.000 1.000\n1.000 1.010\n2.010 0.990\n")?;
-                let key = format!("objects/{fname}");
-                conn.execute(
-                    "INSERT INTO file_records
-                       (subject_id, session_id, ingest_batch_id, modality, format, object_key, original_name, role)
-                     VALUES (?1, ?2, ?3, 'rr', 'txt', ?4, ?5, 'raw')",
-                    rusqlite::params![sid, session_id, batch_id, key, fname],
-                )?;
-            }
+            let fname = format!("{coded}_{label}_{condition}_demo.txt");
+            let obj = objects.join(&fname);
+            fs::write(&obj, "0.000 1.000\n1.000 1.010\n2.010 0.990\n")?;
+            let key = format!("objects/{fname}");
+            conn.execute(
+                "INSERT INTO file_records
+                   (subject_id, session_id, ingest_batch_id, modality, format, object_key, original_name, role)
+                 VALUES (?1, ?2, ?3, 'series', 'txt', ?4, ?5, 'raw')",
+                rusqlite::params![sid, session_id, batch_id, key, fname],
+            )?;
 
-            if label != "s1" {
-                for (k, time_min) in [(0, 0.0), (1, 60.0), (2, 120.0)] {
-                    let cort =
-                        45.0 + (seq as f64) + if condition == "exercise" { 20.0 } else { 0.0 } + f64::from(k) * 3.0;
-                    conn.execute(
-                        "INSERT INTO observations (subject_id, session_id, time_s, ingest_batch_id, source_row)
-                         VALUES (?1, ?2, ?3, ?4, ?5)",
-                        rusqlite::params![sid, session_id, time_min * 60.0, batch_id, k],
-                    )?;
-                    let oid = conn.last_insert_rowid();
-                    for (aid, val) in [
-                        (cort_id, format!("{cort:.3}")),
-                        (sample_id, "serum".into()),
-                        (tp_id, k.to_string()),
-                        (cond_id, condition.to_string()),
-                        (visit_id, label.to_string()),
-                    ] {
-                        conn.execute(
-                            "INSERT INTO observation_values (observation_id, attribute_id, value) VALUES (?1, ?2, ?3)",
-                            rusqlite::params![oid, aid, val],
-                        )?;
-                    }
-                }
+            let vo2 = 40.0 + (seq as f64) + if condition == "exercise" { 5.0 } else { 0.0 };
+            conn.execute(
+                "INSERT INTO observations (subject_id, session_id, time_s, ingest_batch_id, source_row)
+                 VALUES (?1, ?2, 0, ?3, 0)",
+                rusqlite::params![sid, session_id, batch_id],
+            )?;
+            let oid = conn.last_insert_rowid();
+            for (aid, val) in [
+                (vo2_id, format!("{vo2:.1}")),
+                (cond_id, condition.to_string()),
+                (visit_id, label.to_string()),
+            ] {
+                conn.execute(
+                    "INSERT INTO observation_values (observation_id, attribute_id, value) VALUES (?1, ?2, ?3)",
+                    rusqlite::params![oid, aid, val],
+                )?;
             }
         }
         created.push(coded);

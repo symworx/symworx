@@ -25,8 +25,7 @@ Biosignal and lab work already has algorithms here. What it lacks is a small
 store so a study (or an edge node) can answer: *which subject, which session,
 which file, what attributes, and what was ingested.*
 
-The proving shape is a multi-visit exercise study (coded ids, rest vs exercise,
-RR files + tabular assays). The same DDL installs on a one-subject node.
+The same DDL covers a multi-subject study directory and a one-subject edge node.
 
 This is **not** the LoadSym personal ride catalog.
 

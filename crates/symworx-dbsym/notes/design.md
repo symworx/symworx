@@ -9,10 +9,9 @@ a file is, which visit it belonged to, or how two projects stay isolated. dbSym
 installs a catalog **into a project directory** (or onto an edge node): shared
 engine, isolated data.
 
-Proving archive: Physiological Synchrony (`~/research/synchrony`) — coded ids,
-screening vs profile visits, rest vs exercise, RR files plus cortisol/GH tables.
-The crate template has no Synchrony CHECKs (`s1` / `p2e`). After init, the
-**study** owns `<project>/.dbsym/schema.sqlite.sql` and may add tables there.
+The crate template has no study-specific CHECKs on visit labels or conditions.
+After init, the **study** owns `<project>/.dbsym/schema.sqlite.sql` and may add
+tables there. Do not put a lab’s protocol into this crate.
 
 ## Reuse (this workspace)
 
@@ -49,14 +48,14 @@ SQLite default. Postgres dialect later, same dual-file pattern as LoadSym.
 ## Identity
 
 - PK: random surrogate UUID (assigned on ingest, not at `init`).
-- `coded_id` first-class (`ps001`, device `sid`).
+- `coded_id` first-class (study codes or device `sid`).
 - `combined_hash` column exists for later de-id; unused in v1.
 
 ## Sessions vs files vs observations
 
 - **sessions** — visit / capture window (`label`, `kind`, `condition`, `started_at`).
-- **file_records** — RR, VO2, surveys, PDFs (`role` = `raw` \| `derived`).
-- **observations** — tabular points (cortisol timepoints); `time_s` first-class; other fields EAV.
+- **file_records** — waveforms / instrument dumps / surveys (`role` = `raw` \| `derived`).
+- **observations** — tabular points; `time_s` first-class; other fields EAV.
 
 v1 ingest (next): CSV + file register. Excel stays convert-to-CSV.
 

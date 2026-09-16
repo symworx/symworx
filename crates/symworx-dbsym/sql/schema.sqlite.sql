@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS subjects (
 CREATE INDEX IF NOT EXISTS idx_subjects_coded_id ON subjects(coded_id);
 CREATE INDEX IF NOT EXISTS idx_subjects_batch ON subjects(ingest_batch_id);
 
--- Visit / capture window. Labels and conditions are free text (not Synchrony enums).
+-- Visit / capture window. Labels and conditions are free text (not study enums).
 CREATE TABLE IF NOT EXISTS sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     subject_id TEXT NOT NULL REFERENCES subjects(id),
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS attributes (
     preset TEXT
 );
 
--- Tabular repeated measures (e.g. cortisol timepoints). Waveforms are file_records.
+-- Tabular repeated measures. Waveforms are file_records.
 CREATE TABLE IF NOT EXISTS observations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     subject_id TEXT NOT NULL REFERENCES subjects(id),

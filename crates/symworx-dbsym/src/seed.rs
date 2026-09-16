@@ -21,9 +21,10 @@ pub struct SeedAttr {
     pub description: &'static str,
 }
 
-/// Exercise / human performance (Synchrony-shaped, not Synchrony-owned).
+/// Exercise / human performance demographics and session tags.
 ///
 /// Body size uses workspace units: height in meters, mass in kilograms.
+/// Assay-specific fields (hormones, plate IDs, …) belong in the study schema, not here.
 pub const EXERCISE_SCIENCE: &[SeedAttr] = &[
     SeedAttr {
         name: "age",
@@ -58,27 +59,12 @@ pub const EXERCISE_SCIENCE: &[SeedAttr] = &[
     SeedAttr {
         name: "visit",
         kind: "text",
-        description: "Visit label (e.g. s1, p2)",
+        description: "Visit or session label",
     },
     SeedAttr {
         name: "session_date",
         kind: "date",
         description: "Session date (YYYY-MM-DD)",
-    },
-    SeedAttr {
-        name: "cort",
-        kind: "numeric",
-        description: "Cortisol concentration",
-    },
-    SeedAttr {
-        name: "sample",
-        kind: "text",
-        description: "Assay sample type (e.g. serum)",
-    },
-    SeedAttr {
-        name: "timepoint",
-        kind: "numeric",
-        description: "Assay timepoint index",
     },
 ];
 

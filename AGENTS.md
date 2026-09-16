@@ -14,7 +14,7 @@ Key crates:
 - `symworx-dynamics` — Embedding, entropy, RQA/CRQA (core algorithms)
 - `symworx-tui` — Terminal UI (`symview`) — current primary focus
 - `symworx-embed` — Host-side live streaming (PPG JSON protocol, serial/simulator sources, ring buffers); not firmware
-- `symworx-dbsym` — Per-study (or edge) research catalog (scaffold): subjects, attributes, ingest audit, file provenance. Not the LoadSym personal ride catalog.
+- `symworx-dbsym` — Per-study (or edge) research catalog: subjects, sessions, attributes, ingest audit, file provenance. Not the LoadSym personal ride catalog. Study-specific tables live in the installed project schema, not this crate.
 - `symworx-math` — Low-level numerical and sequence primitives (including the canonical home for series operations in `src/series.rs`)
 - `symworx-stats`, `symworx-backend`, Python bindings, etc.
 
