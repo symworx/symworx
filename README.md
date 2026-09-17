@@ -102,6 +102,7 @@ Much of the original work lived in Python; the long-term engine is **Rust**, wit
 | Stats OLS/Ridge/PCA/SVD/LDA/polyreg (`linalg` + OpenBLAS) | **Supported** with native build deps |
 | TUI Import / Explore / Dynamics (RQA) / LoadSym / Spatial | **Supported** (early UX) |
 | Host embed streaming (`symworx-embed`) | **Supported** (simulate default) |
+| `symworx-dbsym` study / edge catalog | **Partial** (schema v1 + `init`; ingest later) |
 | CRQA full API | **Planned** |
 | `symworx-backend` server | **Experimental** (stubs) |
 | R bindings | **Stub** |
@@ -122,6 +123,7 @@ Much of the original work lived in Python; the long-term engine is **Rust**, wit
 | [symworx-biosym](crates/symworx-biosym/README.md) | PPG, respiration, gait, CPG |
 | [symworx-loadsym](crates/symworx-loadsym/README.md) | ACWR, monotony, FIT, nutrition, `symload` (email/polar/sync) |
 | [symworx-loadsym-db](crates/symworx-loadsym-db/README.md) | SQL schema only (v4 multi-source; no personal data) |
+| [symworx-dbsym](crates/symworx-dbsym/README.md) | Per-study / edge catalog (schema v1 + init) |
 | [symworx-spatialsym](crates/symworx-spatialsym/README.md) | Trajectories, space metrics, decisions |
 | [symworx-embed](crates/symworx-embed/README.md) | Host PPG streaming / simulator |
 | [symworx-tui](crates/symworx-tui/README.md) | **`symview`** terminal UI |
