@@ -327,3 +327,79 @@ pub fn generate_demo_and_load(app: &mut App, preset: generate::DemoPreset) -> an
     app.refresh_file_list();
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use symworx_biosym::physiology::respiration::{
+        RespSimulationParams,
+        generate_respiration_timeseries,
+    };
+
+    use super::*;
+    use crate::app::{
+        PeakDetectParams,
+        SignalKind,
+    };
+
+    fn resp_volume(brpm: f64, noise: f64, seed: u64) -> (Vec<f64>, f64, usize) {
+        let params = RespSimulationParams {
+            brpm,
+            dur_min: 1.0,
+            fs: 50.0,
+            tidal_volume: 0.5,
+            insp_exp_ratio: 1.0 / 2.0,
+            kappa_insp: 3.2,
+            tau_exp: 1.6,
+            amplitude: 1.0,
+            noise_level: noise,
+            seed: Some(seed),
+        };
+        let ts = generate_respiration_timeseries(&params);
+        let expected = (params.brpm * params.dur_min).round() as usize;
+        (ts.volume, params.fs, expected)
+    }
+
+    #[test]
+    fn respiration_defaults_reject_falling_edge_noise() {
+        let params = PeakDetectParams::for_kind(SignalKind::Respiration);
+        assert!(
+            params.height_frac >= 0.70 && params.min_interval_sec >= 2.0,
+            "respiration defaults should sit near end-inspiratory volume"
+        );
+
+        // Demo-like 14 brpm plus slower traces where a 1.5s gap used to 2x-count.
+        let cases = [
+            (14.0, 0.03, 1u64),
+            (14.0, 0.03, 7),
+            (14.0, 0.00, 1),
+            (12.0, 0.08, 7),
+            (8.0, 0.03, 7),
+            (20.0, 0.03, 7),
+        ];
+        for (brpm, noise, seed) in cases {
+            let (vol, fs, expected) = resp_volume(brpm, noise, seed);
+            let n = detect_peaks_with_params(&vol, Some(fs), &params).len() as i32;
+            let exp = expected as i32;
+            assert!(
+                (n - exp).abs() <= 2,
+                "brpm={brpm} noise={noise} seed={seed}: det={n} expected={exp}"
+            );
+        }
+    }
+
+    #[test]
+    fn loose_respiration_defaults_double_count_noise() {
+        let loose = PeakDetectParams {
+            height_frac: 0.25,
+            prom_frac: 0.08,
+            min_interval_sec: 1.5,
+            match_tol: 8,
+        };
+        let (vol, fs, expected) = resp_volume(14.0, 0.03, 1);
+        let n = detect_peaks_with_params(&vol, Some(fs), &loose).len();
+        assert!(
+            n >= expected * 2,
+            "old defaults should still over-detect (got {n}, expected breaths {expected})"
+        );
+    }
+}
