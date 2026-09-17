@@ -9,7 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Notes
 
-### Added 
+### Added
+
+### Changed
+
+- Copyright holder updated to Nathaniel T. Berry (Apache License 2.0 retained)
 
 ## [0.4.1] - 2026-09-12
 
@@ -80,7 +84,7 @@ Same contents as 0.3.0. crates.io republish after a partial 0.3.1 upload.
 ### Changed
 
 - Workspace version bumped to 0.2.0
-- Copyright holder updated to PalEm Dynamics LLC (Apache License 2.0 retained)
+- Copyright holder updated to Nathaniel T. Berry (Apache License 2.0 retained)
 
 ### Notes
 
