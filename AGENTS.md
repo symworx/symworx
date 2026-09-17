@@ -15,6 +15,7 @@ Key crates:
 - `symworx-tui` — Terminal UI (`symview`) — current primary focus
 - `symworx-embed` — Host-side live streaming (PPG JSON protocol, serial/simulator sources, ring buffers); not firmware
 - `symworx-dbsym` — Per-study (or edge) research catalog: subjects, sessions, attributes, ingest audit, file provenance. Not the LoadSym personal ride catalog. Study-specific tables live in the installed project schema, not this crate.
+- `symworx-meshsym` — Live IMU/RSSI coupling (typed edges, quality-gated L0–L4, body or formation graph). Not SpatialSym (post-hoc XY / GPS). Firmware stays out of tree. No TUI key yet.
 - `symworx-math` — Low-level numerical and sequence primitives (including the canonical home for series operations in `src/series.rs`)
 - `symworx-stats`, `symworx-backend`, Python bindings, etc.
 
@@ -134,6 +135,7 @@ The workspace strongly prefers **minimal, intentional dependencies**. Every new 
   - Do **not** put Embassy / `no_std` firmware or heavy LA/polars in this crate’s default build. Firmware stays out of tree.
   - Recording streams to disk still goes through **`symworx-io`**. Signal algorithms (peak detect, filters) stay in **`symworx-signal`**.
 - **`symworx-dbsym`** owns the per-study (or edge) catalog: subjects, EAV attributes, ingest audit, file provenance. SQLite file lives outside this repo. Do **not** merge with `symworx-loadsym-db`. Waveform bytes still go through **`symworx-io`**. Algorithms do not take a database connection.
+- **`symworx-meshsym`** owns live coupling on a quality-gated graph (IMU, RSSI class, optional physio edges; body graph or formation graph). Causal windows only. Default build is `thiserror` only. Call `symworx-dynamics` / `symworx-biosym` / `symworx-signal`; do not reimplement RQA, cluster-phase, or HRV. Do **not** convert RSSI to meters. Do **not** put XY / pitch / `SpaceAction` here (`symworx-spatialsym`). Do **not** grow `symworx-embed` into a mesh. Firmware / node daemons stay out of tree. Do not add a `symview` Home key until asked.
 - Data-driven dynamical operators (DMD, Koopman, SINDy) belong in **`symworx-dynamics`**, not stats.
   - DMD: `symworx-dynamics::dmd` (uses `symworx-stats` SVD via `linalg`).
   - EDMD / Koopman: `symworx-dynamics::koopman`.
@@ -172,6 +174,6 @@ RQA and RecurrencePlot are exposed via PyO3 in `bindings/python/`. Keep the Rust
 
 ---
 
-**Last updated:** `symworx-dbsym` scaffold (study/edge catalog, separate from LoadSym). Still covers the core I/O rule (`symworx-io` only for on-disk signal I/O), TUI input priority, and `ndarray-linalg` / polars hygiene.
+**Last updated:** `symworx-meshsym` scaffold (live IMU/RSSI coupling, separate from SpatialSym). Still covers the core I/O rule (`symworx-io` only for on-disk signal I/O), TUI input priority, and `ndarray-linalg` / polars hygiene.
 
 When you start a new session, read this file and respect the TUI input priority rules above.

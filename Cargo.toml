@@ -14,6 +14,7 @@ members = [
     "crates/symworx-io",
     "crates/symworx-loadsym",
     "crates/symworx-math",
+    "crates/symworx-meshsym",
     "crates/symworx-signal",
     "crates/symworx-spatialsym",
     "crates/symworx-stats",
@@ -70,6 +71,7 @@ symworx-core       = { path = "crates/symworx-core", version = "0.4.1" }
 symworx-biosym     = { path = "crates/symworx-biosym", version = "0.4.1" }
 symworx-loadsym    = { path = "crates/symworx-loadsym", version = "0.4.1" }
 symworx-spatialsym = { path = "crates/symworx-spatialsym", version = "0.4.1" }
+symworx-meshsym    = { path = "crates/symworx-meshsym", version = "0.4.1" }
 symworx-tui        = { path = "crates/symworx-tui", version = "0.4.1" }
 
 [workspace.lints.rust]

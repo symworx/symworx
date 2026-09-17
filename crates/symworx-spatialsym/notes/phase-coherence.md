@@ -152,9 +152,10 @@ first-line “coherence”.
   exceed the event width, do not emit a phase score.
 - Near-zero speed: no heading → directional metrics are `None`; non-directional
   may still be valid.
-- RSSI / IMU-only kits (no XY) can use **non-directional** phase from a strap IMU
-  magnitude; directional needs velocity or a heading source. Keep that split in
-  the API so a later field path can call the first without faking the second.
+- RSSI / IMU-only kits (no XY): **MeshSym** owns causal, non-directional
+  effort-phase from strap IMU. Directional phase here still needs a heading
+  from XY (or another heading source). Do not convert RSSI to meters in this
+  crate. See [`../../symworx-meshsym/notes/design.md`](../../symworx-meshsym/notes/design.md).
 
 ## Where to extend (when this is implemented)
 

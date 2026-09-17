@@ -6,12 +6,17 @@ Shipped in `symworx-dynamics::phase`: relative phase, Kuramoto *R*, cluster-phas
 Reference notes for multi-person / multi-series phase coherence and related
 measures. Not an implementation plan. Literature anchors for cluster-phase,
 MdRQA, and CRQA networks — methods that would live in this crate if implemented.
-SpatialSym is a consumer, not the home of these measures.
+SpatialSym (post-hoc XY) and MeshSym (live IMU/RSSI graphs) are consumers, not
+the home of these measures.
 
 SpatialSym kinematics application (effort-phase vs directional-phase, accel/decel
 pairs, where a first cut would land):
 
 [`crates/symworx-spatialsym/notes/phase-coherence.md`](../../symworx-spatialsym/notes/phase-coherence.md)
+
+MeshSym live path (causal effort-phase, quality → `unknown`, regime labels):
+
+[`crates/symworx-meshsym/notes/analytics.md`](../../symworx-meshsym/notes/analytics.md)
 
 ## Purpose
 

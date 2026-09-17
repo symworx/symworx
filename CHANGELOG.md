@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Notes
 
-### Added 
+### Added
+
+- `symworx-meshsym` — live IMU/RSSI coupling crate (documentation-first): L0–L4 design notes, body vs formation graph, contracts. No analysis API yet. SpatialSym remains post-hoc XY / GPS.
 
 ## [0.4.1] - 2026-09-12
 

@@ -23,6 +23,7 @@ to finish.
 | Backend | HTTP `/healthz` + feature-gated AWS/Azure store | Task table, `HealthReport`, and `LocalFsStore` landed on `feature/backend-work`. SDK I/O and a listener wait for a consumer. See [cloud notes](../crates/symworx-backend/notes/cloud.md). |
 | Stats / embed | Eval packet on the live stream | Shared `EvalPolicy`/`EvalReport` types shipped in stats. Remaining: window-rate eval JSON-line in `symworx-embed`, TUI flag display, pulse-response / Kalman 1D exporters. See [model_export.md](../crates/symworx-stats/docs/model_export.md) §10. |
 | dbSym | Study / edge catalog | Schema v1 + `symdb init` in [`symworx-dbsym`](../crates/symworx-dbsym/README.md). Next: file register, CSV ingest, export. Separate from LoadSym’s personal catalog. Design: [notes/design.md](../crates/symworx-dbsym/notes/design.md). |
+| MeshSym | Live IMU/RSSI coupling (L0–L4) | Crate + design notes in [`symworx-meshsym`](../crates/symworx-meshsym/README.md). Next: contracts as types, synthetic L3. Not SpatialSym (post-hoc XY). No TUI key yet. Design: [notes/design.md](../crates/symworx-meshsym/notes/design.md). |
 
 ## Considered
 

@@ -24,7 +24,7 @@ See `physiology::{ppg,respiration}::analysis` and tests for details. Heavily reu
 **Known gaps** (advanced / future):
 - Waveform morphology (PPG: rise time/notch/augmentation; resp: I:E, peak flows, volume integrals).
 - Extended HRV analysis (pNN50, freq-domain LF/HF, nonlinear will use `symworx-dynamics` entropy + `symworx-stats` spectral for now).
-- Cardiorespiratory coupling / RSA metrics (CPG has couplings; dedicated cross-analysis pending).
+- Cardiorespiratory coupling / RSA metrics (CPG has couplings; dedicated cross-analysis pending). Live graph those measures would hang on: [`symworx-meshsym`](../symworx-meshsym/README.md).
 - Sleep module and data simulation.
 - Real-sensor vs sim-tuned quality presets.
 - Streaming / incremental analysis.

@@ -23,6 +23,9 @@ analysis and presentation) are planned on top of this core.
 Analyses are **post-hoc** labels of agent decisions around space (see `decision`
 module); this is not a real-time tool. All lengths are **meters**.
 
+Live IMU / RSSI coupling (causal L0–L4, body or formation graph) lives in
+[`symworx-meshsym`](../symworx-meshsym/README.md), not here.
+
 Design notes (not shipped APIs): [notes/phase-coherence.md](notes/phase-coherence.md)
 — pairwise / group in-phase vs out-of-phase effort and heading.
 

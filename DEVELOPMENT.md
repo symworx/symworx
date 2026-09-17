@@ -50,6 +50,7 @@ Specific crates often have their own examples:
 cargo run -p symworx-biosym --example gait_demo
 cargo run -p symworx-loadsym --example nutrition_demo
 cargo run -p symworx-spatialsym --example synthetic_decisions
+cargo test --lib -p symworx-meshsym
 
 # Recent data-driven / predictive stack
 cargo run -p symworx-stats --example predictive_metrics_demo --features linalg
@@ -113,7 +114,7 @@ Low-level crates must be published before crates that depend on them:
 
 1. `symworx-error`
 2. `symworx-math`
-3. `symworx-io`, `symworx-stats`, `symworx-signal`, `symworx-dynamics`, `symworx-backend`, `symworx-embed`, `symworx-loadsym-db`, `symworx-dbsym`
+3. `symworx-io`, `symworx-stats`, `symworx-signal`, `symworx-dynamics`, `symworx-backend`, `symworx-embed`, `symworx-loadsym-db`, `symworx-dbsym`, `symworx-meshsym`
 4. Grouping crates: `symworx-core`, `symworx-biosym`, `symworx-loadsym`, `symworx-spatialsym`, `symworx-tui`
 5. Python packages (via the corresponding `pyproject-*.toml` files): `symworx-biosym`, `symworx-loadsym`, `symworx-spatialsym`, `symworx-core`
 

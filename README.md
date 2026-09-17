@@ -103,6 +103,7 @@ Much of the original work lived in Python; the long-term engine is **Rust**, wit
 | TUI Import / Explore / Dynamics (RQA) / LoadSym / Spatial | **Supported** (early UX) |
 | Host embed streaming (`symworx-embed`) | **Supported** (simulate default) |
 | `symworx-dbsym` study / edge catalog | **Partial** (schema v1 + `init`; ingest later) |
+| `symworx-meshsym` live IMU/RSSI coupling (L0–L4) | **Partial** (design notes; no analysis API yet) |
 | CRQA full API | **Planned** |
 | `symworx-backend` server | **Experimental** (stubs) |
 | R bindings | **Stub** |
@@ -124,7 +125,8 @@ Much of the original work lived in Python; the long-term engine is **Rust**, wit
 | [symworx-loadsym](crates/symworx-loadsym/README.md) | ACWR, monotony, FIT, nutrition, `symload` (email/polar/sync) |
 | [symworx-loadsym-db](crates/symworx-loadsym-db/README.md) | SQL schema only (v4 multi-source; no personal data) |
 | [symworx-dbsym](crates/symworx-dbsym/README.md) | Per-study / edge catalog (schema v1 + init) |
-| [symworx-spatialsym](crates/symworx-spatialsym/README.md) | Trajectories, space metrics, decisions |
+| [symworx-spatialsym](crates/symworx-spatialsym/README.md) | Trajectories, space metrics, decisions (post-hoc XY) |
+| [symworx-meshsym](crates/symworx-meshsym/README.md) | Live IMU/RSSI coupling, typed edges, L0–L4 |
 | [symworx-embed](crates/symworx-embed/README.md) | Host PPG streaming / simulator |
 | [symworx-tui](crates/symworx-tui/README.md) | **`symview`** terminal UI |
 | [symworx-backend](crates/symworx-backend/README.md) | Process/server utilities (early) |
