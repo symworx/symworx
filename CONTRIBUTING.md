@@ -60,7 +60,7 @@ We ask that you stay engaged with your PR—respond to comments and keep the con
 This project follows the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/).
 By participating, you agree to uphold this code in all project spaces.
 
-Copyright is PalEm Dynamics LLC (Apache-2.0). See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md).
+Copyright is Nathaniel T. Berry (Apache-2.0). See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md).
 
 ## Questions or Need Help?
 
