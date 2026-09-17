@@ -1,4 +1,4 @@
-# Copyright (c) 2026 PalEm Dynamics LLC
+# Copyright (c) 2026 Nathaniel T. Berry
 # Licensed under the Apache License, Version 2.0.
 
 cff-version: 1.2.0
@@ -12,7 +12,6 @@ abstract: >
 authors:
   - family-names: Berry
     given-names: Nathaniel T.
-    affiliation: PalEm Dynamics LLC
 version: "0.4.1"
 date-released: "2026-09-12"
 license: Apache-2.0

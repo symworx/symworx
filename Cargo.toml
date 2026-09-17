@@ -1,4 +1,4 @@
-# Copyright (c) 2026 PalEm Dynamics LLC
+# Copyright (c) 2026 Nathaniel T. Berry
 # Licensed under the Apache License, Version 2.0.
 
 [workspace]
@@ -9,6 +9,7 @@ members = [
     "crates/symworx-biosym",
     "crates/symworx-core",
     "crates/symworx-dynamics",
+    "crates/symworx-dbsym",
     "crates/symworx-embed",
     "crates/symworx-io",
     "crates/symworx-loadsym",

@@ -1,4 +1,4 @@
-// Copyright (c) 2026 PalEm Dynamics LLC
+// Copyright (c) 2026 Nathaniel T. Berry
 // Licensed under the Apache License, Version 2.0.
 
 use rand::{
@@ -6,6 +6,7 @@ use rand::{
     SeedableRng,
     rngs::StdRng,
 };
+use symworx_core::PeakFinderBuilder;
 
 /// Respiration time-series signal.
 #[derive(Debug, Clone)]
@@ -149,29 +150,26 @@ pub fn generate_respiration_timeseries(params: &RespSimulationParams) -> RespTim
         flow[n_samples - 1] = (volume[n_samples - 1] - volume[n_samples - 2]) / dt;
     }
 
-    // Peaks from volume (more meaningful for tidal breathing than flow zeros)
-    let mut inhalation_peaks = Vec::new();
-    let mut exhalation_peaks = Vec::new();
-    if n_samples >= 3 {
-        for i in 1..n_samples - 1 {
-            if volume[i] >= volume[i - 1] && volume[i] > volume[i + 1] && volume[i] > 0.2 * tidal {
-                inhalation_peaks.push(i);
-            }
-            // local minimum near baseline at end-exp
-            if volume[i] <= volume[i - 1] && volume[i] < volume[i + 1] && volume[i] < 0.25 * tidal {
-                exhalation_peaks.push(i);
-            }
-        }
-    }
-
-    // Prefer phase peaks from flow when available (keeps analysis API consistent)
-    let phase_peaks = super::peaks::phase_peak_indices(&flow);
-    if !phase_peaks.inhalation_peak_indices.is_empty() {
-        inhalation_peaks = phase_peaks.inhalation_peak_indices;
-    }
-    if !phase_peaks.exhalation_peak_indices.is_empty() {
-        exhalation_peaks = phase_peaks.exhalation_peak_indices;
-    }
+    // Ground-truth peaks from volume (end-inspiratory maxima / end-expiratory minima).
+    // Unfiltered flow local-maxima pick up high-frequency noise on dV/dt.
+    let min_gap = ((0.5 * cycle_time * params.fs).round() as usize).max(1);
+    let inhalation_peaks: Vec<usize> = PeakFinderBuilder::from_slice(&volume)
+        .height(0.55 * tidal)
+        .prominence(0.20 * tidal)
+        .distance(min_gap)
+        .find()
+        .into_iter()
+        .map(|p| p.index)
+        .collect();
+    let inverted: Vec<f64> = volume.iter().map(|v| -v).collect();
+    let exhalation_peaks: Vec<usize> = PeakFinderBuilder::from_slice(&inverted)
+        .height(-0.25 * tidal)
+        .prominence(0.20 * tidal)
+        .distance(min_gap)
+        .find()
+        .into_iter()
+        .map(|p| p.index)
+        .collect();
 
     RespTimeSeries {
         times,
@@ -261,6 +259,34 @@ mod tests {
         assert!(
             (mean_last - mean_first).abs() < 0.25 * params.tidal_volume,
             "noise should not create large baseline drift: first={mean_first:.4} last={mean_last:.4}"
+        );
+    }
+
+    #[test]
+    fn noisy_volume_peaks_track_breaths_not_flow_wiggles() {
+        let params = RespSimulationParams {
+            brpm: 14.0,
+            dur_min: 1.0,
+            fs: 50.0,
+            noise_level: 0.03,
+            seed: Some(7),
+            ..Default::default()
+        };
+        let ts = generate_respiration_timeseries(&params);
+        let expected = (params.brpm * params.dur_min).round() as i32;
+        let n_in = ts.inhalation_peaks.len() as i32;
+        let n_ex = ts.exhalation_peaks.len() as i32;
+        assert!(
+            (n_in - expected).abs() <= 2,
+            "inhalation peaks {n_in} should be near {expected} breaths, not flow noise"
+        );
+        assert!(
+            (n_ex - expected).abs() <= 2,
+            "exhalation peaks {n_ex} should be near {expected} breaths"
+        );
+        assert!(
+            n_in < 40,
+            "inhalation peak count {n_in} still looks like unfiltered noise"
         );
     }
 }

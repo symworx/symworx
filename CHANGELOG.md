@@ -9,14 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Notes
 
-### Added 
+### Added
+
+### Changed
+
+- Copyright holder updated to Nathaniel T. Berry (Apache License 2.0 retained)
 
 ## [0.4.1] - 2026-09-12
 
 ### Notes
 
+- `symworx-dbsym` generic ingest / export / TUI workflow are not started.
+
 ### Added
 
+- `symworx-dbsym` — per-study / edge catalog: SQLite schema v1 (`subjects`, `sessions`, `file_records`, EAV `observations`), `StoreProfile`, `symdb init` / `apply` / `presets` / `status` (`--features sqlite`). Init copies `.dbsym/schema.sqlite.sql` for the study to edit; never overwrites an existing copy.
 - Software citation: root [`CITATION.cff`](CITATION.cff) (GitHub “Cite this repository”) plus APA/BibTeX in the workspace and crate READMEs 
 
 ## [0.4.0] - 2026-09-04
@@ -77,7 +84,7 @@ Same contents as 0.3.0. crates.io republish after a partial 0.3.1 upload.
 ### Changed
 
 - Workspace version bumped to 0.2.0
-- Copyright holder updated to PalEm Dynamics LLC (Apache License 2.0 retained)
+- Copyright holder updated to Nathaniel T. Berry (Apache License 2.0 retained)
 
 ### Notes
 
