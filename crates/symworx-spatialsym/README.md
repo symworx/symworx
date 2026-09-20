@@ -17,6 +17,9 @@ analysis and presentation) are planned on top of this core.
 - `PlayingDimensions` (rectangular field, meters)
 - `PlayAreaMarkings` (sport-agnostic goal / end boxes / circle) plus `soccer` IFAB Law 1 presets: pitch length/width ranges, fixed 16.5 m / 5.5 m boxes, goal, PK, center circle (meters)
 - `generate_3v3_attack`: 3v3 attacking-third drill (G0 +x, G1 defend) on the FIFA 105×68 m default
+- `generate_11v11_play`: 11v11 sequence of play (default 180 s @ 1 Hz) with planted `SpaceAction` labels; formation-seeking, not a physics engine
+- `convex_hull` / `local_triangles` / `polygon_area`: defending outline and compact attacking triangles
+- `evaluate_space_actions`: cell-wise planted vs classifier scores
 - `SpaceAction`: Expansion, Penetration, Denial, Pressure, Neutral
 - Errors via `SpatialError` + `Result`
 
@@ -50,6 +53,14 @@ Path linearity, pairwise phase, and a 3v3 on the FIFA/IFAB default pitch:
 ```bash
 cargo run -p symworx-spatialsym --example path_and_phase
 ```
+
+11v11 planted labels vs the space-action classifier (and the known limits):
+
+```bash
+cargo run -p symworx-spatialsym --example synthetic_decisions
+```
+
+Design notes: [notes/synthetic-play.md](notes/synthetic-play.md).
 
 ## Citation
 

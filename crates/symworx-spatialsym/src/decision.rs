@@ -534,6 +534,9 @@ pub fn classify_space_actions(
                         SpaceAction::Prevention
                     } else if nearest_dist < 5.0 {
                         SpaceAction::Pressure
+                    } else if speed > 0.6 {
+                        // Occupy / collapse space without being the immediate presser.
+                        SpaceAction::Denial
                     } else {
                         SpaceAction::Neutral
                     }
@@ -608,6 +611,121 @@ pub fn classify_space_actions(
     results
 }
 
+/// Counts of planted vs predicted [`SpaceAction`] labels.
+#[derive(Clone, Debug)]
+pub struct DecisionEval {
+    /// Agent rows compared (min of the two tables).
+    pub agents: usize,
+    /// Frame-cells compared.
+    pub compared: usize,
+    /// Cells where planted == predicted.
+    pub matches: usize,
+    /// `matches / compared` (0 if empty).
+    pub accuracy: f64,
+    /// `(action, n_planted, n_predicted, n_hit)`.
+    pub per_class: Vec<(SpaceAction, usize, usize, usize)>,
+}
+
+impl DecisionEval {
+    /// One-line plus per-class recall/precision-style counts.
+    pub fn summary_lines(&self) -> Vec<String> {
+        let mut lines = vec![format!(
+            "accuracy={:.3}  ({}/{} cells, {} agents)",
+            self.accuracy, self.matches, self.compared, self.agents
+        )];
+        for (action, n_t, n_p, n_h) in &self.per_class {
+            if *n_t == 0 && *n_p == 0 {
+                continue;
+            }
+            let rec = if *n_t > 0 { *n_h as f64 / *n_t as f64 } else { 0.0 };
+            let prec = if *n_p > 0 { *n_h as f64 / *n_p as f64 } else { 0.0 };
+            lines.push(format!(
+                "  {action:?}: planted={n_t} pred={n_p} hit={n_h}  rec={rec:.2} prec={prec:.2}"
+            ));
+        }
+        lines
+    }
+}
+
+const ALL_ACTIONS: [SpaceAction; 8] = [
+    SpaceAction::Expansion,
+    SpaceAction::Penetration,
+    SpaceAction::Denial,
+    SpaceAction::Pressure,
+    SpaceAction::Neutral,
+    SpaceAction::Creation,
+    SpaceAction::Conversion,
+    SpaceAction::Prevention,
+];
+
+fn action_index(a: SpaceAction) -> usize {
+    match a {
+        SpaceAction::Expansion => 0,
+        SpaceAction::Penetration => 1,
+        SpaceAction::Denial => 2,
+        SpaceAction::Pressure => 3,
+        SpaceAction::Neutral => 4,
+        SpaceAction::Creation => 5,
+        SpaceAction::Conversion => 6,
+        SpaceAction::Prevention => 7,
+    }
+}
+
+/// Compare planted labels to classifier output (cell-wise, no temporal tolerance).
+pub fn evaluate_space_actions(truth: &[Vec<SpaceAction>], predicted: &[Vec<AgentDecision>]) -> DecisionEval {
+    let agents = truth.len().min(predicted.len());
+    let mut n_truth = [0usize; 8];
+    let mut n_pred = [0usize; 8];
+    let mut n_hit = [0usize; 8];
+    let mut compared = 0usize;
+    let mut matches = 0usize;
+    for a in 0..agents {
+        let n = truth[a].len().min(predicted[a].len());
+        for t in 0..n {
+            let y = truth[a][t];
+            let yhat = predicted[a][t].action;
+            compared += 1;
+            n_truth[action_index(y)] += 1;
+            n_pred[action_index(yhat)] += 1;
+            if y == yhat {
+                matches += 1;
+                n_hit[action_index(y)] += 1;
+            }
+        }
+    }
+    let accuracy = if compared > 0 {
+        matches as f64 / compared as f64
+    } else {
+        0.0
+    };
+    let per_class = ALL_ACTIONS
+        .iter()
+        .enumerate()
+        .map(|(i, &action)| (action, n_truth[i], n_pred[i], n_hit[i]))
+        .collect();
+    DecisionEval {
+        agents,
+        compared,
+        matches,
+        accuracy,
+        per_class,
+    }
+}
+
+/// Structural limits of [`classify_space_actions`] (independent of any one sequence).
+pub fn classifier_limitations() -> &'static [&'static str] {
+    &[
+        "Only the inferred carrier and agents within proximity_radius are labeled; everyone else is Neutral.",
+        "Possession requires the nearest agent to the focal to be within 2 m — in-flight balls often have no carrier.",
+        "Conversion is a near-goal speed/space heuristic, not a detected shot or goal event.",
+        "Creation/Prevention are gated on attacking-direction cosine and a distance-to-goal cutoff, not on chance quality.",
+        "free_space_ahead is mean distance to all other agents, not a directional gap through the block.",
+        "goal_progress is the forward cosine, not field position (a player can 'progress' while running toward their own goal).",
+        "Post-hoc pass-into-press demotes Penetration/Creation/Conversion to Neutral rather than a distinct poor-decision label.",
+        "Windows shorter than dt collapse to a single sample of heading; 1 Hz tracking makes 0.5 s windows one frame.",
+    ]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -626,6 +744,64 @@ mod tests {
         assert_eq!(
             SpaceAction::Prevention.description(),
             "Prevention (deny scoring opportunity)"
+        );
+    }
+
+    #[test]
+    fn evaluate_identical_labels_is_perfect() {
+        let truth = vec![vec![SpaceAction::Penetration; 4], vec![SpaceAction::Denial; 4]];
+        let pred: Vec<Vec<AgentDecision>> = truth
+            .iter()
+            .map(|row| {
+                row.iter()
+                    .map(|&action| AgentDecision {
+                        action,
+                        confidence: Some(1.0),
+                        features: DecisionFeatures::default(),
+                    })
+                    .collect()
+            })
+            .collect();
+        let ev = evaluate_space_actions(&truth, &pred);
+        assert!((ev.accuracy - 1.0).abs() < 1e-12);
+        assert_eq!(ev.compared, 8);
+    }
+
+    #[test]
+    fn nearby_defender_at_jog_is_denial_not_only_neutral() {
+        // Carrier at origin with the ball; defender 8 m away jogging toward them,
+        // well outside the 5 m Pressure gate and not in a "near goal" box.
+        let times: Vec<f64> = (0..6).map(|i| i as f64).collect();
+        let carrier: Vec<crate::geometry::Point2> = times
+            .iter()
+            .map(|&t| crate::geometry::Point2::new(t * 0.2, 0.0))
+            .collect();
+        let defender: Vec<crate::geometry::Point2> = times
+            .iter()
+            .map(|&t| crate::geometry::Point2::new(8.0 - t * 0.8, 0.2))
+            .collect();
+        let focal = carrier.clone();
+        let groups = [0u32, 1];
+        let att = [
+            crate::geometry::Vec2::new(1.0, 0.0),
+            crate::geometry::Vec2::new(-1.0, 0.0),
+        ];
+        let params = ClassifySpaceParams {
+            window_sec: 2.0,
+            proximity_radius: 12.0,
+            look_ahead_sec: 1.0,
+            groups: Some(&groups),
+            attacking_directions: Some(&att),
+            playing_dimensions: None,
+            goal_positions: None,
+        };
+        let out = classify_space_actions(&[carrier, defender], &times, Some(&focal), &params);
+        let actions: Vec<_> = out[1].iter().map(|d| d.action).collect();
+        assert!(
+            actions
+                .iter()
+                .any(|a| *a == SpaceAction::Denial || *a == SpaceAction::Pressure),
+            "expected Denial or Pressure on the closing defender, got {actions:?}"
         );
     }
 }

@@ -1,170 +1,75 @@
 // Copyright (c) 2026 Nathaniel T. Berry
 // Licensed under the Apache License, Version 2.0.
 
+//! 11v11 planted-label sequence vs the space-action classifier.
+//!
+//! ```bash
+//! cargo run -p symworx-spatialsym --example synthetic_decisions
+//! ```
+
 use symworx_spatialsym::{
-    Point2,
-    Vec2,
+    classifier_limitations,
+    evaluate_space_actions,
+    generate_3v3_attack,
+    generate_11v11_play,
 };
 
 fn main() {
-    println!("symworx-spatialsym synthetic demo\n");
+    println!("symworx-spatialsym — synthetic play vs decision classifier\n");
+
+    println!("=== 3v3 attacking-third drill (kept as a short action clip) ===");
+    let (b3, f3, _) = generate_3v3_attack();
     println!(
-        "Demonstrates longer sequences with Creation / Conversion / Prevention (goal-scoring opportunity actions).\n"
+        "  {} agents, {} frames, dt≈{:.2}s",
+        b3.num_agents(),
+        b3.num_times(),
+        b3.times.get(1).copied().unwrap_or(0.1)
     );
+    let _ = f3;
 
-    let dt = 0.1;
-    let duration = 3.5; // longer for more interesting sequences including creation/denial/conversion
-
-    // 1+2: parametric + noisy (math)
-    let _t: Vec<f64> = (0..=((duration / dt) as usize)).map(|i| i as f64 * dt).collect();
-    let lin = symworx_spatialsym::generate_linear_trajectory(Point2::new(0., 0.), Vec2::new(4., 0.), duration, dt);
-    let curved =
-        symworx_spatialsym::generate_curved_trajectory(Point2::new(0., 2.), Vec2::new(3.5, 0.), duration, dt, 1.0, 3.5);
-    let noisy =
-        symworx_spatialsym::generate_noisy_trajectory(Point2::new(0., 4.), Vec2::new(3.8, 0.), duration, dt, 0.3);
-    println!("1+2: lin={} curved={} noisy={}", lin.len(), curved.len(), noisy.len());
-
-    // 3: event-driven - longer sequence with goal-scoring creation + denial
-    // Attacker (agent 1) makes a run to create a scoring opportunity near the target (goal area).
-    // Passer (0) plays the ball into space (Creation for receiver).
-    // Defender (2) closes to deny the space (Prevention).
-    // Later sequence leads toward a conversion.
-    let init = vec![Point2::new(0., 0.), Point2::new(1.2, 2.5), Point2::new(0.7, -0.5)];
-    let goal_target = Point2::new(8.5, 2.5); // goal area
-    let evs = vec![
-        // Early run to create space near goal (Creation opportunity)
-        symworx_spatialsym::SpatialEvent::StartRun {
-            agent: 1,
-            target: goal_target,
-            speed: 5.5,
-            start_time: 0.4,
-        },
-        symworx_spatialsym::SpatialEvent::Pass {
-            from: 0,
-            to: 1,
-            time: 1.1,
-        },
-        // Defender closes the space created (Denial / Prevention)
-        symworx_spatialsym::SpatialEvent::Close {
-            agent: 2,
-            target: 1,
-            speed: 6.0,
-            start_time: 1.3,
-        },
-        // Second wave: attacker continues or new run toward goal
-        symworx_spatialsym::SpatialEvent::StartRun {
-            agent: 1,
-            target: Point2::new(9.0, 2.8),
-            speed: 4.8,
-            start_time: 2.0,
-        },
-        // Another pass / support run creating more danger
-        symworx_spatialsym::SpatialEvent::Pass {
-            from: 0,
-            to: 1,
-            time: 2.4,
-        },
-    ];
-    let (ev_t, ev_p, ev_f) = symworx_spatialsym::generate_event_driven(init, Point2::new(0.25, 0.), &evs, duration, dt);
-
-    let groups = vec![0u32, 0, 1];
-    let att = vec![Vec2::new(1., 0.), Vec2::new(1., 0.), Vec2::new(-1., 0.)];
-    let dims = Some(symworx_spatialsym::PlayingDimensions::new(105.0, 68.0)); // standard field size
-    // Goal positions per agent (their attacking goal). Team 0 attacks right goal, team 1 left.
-    let goal_pos = vec![
-        Point2::new(52.5, 0.0), // right goal for attacking team (group 0)
-        Point2::new(52.5, 0.0),
-        Point2::new(-52.5, 0.0), // left goal for defending team (group 1)
-    ];
-    let (batch, focal) =
-        symworx_spatialsym::build_agent_trajectories(ev_t, ev_p, groups, att, ev_f, dims, Some(goal_pos));
-
+    println!("\n=== 11v11 sequence of play (3 min @ 1 Hz) ===");
+    let seq = generate_11v11_play();
     println!(
-        "\nBatch (3): {} agents, {} times (longer example with explicit goal-scoring creation + denial)",
-        batch.num_agents(),
-        batch.num_times()
+        "  {} agents, {} frames, {} event tags",
+        seq.batch.num_agents(),
+        seq.batch.num_times(),
+        seq.events.len()
     );
-
-    if let Some(c) = batch.infer_ball_carrier_at(8, None) {
-        println!("Inferred carrier around t=0.8: agent {}", c);
+    println!("  events:");
+    for (f, desc) in &seq.events {
+        println!("    t={:>5.0}s  f={f:<3}  {desc}", *f as f64);
     }
 
-    let decs = batch.classify_with_focal_and_params(&focal, 0.5, 10.0, 0.8);
-    // Print a wider window of decisions for the key attacker (agent 1) to see Creation/Conversion
-    let start = 5;
-    let end = (batch.num_times()).min(28);
-    println!(
-        "\nAgent1 decisions (t={}..{}): {:?}",
-        start,
-        end,
-        decs[1][start..end].iter().map(|d| d.action).collect::<Vec<_>>()
-    );
+    println!("\n--- Classifier A: TUI 1 Hz params (window=2s, radius=15m, look-ahead=2s) ---");
+    let decs_a = seq.batch.classify_with_focal_and_params(&seq.focal, 2.0, 15.0, 2.0);
+    let eval_a = evaluate_space_actions(&seq.labels, &decs_a);
+    for line in eval_a.summary_lines() {
+        println!("  {line}");
+    }
 
-    // Also show defender decisions (agent 2) to see Prevention/Denial
-    println!(
-        "Agent2 (defender) decisions (t={}..{}): {:?}",
-        start,
-        end,
-        decs[2][start..end].iter().map(|d| d.action).collect::<Vec<_>>()
-    );
+    println!("\n--- Classifier B: old 3v3 defaults (window=0.5s, radius=10m, look-ahead=0.8s) ---");
+    let decs_b = seq.batch.classify_with_focal_and_params(&seq.focal, 0.5, 10.0, 0.8);
+    let eval_b = evaluate_space_actions(&seq.labels, &decs_b);
+    for line in eval_b.summary_lines() {
+        println!("  {line}");
+    }
 
-    let sums = batch.per_player_summaries(2.0, 4.5, Some(&focal));
-    println!(
-        "\nPer-player loads: {:?}",
-        sums.iter()
-            .map(|s| (s.player_idx, s.estimated_load.round()))
-            .collect::<Vec<_>>()
-    );
+    println!("\n--- Structural limits (not sequence-specific) ---");
+    for (i, note) in classifier_limitations().iter().enumerate() {
+        println!("  {}. {note}", i + 1);
+    }
 
-    // Ground truth using the new longer "scoring_sequence" scenario (Creation + Conversion + Prevention)
-    println!("\n=== Longer scoring sequence demo (Creation + Conversion + Prevention) ===");
-    let n_steps = batch.num_times();
-    let seq_labels = symworx_spatialsym::generate_ground_truth(3, n_steps, "scoring_sequence");
+    // Sample one creation-phase frame: carrier + nearby vs planted.
+    let t = 60usize.min(seq.batch.num_times().saturating_sub(1));
+    println!("\n--- Frame {t} (creation phase) carrier vs planted ---");
+    for i in 0..seq.batch.num_agents() {
+        let planted = seq.labels[i][t];
+        let pred = decs_a[i][t].action;
+        let ball = decs_a[i][t].features.is_ball_carrier;
+        if ball || planted != pred && planted != symworx_spatialsym::SpaceAction::Neutral {
+            println!("  A{i:<2}  GT={planted:?}  CL={pred:?}  ball={ball}");
+        }
+    }
 
-    // Show classifier output over the key window
-    let key_start = 6;
-    let key_end = n_steps.min(26);
-    println!(
-        "Classifier (agent0 creator) t={}-{}: {:?}",
-        key_start,
-        key_end,
-        decs[0][key_start..key_end].iter().map(|d| d.action).collect::<Vec<_>>()
-    );
-    println!(
-        "Classifier (agent1) t={}-{}: {:?}",
-        key_start,
-        key_end,
-        decs[1][key_start..key_end].iter().map(|d| d.action).collect::<Vec<_>>()
-    );
-    println!(
-        "Classifier (agent2 denier) t={}-{}: {:?}",
-        key_start,
-        key_end,
-        decs[2][key_start..key_end].iter().map(|d| d.action).collect::<Vec<_>>()
-    );
-
-    println!("\nGround truth labels for scoring_sequence:");
-    println!(
-        "Agent 0 (creator / Creation phase): {:?}",
-        seq_labels[0][key_start..key_end]
-            .iter()
-            .map(|a| format!("{:?}", a))
-            .collect::<Vec<_>>()
-    );
-    println!(
-        "Agent 1 (Conversion / finishing):   {:?}",
-        seq_labels[1][key_start..key_end]
-            .iter()
-            .map(|a| format!("{:?}", a))
-            .collect::<Vec<_>>()
-    );
-    println!(
-        "Agent 2 (Prevention / Denial):      {:?}",
-        seq_labels[2][key_start..key_end]
-            .iter()
-            .map(|a| format!("{:?}", a))
-            .collect::<Vec<_>>()
-    );
-
-    println!("\nSynthetic (1-3) generated + analyzed. Ready for testing/visualization.");
+    println!("\nDone. Visualize with: cargo run -p symworx-tui --bin symview   then 4, g");
 }

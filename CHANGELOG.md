@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+### Added
+
+- `symworx-spatialsym`: 11v11 sequence of play (`generate_11v11_play`, 180 s @ 1 Hz) with planted `SpaceAction` labels; `convex_hull` / `local_triangles` for defending outline vs local attacking triangles; `evaluate_space_actions` vs the classifier
+- Spatial Visualize: 3v3 drill on `g`; 11v11 sequence on `a`; magenta defending hull and white local attacking triangles on 11v11; CL vs GT on compact agent lines
+
+### Changed
+
+- Nearby defenders who are not the immediate presser now classify as `Denial` (the variant was previously unused)
+- Event-driven `Close` tracks the target each frame instead of a frozen snapshot
+
 ## [0.4.2] - 2026-09-17
 
 ### Notes

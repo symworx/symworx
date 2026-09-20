@@ -34,9 +34,12 @@ use ratatui::{
 
 use crate::app::App;
 
-const TRAIL_FRAMES: usize = 8;
-/// C(6,2) = 15 covers a 3v3; extra pairs are dropped.
+const TRAIL_FRAMES: usize = 12;
+/// C(6,2) = 15 covers a 3v3; 11v11 uses hull/triangles instead of all-pairs.
 const PAIR_CAP: usize = 15;
+/// Compact attacking triangles: 6 nearest teammates, max edge 30 m.
+const TRI_K: usize = 6;
+const TRI_MAX_EDGE_M: f64 = 30.0;
 
 /// G0 (attack) white; G1 (defend) magenta — avoids cyan/yellow/red used for phase edges.
 pub fn team_color(group: Option<u32>) -> Color {
@@ -48,6 +51,61 @@ pub fn team_color(group: Option<u32>) -> Color {
 
 fn group_of(batch: &symworx_spatialsym::AgentTrajectories, i: usize) -> Option<u32> {
     batch.groups.as_ref().and_then(|g| g.get(i).copied())
+}
+
+fn possessing_group(
+    app: &App,
+    batch: &symworx_spatialsym::AgentTrajectories,
+    idx: usize,
+    focal: &[symworx_spatialsym::Point2],
+) -> Option<u32> {
+    if let Some(decs) = &app.spatial_decisions {
+        for (i, row) in decs.iter().enumerate() {
+            if row.get(idx).is_some_and(|d| d.features.is_ball_carrier) {
+                return group_of(batch, i);
+            }
+        }
+    }
+    let frame = batch.frame(idx)?;
+    let fp = *focal.get(idx)?;
+    let mut best_g = None;
+    let mut best_d = f64::INFINITY;
+    for (i, p) in frame.agent_positions.iter().enumerate() {
+        let d = p.distance(fp);
+        if d < best_d {
+            best_d = d;
+            best_g = group_of(batch, i);
+        }
+    }
+    best_g
+}
+
+fn canvas_closed_edges(
+    pts: &[symworx_spatialsym::Point2],
+    rotate: bool,
+    color: Color,
+) -> Vec<(f64, f64, f64, f64, Color)> {
+    if pts.len() < 2 {
+        return Vec::new();
+    }
+    let mut edges = Vec::with_capacity(pts.len());
+    for i in 0..pts.len() {
+        let a = pts[i];
+        let b = pts[(i + 1) % pts.len()];
+        let (x1, y1) = if rotate { attack_up(a.x, a.y) } else { (a.x, a.y) };
+        let (x2, y2) = if rotate { attack_up(b.x, b.y) } else { (b.x, b.y) };
+        edges.push((x1, y1, x2, y2, color));
+    }
+    edges
+}
+
+/// Pair used by the effort strip: RW–ST on 11v11, else A0–A1.
+pub fn strip_pair_indices(n_agents: usize) -> (usize, usize) {
+    if n_agents >= 22 {
+        (8, 9)
+    } else {
+        (0, 1.min(n_agents.saturating_sub(1)))
+    }
 }
 
 fn focused_agent_idx(app: Option<&App>, batch: &symworx_spatialsym::AgentTrajectories, idx: usize) -> usize {
@@ -189,7 +247,10 @@ pub fn render_spatial_plan(
     let dir = batch.pairwise_directional_phase_at(idx, &cfg).ok();
     let n = batch.num_agents();
     let mut edges: Vec<(f64, f64, f64, f64, Color)> = Vec::new();
-    if let Some(frame_pos) = batch.frame(idx) {
+    // All-pairs is readable for 3v3; 11v11 uses hull + local triangles instead.
+    if n <= 8
+        && let Some(frame_pos) = batch.frame(idx)
+    {
         let mut shown = 0usize;
         for i in 0..n {
             for j in (i + 1)..n {
@@ -224,6 +285,32 @@ pub fn render_spatial_plan(
                     edges.push((x1, y1, x2, y2, color));
                     shown += 1;
                 }
+            }
+        }
+    }
+
+    let mut hull_edges: Vec<(f64, f64, f64, f64, Color)> = Vec::new();
+    let mut tri_edges: Vec<(f64, f64, f64, f64, Color)> = Vec::new();
+    let mut hull_area = 0.0;
+    let mut n_tris = 0usize;
+    if let (Some(frame_pos), Some(g_att)) = (batch.frame(idx), possessing_group(app, batch, idx, focal)) {
+        let mut def_pts = Vec::new();
+        let mut att_pts = Vec::new();
+        for (i, p) in frame_pos.agent_positions.iter().enumerate() {
+            match group_of(batch, i) {
+                Some(g) if g == g_att => att_pts.push(*p),
+                Some(_) => def_pts.push(*p),
+                None => {}
+            }
+        }
+        let hull = symworx_spatialsym::convex_hull(&def_pts);
+        hull_area = symworx_spatialsym::polygon_area(&hull);
+        hull_edges = canvas_closed_edges(&hull, rotate, Color::LightMagenta);
+        if let Some(&fp) = focal.get(idx) {
+            let tris = symworx_spatialsym::local_triangles(&att_pts, fp, TRI_K, TRI_MAX_EDGE_M);
+            n_tris = tris.len();
+            for tri in &tris {
+                tri_edges.extend(canvas_closed_edges(tri, rotate, Color::White));
             }
         }
     }
@@ -305,7 +392,7 @@ pub fn render_spatial_plan(
 
     let canvas = Canvas::default()
         .block(Block::new().borders(Borders::TOP).title(format!(
-            " Plan  {field_label}  attack ↑  t={t:.2}s  A{focus} path/chord "
+            " Plan  {field_label}  attack ↑  t={t:.2}s  A{focus}  def-hull={hull_area:.0}m²  att-Δ={n_tris} "
         )))
         .x_bounds(x_bounds)
         .y_bounds(y_bounds)
@@ -382,6 +469,12 @@ pub fn render_spatial_plan(
                 });
             }
             ctx.layer();
+            for &(x1, y1, x2, y2, color) in &hull_edges {
+                ctx.draw(&CanvasLine { x1, y1, x2, y2, color });
+            }
+            for &(x1, y1, x2, y2, color) in &tri_edges {
+                ctx.draw(&CanvasLine { x1, y1, x2, y2, color });
+            }
             for &(x1, y1, x2, y2, color) in &edges {
                 ctx.draw(&CanvasLine { x1, y1, x2, y2, color });
             }
@@ -416,9 +509,10 @@ pub fn render_spatial_plan(
     frame.render_widget(canvas, area);
 }
 
-/// Effort in-phase series for A0–A1 with a playhead at the current frame.
+/// Effort in-phase series for a stable pair with a playhead at the current frame.
 pub fn render_pair_strip(frame: &mut Frame, batch: &symworx_spatialsym::AgentTrajectories, idx: usize, area: Rect) {
-    let title = " A0–A1 effort-in  (←→ frame) ";
+    let (ia, ib) = strip_pair_indices(batch.num_agents());
+    let title = format!(" A{ia}–A{ib} effort-in  (←→ frame) ");
     if batch.num_agents() < 2 {
         frame.render_widget(
             ratatui::widgets::Paragraph::new("Need ≥2 agents for pair strip")
@@ -428,7 +522,7 @@ pub fn render_pair_strip(frame: &mut Frame, batch: &symworx_spatialsym::AgentTra
         return;
     }
     let cfg = now_phase_cfg();
-    let series = batch.pairwise_effort_phase_series(0, 1, &cfg).unwrap_or_default();
+    let series = batch.pairwise_effort_phase_series(ia, ib, &cfg).unwrap_or_default();
     let mut data: Vec<(f64, f64)> = Vec::new();
     for (i, score) in series.iter().enumerate() {
         if let Some(y) = score
@@ -507,31 +601,56 @@ pub fn compact_agent_lines(app: &App, idx: usize, focal: &[symworx_spatialsym::P
     };
     let focus = focused_agent_idx(Some(app), batch, idx);
     let mut last_g: Option<Option<u32>> = None;
+    let mut hidden_neutral = 0usize;
+    const MAX_AGENT_LINES: usize = 14;
     for (i, p) in frame.agent_positions.iter().enumerate() {
         let g = group_of(batch, i);
         if last_g != Some(g) {
+            if hidden_neutral > 0 {
+                lines.push(format!("    +{hidden_neutral} Neutral"));
+                hidden_neutral = 0;
+            }
             lines.push(match g {
-                Some(0) => "  G0 attack (white)".into(),
-                Some(1) => "  G1 defend (magenta)".into(),
+                Some(0) => "  G0 (white triangles when in possession)".into(),
+                Some(1) => "  G1 (magenta hull when defending)".into(),
                 Some(n) => format!("  G{n}"),
                 None => "  agents".into(),
             });
             last_g = Some(g);
         }
-        let mark = if i == focus { "*" } else { " " };
-        if let Some(d) = app
+        let d = app
             .spatial_decisions
             .as_ref()
-            .and_then(|decs| decs.get(i).and_then(|row| row.get(idx)))
-        {
+            .and_then(|decs| decs.get(i).and_then(|row| row.get(idx)));
+        let is_carrier = d.is_some_and(|x| x.features.is_ball_carrier);
+        let action = d.map(|x| x.action);
+        let interesting =
+            is_carrier || i == focus || action.is_some_and(|a| a != symworx_spatialsym::SpaceAction::Neutral);
+        if !interesting {
+            hidden_neutral += 1;
+            continue;
+        }
+        if lines.len() >= MAX_AGENT_LINES {
+            hidden_neutral += 1;
+            continue;
+        }
+        let mark = if i == focus { "*" } else { " " };
+        if let Some(d) = d {
             let f = &d.features;
             let mut parts = vec![
                 format!("{mark}A{i}"),
                 format!("({:.0},{:.0})", p.x, p.y),
                 format!("CL:{:?}", d.action),
-                format!("spd={:.1}", f.speed),
-                format!("ball={}", if f.is_ball_carrier { "Y" } else { "N" }),
             ];
+            if let Some(gt) = app
+                .spatial_labels
+                .as_ref()
+                .and_then(|l| l.get(i).and_then(|row| row.get(idx)))
+            {
+                parts.push(format!("GT:{gt:?}"));
+            }
+            parts.push(format!("spd={:.1}", f.speed));
+            parts.push(format!("ball={}", if f.is_ball_carrier { "Y" } else { "N" }));
             if let Some(v) = f.nearest_opponent_dist {
                 parts.push(format!("near={v:.1}"));
             }
@@ -542,6 +661,9 @@ pub fn compact_agent_lines(app: &App, idx: usize, focal: &[symworx_spatialsym::P
         } else {
             lines.push(format!("  {mark}A{i}  ({:.0},{:.0})", p.x, p.y));
         }
+    }
+    if hidden_neutral > 0 {
+        lines.push(format!("    +{hidden_neutral} Neutral / hidden"));
     }
     lines
 }
