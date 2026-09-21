@@ -1,16 +1,16 @@
 # Day-to-day CI (see DEVELOPMENT.md).
 #
-# Day-to-day CI on develop only. stage/main are FF promotions of that SHA.
-# Tag / release.yml re-runs the full gate before publish.
-# workflow_dispatch re-runs this gate on a branch (checks only; no publish).
+# GitHub Flow: default branch is worx. develop stays in the filter until
+# GitHub renames develop → worx. Tag / release.yml re-runs the full gate
+# before publish. workflow_dispatch re-runs this gate (checks only; no publish).
 
 name: CI
 
 on:
   push:
-    branches: [develop]
+    branches: [worx, develop]
   pull_request:
-    branches: [develop]
+    branches: [worx, develop]
   workflow_dispatch:
 
 concurrency:

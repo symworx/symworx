@@ -53,11 +53,11 @@
 #   remote). If already published, cut the next higher version instead.
 #
 # Safe workflow:
-#   1. On release/vX.Y.Z (or a release-prep branch):
+#   1. On worx (or an optional release/vX.Y.Z freeze branch):
 #        ./scripts/bump-version.sh patch --dry-run
 #        ./scripts/bump-version.sh patch --changelog
 #   2. Fill in CHANGELOG.md notes
-#   3. git diff, commit, open PR → main
+#   3. git diff, commit, open PR → worx
 #   4. After merge: git tag -a vX.Y.Z && git push origin vX.Y.Z
 #
 # See DEVELOPMENT.md § Releasing.
