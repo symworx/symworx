@@ -1,6 +1,6 @@
-# Release validation + publish. SymWorx org standard
-# (GitHub Flow; default branch worx). See DEVELOPMENT.md for this
-# repository's jobs.
+# Release validation + publish.
+# SymWorx org standard (default branch `worx`).
+# See DEVELOPMENT.md for additional information.
 #
 # GitHub Flow:
 #   feature/* ──PR──► worx ──tag──► vX.Y.Z
@@ -11,8 +11,6 @@
 #   - pushes to release/**
 #   - tags v*
 #   - workflow_dispatch (checks only; does not publish)
-#
-# Push to worx is not a trigger: day-to-day CI already ran.
 #
 # Publish (crates.io, PyPI, GitHub Release) runs only on tags v*, after
 # validation succeeds. Create tags manually on worx.
