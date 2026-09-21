@@ -39,7 +39,7 @@ If you see something that needs fixing, feel free to open a PR directly—no nee
 
 ## Release path
 
-GitHub Flow. Feature PRs go to **`worx`**. A release is a version bump + changelog on `worx`, then a **manual** tag `vX.Y.Z` on that commit:
+This repository follows the **SymWorx org standard** (GitHub Flow). Feature PRs go to **`worx`**. A release is a version bump + changelog on `worx`, then a **manual** tag `vX.Y.Z` on that commit:
 
 ```text
 feature/*  ──PR──►  worx  ──tag──►  vX.Y.Z

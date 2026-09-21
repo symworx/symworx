@@ -1,4 +1,6 @@
-# Release validation + publish (see DEVELOPMENT.md).
+# Release validation + publish. SymWorx org standard
+# (GitHub Flow; default branch worx). See DEVELOPMENT.md for this
+# repository's jobs.
 #
 # GitHub Flow:
 #   feature/* ──PR──► worx ──tag──► vX.Y.Z

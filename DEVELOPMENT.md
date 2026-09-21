@@ -92,7 +92,7 @@ All crates currently share a single version defined in the root `[workspace.pack
 
 ## Branching
 
-GitHub Flow. The default branch is **`worx`**.
+**SymWorx org standard** (GitHub Flow). The default branch is **`worx`**.
 
 ```text
 feature/*  ──PR──►  worx  ──tag──►  vX.Y.Z

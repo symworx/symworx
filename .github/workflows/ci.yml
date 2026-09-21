@@ -1,8 +1,9 @@
-# Day-to-day CI (see DEVELOPMENT.md).
+# Day-to-day CI. SymWorx org standard (GitHub Flow; default branch worx).
+# See DEVELOPMENT.md for this repository's jobs.
 #
-# GitHub Flow: default branch is worx. develop stays in the filter until
-# GitHub renames develop → worx. Tag / release.yml re-runs the full gate
-# before publish. workflow_dispatch re-runs this gate (checks only; no publish).
+# develop stays in the filter until GitHub renames develop → worx.
+# Tag / release.yml re-runs the full gate before publish.
+# workflow_dispatch re-runs this gate (checks only; no publish).
 
 name: CI
 
