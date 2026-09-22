@@ -130,11 +130,11 @@ Low-level crates must be published before crates that depend on them:
 
 1. `symworx-error`
 2. `symworx-math`
-3. `symworx-io`, `symworx-stats`, `symworx-signal`, `symworx-dynamics`, `symworx-backend`, `symworx-embed`, `symworx-loadsym-db`, `symworx-dbsym`
+3. `symworx-io`, `symworx-stats`, `symworx-signal`, `symworx-dynamics`, `symworx-backend`, `symworx-embed`, `symworx-loadsym-db`, `symworx-dbsym`, `symworx-dbsym-tui`
 4. Grouping crates: `symworx-core`, `symworx-biosym`, `symworx-loadsym`, `symworx-spatialsym`, `symworx-tui`
 5. Python packages (via the corresponding `pyproject-*.toml` files): `symworx-biosym`, `symworx-loadsym`, `symworx-spatialsym`, `symworx-core`
 
-The `symview` binary (from `symworx-tui`) can be installed with `cargo install symworx-tui --bin symview` or distributed separately.
+The `symview` binary (from `symworx-tui`) can be installed with `cargo install symworx-tui --bin symview` or distributed separately. `symdb-view` (from `symworx-dbsym-tui`) is the read-only dbSym catalog browser: `cargo run -p symworx-dbsym-tui --bin symdb-view`.
 
 ### Versioning
 

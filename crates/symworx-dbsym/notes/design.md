@@ -40,6 +40,7 @@ node needs FIT + PPG in one file.
 ```
 
 SQLite default. Postgres dialect later, same dual-file pattern as LoadSym.
+`symdb-view` can already open a Postgres URL read-only; that does not add DDL here.
 
 **Study profile:** multi-subject; seed `exercise_science` (optional).
 
@@ -68,4 +69,8 @@ v1 ingest (next): CSV + file register. Excel stays convert-to-CSV.
 | Subject id | UUID; coded ids valid without name/DOB |
 | LoadSym | Separate schema this build |
 | Default deps | `thiserror` only; `rusqlite` behind `sqlite` |
-| Interface | Library + `symdb` CLI; no TUI key yet |
+| Interface | Library + `symdb` CLI. Read-only browse is `symworx-dbsym-tui` (`symdb-view`), not a `symview` tab |
+
+## Viewer
+
+`symdb-view` lists whatever tables are in the open database, including ones the study added to its schema copy. It does not hardcode the v1 names as the only view. It does not open `$VELOFIT_HOME` or draw LoadSym metrics. A shared result grid, if LoadSym ever needs one, would live in `symworx-dbsym-tui`. That extraction is not started.
