@@ -21,7 +21,7 @@ use csv::{
 };
 use symworx_error::SymError;
 
-/// Field separator for [`load_numeric_table_with`].
+/// Field separator for [`load_numeric_table`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TableDelimiter {
     /// `,`
@@ -61,13 +61,6 @@ pub struct TableReadOptions {
 
 impl Default for TableReadOptions {
     fn default() -> Self {
-        Self::csv_headers()
-    }
-}
-
-impl TableReadOptions {
-    /// Comma-separated file with a header row (legacy [`load_numeric_table`]).
-    pub fn csv_headers() -> Self {
         Self {
             delimiter: TableDelimiter::Comma,
             has_headers: true,
@@ -132,20 +125,12 @@ impl TableData {
     }
 }
 
-/// Load a headered comma CSV as a numeric table.
-///
-/// Non-numeric columns are skipped (TUI / StatsSym). Prefer
-/// [`load_numeric_table_with`] when the file has no header or is not comma
-/// separated.
-pub fn load_numeric_table(path: &str) -> Result<TableData, SymError> {
-    load_numeric_table_with(path, &TableReadOptions::csv_headers())
-}
-
-/// Load a numeric table with explicit delimiter / header / names.
+/// Load a numeric table. Default `opts`: comma, first row is headers.
 ///
 /// After names are known, every subsequent cell in a kept column is `f64`.
+/// Other columns are skipped (`skipped_headers`); they are not stored as text.
 /// Empty lines are skipped.
-pub fn load_numeric_table_with(path: &str, opts: &TableReadOptions) -> Result<TableData, SymError> {
+pub fn load_numeric_table(path: &str, opts: &TableReadOptions) -> Result<TableData, SymError> {
     let raw_rows = read_raw_rows(path, opts.delimiter)?;
     if raw_rows.is_empty() {
         return Err(SymError::UnsupportedFormat("table is empty".into()));
@@ -371,7 +356,7 @@ mod tests {
             writeln!(f, "1.0,2.0,a").unwrap();
             writeln!(f, "3.0,4.0,b").unwrap();
         }
-        let t = load_numeric_table(path.to_str().unwrap()).unwrap();
+        let t = load_numeric_table(path.to_str().unwrap(), &TableReadOptions::default()).unwrap();
         assert_eq!(t.n_cols(), 2);
         assert_eq!(t.n_rows(), 2);
         assert_eq!(t.headers, vec!["x", "y"]);
@@ -392,7 +377,7 @@ mod tests {
             has_headers: false,
             names: Some(vec!["t_s".into(), "rr_s".into()]),
         };
-        let t = load_numeric_table_with(path.to_str().unwrap(), &opts).unwrap();
+        let t = load_numeric_table(path.to_str().unwrap(), &opts).unwrap();
         assert_eq!(t.headers, vec!["t_s", "rr_s"]);
         assert_eq!(t.column("t_s").unwrap(), &[0.0, 1.304]);
         assert_eq!(t.column("rr_s").unwrap()[0], 1.304);
@@ -412,7 +397,7 @@ mod tests {
             has_headers: true,
             names: Some(vec!["rr".into(), "time".into()]),
         };
-        let t = load_numeric_table_with(path.to_str().unwrap(), &opts).unwrap();
+        let t = load_numeric_table(path.to_str().unwrap(), &opts).unwrap();
         assert_eq!(t.headers, vec!["rr", "time"]);
         assert_eq!(t.column("rr").unwrap(), &[0.8, 0.9]);
     }
@@ -429,7 +414,7 @@ mod tests {
             has_headers: false,
             names: Some(vec!["a".into(), "b".into()]),
         };
-        let err = load_numeric_table_with(path.to_str().unwrap(), &opts).unwrap_err();
+        let err = load_numeric_table(path.to_str().unwrap(), &opts).unwrap_err();
         match err {
             SymError::UnsupportedFormat(s) => assert!(s.contains("not numeric"), "{s}"),
             other => panic!("{other:?}"),

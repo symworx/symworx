@@ -120,7 +120,6 @@ pub use table::{
     TableDelimiter,
     TableReadOptions,
     load_numeric_table,
-    load_numeric_table_with,
     write_columns_csv,
     write_numeric_table,
 };

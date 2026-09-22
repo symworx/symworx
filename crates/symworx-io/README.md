@@ -10,19 +10,19 @@ parquet/polars stacks for on-disk I/O.
 Also provides personal-archive path helpers (`VELOFIT_HOME`, activity discovery)
 used by `symload` and the TUI.
 
-Numeric tables (`load_numeric_table` / `load_numeric_table_with`): comma, tab, or
-whitespace; first-row headers **or** explicit names. Subsequent cells in kept
-columns are `f64`. Example (no Polar-specific reader):
+Numeric tables (`load_numeric_table`): comma, tab, or whitespace; first-row
+headers **or** explicit names. Kept columns are `f64` only (other columns
+skipped). Example:
 
 ```rust
-use symworx_io::{TableDelimiter, TableReadOptions, load_numeric_table_with};
+use symworx_io::{TableDelimiter, TableReadOptions, load_numeric_table};
 
 let opts = TableReadOptions {
     delimiter: TableDelimiter::Whitespace,
     has_headers: false,
     names: Some(vec!["t_s".into(), "rr_s".into()]),
 };
-let table = load_numeric_table_with("series.txt", &opts)?;
+let table = load_numeric_table("series.txt", &opts)?;
 let t = table.column("t_s");
 ```
 

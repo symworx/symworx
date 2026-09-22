@@ -13,7 +13,7 @@ use symworx_core::io::{
     },
     gbd::GbdReader,
     load_any,
-    load_numeric_table_with,
+    load_numeric_table,
     read_ibi,
     table::{
         TableDelimiter,
@@ -271,7 +271,7 @@ pub fn py_load_numeric_table(
         has_headers,
         names,
     };
-    match load_numeric_table_with(path, &opts) {
+    match load_numeric_table(path, &opts) {
         Ok(t) => Ok(PyTableData {
             source: t.source,
             headers: t.headers,

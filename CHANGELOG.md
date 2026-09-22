@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `symworx-io`: `TableReadOptions` / `load_numeric_table_with` — comma, tab, or whitespace; header row or explicit column names; subsequent cells parsed as `f64`.
+- `symworx-io`: `load_numeric_table(path, opts)` — comma, tab, or whitespace; header row or explicit names; kept columns are `f64` (others skipped).
 - `symworx-math::tz`: `TimeZone` enum (`Utc`, `Est`, `Edt`, `UsEastern`, `FixedHours`) with `local_to_unix` / `unix_to_local`. `UsEastern` uses US DST rules since 2007 (EST/EDT).
 
 ### Changed
