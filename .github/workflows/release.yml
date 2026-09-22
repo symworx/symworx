@@ -182,6 +182,7 @@ jobs:
             -p symworx-embed \
             -p symworx-loadsym-db \
             -p symworx-dbsym \
+            -p symworx-dbsym-tui \
             -p symworx-core \
             -p symworx-biosym \
             -p symworx-loadsym \
@@ -236,6 +237,7 @@ jobs:
             -p symworx-embed
             -p symworx-loadsym-db
             -p symworx-dbsym
+            -p symworx-dbsym-tui
             -p symworx-core
             -p symworx-biosym
             -p symworx-loadsym
@@ -371,6 +373,7 @@ jobs:
           publish_one symworx-embed
           publish_one symworx-loadsym-db
           publish_one symworx-dbsym
+          publish_one symworx-dbsym-tui
           publish_one symworx-core
           publish_one symworx-biosym
           publish_one symworx-loadsym

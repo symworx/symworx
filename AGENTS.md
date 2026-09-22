@@ -15,6 +15,7 @@ Key crates:
 - `symworx-tui` — Terminal UI (`symview`) — current primary focus
 - `symworx-embed` — Host-side live streaming (PPG JSON protocol, serial/simulator sources, ring buffers); not firmware
 - `symworx-dbsym` — Per-study (or edge) research catalog: subjects, sessions, attributes, ingest audit, file provenance. Not the LoadSym personal ride catalog. Study-specific tables live in the installed project schema, not this crate.
+- `symworx-dbsym-tui` — Read-only `symdb-view` for a dbSym SQLite file or Postgres URL. Not a `symview` tab and not LoadSym.
 - `symworx-math` — Low-level numerical and sequence primitives (including the canonical home for series operations in `src/series.rs`)
 - `symworx-stats`, `symworx-backend`, Python bindings, etc.
 
@@ -103,6 +104,7 @@ cargo run -p symworx-tui --example generate_biosym_demo
 - LoadSym catalog schema (SQL only, no personal data): `crates/symworx-loadsym-db/` — operator guide `docs/loadsym-personal-starter.md` (schema v4 multi-source)
 - LoadSym catalog runtime + `symload` CLI: `crates/symworx-loadsym/src/catalog.rs`, `src/bin/symload.rs`
 - dbSym study/edge catalog: `crates/symworx-dbsym/` — template SQL `sql/schema.sqlite.sql`; after init the study owns `<project>/.dbsym/schema.sqlite.sql`. Design `notes/design.md`.
+- dbSym read-only browser: `crates/symworx-dbsym-tui/` (`symdb-view`). Do not fold this into `symview` or into LoadSym.
 - IMAP / Polar AccessLink fetch: `crates/symworx-io/src/email.rs`, `polar.rs` (feature-gated)
 
 **Important:** Successive difference logic and other general sequence operations belong in `symworx-math`, **not** in `symworx-stats`, `symworx-signal`, or domain crates like `symworx-biosym`. Re-use via `symworx-core::math::series` (or direct `symworx-math`).
@@ -134,6 +136,7 @@ The workspace strongly prefers **minimal, intentional dependencies**. Every new 
   - Do **not** put Embassy / `no_std` firmware or heavy LA/polars in this crate’s default build. Firmware stays out of tree.
   - Recording streams to disk still goes through **`symworx-io`**. Signal algorithms (peak detect, filters) stay in **`symworx-signal`**.
 - **`symworx-dbsym`** owns the per-study (or edge) catalog: subjects, EAV attributes, ingest audit, file provenance. SQLite file lives outside this repo. Do **not** merge with `symworx-loadsym-db`. Waveform bytes still go through **`symworx-io`**. Algorithms do not take a database connection.
+  - **`symworx-dbsym-tui`** is the read-only table browser (`symdb-view`: SQLite file or Postgres URL). It does not own the schema, does not write, and does not replace LoadSym screens in `symview`.
 - Data-driven dynamical operators (DMD, Koopman, SINDy) belong in **`symworx-dynamics`**, not stats.
   - DMD: `symworx-dynamics::dmd` (uses `symworx-stats` SVD via `linalg`).
   - EDMD / Koopman: `symworx-dynamics::koopman`.
@@ -172,6 +175,6 @@ RQA and RecurrencePlot are exposed via PyO3 in `bindings/python/`. Keep the Rust
 
 ---
 
-**Last updated:** `symworx-dbsym` scaffold (study/edge catalog, separate from LoadSym). Still covers the core I/O rule (`symworx-io` only for on-disk signal I/O), TUI input priority, and `ndarray-linalg` / polars hygiene.
+**Last updated:** `symworx-dbsym-tui` (`symdb-view`, read-only SQLite/Postgres browser; not a `symview` tab). Still covers the core I/O rule (`symworx-io` only for on-disk signal I/O), TUI input priority, and `ndarray-linalg` / polars hygiene.
 
 When you start a new session, read this file and respect the TUI input priority rules above.

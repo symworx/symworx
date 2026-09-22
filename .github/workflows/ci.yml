@@ -49,6 +49,7 @@ jobs:
             -p symworx-embed \
             -p symworx-loadsym-db \
             -p symworx-dbsym \
+            -p symworx-dbsym-tui \
             -p symworx-core \
             -p symworx-biosym \
             -p symworx-loadsym \
@@ -128,6 +129,7 @@ jobs:
             -p symworx-embed
             -p symworx-loadsym-db
             -p symworx-dbsym
+            -p symworx-dbsym-tui
             -p symworx-core
             -p symworx-biosym
             -p symworx-loadsym

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+### Added
+
+- `symworx-dbsym-tui` — `symdb-view`, a read-only browser for a dbSym SQLite file or a Postgres URL (`NoTls`). Not a LoadSym view and not a `symview` tab.
+
 ### Changed
 
 - GitHub Flow: default branch is `worx`; releases are tags on `worx` (no `stage` / `main` promotion).
