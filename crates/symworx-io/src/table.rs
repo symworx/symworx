@@ -3,11 +3,15 @@
 
 //! Tabular numeric data for StatsSym / general analysis (CSV first).
 //!
-//! Loads headered CSV into column-oriented storage. Non-numeric columns are
-//! recorded as skipped so the TUI can show names without forcing parse failure.
+//! Headers come from the first row **or** from an explicit name list. Every
+//! subsequent cell in a kept column is parsed as `f64`.
 
 use std::{
     fs::File,
+    io::{
+        BufRead,
+        BufReader,
+    },
     path::Path,
 };
 
@@ -16,6 +20,61 @@ use csv::{
     WriterBuilder,
 };
 use symworx_error::SymError;
+
+/// Field separator for [`load_numeric_table_with`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TableDelimiter {
+    /// `,`
+    Comma,
+    /// Tab
+    Tab,
+    /// Any run of ASCII whitespace (space-separated Polar-style dumps).
+    Whitespace,
+}
+
+impl TableDelimiter {
+    /// Parse `"comma"` / `","`, `"tab"`, `"whitespace"` / `"space"`.
+    pub fn parse(s: &str) -> Result<Self, SymError> {
+        match s.trim().to_ascii_lowercase().as_str() {
+            "comma" | "," | "csv" => Ok(Self::Comma),
+            "tab" | "\t" | "tsv" => Ok(Self::Tab),
+            "whitespace" | "space" | "ws" => Ok(Self::Whitespace),
+            other => Err(SymError::UnsupportedFormat(format!(
+                "unknown table delimiter {other:?}"
+            ))),
+        }
+    }
+}
+
+/// How to read a numeric table: delimiter, header row, optional column names.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TableReadOptions {
+    /// Field separator.
+    pub delimiter: TableDelimiter,
+    /// If true, the first non-empty row is headers.
+    pub has_headers: bool,
+    /// Explicit column names. Without a header row these label columns in
+    /// order (`c0`, `c1`, … if omitted). With a header row they select and
+    /// rename matching columns (case-insensitive).
+    pub names: Option<Vec<String>>,
+}
+
+impl Default for TableReadOptions {
+    fn default() -> Self {
+        Self::csv_headers()
+    }
+}
+
+impl TableReadOptions {
+    /// Comma-separated file with a header row (legacy [`load_numeric_table`]).
+    pub fn csv_headers() -> Self {
+        Self {
+            delimiter: TableDelimiter::Comma,
+            has_headers: true,
+            names: None,
+        }
+    }
+}
 
 /// In-memory numeric table (column-major) for statistical workflows.
 #[derive(Debug, Clone, Default)]
@@ -65,73 +124,97 @@ impl TableData {
     pub fn column_index(&self, name: &str) -> Option<usize> {
         self.headers.iter().position(|h| h.eq_ignore_ascii_case(name))
     }
+
+    /// Values for a named column.
+    pub fn column(&self, name: &str) -> Option<&[f64]> {
+        let i = self.column_index(name)?;
+        Some(self.columns[i].as_slice())
+    }
 }
 
-/// Load a headered CSV as a numeric table.
+/// Load a headered comma CSV as a numeric table.
 ///
-/// - First row = headers.
-/// - A column is kept if **every** non-empty cell parses as `f64`.
-/// - Empty cells become `0.0` only if the column is otherwise numeric (optional
-///   strict mode later). Currently empty → treat as non-numeric column skip.
-/// - Columns that fail numeric parse are listed in [`TableData::skipped_headers`].
+/// Non-numeric columns are skipped (TUI / StatsSym). Prefer
+/// [`load_numeric_table_with`] when the file has no header or is not comma
+/// separated.
 pub fn load_numeric_table(path: &str) -> Result<TableData, SymError> {
-    let mut rdr = ReaderBuilder::new()
-        .has_headers(true)
-        .flexible(true)
-        .from_path(path)
-        .map_err(|e| SymError::UnsupportedFormat(format!("csv open: {e}")))?;
+    load_numeric_table_with(path, &TableReadOptions::csv_headers())
+}
 
-    let headers: Vec<String> = rdr
-        .headers()
-        .map_err(|e| SymError::UnsupportedFormat(format!("csv headers: {e}")))?
-        .iter()
-        .map(|s| s.trim().to_string())
-        .collect();
-
-    if headers.is_empty() {
-        return Err(SymError::UnsupportedFormat("csv has no headers".into()));
+/// Load a numeric table with explicit delimiter / header / names.
+///
+/// After names are known, every subsequent cell in a kept column is `f64`.
+/// Empty lines are skipped.
+pub fn load_numeric_table_with(path: &str, opts: &TableReadOptions) -> Result<TableData, SymError> {
+    let raw_rows = read_raw_rows(path, opts.delimiter)?;
+    if raw_rows.is_empty() {
+        return Err(SymError::UnsupportedFormat("table is empty".into()));
     }
 
-    let ncols = headers.len();
-    let mut col_ok = vec![true; ncols];
-    let mut col_data: Vec<Vec<f64>> = vec![Vec::new(); ncols];
+    let (file_headers, data_rows) = if opts.has_headers {
+        let headers = raw_rows[0].clone();
+        (headers, &raw_rows[1..])
+    } else {
+        let n = raw_rows.iter().map(|r| r.len()).max().unwrap_or(0);
+        let headers = (0..n).map(|i| format!("c{i}")).collect();
+        (headers, raw_rows.as_slice())
+    };
 
-    for result in rdr.records() {
-        let rec = result.map_err(|e| SymError::UnsupportedFormat(format!("csv row: {e}")))?;
-        for c in 0..ncols {
-            if !col_ok[c] {
+    let (keep_idx, keep_names, skipped) = resolve_columns(&file_headers, opts.has_headers, opts.names.as_deref())?;
+    if keep_idx.is_empty() {
+        return Err(SymError::UnsupportedFormat("no columns selected".into()));
+    }
+
+    let require_numeric = opts.names.is_some();
+    let mut col_ok = vec![true; keep_idx.len()];
+    let mut col_data: Vec<Vec<f64>> = vec![Vec::new(); keep_idx.len()];
+
+    for (row_i, rec) in data_rows.iter().enumerate() {
+        for (k, &src) in keep_idx.iter().enumerate() {
+            if !col_ok[k] {
                 continue;
             }
-            let cell = rec.get(c).map(|s| s.trim()).unwrap_or("");
+            let cell = rec.get(src).map(|s| s.trim()).unwrap_or("");
             if cell.is_empty() {
-                // empty cell: fill 0.0 for numeric columns (common for sparse tables)
-                col_data[c].push(0.0);
+                if require_numeric {
+                    return Err(SymError::UnsupportedFormat(format!(
+                        "{path}:{} empty cell in column {}",
+                        row_i + 1,
+                        keep_names[k]
+                    )));
+                }
+                col_data[k].push(0.0);
             } else if let Ok(v) = cell.parse::<f64>() {
-                col_data[c].push(v);
+                col_data[k].push(v);
+            } else if require_numeric {
+                return Err(SymError::UnsupportedFormat(format!(
+                    "{path}:{} column {} is not numeric: {cell:?}",
+                    row_i + 1,
+                    keep_names[k]
+                )));
             } else {
-                col_ok[c] = false;
-                col_data[c].clear();
+                col_ok[k] = false;
+                col_data[k].clear();
             }
         }
     }
 
     let mut out_headers = Vec::new();
     let mut out_cols = Vec::new();
-    let mut skipped = Vec::new();
-    for c in 0..ncols {
-        if col_ok[c] && !col_data[c].is_empty() {
-            out_headers.push(headers[c].clone());
-            out_cols.push(std::mem::take(&mut col_data[c]));
+    let mut skipped_headers = skipped;
+    for k in 0..keep_idx.len() {
+        if col_ok[k] && !col_data[k].is_empty() {
+            out_headers.push(keep_names[k].clone());
+            out_cols.push(std::mem::take(&mut col_data[k]));
         } else {
-            skipped.push(headers[c].clone());
+            skipped_headers.push(keep_names[k].clone());
         }
     }
 
     if out_cols.is_empty() {
-        return Err(SymError::UnsupportedFormat("no numeric columns found in csv".into()));
+        return Err(SymError::UnsupportedFormat("no numeric columns found".into()));
     }
 
-    // Align lengths (ragged flexible CSV)
     let n = out_cols.iter().map(|c| c.len()).min().unwrap_or(0);
     for col in &mut out_cols {
         col.truncate(n);
@@ -141,8 +224,104 @@ pub fn load_numeric_table(path: &str) -> Result<TableData, SymError> {
         source: path.to_string(),
         headers: out_headers,
         columns: out_cols,
-        skipped_headers: skipped,
+        skipped_headers,
     })
+}
+
+fn resolve_columns(
+    file_headers: &[String],
+    has_headers: bool,
+    names: Option<&[String]>,
+) -> Result<(Vec<usize>, Vec<String>, Vec<String>), SymError> {
+    match names {
+        None => {
+            let idx: Vec<usize> = (0..file_headers.len()).collect();
+            Ok((idx, file_headers.to_vec(), Vec::new()))
+        }
+        Some(wanted) if !has_headers => {
+            if wanted.len() > file_headers.len() {
+                return Err(SymError::UnsupportedFormat(format!(
+                    "got {} columns, {} names",
+                    file_headers.len(),
+                    wanted.len()
+                )));
+            }
+            let idx: Vec<usize> = (0..wanted.len()).collect();
+            let skipped = file_headers[wanted.len()..].to_vec();
+            Ok((idx, wanted.to_vec(), skipped))
+        }
+        Some(wanted) => {
+            let mut idx = Vec::new();
+            let mut keep_names = Vec::new();
+            for name in wanted {
+                let pos = file_headers
+                    .iter()
+                    .position(|h| h.eq_ignore_ascii_case(name))
+                    .or_else(|| parse_c_index(name, file_headers.len()));
+                let Some(p) = pos else {
+                    return Err(SymError::UnsupportedFormat(format!(
+                        "column {name:?} not in headers {file_headers:?}"
+                    )));
+                };
+                idx.push(p);
+                keep_names.push(name.clone());
+            }
+            let skipped = file_headers
+                .iter()
+                .enumerate()
+                .filter(|(i, _)| !idx.contains(i))
+                .map(|(_, h)| h.clone())
+                .collect();
+            Ok((idx, keep_names, skipped))
+        }
+    }
+}
+
+fn parse_c_index(name: &str, ncols: usize) -> Option<usize> {
+    let rest = name.strip_prefix('c').or_else(|| name.strip_prefix('C'))?;
+    let i: usize = rest.parse().ok()?;
+    (i < ncols).then_some(i)
+}
+
+fn read_raw_rows(path: &str, delimiter: TableDelimiter) -> Result<Vec<Vec<String>>, SymError> {
+    match delimiter {
+        TableDelimiter::Whitespace => read_whitespace_rows(path),
+        TableDelimiter::Comma => read_csv_rows(path, b','),
+        TableDelimiter::Tab => read_csv_rows(path, b'\t'),
+    }
+}
+
+fn read_csv_rows(path: &str, delim: u8) -> Result<Vec<Vec<String>>, SymError> {
+    let mut rdr = ReaderBuilder::new()
+        .has_headers(false)
+        .flexible(true)
+        .delimiter(delim)
+        .from_path(path)
+        .map_err(|e| SymError::UnsupportedFormat(format!("csv open: {e}")))?;
+    let mut rows = Vec::new();
+    for result in rdr.records() {
+        let rec = result.map_err(|e| SymError::UnsupportedFormat(format!("csv row: {e}")))?;
+        let row: Vec<String> = rec.iter().map(|s| s.trim().to_string()).collect();
+        if row.iter().all(|s| s.is_empty()) {
+            continue;
+        }
+        rows.push(row);
+    }
+    Ok(rows)
+}
+
+fn read_whitespace_rows(path: &str) -> Result<Vec<Vec<String>>, SymError> {
+    let file = File::open(path).map_err(SymError::Io)?;
+    let mut rows = Vec::new();
+    for line in BufReader::new(file).lines() {
+        let line = line.map_err(SymError::Io)?;
+        let parts: Vec<String> = line.split_whitespace().map(str::to_string).collect();
+        if parts.is_empty() {
+            continue;
+        }
+        rows.push(parts);
+    }
+    Ok(rows)
 }
 
 /// Write a numeric table to CSV with headers.
@@ -187,11 +366,15 @@ mod tests {
 
     use super::*;
 
+    fn tmp(name: &str) -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!("symworx_table_{}_{}", std::process::id(), name));
+        let _ = std::fs::create_dir_all(&dir);
+        dir.join(name)
+    }
+
     #[test]
     fn load_simple_numeric_csv() {
-        let dir = std::env::temp_dir().join(format!("symworx_table_{}", std::process::id()));
-        let _ = std::fs::create_dir_all(&dir);
-        let path = dir.join("t.csv");
+        let path = tmp("t.csv");
         {
             let mut f = File::create(&path).unwrap();
             writeln!(f, "x,y,label").unwrap();
@@ -204,6 +387,62 @@ mod tests {
         assert_eq!(t.headers, vec!["x", "y"]);
         assert!(t.skipped_headers.iter().any(|h| h == "label"));
         assert_eq!(t.columns[0], vec![1.0, 3.0]);
-        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn load_whitespace_with_explicit_names() {
+        let path = tmp("rr.txt");
+        {
+            let mut f = File::create(&path).unwrap();
+            writeln!(f, "0.000 1.304").unwrap();
+            writeln!(f, "1.304 1.304").unwrap();
+        }
+        let opts = TableReadOptions {
+            delimiter: TableDelimiter::Whitespace,
+            has_headers: false,
+            names: Some(vec!["t_s".into(), "rr_s".into()]),
+        };
+        let t = load_numeric_table_with(path.to_str().unwrap(), &opts).unwrap();
+        assert_eq!(t.headers, vec!["t_s", "rr_s"]);
+        assert_eq!(t.column("t_s").unwrap(), &[0.0, 1.304]);
+        assert_eq!(t.column("rr_s").unwrap()[0], 1.304);
+    }
+
+    #[test]
+    fn headered_select_by_name() {
+        let path = tmp("sel.csv");
+        {
+            let mut f = File::create(&path).unwrap();
+            writeln!(f, "time,rr,flag").unwrap();
+            writeln!(f, "0,0.8,ok").unwrap();
+            writeln!(f, "1,0.9,ok").unwrap();
+        }
+        let opts = TableReadOptions {
+            delimiter: TableDelimiter::Comma,
+            has_headers: true,
+            names: Some(vec!["rr".into(), "time".into()]),
+        };
+        let t = load_numeric_table_with(path.to_str().unwrap(), &opts).unwrap();
+        assert_eq!(t.headers, vec!["rr", "time"]);
+        assert_eq!(t.column("rr").unwrap(), &[0.8, 0.9]);
+    }
+
+    #[test]
+    fn explicit_names_reject_non_numeric() {
+        let path = tmp("bad.csv");
+        {
+            let mut f = File::create(&path).unwrap();
+            writeln!(f, "1.0,x").unwrap();
+        }
+        let opts = TableReadOptions {
+            delimiter: TableDelimiter::Comma,
+            has_headers: false,
+            names: Some(vec!["a".into(), "b".into()]),
+        };
+        let err = load_numeric_table_with(path.to_str().unwrap(), &opts).unwrap_err();
+        match err {
+            SymError::UnsupportedFormat(s) => assert!(s.contains("not numeric"), "{s}"),
+            other => panic!("{other:?}"),
+        }
     }
 }

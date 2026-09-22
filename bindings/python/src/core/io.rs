@@ -13,7 +13,12 @@ use symworx_core::io::{
     },
     gbd::GbdReader,
     load_any,
+    load_numeric_table_with,
     read_ibi,
+    table::{
+        TableDelimiter,
+        TableReadOptions,
+    },
     traits::{
         SymReader,
         SymWriter,
@@ -217,6 +222,67 @@ pub fn py_fetch_srm_fit_attachments(user: &str, app_password: &str, target_dir: 
 }
 
 // ===========================================================
+// Numeric table (headers or explicit names)
+// ===========================================================
+
+#[pyclass(name = "TableData")]
+pub struct PyTableData {
+    #[pyo3(get)]
+    pub source: String,
+    #[pyo3(get)]
+    pub headers: Vec<String>,
+    #[pyo3(get)]
+    pub columns: Vec<Vec<f64>>,
+    #[pyo3(get)]
+    pub skipped_headers: Vec<String>,
+}
+
+#[pymethods]
+impl PyTableData {
+    fn n_rows(&self) -> usize {
+        self.columns.first().map(|c| c.len()).unwrap_or(0)
+    }
+
+    fn n_cols(&self) -> usize {
+        self.columns.len()
+    }
+
+    fn column(&self, name: &str) -> PyResult<Vec<f64>> {
+        let i = self
+            .headers
+            .iter()
+            .position(|h| h.eq_ignore_ascii_case(name))
+            .ok_or_else(|| PyIOError::new_err(format!("no column {name:?}")))?;
+        Ok(self.columns[i].clone())
+    }
+}
+
+#[pyfunction(name = "load_numeric_table")]
+#[pyo3(signature = (path, delimiter="comma", has_headers=true, names=None))]
+pub fn py_load_numeric_table(
+    path: &str,
+    delimiter: &str,
+    has_headers: bool,
+    names: Option<Vec<String>>,
+) -> PyResult<PyTableData> {
+    let delim = TableDelimiter::parse(delimiter).map_err(|e| PyIOError::new_err(e.to_string()))?;
+    let opts = TableReadOptions {
+        delimiter: delim,
+        has_headers,
+        names,
+    };
+    match load_numeric_table_with(path, &opts) {
+        Ok(t) => Ok(PyTableData {
+            source: t.source,
+            headers: t.headers,
+            columns: t.columns,
+            skipped_headers: t.skipped_headers,
+        }),
+        Err(e) => Err(PyErr::new::<PyIOError, _>(format!("load_numeric_table: {e}"))),
+    }
+}
+
+// ===========================================================
 // PYTHON REGISTER
 // ===========================================================
 
@@ -224,6 +290,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_read_gbd, m)?)?;
     m.add_function(wrap_pyfunction!(py_read_ibi, m)?)?;
     m.add_function(wrap_pyfunction!(py_load_activity, m)?)?;
+    m.add_function(wrap_pyfunction!(py_load_numeric_table, m)?)?;
     #[cfg(feature = "email")]
     m.add_function(wrap_pyfunction!(py_fetch_srm_fit_attachments, m)?)?;
 
@@ -233,6 +300,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyIbiRecord>()?;
     m.add_class::<PyParquetReader>()?;
     m.add_class::<PyActivityData>()?;
+    m.add_class::<PyTableData>()?;
 
     Ok(())
 }
