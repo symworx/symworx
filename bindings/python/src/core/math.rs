@@ -19,7 +19,6 @@ use symworx_core::math::{
     ewma,
     gamma_kernel,
     gamma_pdf,
-    is_us_eastern_dst,
     // Random
     random::sample,
     rolling_mean,
@@ -154,28 +153,6 @@ impl PyTimeZone {
     }
 
     #[staticmethod]
-    fn utc() -> Self {
-        Self { inner: TimeZone::Utc }
-    }
-
-    #[staticmethod]
-    fn est() -> Self {
-        Self { inner: TimeZone::Est }
-    }
-
-    #[staticmethod]
-    fn edt() -> Self {
-        Self { inner: TimeZone::Edt }
-    }
-
-    #[staticmethod]
-    fn us_eastern() -> Self {
-        Self {
-            inner: TimeZone::UsEastern,
-        }
-    }
-
-    #[staticmethod]
     fn fixed_hours(hours: i8) -> Self {
         Self {
             inner: TimeZone::FixedHours(hours),
@@ -183,16 +160,12 @@ impl PyTimeZone {
     }
 
     fn offset_hours(&self, year: i32, month: u8, day: u8, hour: u8, minute: u8, second: u8) -> PyResult<i8> {
-        let local = CivilTime::new(year, month, day, hour, minute, second)
-            .ok_or_else(|| PyValueError::new_err("invalid civil time"))?;
-        Ok(self.inner.offset_hours(local))
+        Ok(self.inner.offset_hours(civil(year, month, day, hour, minute, second)?))
     }
 
     fn local_to_unix(&self, year: i32, month: u8, day: u8, hour: u8, minute: u8, second: u8) -> PyResult<i64> {
-        let local = CivilTime::new(year, month, day, hour, minute, second)
-            .ok_or_else(|| PyValueError::new_err("invalid civil time"))?;
         self.inner
-            .local_to_unix(local)
+            .local_to_unix(civil(year, month, day, hour, minute, second)?)
             .ok_or_else(|| PyValueError::new_err("cannot convert local time"))
     }
 
@@ -209,11 +182,8 @@ impl PyTimeZone {
     }
 }
 
-#[pyfunction(name = "is_us_eastern_dst")]
-pub fn py_is_us_eastern_dst(year: i32, month: u8, day: u8, hour: u8, minute: u8, second: u8) -> PyResult<bool> {
-    let local = CivilTime::new(year, month, day, hour, minute, second)
-        .ok_or_else(|| PyValueError::new_err("invalid civil time"))?;
-    Ok(is_us_eastern_dst(local))
+fn civil(year: i32, month: u8, day: u8, hour: u8, minute: u8, second: u8) -> PyResult<CivilTime> {
+    CivilTime::new(year, month, day, hour, minute, second).ok_or_else(|| PyValueError::new_err("invalid civil time"))
 }
 
 // ==========================================================
@@ -242,7 +212,6 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_ewma, m)?)?;
     m.add_function(wrap_pyfunction!(py_rolling_mean, m)?)?;
     m.add_function(wrap_pyfunction!(py_rolling_std, m)?)?;
-    m.add_function(wrap_pyfunction!(py_is_us_eastern_dst, m)?)?;
     m.add_class::<PyTimeZone>()?;
 
     Ok(())

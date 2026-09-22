@@ -64,20 +64,14 @@ impl TimeZone {
     pub fn parse(s: &str) -> Result<Self, String> {
         let t = s.trim();
         match t.to_ascii_uppercase().as_str() {
-            "UTC" | "Z" | "GMT" => return Ok(Self::Utc),
-            "EST" => return Ok(Self::Est),
-            "EDT" => return Ok(Self::Edt),
-            "US/EASTERN" | "AMERICA/NEW_YORK" | "EASTERN" | "US-EASTERN" => return Ok(Self::UsEastern),
-            _ => {}
+            "UTC" | "Z" | "GMT" => Ok(Self::Utc),
+            "EST" => Ok(Self::Est),
+            "EDT" => Ok(Self::Edt),
+            "US/EASTERN" | "AMERICA/NEW_YORK" | "EASTERN" | "US-EASTERN" => Ok(Self::UsEastern),
+            _ => parse_fixed_hours(t)
+                .map(Self::FixedHours)
+                .ok_or_else(|| format!("unknown time zone {s:?}")),
         }
-        let lower = t.to_ascii_lowercase();
-        if lower == "us/eastern" || lower == "america/new_york" {
-            return Ok(Self::UsEastern);
-        }
-        if let Some(hours) = parse_fixed_hours(t) {
-            return Ok(Self::FixedHours(hours));
-        }
-        Err(format!("unknown time zone {s:?}"))
     }
 
     /// Offset from UTC in seconds (east positive) at this **local** civil time.
@@ -111,6 +105,10 @@ impl TimeZone {
     /// Convert UNIX seconds (UTC) to local civil time in this zone.
     pub fn unix_to_local(self, unix_s: i64) -> Option<CivilTime> {
         let off = match self {
+            Self::Utc => 0,
+            Self::Est => -5 * 3600,
+            Self::Edt => -4 * 3600,
+            Self::FixedHours(h) => i32::from(h) * 3600,
             Self::UsEastern => {
                 let (start, end) = us_eastern_dst_unix_bounds(unix_to_civil(unix_s)?.year)?;
                 if unix_s >= start && unix_s < end {
@@ -119,14 +117,6 @@ impl TimeZone {
                     -5 * 3600
                 }
             }
-            other => other.offset_s(CivilTime {
-                year: 1970,
-                month: 1,
-                day: 1,
-                hour: 0,
-                minute: 0,
-                second: 0,
-            }),
         };
         unix_to_civil(unix_s + i64::from(off))
     }

@@ -4,7 +4,7 @@
 from pathlib import Path
 
 from symworx.core.io import load_numeric_table
-from symworx.core.math import TimeZone, is_us_eastern_dst
+from symworx.core.math import TimeZone
 
 
 def test_whitespace_explicit_names(tmp_path: Path):
@@ -27,8 +27,7 @@ def test_headered_csv_skips_non_numeric(tmp_path: Path):
 def test_us_eastern_august_is_edt():
     tz = TimeZone.parse("US/Eastern")
     assert tz.offset_hours(2017, 8, 14, 8, 20, 0) == -4
-    assert is_us_eastern_dst(2017, 8, 14, 8, 20, 0)
-    assert TimeZone.est().offset_hours(2017, 8, 14, 8, 20, 0) == -5
+    assert TimeZone.parse("EST").offset_hours(2017, 8, 14, 8, 20, 0) == -5
     unix = tz.local_to_unix(2017, 8, 14, 8, 20, 0)
     y, mo, d, h, mi, s = tz.unix_to_local(unix)
     assert (y, mo, d, h, mi, s) == (2017, 8, 14, 8, 20, 0)

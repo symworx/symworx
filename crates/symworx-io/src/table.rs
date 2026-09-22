@@ -28,7 +28,7 @@ pub enum TableDelimiter {
     Comma,
     /// Tab
     Tab,
-    /// Any run of ASCII whitespace (space-separated Polar-style dumps).
+    /// Any run of ASCII whitespace.
     Whitespace,
 }
 
@@ -254,11 +254,7 @@ fn resolve_columns(
             let mut idx = Vec::new();
             let mut keep_names = Vec::new();
             for name in wanted {
-                let pos = file_headers
-                    .iter()
-                    .position(|h| h.eq_ignore_ascii_case(name))
-                    .or_else(|| parse_c_index(name, file_headers.len()));
-                let Some(p) = pos else {
+                let Some(p) = file_headers.iter().position(|h| h.eq_ignore_ascii_case(name)) else {
                     return Err(SymError::UnsupportedFormat(format!(
                         "column {name:?} not in headers {file_headers:?}"
                     )));
@@ -275,12 +271,6 @@ fn resolve_columns(
             Ok((idx, keep_names, skipped))
         }
     }
-}
-
-fn parse_c_index(name: &str, ncols: usize) -> Option<usize> {
-    let rest = name.strip_prefix('c').or_else(|| name.strip_prefix('C'))?;
-    let i: usize = rest.parse().ok()?;
-    (i < ncols).then_some(i)
 }
 
 fn read_raw_rows(path: &str, delimiter: TableDelimiter) -> Result<Vec<Vec<String>>, SymError> {
