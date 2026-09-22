@@ -4,6 +4,7 @@
 
 It is aimed at research, education, and portable inference (workstation today; embedded/mobile recipes for exported models).
 
+**Site:** [/SymWorx](https://symworx.github.io/symworx/)
 **License:** [Apache License 2.0](LICENSE)
 **Changelog:** [CHANGELOG.md](CHANGELOG.md)
 **Cite:** [Citation](#citation) · [`CITATION.cff`](CITATION.cff)
