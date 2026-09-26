@@ -145,7 +145,11 @@ pub fn load_numeric_table(path: &str, opts: &TableReadOptions) -> Result<TableDa
         (headers, raw_rows.as_slice())
     };
 
-    let (keep_idx, keep_names, skipped) = resolve_columns(&file_headers, opts.has_headers, opts.names.as_deref())?;
+    let ResolvedColumns {
+        index: keep_idx,
+        names: keep_names,
+        skipped,
+    } = resolve_columns(&file_headers, opts.has_headers, opts.names.as_deref())?;
     if keep_idx.is_empty() {
         return Err(SymError::UnsupportedFormat("no columns selected".into()));
     }
@@ -213,15 +217,25 @@ pub fn load_numeric_table(path: &str, opts: &TableReadOptions) -> Result<TableDa
     })
 }
 
+struct ResolvedColumns {
+    index: Vec<usize>,
+    names: Vec<String>,
+    skipped: Vec<String>,
+}
+
 fn resolve_columns(
     file_headers: &[String],
     has_headers: bool,
     names: Option<&[String]>,
-) -> Result<(Vec<usize>, Vec<String>, Vec<String>), SymError> {
+) -> Result<ResolvedColumns, SymError> {
     match names {
         None => {
-            let idx: Vec<usize> = (0..file_headers.len()).collect();
-            Ok((idx, file_headers.to_vec(), Vec::new()))
+            let index: Vec<usize> = (0..file_headers.len()).collect();
+            Ok(ResolvedColumns {
+                index,
+                names: file_headers.to_vec(),
+                skipped: Vec::new(),
+            })
         }
         Some(wanted) if !has_headers => {
             if wanted.len() > file_headers.len() {
@@ -231,12 +245,16 @@ fn resolve_columns(
                     wanted.len()
                 )));
             }
-            let idx: Vec<usize> = (0..wanted.len()).collect();
+            let index: Vec<usize> = (0..wanted.len()).collect();
             let skipped = file_headers[wanted.len()..].to_vec();
-            Ok((idx, wanted.to_vec(), skipped))
+            Ok(ResolvedColumns {
+                index,
+                names: wanted.to_vec(),
+                skipped,
+            })
         }
         Some(wanted) => {
-            let mut idx = Vec::new();
+            let mut index = Vec::new();
             let mut keep_names = Vec::new();
             for name in wanted {
                 let Some(p) = file_headers.iter().position(|h| h.eq_ignore_ascii_case(name)) else {
@@ -244,16 +262,20 @@ fn resolve_columns(
                         "column {name:?} not in headers {file_headers:?}"
                     )));
                 };
-                idx.push(p);
+                index.push(p);
                 keep_names.push(name.clone());
             }
             let skipped = file_headers
                 .iter()
                 .enumerate()
-                .filter(|(i, _)| !idx.contains(i))
+                .filter(|(i, _)| !index.contains(i))
                 .map(|(_, h)| h.clone())
                 .collect();
-            Ok((idx, keep_names, skipped))
+            Ok(ResolvedColumns {
+                index,
+                names: keep_names,
+                skipped,
+            })
         }
     }
 }

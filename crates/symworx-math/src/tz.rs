@@ -130,7 +130,7 @@ pub fn is_us_eastern_dst(local: CivilTime) -> bool {
     let m = local.month;
     let d = local.day;
     let h = local.hour;
-    if m < 3 || m > 11 {
+    if !(3..=11).contains(&m) {
         return false;
     }
     if m > 3 && m < 11 {
