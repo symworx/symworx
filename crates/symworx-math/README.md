@@ -14,6 +14,7 @@ stats, signal, dynamics, and domain crates without huge compile times.
 | `optimize` | Gradient descent, Armijo line search, finite-difference gradients, 1-D golden-section min/max |
 | `oscillators` | Van der Pol and related demo plants |
 | `distributions` / `special` / `random` | PDFs, Gamma/Beta, erf / standard normal CDF, RNG helpers |
+| `tz` | Civil time + `TimeZone` (`Utc`, `Est`, `Edt`, `UsEastern` DST, `FixedHours`) |
 
 ## Where this crate sits
 

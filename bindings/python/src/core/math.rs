@@ -8,6 +8,8 @@ use pyo3::{
 };
 use rand::rng;
 use symworx_core::math::{
+    CivilTime,
+    TimeZone,
     // Distributions
     beta_kernel,
     beta_pdf,
@@ -132,6 +134,59 @@ pub fn py_rolling_std(data: Vec<f64>, window: usize) -> Vec<f64> {
 }
 
 // ==========================================================
+// Time zones
+// ==========================================================
+
+#[pyclass(name = "TimeZone")]
+#[derive(Clone, Copy)]
+pub struct PyTimeZone {
+    inner: TimeZone,
+}
+
+#[pymethods]
+impl PyTimeZone {
+    #[staticmethod]
+    fn parse(name: &str) -> PyResult<Self> {
+        TimeZone::parse(name)
+            .map(|inner| Self { inner })
+            .map_err(PyValueError::new_err)
+    }
+
+    #[staticmethod]
+    fn fixed_hours(hours: i8) -> Self {
+        Self {
+            inner: TimeZone::FixedHours(hours),
+        }
+    }
+
+    fn offset_hours(&self, year: i32, month: u8, day: u8, hour: u8, minute: u8, second: u8) -> PyResult<i8> {
+        Ok(self.inner.offset_hours(civil(year, month, day, hour, minute, second)?))
+    }
+
+    fn local_to_unix(&self, year: i32, month: u8, day: u8, hour: u8, minute: u8, second: u8) -> PyResult<i64> {
+        self.inner
+            .local_to_unix(civil(year, month, day, hour, minute, second)?)
+            .ok_or_else(|| PyValueError::new_err("cannot convert local time"))
+    }
+
+    fn unix_to_local(&self, unix_s: i64) -> PyResult<(i32, u8, u8, u8, u8, u8)> {
+        let c = self
+            .inner
+            .unix_to_local(unix_s)
+            .ok_or_else(|| PyValueError::new_err("cannot convert unix time"))?;
+        Ok((c.year, c.month, c.day, c.hour, c.minute, c.second))
+    }
+
+    fn __repr__(&self) -> String {
+        format!("TimeZone({:?})", self.inner)
+    }
+}
+
+fn civil(year: i32, month: u8, day: u8, hour: u8, minute: u8, second: u8) -> PyResult<CivilTime> {
+    CivilTime::new(year, month, day, hour, minute, second).ok_or_else(|| PyValueError::new_err("invalid civil time"))
+}
+
+// ==========================================================
 // Python Registration
 // ==========================================================
 
@@ -157,6 +212,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_ewma, m)?)?;
     m.add_function(wrap_pyfunction!(py_rolling_mean, m)?)?;
     m.add_function(wrap_pyfunction!(py_rolling_std, m)?)?;
+    m.add_class::<PyTimeZone>()?;
 
     Ok(())
 }

@@ -10,7 +10,7 @@ use super::common::{
 use crate::app::App;
 
 pub fn try_load_stats_table(app: &mut App, path: &str) {
-    match symworx_io::load_numeric_table(path) {
+    match symworx_io::load_numeric_table(path, &symworx_io::TableReadOptions::default()) {
         Ok(t) => {
             let skipped = if t.skipped_headers.is_empty() {
                 String::new()
@@ -374,7 +374,7 @@ pub fn run_stats_generate(app: &mut App) {
                 app.status = format!("Write failed: {e}");
                 return;
             }
-            match symworx_io::load_numeric_table(&path) {
+            match symworx_io::load_numeric_table(&path, &symworx_io::TableReadOptions::default()) {
                 Ok(t) => {
                     app.stats_gen_notes = synth.notes.clone();
                     let src = format!("Generated {} → {path}", preset.label());
