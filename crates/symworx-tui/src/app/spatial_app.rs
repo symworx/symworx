@@ -13,7 +13,12 @@ use super::{
 };
 
 impl App {
+    /// Small 3v3 attacking-third drill (~3 s @ 10 Hz). Default `g` generate.
     pub fn seed_spatial_demo(&mut self) {
+        self.seed_spatial_3v3();
+    }
+
+    pub fn seed_spatial_3v3(&mut self) {
         let (batch, focal, events) = symworx_spatialsym::generate_3v3_attack();
         let n_agents = batch.num_agents();
         let n_steps = batch.num_times();
@@ -30,6 +35,21 @@ impl App {
             self.spatial_decisions = Some(decs);
         }
         self.spatial_events = events;
+    }
+
+    /// 11v11 sequence of play (3 min @ 1 Hz) with planted labels.
+    pub fn seed_spatial_11v11(&mut self) {
+        let seq = symworx_spatialsym::generate_11v11_play();
+        self.spatial_batch = Some(seq.batch);
+        self.spatial_focal = Some(seq.focal);
+        self.spatial_frame_idx = 0;
+        self.spatial_labels = Some(seq.labels);
+        // 1 Hz sequence: window / look-ahead must be ≥ dt or bearings collapse to one sample.
+        if let (Some(b), Some(foc)) = (&self.spatial_batch, &self.spatial_focal) {
+            let decs = b.classify_with_focal_and_params(foc, 2.0, 15.0, 2.0);
+            self.spatial_decisions = Some(decs);
+        }
+        self.spatial_events = seq.events;
     }
     pub fn load_spatial_csv(&mut self, path: &PathBuf) -> anyhow::Result<()> {
         use symworx_spatialsym::{

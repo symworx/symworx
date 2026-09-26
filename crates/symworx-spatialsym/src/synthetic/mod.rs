@@ -1,14 +1,29 @@
 // Copyright (c) 2026 Nathaniel T. Berry
 // Licensed under the Apache License, Version 2.0.
 
-//! Synthetic data generation for spatial analysis (options 1-3).
+//! Synthetic data generation for spatial analysis.
 //!
 //! 1. Parametric linear + simple curves
-//! 2. Using symworx-math primitives (random, series, oscillators where useful)
-//! 3. Event-driven scenario builder
+//! 2. Deterministic “noise” (sin/cos; no extra rand dep)
+//! 3. Event-driven scenario builder (3v3 skeleton)
+//! 4. Formation-seeking 11v11 sequence of play ([`play`])
 //!
 //! These produce data usable with AgentTrajectories, including groups and
 //! attacking directions for possession-aware classification.
+//!
+//! The 3v3 drill is a single action (~3 s at 10 Hz). Prefer [`generate_11v11_play`]
+//! when evaluating team shape, hull/triangle geometry, or decision labels over
+//! a sequence of play.
+
+mod play;
+
+pub use play::{
+    PLAY_11V11_DT_SEC,
+    PLAY_11V11_DURATION_SEC,
+    SyntheticSequence,
+    generate_11v11_play,
+    generate_11v11_play_with,
+};
 
 use crate::{
     geometry::{
@@ -129,6 +144,7 @@ pub fn generate_event_driven(
     // In real impl, maintain current velocity per agent, update on events.
     let mut current_targets: Vec<Option<Point2>> = vec![None; n_agents];
     let mut current_speeds: Vec<f64> = vec![0.0; n_agents];
+    let mut current_track: Vec<Option<usize>> = vec![None; n_agents];
     let mut ball_carrier: Option<usize> = Some(0); // assume start with 0
 
     for step in 1..n_steps {
@@ -146,11 +162,13 @@ pub fn generate_event_driven(
                 } if (start_time - t).abs() < dt / 2.0 => {
                     current_targets[*agent] = Some(*target);
                     current_speeds[*agent] = *speed;
+                    current_track[*agent] = None;
                 }
                 SpatialEvent::Pass { from, to, time } if (time - t).abs() < dt / 2.0 => {
                     ball_carrier = Some(*to);
                     current_targets[*from] = None;
                     current_speeds[*from] = 0.0;
+                    current_track[*from] = None;
                 }
                 SpatialEvent::Close {
                     agent,
@@ -158,8 +176,8 @@ pub fn generate_event_driven(
                     speed,
                     start_time,
                 } if (start_time - t).abs() < dt / 2.0 => {
-                    // Defender moves toward current pos of target
-                    current_targets[*agent] = Some(positions[*target][step - 1]);
+                    // Track the target each frame (not a frozen snapshot).
+                    current_track[*agent] = Some(*target);
                     current_speeds[*agent] = *speed;
                 }
                 _ => {}
@@ -170,6 +188,10 @@ pub fn generate_event_driven(
         for agent in 0..n_agents {
             let prev_pos = positions[agent][step - 1];
             let mut new_pos = prev_pos;
+
+            if let Some(tid) = current_track[agent] {
+                current_targets[agent] = Some(positions[tid][step - 1]);
+            }
 
             if let Some(target) = current_targets[agent] {
                 let to_target = target - prev_pos;
@@ -316,8 +338,10 @@ pub fn generate_3v3_attack() -> (AgentTrajectories, Vec<Point2>, Vec<(usize, Str
     (batch, focal, events)
 }
 
-/// Ground truth labels for testing the classifier against known scenarios.
-/// Returns per-agent expected SpaceAction over time.
+/// Toy per-agent label painter for named mini-scenarios.
+///
+/// Not tied to [`generate_3v3_attack`] or [`generate_11v11_play`] kinematics.
+/// Prefer the planted `labels` on [`SyntheticSequence`] for evaluation.
 pub fn generate_ground_truth(
     n_agents: usize,
     n_steps: usize,

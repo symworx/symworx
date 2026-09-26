@@ -11,7 +11,7 @@
 //! actions such as expansion, penetration, denial, and pressure.
 //!
 //! ## Key Concepts (idiomatic, reusable)
-//! - [`geometry`] — `Point2`, `Vec2`, bearing/angle, basic ops (Copy-friendly).
+//! - [`geometry`] — `Point2`, `Vec2`, bearing/angle, `convex_hull` / `local_triangles`.
 //! - [`trajectory`] — Time-stamped position sequences (single + batched).
 //! - [`kinematics`] — Velocity, speed, heading derivation using `symworx-math` series primitives.
 //! - [`metrics`] — Pairwise distances and single-agent path linearity (vs the start→end chord).
@@ -19,6 +19,7 @@
 //! - Space geometry primitives and decision classification are co-evolving (see high-priority work).
 //! - [`space`] — Play-area bounds plus sport-agnostic markings; [`soccer`] has IFAB Law 1 presets.
 //! - [`decision`] — `SpaceAction` enum and classifiers using historical + future windows.
+//! - [`synthetic`] — Parametric paths, 3v3 drill, and an 11v11 sequence of play with planted labels.
 //!
 //! ## Design Notes
 //! - All linear dimensions are in **meters** (per SymWorx convention).
@@ -51,11 +52,14 @@ pub mod trajectory;
 pub use decision::{
     AgentDecision,
     ClassifySpaceParams,
+    DecisionEval,
     DecisionFeatures,
     SpaceAction,
+    classifier_limitations,
     classify_single_trajectory,
     classify_single_trajectory_with_params,
     classify_space_actions,
+    evaluate_space_actions,
 };
 pub use error::{
     Result,
@@ -65,6 +69,9 @@ pub use geometry::{
     Point2,
     Vec2,
     bearing_between,
+    convex_hull,
+    local_triangles,
+    polygon_area,
 };
 pub use kinematics::{
     EffortEvent,
@@ -121,9 +128,14 @@ pub use space::{
     soccer,
 };
 pub use synthetic::{
+    PLAY_11V11_DT_SEC,
+    PLAY_11V11_DURATION_SEC,
     SpatialEvent,
+    SyntheticSequence,
     build_agent_trajectories,
     generate_3v3_attack,
+    generate_11v11_play,
+    generate_11v11_play_with,
     generate_curved_trajectory,
     generate_event_driven,
     generate_ground_truth,
