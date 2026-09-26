@@ -117,6 +117,8 @@ pub use paths::{
 use symworx_error::SymError;
 pub use table::{
     TableData,
+    TableDelimiter,
+    TableReadOptions,
     load_numeric_table,
     write_columns_csv,
     write_numeric_table,

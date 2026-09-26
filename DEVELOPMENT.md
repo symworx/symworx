@@ -90,22 +90,39 @@ This is a Cargo workspace. Low-level crates (e.g. `symworx-math`, `symworx-io`, 
 
 All crates currently share a single version defined in the root `[workspace.package]`.
 
+## Branching
+
+**SymWorx org standard** (GitHub Flow). The default branch is **`worx`**.
+
+```text
+feature/*  ──PR──►  worx  ──tag──►  vX.Y.Z
+                 day-to-day CI         publish on tag
+```
+
+| Branch | Role |
+|:-------|:-----|
+| `worx` | Default. Open feature PRs here. Keep it releasable. |
+| `feature/*` | Short-lived work |
+| `release/vX.Y.Z` | Optional freeze when a release needs soak or last-minute fixes |
+
+Do not force-push `worx`. Until GitHub finishes renaming `develop` → `worx`, the default is still named `develop` (same history); open PRs against the GitHub default.
+
 ## Releasing
 
-We follow a branch-based workflow with a single shared version across the workspace:
+Single shared version across the workspace. Feature work lands on `worx`. A release is a version bump on `worx`, then a tag:
 
-1. **Feature development** → merge to `develop` (day-to-day CI: fmt, clippy, lib tests, Python bindings).
-2. **Stage / early access** → fast-forward `develop` → `stage` when you want a promotion point. Day-to-day CI does **not** run on `stage` (avoids double runs on FF); beta tags can still be cut from here if needed.
-3. **Release preparation**:
-   - Create a branch `release/vX.Y.Z` from `stage` (or from `develop` if stage is not updated yet).
+1. **Feature development** → merge to `worx` (day-to-day CI: fmt, clippy, lib tests, Python bindings).
+2. **Version bump** (on `worx`, or on an optional `release/vX.Y.Z` freeze branch):
    - Bump the shared version in the root `Cargo.toml`: `[workspace.package] version` **and** every internal crate `version = "…"` under `[workspace.dependencies]` (must stay in lockstep). `./scripts/bump-version.sh` also updates `CITATION.cff` `version`. README citation blocks stay unversioned on purpose.
    - Set `date-released` in `CITATION.cff` to the release date.
-   - Update `CHANGELOG.md` (require a `## [X.Y.Z]` section for the release branch/tag).
-   - Open a PR from `release/vX.Y.Z` to `main`.
-4. **Release**:
-   - Merge the PR to `main` when release checks are green.
-   - **Manually** create and push the annotated tag `vX.Y.Z` on the merge commit (tags are not auto-created in CI).
+   - Update `CHANGELOG.md` (require a `## [X.Y.Z]` section for the tag / `release/*` branch).
+   - Open a PR into `worx` if the bump is not already on the default branch.
+3. **Release**:
+   - Merge when checks are green.
+   - **Manually** create and push the annotated tag `vX.Y.Z` on that commit (tags are not auto-created in CI).
    - Tag push runs [`.github/workflows/release.yml`](.github/workflows/release.yml): full validation, then **publish** to crates.io and create a **GitHub Release** page (only on `v*` tags after validation succeeds). **PyPI is paused** until `publish-python` is re-enabled.
+
+Pre-releases (`0.2.0-rc.1`) are tags on `worx` (GitHub pre-release). There is no `stage` soak branch.
 
 ### Publishing Order
 
@@ -123,17 +140,17 @@ The `symview` binary (from `symworx-tui`) can be installed with `cargo install s
 
 - We use a single version for the entire workspace.
 - Semantic Versioning (SemVer) is followed.
-- Pre-releases (e.g. `0.2.0-beta.1`, `0.2.0-rc.1`) may be tagged from `stage` or a release branch.
-- Final releases are cut from `release/vX.Y.Z` branches merged into `main`, then **manually** tagged.
+- Pre-releases (e.g. `0.2.0-beta.1`, `0.2.0-rc.1`) may be tagged from `worx` (or an optional release branch); mark them as prerelease in GitHub (`-` in the version).
+- Final releases are tagged on `worx`.
 
 ### CI / Release Automation Notes
 
-- Day-to-day [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on push/PR to **`develop`** only, plus **`workflow_dispatch`** (manual re-run of this gate; no publish). It formats library crates, clippy + unit-tests the **full science package set**, and builds Python bindings (`maturin develop` + pytest). The TUI smoke build is **disabled**; run `cargo build -p symworx-tui --bin symview` locally when touching the TUI.
+- Day-to-day [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on push/PR to **`worx`** and **`develop`** (cutover), plus **`workflow_dispatch`** (manual re-run of this gate; no publish). It formats library crates, clippy + unit-tests the **full science package set**, and builds Python bindings (`maturin develop` + pytest). The TUI smoke build is **disabled**; run `cargo build -p symworx-tui --bin symview` locally when touching the TUI.
 - The release path is gated by [`.github/workflows/release.yml`](.github/workflows/release.yml):
-  - **Validation** on PRs into `main`, pushes to `release/**`, tags `v*`, and `workflow_dispatch` (not on push to `main`; the PR already ran this workflow):
+  - **Validation** on PRs into `main` (legacy freeze PRs), pushes to `release/**`, tags `v*`, and `workflow_dispatch` (not on push to `worx`; day-to-day CI already ran):
     - Release metadata (workspace version matches `release/vX.Y.Z` / tag; `CHANGELOG.md` has a `## [X.Y.Z]` section).
-    - Same science fmt/clippy/test set as day-to-day CI, plus Python **wheel smoke** 
-    - **Tags are created manually** after a green merge to `main` (for now, we do not have an auto-tag job).
+    - Same science fmt/clippy/test set as day-to-day CI, plus Python **wheel smoke**
+    - **Tags are created manually** after a green merge to `worx` (for now, we do not have an auto-tag job).
   - **Publish** runs only on tag `v*` after validation succeeds:
     - crates.io
     - GitHub Release

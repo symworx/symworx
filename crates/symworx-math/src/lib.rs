@@ -15,6 +15,7 @@
 //! - [`circular`] — Wrap, circular mean, mean resultant length, circular SD.
 //! - [`optimize`] — Gradient descent and finite-difference gradients
 //!   (no LAPACK; used by nonlinear regression and teaching demos).
+//! - [`tz`] — Civil time and explicit time zones (EST/EDT, US Eastern DST).
 
 #![allow(unused_imports)]
 #![warn(missing_docs)]
@@ -44,6 +45,9 @@ pub mod circular;
 
 /// Series and sequential operations (differences, etc.).
 pub mod series;
+
+/// Civil time and explicit timezone offsets (EST/EDT, US Eastern DST, fixed hours).
+pub mod tz;
 
 // Re-exports
 pub use circular::{
@@ -92,6 +96,11 @@ pub use special::{
     ln_beta,
     ln_gamma,
     standard_normal_cdf,
+};
+pub use tz::{
+    CivilTime,
+    TimeZone,
+    is_us_eastern_dst,
 };
 
 // Namespaced re-exports (for convenience)

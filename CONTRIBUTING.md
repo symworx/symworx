@@ -32,18 +32,22 @@ If you see something that needs fixing, feel free to open a PR directly—no nee
 
 1. **Fork the repository** and clone your fork.
 2. Set up the development environment (see [DEVELOPMENT.md](DEVELOPMENT.md) for detailed instructions, including Rust toolchain, Python bindings via PyO3, and testing).
-3. Create a focused branch from **`develop`** (`git checkout -b feature/your-feature-name`).
+3. Create a focused branch from **`worx`** (`git checkout -b feature/your-feature-name`).
 4. Make your changes, ensuring they follow our coding standards and pass all tests.
 5. Commit your changes with clear, descriptive messages.
-6. Push your branch and open a Pull Request against **`develop`**.
+6. Push your branch and open a Pull Request against **`worx`**.
 
 ## Release path
 
-Do **not** open feature PRs straight to `main`. Releases follow:
+This repository follows the **SymWorx org standard** (GitHub Flow). Feature PRs go to **`worx`**. A release is a version bump + changelog on `worx`, then a **manual** tag `vX.Y.Z` on that commit:
 
-`develop` → `stage` (FF) → `release/vX.Y.Z` → PR to `main` → merge → **manual** tag `vX.Y.Z`
+```text
+feature/*  ──PR──►  worx  ──tag──►  vX.Y.Z
+```
 
-Details: [DEVELOPMENT.md](DEVELOPMENT.md#releasing).
+Optional freeze: `release/vX.Y.Z` off `worx`, PR it back, then tag.
+
+Until GitHub renames the default branch, PRs still target **`develop`** (same history). Details: [DEVELOPMENT.md](DEVELOPMENT.md#releasing).
 
 ## Submitting Pull Requests
 
