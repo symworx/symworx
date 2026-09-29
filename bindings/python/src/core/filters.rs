@@ -191,6 +191,13 @@ impl PyKalmanFilter {
         })
     }
 
+    /// Attach control matrix B (n_states × n_controls). Then `predict(control=u)`.
+    fn with_control(&mut self, b: Vec<Vec<f64>>) -> PyResult<()> {
+        let b = vec2_to_array2(b)?;
+        self.inner = self.inner.clone().with_control(b);
+        Ok(())
+    }
+
     /// Prediction step. control is optional (length must match control dimension if provided).
     #[pyo3(signature = (control=None))]
     fn predict(&mut self, control: Option<Vec<f64>>) {

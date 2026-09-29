@@ -21,6 +21,7 @@ use symworx_core::stats::{
     HistogramConfig,
     KdeConfig,
     KdeEstimate as RustKde,
+    LinearModel,
     LogisticConfig,
     LogisticModel as RustLogisticModel,
     MulticlassLogisticModel as RustMulticlassLogistic,
@@ -40,12 +41,13 @@ use symworx_core::stats::{
     correlation_matrix_from_vec,
     // distance
     euclidean,
+    // linreg
+    fit_polynomial_degrees,
     // naive bayes
     gaussian_nb as rust_gaussian_nb,
     hist_kde_with as rust_hist_kde_with,
     histogram as rust_histogram,
     kde_gaussian as rust_kde_gaussian,
-    // linreg
     l1,
     l2,
     // logistic
@@ -62,6 +64,7 @@ use symworx_core::stats::{
     nested_lr_chi2 as rust_nested_lr_chi2,
     pearson_correlation,
     percentile,
+    polynomial_design,
     r2 as rust_r2,
     residual_errors as rust_residual_errors,
     residuals as rust_residuals,
@@ -71,6 +74,7 @@ use symworx_core::stats::{
     roc_auc_ovr as rust_roc_auc_ovr,
     rss as rust_rss,
     sd_successive_differences,
+    sdnn,
     silverman_bandwidth as rust_silverman_bandwidth,
     // variability
     successive_differences,
@@ -505,6 +509,29 @@ pub fn py_l2(x: Vec<Vec<f64>>, y: Vec<f64>) -> PyResult<Vec<f64>> {
     Ok(beta.to_vec())
 }
 
+#[pyfunction(name = "fit_polynomial")]
+pub fn py_fit_polynomial(x: Vec<f64>, y: Vec<f64>, degree: usize) -> PyResult<Vec<f64>> {
+    let search = fit_polynomial_degrees(&x, &y, degree).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let fit = search.fits.iter().find(|f| f.degree == degree).ok_or_else(|| {
+        PyValueError::new_err(format!(
+            "degree {degree} not fitted (n={}, max_fitted={})",
+            search.n_samples, search.max_degree_fitted
+        ))
+    })?;
+    Ok(fit.coeffs_packed().to_vec())
+}
+
+#[pyfunction(name = "predict_polynomial")]
+pub fn py_predict_polynomial(coeffs: Vec<f64>, x: Vec<f64>) -> PyResult<Vec<f64>> {
+    if coeffs.is_empty() {
+        return Err(PyValueError::new_err("empty polynomial coefficients"));
+    }
+    let degree = coeffs.len() - 1;
+    let model = LinearModel::from_packed(&Array1::from(coeffs));
+    let design = polynomial_design(&x, degree);
+    Ok(model.predict(&design).to_vec())
+}
+
 // ==========================================================
 // Variabilty
 // ==========================================================
@@ -522,6 +549,15 @@ pub fn py_mean_successive_differences(data: Vec<f64>) -> f64 {
 #[pyfunction(name = "rmssd")]
 pub fn py_rmssd(data: Vec<f64>) -> f64 {
     rmssd(&data)
+}
+
+/// Population standard deviation of NN intervals (SDNN).
+///
+/// Same units as `data` (seconds when `data` is an RR series in seconds).
+/// Fewer than two samples returns NaN.
+#[pyfunction(name = "sdnn")]
+pub fn py_sdnn(data: Vec<f64>) -> f64 {
+    sdnn(&data)
 }
 
 #[pyfunction(name = "sd_successive_differences")]
@@ -1026,11 +1062,14 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // --- Linear regression --------------------------------
     m.add_function(wrap_pyfunction!(py_l1, m)?)?;
     m.add_function(wrap_pyfunction!(py_l2, m)?)?;
+    m.add_function(wrap_pyfunction!(py_fit_polynomial, m)?)?;
+    m.add_function(wrap_pyfunction!(py_predict_polynomial, m)?)?;
 
     // --- Variability --------------------------------------
     m.add_function(wrap_pyfunction!(py_successive_differences, m)?)?;
     m.add_function(wrap_pyfunction!(py_mean_successive_differences, m)?)?;
     m.add_function(wrap_pyfunction!(py_rmssd, m)?)?;
+    m.add_function(wrap_pyfunction!(py_sdnn, m)?)?;
     m.add_function(wrap_pyfunction!(py_sd_successive_differences, m)?)?;
 
     // --- Split / preprocess / logistic / metrics (0.1 ML surface) ---

@@ -357,6 +357,7 @@ pub use variability::{
     mean_successive_differences,
     rmssd,
     sd_successive_differences,
+    sdnn,
     successive_differences,
 };
 

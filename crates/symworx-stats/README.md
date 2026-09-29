@@ -10,7 +10,7 @@ Statistics and machine-learning algorithms. Dynamical operators and signal sensi
 
 | Module | Methods | `linalg` feature? |
 |:-------|:--------|:------------------|
-| `basic`, `variability` | mean, median, MAD, RMSSD, … | No |
+| `basic`, `variability` | mean, median, MAD, RMSSD, SDNN, … | No |
 | `correlation`, `autocorrelation` | Pearson, ACF | No |
 | `distance` | Euclidean, Manhattan, cosine, Chebyshev | No |
 | `error_metrics` | MAE/MSE/RMSE, R², bias, residuals, `RegressionReport` | No |

@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Python: `fit_polynomial` / `predict_polynomial`; `KalmanFilter.with_control`.
+- Python: `sdnn` (`symworx.core.statistics` and `symworx.biosym.physiology`) and `compute_hrv_metrics` / `HrvMetrics` (SDNN + RMSSD from RR intervals in seconds).
+
 ### Changed 
 
 ## [0.5.0] - 2026-09-28

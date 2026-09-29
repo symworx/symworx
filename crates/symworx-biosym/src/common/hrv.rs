@@ -1,10 +1,7 @@
 // Copyright (c) 2026 Nathaniel T. Berry
 // Licensed under the Apache License, Version 2.0.
 
-use symworx_core::stats::{
-    self,
-    variability,
-};
+use symworx_core::stats::variability;
 
 /// Heart rate variability metrics derived from RR intervals (seconds).
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -27,7 +24,7 @@ pub fn compute_hrv_metrics(rr_intervals_sec: &[f64]) -> HrvMetrics {
     };
 
     let sdnn_sec = if rr_intervals_sec.len() >= 2 {
-        let v = stats::std_dev(rr_intervals_sec);
+        let v = variability::sdnn(rr_intervals_sec);
         if v.is_finite() { Some(v) } else { None }
     } else {
         None
@@ -53,5 +50,23 @@ mod tests {
         let hrv = compute_hrv_metrics(&[0.9]);
         assert!(hrv.rmssd_sec.is_none());
         assert!(hrv.sdnn_sec.is_none());
+    }
+
+    #[test]
+    fn hrv_sdnn_is_population_std() {
+        let hrv = compute_hrv_metrics(&[1.0, 2.0, 3.0]);
+        // population std: mean=2, var=(1+0+1)/3 = 2/3; RMSSD diffs=[1,1]
+        let expected = (2.0_f64 / 3.0).sqrt();
+        let sdnn = hrv.sdnn_sec.expect("sdnn");
+        assert!((sdnn - expected).abs() < 1e-12);
+        assert!((hrv.rmssd_sec.expect("rmssd") - 1.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn hrv_sdnn_with_two_intervals() {
+        let hrv = compute_hrv_metrics(&[1.0, 3.0]);
+        assert!(hrv.rmssd_sec.is_none());
+        let sdnn = hrv.sdnn_sec.expect("sdnn");
+        assert!((sdnn - 1.0).abs() < 1e-12);
     }
 }

@@ -25,6 +25,8 @@ pub use series::successive_absolute_differences;
 pub use series::successive_differences;
 use symworx_math::series;
 
+use crate::basic::std_dev;
+
 /// Mean of successive absolute differences (MSD).
 ///
 /// Uses absolute diffs (conventional for HRV / gait variability). Empty → `NaN`.
@@ -34,6 +36,16 @@ pub fn mean_successive_differences(data: &[f64]) -> f64 {
         return f64::NAN;
     }
     diffs.iter().sum::<f64>() / diffs.len() as f64
+}
+
+/// Standard deviation of NN intervals (SDNN).
+///
+/// Population standard deviation (divide by *n*), identical to [`crate::basic::std_dev`].
+/// For an RR/NN series this is the time-domain SDNN, in the same units as `data`.
+///
+/// `len < 2` → `NaN`.
+pub fn sdnn(data: &[f64]) -> f64 {
+    std_dev(data)
 }
 
 /// Root mean square of successive differences (RMSSD).
@@ -90,6 +102,16 @@ mod tests {
         let data = [1.0, 2.0, 4.0];
         // diffs = [1,2], rms = sqrt( (1+4)/2 ) = sqrt(2.5)
         assert!((rmssd(&data) - 2.5f64.sqrt()).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_sdnn() {
+        let data = [1.0, 2.0, 3.0];
+        // population std: mean=2, var = (1+0+1)/3 = 2/3
+        assert!((sdnn(&data) - (2.0_f64 / 3.0).sqrt()).abs() < 1e-12);
+        assert_eq!(sdnn(&[1.0, 1.0, 1.0]), 0.0);
+        assert!(sdnn(&[1.0]).is_nan());
+        assert!(sdnn(&[]).is_nan());
     }
 
     #[test]

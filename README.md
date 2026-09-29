@@ -3,7 +3,7 @@
 **SymWorx** is an open-source computational stack for **biosignal analysis**, **training load**, **nonlinear dynamics**, and **classical ML** — with a **Rust kernel**, **Python bindings**, and a keyboard-driven TUI (`symview`).
 
 It is aimed at research, education, and portable inference (workstation today; embedded/mobile recipes for exported models).
-
+    
 **License:** [Apache License 2.0](LICENSE)
 **Changelog:** [CHANGELOG.md](CHANGELOG.md)
 **Cite:** [Citation](#citation) · [`CITATION.cff`](CITATION.cff)

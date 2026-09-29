@@ -13,6 +13,17 @@ def test_mean_median():
     assert st.median([1.0, 2.0, 3.0]) == 2.0
 
 
+def test_sdnn():
+    import math
+
+    rr = [1.0, 2.0, 3.0]
+    # population std: mean=2, var = 2/3
+    assert abs(st.sdnn(rr) - math.sqrt(2.0 / 3.0)) < 1e-12
+    assert st.sdnn([1.0, 1.0, 1.0]) == 0.0
+    assert math.isnan(st.sdnn([0.9]))
+    assert math.isnan(st.sdnn([]))
+
+
 def test_train_test_split_indices():
     plan = st.train_test_split(100, test_ratio=0.3, n_train_folds=5, shuffle=True, seed=7)
     assert plan.n == 100
