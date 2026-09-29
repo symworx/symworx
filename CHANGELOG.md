@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Spatial Visualize: 3v3 drill on `g`; 11v11 sequence on `a`; magenta defending hull and white local attacking triangles on 11v11; CL vs GT on compact agent lines
 - `symworx-io`: `load_numeric_table(path, opts)` — comma, tab, or whitespace; header row or explicit names; kept columns are `f64` (others skipped).
 - `symworx-math::tz`: `TimeZone` enum (`Utc`, `Est`, `Edt`, `UsEastern`, `FixedHours`) with `local_to_unix` / `unix_to_local`. `UsEastern` uses US DST rules since 2007 (EST/EDT).
+- `symworx-dbsym-tui` — `symdb-view`, a read-only browser for a dbSym SQLite file or a Postgres URL (`NoTls`). Not a LoadSym view and not a `symview` tab.
 
 ### Changed
 

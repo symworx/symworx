@@ -124,6 +124,7 @@ Much of the original work lived in Python; the long-term engine is **Rust**, wit
 | [symworx-loadsym](crates/symworx-loadsym/README.md) | ACWR, monotony, FIT, nutrition, `symload` (email/polar/sync) |
 | [symworx-loadsym-db](crates/symworx-loadsym-db/README.md) | SQL schema only (v4 multi-source; no personal data) |
 | [symworx-dbsym](crates/symworx-dbsym/README.md) | Per-study / edge catalog (schema v1 + init) |
+| [symworx-dbsym-tui](crates/symworx-dbsym-tui/README.md) | **`symdb-view`** read-only catalog browser (SQLite file or Postgres URL) |
 | [symworx-spatialsym](crates/symworx-spatialsym/README.md) | Trajectories, space metrics, decisions |
 | [symworx-embed](crates/symworx-embed/README.md) | Host PPG streaming / simulator |
 | [symworx-tui](crates/symworx-tui/README.md) | **`symview`** terminal UI |
