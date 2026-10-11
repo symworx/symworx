@@ -10,8 +10,8 @@ Statistics and machine-learning algorithms. Dynamical operators and signal sensi
 
 | Module | Methods | `linalg` feature? |
 |:-------|:--------|:------------------|
-| `basic`, `variability` | mean, median, MAD, RMSSD, SDNN, … | No |
-| `correlation`, `autocorrelation` | Pearson, ACF | No |
+| `basic`, `variability` | mean, median, MAD, RMSSD, … | No |
+| `correlation`, `autocorrelation` | Pearson, autocovariance `acf`, normalized `acf_normalized`, lagged `ccf` | No |
 | `distance` | Euclidean, Manhattan, cosine, Chebyshev | No |
 | `error_metrics` | MAE/MSE/RMSE, R², bias, residuals, `RegressionReport` | No |
 | `eval` | Shared `EvalPolicy` / `EvalReport` / `ModelEval` (flag + percentile) | No (`serde` opt-in for JSON) |
@@ -81,6 +81,17 @@ cargo run -p symworx-stats --example predictive_metrics_demo --features linalg
 ```
 
 ## Quick snippets
+
+### Lag curves
+
+```rust
+use symworx_stats::{acf_normalized, ccf};
+
+let r = acf_normalized(&gh, 6, false); // r[0] == 1
+let lag = ccf(&hrv, &delta_gh, 6);     // lag[d] = corr(hrv[t−d], Δgh[t])
+```
+
+`acf` remains the mean-centered autocovariance (lag 0 is the second moment, not 1).
 
 ### Predicted vs expected
 

@@ -19,12 +19,14 @@ use symworx_core::stats::{
     // density
     Histogram as RustHistogram,
     HistogramConfig,
+    KMeansConfig,
     KdeConfig,
     KdeEstimate as RustKde,
     LinearModel,
     LogisticConfig,
     LogisticModel as RustLogisticModel,
     MulticlassLogisticModel as RustMulticlassLogistic,
+    RelativeKMeansDiscretizer as RustRelativeKMeans,
     // split
     SplitConfig,
     // preprocess
@@ -33,10 +35,12 @@ use symworx_core::stats::{
     accuracy as rust_accuracy,
     // autocorrelation
     acf,
+    acf_normalized,
     // model selection (light surface)
     adjusted_r2 as rust_adjusted_r2,
     aic_gaussian as rust_aic_gaussian,
     bic_gaussian as rust_bic_gaussian,
+    ccf,
     classification_report as rust_classification_report,
     correlation_matrix_from_vec,
     // distance
@@ -114,6 +118,19 @@ fn array2_to_vec(a: &Array2<f64>) -> Vec<Vec<f64>> {
 #[pyfunction(name = "acf")]
 pub fn py_acf(signal: Vec<f64>, unbiased: bool) -> Vec<f64> {
     acf(&signal, unbiased)
+}
+
+/// Correlation-normalized autocovariance. Lag 0 is 1 when variance is positive.
+#[pyfunction(name = "acf_normalized")]
+#[pyo3(signature = (signal, max_lag, unbiased = false))]
+pub fn py_acf_normalized(signal: Vec<f64>, max_lag: usize, unbiased: bool) -> Vec<f64> {
+    acf_normalized(&signal, max_lag, unbiased)
+}
+
+/// `corr(driver[t−lag], target[t])` for `lag = 0..=max_lag`.
+#[pyfunction(name = "ccf")]
+pub fn py_ccf(driver: Vec<f64>, target: Vec<f64>, max_lag: usize) -> Vec<f64> {
+    ccf(&driver, &target, max_lag)
 }
 
 // ==========================================================
@@ -1014,12 +1031,84 @@ pub fn py_gaussian_nb(x: Vec<Vec<f64>>, y: Vec<usize>, var_smoothing: f64) -> Py
 }
 
 // ==========================================================
+// Relative k-means discretizer
+// ==========================================================
+
+/// Per-group range onto `[0, 1]`, then shared k-means cuts.
+///
+/// Bins mean “low / mid / high for this user”. Pass the integer labels
+/// to `transfer_entropy_discrete`. Do not concatenate users into one TE
+/// series.
+#[pyclass(name = "RelativeKMeansDiscretizer")]
+#[derive(Clone)]
+pub struct PyRelativeKMeansDiscretizer {
+    inner: RustRelativeKMeans,
+}
+
+#[pymethods]
+impl PyRelativeKMeansDiscretizer {
+    #[getter]
+    fn n_bins(&self) -> usize {
+        self.inner.n_bins
+    }
+
+    #[getter]
+    fn cuts(&self) -> Vec<f64> {
+        self.inner.cuts.clone()
+    }
+
+    #[getter]
+    fn centroids(&self) -> Vec<f64> {
+        self.inner.centroids.clone()
+    }
+
+    /// Bin samples from groups seen at fit time.
+    fn transform(&self, values: Vec<f64>, group_ids: Vec<usize>) -> PyResult<Vec<u8>> {
+        self.inner
+            .transform(&values, &group_ids)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// Held-out group: that series’ own range, shared cuts.
+    fn transform_new_group(&self, values: Vec<f64>) -> Vec<u8> {
+        self.inner.transform_new_group(&values)
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "RelativeKMeansDiscretizer(n_bins={}, cuts={:?})",
+            self.inner.n_bins, self.inner.cuts
+        )
+    }
+}
+
+/// Fit [`RelativeKMeansDiscretizer`] with min/max per group.
+#[pyfunction(name = "relative_kmeans_discretizer")]
+#[pyo3(signature = (values, group_ids, n_bins, seed = 42))]
+pub fn py_relative_kmeans_discretizer(
+    values: Vec<f64>,
+    group_ids: Vec<usize>,
+    n_bins: usize,
+    seed: u64,
+) -> PyResult<PyRelativeKMeansDiscretizer> {
+    let cfg = KMeansConfig {
+        seed,
+        ..KMeansConfig::default()
+    };
+    let inner =
+        RustRelativeKMeans::fit(&values, &group_ids, n_bins, &cfg).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    Ok(PyRelativeKMeansDiscretizer { inner })
+}
+
+// ==========================================================
 // PYTHON REGISTER
 // ==========================================================
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // --- Autocorrelation ----------------------------------
     m.add_function(wrap_pyfunction!(py_acf, m)?)?;
+    m.add_function(wrap_pyfunction!(py_acf_normalized, m)?)?;
+    m.add_function(wrap_pyfunction!(py_ccf, m)?)?;
 
     // --- Basic statistics ---------------------------------
     m.add_function(wrap_pyfunction!(py_mean, m)?)?;
@@ -1088,6 +1177,10 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_roc_auc, m)?)?;
     m.add_function(wrap_pyfunction!(py_roc_auc_ovr, m)?)?;
     m.add_function(wrap_pyfunction!(py_gaussian_nb, m)?)?;
+
+    // --- Relative k-means discretizer (TE bins) -----------
+    m.add_class::<PyRelativeKMeansDiscretizer>()?;
+    m.add_function(wrap_pyfunction!(py_relative_kmeans_discretizer, m)?)?;
 
     crate::core::mixed::register(m)?;
 

@@ -127,7 +127,11 @@ pub mod synthetic;
 pub mod variability;
 
 // Re-exports
-pub use autocorrelation::acf;
+pub use autocorrelation::{
+    acf,
+    acf_normalized,
+    ccf,
+};
 pub use basic::{
     cv,
     mad,
