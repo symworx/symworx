@@ -36,7 +36,22 @@ pub mod windows;
 /// Sparse / compressed sensing (ISTA, OMP, measurement matrices).
 pub mod sparse_sensing;
 
+/// Deconvolution (NNLS hormone path, Wiener).
+pub mod deconvolution;
+
 pub use decimate::min_max_decimate;
+pub use deconvolution::{
+    burst_indices,
+    convolve,
+    exponential_kernel,
+    gh_burst_deconvolve,
+    gh_deconvolve,
+    gh_deconvolve_sparse,
+    gh_reconvolve,
+    nonnegative_deconvolution,
+    nonnegative_deconvolution_on_support,
+    sparse_nonnegative_deconvolution,
+};
 pub use interpolation::{
     interp_cubic,
     interp_linear,

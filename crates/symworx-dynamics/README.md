@@ -8,7 +8,7 @@ This is a sub-crate to the [`symworx-core`](../symworx-core/README.md) crate.
 | Module | Methods |
 |:-------|:--------|
 | `embedding` | Delay coordinates (`edim`), false nearest neighbors (`fnn`) |
-| `entropy` | Sample entropy, multiscale entropy, discrete transfer entropy |
+| `entropy` | Sample entropy, multiscale entropy, histogram AMI / cross-AMI, discrete transfer entropy |
 | `rqa` | Recurrence plots, RQA / cRQA metrics |
 | `phase` | Relative phase, Kuramoto *R*, cluster-phase (Richardson et al. 2012); input is pre-extracted phases |
 | `dmd` | Dynamic Mode Decomposition (exact / SVD-based) |
@@ -41,7 +41,26 @@ Returns `0.0` for short, constant, or mismatched series. Do **not** concatenate 
 
 Shared relative cuts (per-user min/max, k-means on the pooled unit interval) live in `symworx-stats::discretize`. Example: `cargo run -p symworx-dynamics --example relative_te_demo`.
 
-No TUI or Python binding yet.
+No TUI or Python binding for transfer entropy yet.
+
+## Average mutual information
+
+Histogram mutual information in nats. Bins are equal-occupancy quantiles, the same partition family as discrete transfer entropy. Default `bins` is 8 (`DEFAULT_AMI_BINS`).
+
+```rust
+use symworx_dynamics::{ami, cross_ami, mutual_information, first_local_minimum, DEFAULT_AMI_BINS};
+
+let mi = mutual_information(&x, &y, DEFAULT_AMI_BINS);
+let auto = ami(&x, 6, DEFAULT_AMI_BINS);
+let tau = first_local_minimum(&auto);
+let lagged = cross_ami(&driver, &target, 6, DEFAULT_AMI_BINS);
+```
+
+`cross_ami` index `d` is `I(driver[t−d]; target[t])`, the same backward shift as a Kalman control lag. Those bins are fit once on each full series. `mutual_information` refits bins on the pairs it is given: build the complete pairs yourself and do not concatenate visits. Lag 0 of `ami` is the entropy of `x` under that partition. The embedding readout is the first local minimum.
+
+Short, constant, non-finite, or mismatched inputs return `0.0` or an empty curve. `bins` must be in `2..=255`.
+
+Python: `symworx.core.dynamics.ami`, `cross_ami`, `mutual_information`, `mutual_information_discrete`, `first_local_minimum`. `symworx.core.statistics` exposes `acf_normalized` and `ccf` with the same lag sign.
 
 ## DMD / EDMD
 
