@@ -38,7 +38,9 @@ maturin develop --manifest-path bindings/python/Cargo.toml --features email
 
 ## Statistics / classical ML (`symworx.core.statistics`)
 
-Rust `symworx-stats` surface exposed for 0.1 (in addition to basic mean/corr/l1/l2/HRV):
+Rust `symworx-stats` surface exposed for 0.1 (in addition to basic mean/corr/l1/l2/HRV).
+
+Time-domain HRV on an interval series: `sdnn` is the population SDNN (NaN if fewer than two samples), next to `rmssd`. The same `sdnn`, plus `compute_hrv_metrics` → `HrvMetrics` (`sdnn_sec`, `rmssd_sec`; `None` when the series is too short), is on `symworx.biosym.physiology`. Intervals are in seconds.
 
 | API | Role |
 |-----|------|
