@@ -8,7 +8,11 @@
 /// `h[n] = exp(-n * dt / tau)` for `n = 0..len`. `dt` and `tau` share a time unit
 /// (minutes or seconds). `tau` and `dt` must be positive.
 pub fn exponential_kernel(dt: f64, tau: f64, len: usize) -> Vec<f64> {
-    if len == 0 || !(dt > 0.0) || !(tau > 0.0) {
+    // NaN is not positive. `!(x > 0.0)` rejects it, and clippy forbids that spelling.
+    if len == 0
+        || dt.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)
+        || tau.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)
+    {
         return vec![];
     }
     (0..len).map(|i| (-(i as f64) * dt / tau).exp()).collect()

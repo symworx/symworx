@@ -41,7 +41,7 @@ Returns `0.0` for short, constant, or mismatched series. Do **not** concatenate 
 
 Shared relative cuts (per-user min/max, k-means on the pooled unit interval) live in `symworx-stats::discretize`. Example: `cargo run -p symworx-dynamics --example relative_te_demo`.
 
-No TUI or Python binding for transfer entropy yet.
+No TUI binding. Python: `symworx.core.dynamics.transfer_entropy`, `transfer_entropy_with`, `transfer_entropy_mv`, `transfer_entropy_conditional`, and `transfer_entropy_discrete*`.
 
 ## Average mutual information
 

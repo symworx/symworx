@@ -80,7 +80,8 @@ def test_transfer_entropy_coupled_source_predicts_target():
     te_yx = dyn.transfer_entropy_with(y, x, cfg)
     assert te_xy > 0.0
     assert te_xy > te_yx
-    assert dyn.transfer_entropy(x, y) == te_xy
+    # HashMap summation order can move the last bits.
+    assert abs(dyn.transfer_entropy(x, y) - te_xy) < 1e-12
 
 
 def test_transfer_entropy_short_or_constant_is_zero():
