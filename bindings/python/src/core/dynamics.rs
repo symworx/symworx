@@ -8,17 +8,31 @@ use pyo3::{
     wrap_pyfunction,
 };
 use symworx_core::dynamics::{
+    DEFAULT_AMI_BINS,
     DEFAULT_LMIN,
     DEFAULT_VMIN,
     RecurrencePlot,
     RqaResult,
+    TeConfig,
+    ami,
+    cross_ami,
     crqa,
     edim,
+    first_local_minimum,
     fnn,
     multiscale_entropy,
+    mutual_information,
+    mutual_information_discrete,
     rqa,
     rqa_from_trajectory,
     sample_entropy,
+    transfer_entropy,
+    transfer_entropy_conditional,
+    transfer_entropy_discrete,
+    transfer_entropy_discrete_conditional,
+    transfer_entropy_discrete_mv,
+    transfer_entropy_mv,
+    transfer_entropy_with,
 };
 
 // ================================================
@@ -241,6 +255,191 @@ pub fn py_multiscale_entropy(data: Vec<f64>, max_scale: usize, m: usize, r: f64)
     multiscale_entropy(&data, max_scale, m, r)
 }
 
+/// Histogram `I(x; y)` in nats. Default `bins` is [`DEFAULT_AMI_BINS`].
+#[pyfunction(name = "mutual_information")]
+#[pyo3(signature = (x, y, bins = 8))]
+pub fn py_mutual_information(x: Vec<f64>, y: Vec<f64>, bins: usize) -> f64 {
+    mutual_information(&x, &y, bins)
+}
+
+/// Histogram mutual information on integer labels in `0..=255`.
+#[pyfunction(name = "mutual_information_discrete")]
+pub fn py_mutual_information_discrete(x: Vec<u32>, y: Vec<u32>) -> PyResult<f64> {
+    let xb = labels_as_u8(&x)?;
+    let yb = labels_as_u8(&y)?;
+    Ok(mutual_information_discrete(&xb, &yb))
+}
+
+fn labels_as_u8(labels: &[u32]) -> PyResult<Vec<u8>> {
+    labels
+        .iter()
+        .map(|&v| {
+            u8::try_from(v).map_err(|_| pyo3::exceptions::PyValueError::new_err(format!("label {v} exceeds 255")))
+        })
+        .collect()
+}
+
+/// `I(x_t; x_{t+τ})` for `τ = 0..=max_lag`.
+#[pyfunction(name = "ami")]
+#[pyo3(signature = (x, max_lag, bins = 8))]
+pub fn py_ami(x: Vec<f64>, max_lag: usize, bins: usize) -> Vec<f64> {
+    ami(&x, max_lag, bins)
+}
+
+/// `I(driver[t−lag]; target[t])` for `lag = 0..=max_lag`.
+#[pyfunction(name = "cross_ami")]
+#[pyo3(signature = (driver, target, max_lag, bins = 8))]
+pub fn py_cross_ami(driver: Vec<f64>, target: Vec<f64>, max_lag: usize, bins: usize) -> Vec<f64> {
+    cross_ami(&driver, &target, max_lag, bins)
+}
+
+/// First interior lag where the curve has decreased and then levels or rises.
+#[pyfunction(name = "first_local_minimum")]
+pub fn py_first_local_minimum(values: Vec<f64>) -> Option<usize> {
+    first_local_minimum(&values)
+}
+
+// ================================================
+// Discrete transfer entropy
+// ================================================
+
+/// Histogram Schreiber TE config. Entropy in nats.
+///
+/// `k` / `l` are target / source history lengths. `tau` is the embedding
+/// delay. `horizon` is the prediction step. `bins` is the number of
+/// equal-occupancy quantile bins on the continuous path (ignored by
+/// `transfer_entropy_discrete*`).
+#[pyclass(name = "TeConfig")]
+#[derive(Clone, Debug)]
+pub struct PyTeConfig {
+    #[pyo3(get, set)]
+    pub k: usize,
+    #[pyo3(get, set)]
+    pub l: usize,
+    #[pyo3(get, set)]
+    pub tau: usize,
+    #[pyo3(get, set)]
+    pub horizon: usize,
+    #[pyo3(get, set)]
+    pub bins: usize,
+}
+
+#[pymethods]
+impl PyTeConfig {
+    #[new]
+    #[pyo3(signature = (k = 1, l = 1, tau = 1, horizon = 1, bins = 4))]
+    fn new(k: usize, l: usize, tau: usize, horizon: usize, bins: usize) -> Self {
+        Self {
+            k,
+            l,
+            tau,
+            horizon,
+            bins,
+        }
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "TeConfig(k={}, l={}, tau={}, horizon={}, bins={})",
+            self.k, self.l, self.tau, self.horizon, self.bins
+        )
+    }
+}
+
+impl From<&PyTeConfig> for TeConfig {
+    fn from(c: &PyTeConfig) -> Self {
+        Self {
+            k: c.k,
+            l: c.l,
+            tau: c.tau,
+            horizon: c.horizon,
+            bins: c.bins,
+        }
+    }
+}
+
+fn default_te_cfg() -> TeConfig {
+    TeConfig::default()
+}
+
+fn cfg_from(cfg: Option<&PyTeConfig>) -> TeConfig {
+    cfg.map(TeConfig::from).unwrap_or_else(default_te_cfg)
+}
+
+/// Bivariate `TE(source → target)` with default `TeConfig`.
+#[pyfunction(name = "transfer_entropy")]
+pub fn py_transfer_entropy(source: Vec<f64>, target: Vec<f64>) -> f64 {
+    transfer_entropy(&source, &target)
+}
+
+/// Bivariate TE with an explicit config.
+#[pyfunction(name = "transfer_entropy_with")]
+pub fn py_transfer_entropy_with(source: Vec<f64>, target: Vec<f64>, cfg: &PyTeConfig) -> f64 {
+    transfer_entropy_with(&source, &target, &TeConfig::from(cfg))
+}
+
+/// Joint multi-source `TE((X1,...,Xp) → Y)`.
+#[pyfunction(name = "transfer_entropy_mv")]
+#[pyo3(signature = (sources, target, cfg=None))]
+pub fn py_transfer_entropy_mv(sources: Vec<Vec<f64>>, target: Vec<f64>, cfg: Option<&PyTeConfig>) -> f64 {
+    let refs: Vec<&[f64]> = sources.iter().map(|s| s.as_slice()).collect();
+    transfer_entropy_mv(&refs, &target, &cfg_from(cfg))
+}
+
+/// Partial `TE((X1,...,Xp) → Y | Z1,...,Zq)`.
+#[pyfunction(name = "transfer_entropy_conditional")]
+#[pyo3(signature = (condition, sources, target, cfg=None))]
+pub fn py_transfer_entropy_conditional(
+    condition: Vec<Vec<f64>>,
+    sources: Vec<Vec<f64>>,
+    target: Vec<f64>,
+    cfg: Option<&PyTeConfig>,
+) -> f64 {
+    let z: Vec<&[f64]> = condition.iter().map(|s| s.as_slice()).collect();
+    let x: Vec<&[f64]> = sources.iter().map(|s| s.as_slice()).collect();
+    transfer_entropy_conditional(&z, &x, &target, &cfg_from(cfg))
+}
+
+/// Bivariate TE on already-discrete labels (`0..=255`).
+#[pyfunction(name = "transfer_entropy_discrete")]
+#[pyo3(signature = (source, target, cfg=None))]
+pub fn py_transfer_entropy_discrete(source: Vec<u32>, target: Vec<u32>, cfg: Option<&PyTeConfig>) -> PyResult<f64> {
+    let xs = labels_as_u8(&source)?;
+    let ys = labels_as_u8(&target)?;
+    Ok(transfer_entropy_discrete(&xs, &ys, &cfg_from(cfg)))
+}
+
+/// Joint multi-source TE on already-discrete labels.
+#[pyfunction(name = "transfer_entropy_discrete_mv")]
+#[pyo3(signature = (sources, target, cfg=None))]
+pub fn py_transfer_entropy_discrete_mv(
+    sources: Vec<Vec<u32>>,
+    target: Vec<u32>,
+    cfg: Option<&PyTeConfig>,
+) -> PyResult<f64> {
+    let owned: Vec<Vec<u8>> = sources.iter().map(|s| labels_as_u8(s)).collect::<PyResult<_>>()?;
+    let ys = labels_as_u8(&target)?;
+    let refs: Vec<&[u8]> = owned.iter().map(|s| s.as_slice()).collect();
+    Ok(transfer_entropy_discrete_mv(&refs, &ys, &cfg_from(cfg)))
+}
+
+/// Partial TE on already-discrete labels.
+#[pyfunction(name = "transfer_entropy_discrete_conditional")]
+#[pyo3(signature = (condition, sources, target, cfg=None))]
+pub fn py_transfer_entropy_discrete_conditional(
+    condition: Vec<Vec<u32>>,
+    sources: Vec<Vec<u32>>,
+    target: Vec<u32>,
+    cfg: Option<&PyTeConfig>,
+) -> PyResult<f64> {
+    let z_owned: Vec<Vec<u8>> = condition.iter().map(|s| labels_as_u8(s)).collect::<PyResult<_>>()?;
+    let x_owned: Vec<Vec<u8>> = sources.iter().map(|s| labels_as_u8(s)).collect::<PyResult<_>>()?;
+    let ys = labels_as_u8(&target)?;
+    let z: Vec<&[u8]> = z_owned.iter().map(|s| s.as_slice()).collect();
+    let x: Vec<&[u8]> = x_owned.iter().map(|s| s.as_slice()).collect();
+    Ok(transfer_entropy_discrete_conditional(&z, &x, &ys, &cfg_from(cfg)))
+}
+
 // ================================================
 // Python register
 // ================================================
@@ -255,10 +454,26 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_rqa_from_trajectory, m)?)?;
     m.add_function(wrap_pyfunction!(py_crqa, m)?)?;
     m.add_function(wrap_pyfunction!(py_multiscale_entropy, m)?)?;
+    m.add_function(wrap_pyfunction!(py_mutual_information, m)?)?;
+    m.add_function(wrap_pyfunction!(py_mutual_information_discrete, m)?)?;
+    m.add_function(wrap_pyfunction!(py_ami, m)?)?;
+    m.add_function(wrap_pyfunction!(py_cross_ami, m)?)?;
+    m.add_function(wrap_pyfunction!(py_first_local_minimum, m)?)?;
+    m.add("DEFAULT_AMI_BINS", DEFAULT_AMI_BINS)?;
     m.add_class::<PyRqaResult>()?;
 
     // RecurrencePlot (full object with matrix)
     m.add_class::<PyRecurrencePlot>()?;
+
+    // Discrete transfer entropy
+    m.add_class::<PyTeConfig>()?;
+    m.add_function(wrap_pyfunction!(py_transfer_entropy, m)?)?;
+    m.add_function(wrap_pyfunction!(py_transfer_entropy_with, m)?)?;
+    m.add_function(wrap_pyfunction!(py_transfer_entropy_mv, m)?)?;
+    m.add_function(wrap_pyfunction!(py_transfer_entropy_conditional, m)?)?;
+    m.add_function(wrap_pyfunction!(py_transfer_entropy_discrete, m)?)?;
+    m.add_function(wrap_pyfunction!(py_transfer_entropy_discrete_mv, m)?)?;
+    m.add_function(wrap_pyfunction!(py_transfer_entropy_discrete_conditional, m)?)?;
 
     // Useful constants so Python users can match Rust defaults
     m.add("DEFAULT_LMIN", DEFAULT_LMIN)?;
