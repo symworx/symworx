@@ -17,7 +17,7 @@ The `physiology` module provides generation + analysis for PPG and respiration (
 - **Common** (`physiology::common`): `PhysiologySignal`, `PhysiologySummary` (mean/std/dur), `IntervalSeries` (peaks, intervals, rates; optional alternating-phase insp/exp split), `HrvMetrics` (SDNN + RMSSD), `PhysiologyProcessingParams` (bandpass via `symworx-signal` biquads + peak overrides), peak detection via `symworx_core::PeakFinderBuilder`.
 - **PPG**: `PpgAnalysis` (summary + intervals + mean HR bpm + HRV). `analyze_ppg*` / `detect_ppg_peaks*` / `summarize_ppg`. Quality presets (`PPGSignalQuality`: Reference/High/Moderate/Poor) drive bandpass (0.5–5 Hz) + tuned peak thresholds for noisy simulated data. Hardcoded default fs 250 Hz for signal wrapper.
 - **Respiration**: `RespAnalysis` (summary + intervals + mean BRPM + insp/exp splits from alt phases + `RespPhasePeaks` from signed flow local maxima + phase-specific intervals). `analyze_respiration*` etc. Bandpass 0.1–0.5 Hz; default fs 50 Hz on flow channel. Volume field present but analysis focuses on flow.
-- **Bindings**: Full `PpgAnalysis` / `RespAnalysis` (flattened for py) + analyze fns exposed.
+- **Bindings**: Full `PpgAnalysis` / `RespAnalysis` (flattened for py) + analyze fns exposed. `physiology.sdnn` and `physiology.compute_hrv_metrics` (`HrvMetrics.sdnn_sec`, `rmssd_sec`) take an RR series in seconds.
 
 See `physiology::{ppg,respiration}::analysis` and tests for details. Heavily reuses core crates; no direct scipy equivalent.
 

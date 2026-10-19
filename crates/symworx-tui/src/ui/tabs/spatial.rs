@@ -26,7 +26,8 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
              Close help:  Esc  or  Alt-?\n\n\
              \n\
              DATA\n\n\
-               g                   generate synthetic demo\n\
+               g                   generate 3v3 drill (small, ~3 s @ 10 Hz)\n\
+               a                   generate 11v11 sequence (3 min @ 1 Hz)\n\
                i                   import menu (CSV under ./data)\n\
                v  /  Esc           leave import menu → visualize\n\n\
              \n\
@@ -40,10 +41,12 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
                b                   infer ball carrier (current frame)\n\
                e                   export CSV + JSON + meta → data/\n\
                l                   refresh status / legend\n\n\
-             Panels: plan view · A0–A1 effort strip · compact agents · events · summaries.\n\
-             Layout: stats left, field right (attack +x is up). 3v3 on IFAB 105×68 m + boxes.\n\
-             Teams: G0 white (attack ↑), G1 magenta. Pair edges: cyan=in yellow=opp red=out.\n\
-             Focused agent (on-ball, else A0): blue path, green start→now chord (matches eff/rms).\n\n\
+             Panels: plan view · pair effort strip · compact agents · events · summaries.\n\
+             Layout: stats left, field right (attack +x is up). IFAB 105×68 m. `g`=3v3, `a`=11v11.\n\
+             Shape (11v11): defending team = magenta convex hull; possessing team = local white triangles.\n\
+             Teams: G0 white, G1 magenta. 3v3 pair edges (cyan/yellow/red) on small batches.\n\
+             Focused agent (on-ball, else A0): blue path, green start→now chord.\n\
+             CL = classifier, GT = planted script label. Far off-ball agents stay Neutral.\n\n\
              \n\
              GLOBAL\n\n\
                Ctrl+H              Home\n\
@@ -93,11 +96,11 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
             "".into()
         };
         format!(
-            "Frame: ←→ n/p    g:regen  i:import  b:ball{}   | conf spd fwd ball near free dfoc v2f",
+            "Frame: ←→ n/p    g:3v3  a:11v11  i:import  b:ball{}   | conf spd fwd ball near free dfoc v2f",
             ev_hint
         )
     } else {
-        "No data — press g to generate synthetic demo, or i to import CSV from ./data/.".to_string()
+        "No data — press g for 3v3, a for 11v11, or i to import CSV from ./data/.".to_string()
     };
     let nav = Paragraph::new(nav_text).style(Style::default().fg(Color::DarkGray));
     frame.render_widget(nav, chunks[1]);
@@ -141,7 +144,7 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
                 Paragraph::new(ev_lines.join("\n")).block(Block::new().borders(Borders::TOP).title(" Event Tags "));
             frame.render_widget(events_p, left[2]);
 
-            let sum_lines = format_spatial_summaries(batch, focal, idx);
+            let sum_lines = format_spatial_summaries(app, batch, focal, idx);
             let sum_p =
                 Paragraph::new(sum_lines.join("\n")).block(Block::new().borders(Borders::TOP).title(" Summary Data "));
             frame.render_widget(sum_p, left[3]);
@@ -154,7 +157,8 @@ pub fn render_spatial_tab(frame: &mut Frame, app: &App, area: Rect) {
     } else {
         let help = Paragraph::new(
             "No spatial data loaded.\n\n\
-             • g  — generate 3v3 demo (G0 attack ↑, G1 defend)\n\
+             • g  — generate 3v3 drill (small, ~3 s @ 10 Hz)\n\
+             • a  — generate 11v11 sequence (3 min @ 1 Hz; G0 attack ↑)\n\
              • i  — import CSV from ./data/ (time,agent_id,x,y)\n\
              • M-? — full help\n\n\
              After data loads: ←→ n/p frames, < > events, b ball carrier, e export.",
@@ -215,7 +219,8 @@ fn render_spatial_import_menu(frame: &mut Frame, app: &App, area: Rect) {
     let import_text = format!(
         "Spatial Import / Generate\n\n\
          Keys:\n\
-           1 / g     Generate 3v3 demo (G0 attack ↑, G1 defend)\n\
+           1 / g     Generate 3v3 drill (small, ~3 s @ 10 Hz)\n\
+           a         Generate 11v11 sequence (3 min @ 1 Hz)\n\
            2 / Enter Load first suitable .csv from ./data/\n\
            Esc / v   Back to visualize\n\n\
          Discovered in ./data/:\n{}\n\n\
@@ -233,6 +238,7 @@ fn render_spatial_import_menu(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 fn format_spatial_summaries(
+    app: &App,
     batch: &symworx_spatialsym::AgentTrajectories,
     focal: &[symworx_spatialsym::Point2],
     frame_idx: usize,
@@ -240,6 +246,14 @@ fn format_spatial_summaries(
     const THRESH: f64 = 0.8;
     let summaries = batch.per_player_summaries(THRESH, 1.0, Some(focal));
     let mut lines = Vec::new();
+
+    if let (Some(gt), Some(decs)) = (&app.spatial_labels, &app.spatial_decisions) {
+        let ev = symworx_spatialsym::evaluate_space_actions(gt, decs);
+        lines.push(format!(
+            "Planted vs CL: acc={:.2}  {}/{} cells  (see synthetic_decisions example)",
+            ev.accuracy, ev.matches, ev.compared
+        ));
+    }
 
     let groups = batch.per_group_summaries(THRESH, 1.0, Some(focal));
     if groups.is_empty() {
@@ -276,7 +290,9 @@ fn format_spatial_summaries(
         ..symworx_spatialsym::PhaseWindow::default()
     };
     let groups_idx = batch.groups.as_deref();
-    if let Ok(effort) = batch.pairwise_effort_phase(&cfg) {
+    if batch.num_agents() <= 8
+        && let Ok(effort) = batch.pairwise_effort_phase(&cfg)
+    {
         let dir = batch.pairwise_directional_phase(&cfg).ok();
         let n = batch.num_agents();
         let mut within = Vec::new();
@@ -306,10 +322,24 @@ fn format_spatial_summaries(
             }
         }
         if !within.is_empty() {
-            lines.push(format!("  Pairs (within)  {}", within.join("  ")));
+            let extra = within.len().saturating_sub(4);
+            let shown = within.into_iter().take(4).collect::<Vec<_>>().join("  ");
+            let tail = if extra > 0 {
+                format!("  +{extra}")
+            } else {
+                String::new()
+            };
+            lines.push(format!("  Pairs (within)  {shown}{tail}"));
         }
         if !versus.is_empty() {
-            lines.push(format!("  Pairs (versus)  {}", versus.join("  ")));
+            let extra = versus.len().saturating_sub(4);
+            let shown = versus.into_iter().take(4).collect::<Vec<_>>().join("  ");
+            let tail = if extra > 0 {
+                format!("  +{extra}")
+            } else {
+                String::new()
+            };
+            lines.push(format!("  Pairs (versus)  {shown}{tail}"));
         }
     }
 
@@ -360,7 +390,8 @@ fn format_spatial_summaries(
     }
 
     lines.push("Players (full trajectory):".into());
-    for s in &summaries {
+    let player_cap = 6usize;
+    for s in summaries.iter().take(player_cap) {
         let g = s.group.map(|g| format!("G{g}")).unwrap_or_else(|| "—".into());
         let focal_str = s
             .avg_dist_to_focal
@@ -387,6 +418,9 @@ fn format_spatial_summaries(
             rms_str,
             focal_str
         ));
+    }
+    if summaries.len() > player_cap {
+        lines.push(format!("  +{} more players", summaries.len() - player_cap));
     }
     lines
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2026 PalEm Dynamics LLC
+// Copyright (c) 2026 Nathaniel T. Berry
 // Licensed under the Apache License, Version 2.0.
 
 use ndarray::{
@@ -19,11 +19,14 @@ use symworx_core::stats::{
     // density
     Histogram as RustHistogram,
     HistogramConfig,
+    KMeansConfig,
     KdeConfig,
     KdeEstimate as RustKde,
+    LinearModel,
     LogisticConfig,
     LogisticModel as RustLogisticModel,
     MulticlassLogisticModel as RustMulticlassLogistic,
+    RelativeKMeansDiscretizer as RustRelativeKMeans,
     // split
     SplitConfig,
     // preprocess
@@ -32,20 +35,23 @@ use symworx_core::stats::{
     accuracy as rust_accuracy,
     // autocorrelation
     acf,
+    acf_normalized,
     // model selection (light surface)
     adjusted_r2 as rust_adjusted_r2,
     aic_gaussian as rust_aic_gaussian,
     bic_gaussian as rust_bic_gaussian,
+    ccf,
     classification_report as rust_classification_report,
     correlation_matrix_from_vec,
     // distance
     euclidean,
+    // linreg
+    fit_polynomial_degrees,
     // naive bayes
     gaussian_nb as rust_gaussian_nb,
     hist_kde_with as rust_hist_kde_with,
     histogram as rust_histogram,
     kde_gaussian as rust_kde_gaussian,
-    // linreg
     l1,
     l2,
     // logistic
@@ -62,6 +68,7 @@ use symworx_core::stats::{
     nested_lr_chi2 as rust_nested_lr_chi2,
     pearson_correlation,
     percentile,
+    polynomial_design,
     r2 as rust_r2,
     residual_errors as rust_residual_errors,
     residuals as rust_residuals,
@@ -71,6 +78,7 @@ use symworx_core::stats::{
     roc_auc_ovr as rust_roc_auc_ovr,
     rss as rust_rss,
     sd_successive_differences,
+    sdnn,
     silverman_bandwidth as rust_silverman_bandwidth,
     // variability
     successive_differences,
@@ -110,6 +118,19 @@ fn array2_to_vec(a: &Array2<f64>) -> Vec<Vec<f64>> {
 #[pyfunction(name = "acf")]
 pub fn py_acf(signal: Vec<f64>, unbiased: bool) -> Vec<f64> {
     acf(&signal, unbiased)
+}
+
+/// Correlation-normalized autocovariance. Lag 0 is 1 when variance is positive.
+#[pyfunction(name = "acf_normalized")]
+#[pyo3(signature = (signal, max_lag, unbiased = false))]
+pub fn py_acf_normalized(signal: Vec<f64>, max_lag: usize, unbiased: bool) -> Vec<f64> {
+    acf_normalized(&signal, max_lag, unbiased)
+}
+
+/// `corr(driver[t−lag], target[t])` for `lag = 0..=max_lag`.
+#[pyfunction(name = "ccf")]
+pub fn py_ccf(driver: Vec<f64>, target: Vec<f64>, max_lag: usize) -> Vec<f64> {
+    ccf(&driver, &target, max_lag)
 }
 
 // ==========================================================
@@ -505,6 +526,29 @@ pub fn py_l2(x: Vec<Vec<f64>>, y: Vec<f64>) -> PyResult<Vec<f64>> {
     Ok(beta.to_vec())
 }
 
+#[pyfunction(name = "fit_polynomial")]
+pub fn py_fit_polynomial(x: Vec<f64>, y: Vec<f64>, degree: usize) -> PyResult<Vec<f64>> {
+    let search = fit_polynomial_degrees(&x, &y, degree).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    let fit = search.fits.iter().find(|f| f.degree == degree).ok_or_else(|| {
+        PyValueError::new_err(format!(
+            "degree {degree} not fitted (n={}, max_fitted={})",
+            search.n_samples, search.max_degree_fitted
+        ))
+    })?;
+    Ok(fit.coeffs_packed().to_vec())
+}
+
+#[pyfunction(name = "predict_polynomial")]
+pub fn py_predict_polynomial(coeffs: Vec<f64>, x: Vec<f64>) -> PyResult<Vec<f64>> {
+    if coeffs.is_empty() {
+        return Err(PyValueError::new_err("empty polynomial coefficients"));
+    }
+    let degree = coeffs.len() - 1;
+    let model = LinearModel::from_packed(&Array1::from(coeffs));
+    let design = polynomial_design(&x, degree);
+    Ok(model.predict(&design).to_vec())
+}
+
 // ==========================================================
 // Variabilty
 // ==========================================================
@@ -522,6 +566,15 @@ pub fn py_mean_successive_differences(data: Vec<f64>) -> f64 {
 #[pyfunction(name = "rmssd")]
 pub fn py_rmssd(data: Vec<f64>) -> f64 {
     rmssd(&data)
+}
+
+/// Population standard deviation of NN intervals (SDNN).
+///
+/// Same units as `data` (seconds when `data` is an RR series in seconds).
+/// Fewer than two samples returns NaN.
+#[pyfunction(name = "sdnn")]
+pub fn py_sdnn(data: Vec<f64>) -> f64 {
+    sdnn(&data)
 }
 
 #[pyfunction(name = "sd_successive_differences")]
@@ -978,12 +1031,84 @@ pub fn py_gaussian_nb(x: Vec<Vec<f64>>, y: Vec<usize>, var_smoothing: f64) -> Py
 }
 
 // ==========================================================
+// Relative k-means discretizer
+// ==========================================================
+
+/// Per-group range onto `[0, 1]`, then shared k-means cuts.
+///
+/// Bins mean “low / mid / high for this user”. Pass the integer labels
+/// to `transfer_entropy_discrete`. Do not concatenate users into one TE
+/// series.
+#[pyclass(name = "RelativeKMeansDiscretizer")]
+#[derive(Clone)]
+pub struct PyRelativeKMeansDiscretizer {
+    inner: RustRelativeKMeans,
+}
+
+#[pymethods]
+impl PyRelativeKMeansDiscretizer {
+    #[getter]
+    fn n_bins(&self) -> usize {
+        self.inner.n_bins
+    }
+
+    #[getter]
+    fn cuts(&self) -> Vec<f64> {
+        self.inner.cuts.clone()
+    }
+
+    #[getter]
+    fn centroids(&self) -> Vec<f64> {
+        self.inner.centroids.clone()
+    }
+
+    /// Bin samples from groups seen at fit time.
+    fn transform(&self, values: Vec<f64>, group_ids: Vec<usize>) -> PyResult<Vec<u8>> {
+        self.inner
+            .transform(&values, &group_ids)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+    }
+
+    /// Held-out group: that series’ own range, shared cuts.
+    fn transform_new_group(&self, values: Vec<f64>) -> Vec<u8> {
+        self.inner.transform_new_group(&values)
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "RelativeKMeansDiscretizer(n_bins={}, cuts={:?})",
+            self.inner.n_bins, self.inner.cuts
+        )
+    }
+}
+
+/// Fit [`RelativeKMeansDiscretizer`] with min/max per group.
+#[pyfunction(name = "relative_kmeans_discretizer")]
+#[pyo3(signature = (values, group_ids, n_bins, seed = 42))]
+pub fn py_relative_kmeans_discretizer(
+    values: Vec<f64>,
+    group_ids: Vec<usize>,
+    n_bins: usize,
+    seed: u64,
+) -> PyResult<PyRelativeKMeansDiscretizer> {
+    let cfg = KMeansConfig {
+        seed,
+        ..KMeansConfig::default()
+    };
+    let inner =
+        RustRelativeKMeans::fit(&values, &group_ids, n_bins, &cfg).map_err(|e| PyValueError::new_err(e.to_string()))?;
+    Ok(PyRelativeKMeansDiscretizer { inner })
+}
+
+// ==========================================================
 // PYTHON REGISTER
 // ==========================================================
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // --- Autocorrelation ----------------------------------
     m.add_function(wrap_pyfunction!(py_acf, m)?)?;
+    m.add_function(wrap_pyfunction!(py_acf_normalized, m)?)?;
+    m.add_function(wrap_pyfunction!(py_ccf, m)?)?;
 
     // --- Basic statistics ---------------------------------
     m.add_function(wrap_pyfunction!(py_mean, m)?)?;
@@ -1026,11 +1151,14 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // --- Linear regression --------------------------------
     m.add_function(wrap_pyfunction!(py_l1, m)?)?;
     m.add_function(wrap_pyfunction!(py_l2, m)?)?;
+    m.add_function(wrap_pyfunction!(py_fit_polynomial, m)?)?;
+    m.add_function(wrap_pyfunction!(py_predict_polynomial, m)?)?;
 
     // --- Variability --------------------------------------
     m.add_function(wrap_pyfunction!(py_successive_differences, m)?)?;
     m.add_function(wrap_pyfunction!(py_mean_successive_differences, m)?)?;
     m.add_function(wrap_pyfunction!(py_rmssd, m)?)?;
+    m.add_function(wrap_pyfunction!(py_sdnn, m)?)?;
     m.add_function(wrap_pyfunction!(py_sd_successive_differences, m)?)?;
 
     // --- Split / preprocess / logistic / metrics (0.1 ML surface) ---
@@ -1049,6 +1177,10 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_roc_auc, m)?)?;
     m.add_function(wrap_pyfunction!(py_roc_auc_ovr, m)?)?;
     m.add_function(wrap_pyfunction!(py_gaussian_nb, m)?)?;
+
+    // --- Relative k-means discretizer (TE bins) -----------
+    m.add_class::<PyRelativeKMeansDiscretizer>()?;
+    m.add_function(wrap_pyfunction!(py_relative_kmeans_discretizer, m)?)?;
 
     crate::core::mixed::register(m)?;
 

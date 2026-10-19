@@ -1,4 +1,4 @@
-// Copyright (c) 2026 PalEm Dynamics LLC
+// Copyright (c) 2026 Nathaniel T. Berry
 // Licensed under the Apache License, Version 2.0.
 
 //! # symworx-dynamics
@@ -11,7 +11,7 @@
 //! ## Modules
 //!
 //! - [`embedding`] — Phase space reconstruction (`edim`, false nearest neighbors)
-//! - [`entropy`] — Sample entropy, multiscale entropy, and transfer entropy
+//! - [`entropy`] — Sample entropy, multiscale entropy, mutual information, and transfer entropy
 //! - [`rqa`] — Recurrence Quantification Analysis (RQA) and cross-recurrence (cRQA)
 //! - [`phase`] — Relative phase, Kuramoto order, cluster-phase (pre-extracted phases)
 //! - [`dmd`] — Dynamic Mode Decomposition (data-driven linear operators)
@@ -33,7 +33,7 @@ pub mod control;
 pub mod dmd;
 /// Embedding dimension calculations (e.g., edim, fnn).
 pub mod embedding;
-/// Entropy measures (e.g., sample entropy, multiscale entropy, transfer entropy).
+/// Entropy measures (sample entropy, multiscale entropy, mutual information, transfer entropy).
 pub mod entropy;
 /// Extended DMD / Koopman operator approximation.
 pub mod koopman;
@@ -66,8 +66,14 @@ pub use embedding::{
     fnn,
 };
 pub use entropy::{
+    DEFAULT_AMI_BINS,
     TeConfig,
+    ami,
+    cross_ami,
+    first_local_minimum,
     multiscale_entropy,
+    mutual_information,
+    mutual_information_discrete,
     sample_entropy,
     transfer_entropy,
     transfer_entropy_conditional,

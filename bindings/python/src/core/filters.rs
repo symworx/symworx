@@ -1,4 +1,4 @@
-// Copyright (c) 2026 PalEm Dynamics LLC
+// Copyright (c) 2026 Nathaniel T. Berry
 // Licensed under the Apache License, Version 2.0.
 
 use ndarray::{
@@ -189,6 +189,13 @@ impl PyKalmanFilter {
         Ok(Self {
             inner: KalmanFilter::new(f, h, q, r, x0, p0),
         })
+    }
+
+    /// Attach control matrix B (n_states × n_controls). Then `predict(control=u)`.
+    fn with_control(&mut self, b: Vec<Vec<f64>>) -> PyResult<()> {
+        let b = vec2_to_array2(b)?;
+        self.inner = self.inner.clone().with_control(b);
+        Ok(())
     }
 
     /// Prediction step. control is optional (length must match control dimension if provided).

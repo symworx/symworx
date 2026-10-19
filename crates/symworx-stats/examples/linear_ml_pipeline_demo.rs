@@ -1,4 +1,4 @@
-// Copyright (c) 2026 PalEm Dynamics LLC
+// Copyright (c) 2026 Nathaniel T. Berry
 // Licensed under the Apache License, Version 2.0.
 
 //! ML-style linear regression: split → fit → hold-out → k-fold CV.

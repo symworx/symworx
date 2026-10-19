@@ -1,4 +1,4 @@
-// Copyright (c) 2026 PalEm Dynamics LLC
+// Copyright (c) 2026 Nathaniel T. Berry
 // Licensed under the Apache License, Version 2.0.
 
 //! # symworx-stats
@@ -127,7 +127,11 @@ pub mod synthetic;
 pub mod variability;
 
 // Re-exports
-pub use autocorrelation::acf;
+pub use autocorrelation::{
+    acf,
+    acf_normalized,
+    ccf,
+};
 pub use basic::{
     cv,
     mad,
@@ -357,6 +361,7 @@ pub use variability::{
     mean_successive_differences,
     rmssd,
     sd_successive_differences,
+    sdnn,
     successive_differences,
 };
 

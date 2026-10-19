@@ -1,4 +1,4 @@
-// Copyright (c) 2026 PalEm Dynamics LLC
+// Copyright (c) 2026 Nathaniel T. Berry
 // Licensed under the Apache License, Version 2.0.
 
 //! # symworx-io
@@ -117,6 +117,8 @@ pub use paths::{
 use symworx_error::SymError;
 pub use table::{
     TableData,
+    TableDelimiter,
+    TableReadOptions,
     load_numeric_table,
     write_columns_csv,
     write_numeric_table,

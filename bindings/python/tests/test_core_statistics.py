@@ -13,6 +13,17 @@ def test_mean_median():
     assert st.median([1.0, 2.0, 3.0]) == 2.0
 
 
+def test_sdnn():
+    import math
+
+    rr = [1.0, 2.0, 3.0]
+    # population std: mean=2, var = 2/3
+    assert abs(st.sdnn(rr) - math.sqrt(2.0 / 3.0)) < 1e-12
+    assert st.sdnn([1.0, 1.0, 1.0]) == 0.0
+    assert math.isnan(st.sdnn([0.9]))
+    assert math.isnan(st.sdnn([]))
+
+
 def test_train_test_split_indices():
     plan = st.train_test_split(100, test_ratio=0.3, n_train_folds=5, shuffle=True, seed=7)
     assert plan.n == 100
@@ -109,3 +120,44 @@ def test_gaussian_nb():
     pred = clf.predict(x)
     assert pred == y
     assert abs(st.accuracy(y, pred) - 1.0) < 1e-12
+
+
+def _lcg(n, seed):
+    s = seed
+    out = []
+    for _ in range(n):
+        s = (s * 6364136223846793005 + 1) & ((1 << 64) - 1)
+        out.append(((s >> 33) & 0xFFFFFFFF) / 0xFFFFFFFF)
+    return out
+
+
+def test_acf_normalized_lag0_is_one():
+    signal = [1.0, 2.0, 3.0, 4.0, 5.0]
+    raw = st.acf(signal, False)
+    norm = st.acf_normalized(signal, 4)
+    assert abs(norm[0] - 1.0) < 1e-12
+    assert all(abs(norm[k] - raw[k] / raw[0]) < 1e-12 for k in range(5))
+    assert st.acf_normalized([1.0, 1.0, 1.0], 3) == []
+
+
+def test_ccf_peaks_at_planted_lag():
+    driver = _lcg(400, 3)
+    k = 4
+    target = [0.0] * len(driver)
+    for t in range(k, len(driver)):
+        target[t] = driver[t - k]
+    curve = st.ccf(driver, target, 8)
+    assert curve.index(max(curve)) == k
+    assert curve[k] > 0.99
+    assert st.ccf(driver, target[:-1], 2) == []
+
+
+def test_relative_kmeans_discretizer_is_shift_invariant():
+    values = [10.0, 20.0, 30.0, 40.0] * 20
+    groups = [0] * len(values)
+    disc = st.relative_kmeans_discretizer(values, groups, 3, seed=3)
+    assert disc.n_bins == 3
+    assert len(disc.cuts) == 2
+    bins = disc.transform(values, groups)
+    shifted = disc.transform_new_group([v + 250.0 for v in values])
+    assert bins == shifted

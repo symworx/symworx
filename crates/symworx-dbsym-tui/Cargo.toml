@@ -1,0 +1,35 @@
+# Copyright (c) 2026 Nathaniel T. Berry
+# Licensed under the Apache License, Version 2.0.
+
+[package]
+name = "symworx-dbsym-tui"
+version          = { workspace = true }
+edition          = { workspace = true }
+license          = { workspace = true }
+repository       = { workspace = true }
+authors          = { workspace = true }
+description      = "Read-only terminal browser for dbSym catalogs (SQLite and Postgres)"
+keywords = ["tui", "sqlite", "postgres", "database"]
+categories = ["command-line-utilities", "science"]
+
+[[bin]]
+name = "symdb-view"
+path = "src/bin/symdb-view.rs"
+
+[dependencies]
+ratatui = "0.30"
+crossterm = "0.29"
+thiserror = { workspace = true }
+symworx-dbsym = { workspace = true }
+# Same pin and bundled SQLite as symworx-dbsym / symworx-loadsym. Not LoadSym's connection.
+rusqlite = { version = "0.32", optional = true, features = ["bundled"] }
+# Sync client. NoTls only; TLS is a later feature.
+postgres = { version = "0.19", optional = true }
+
+[features]
+default = ["sqlite", "postgres"]
+sqlite = ["dep:rusqlite"]
+postgres = ["dep:postgres"]
+
+[lints]
+workspace = true

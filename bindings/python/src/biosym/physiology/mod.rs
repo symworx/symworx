@@ -1,12 +1,14 @@
-// Copyright (c) 2026 PalEm Dynamics LLC
+// Copyright (c) 2026 Nathaniel T. Berry
 // Licensed under the Apache License, Version 2.0.
 
 use pyo3::prelude::*;
 
+pub mod hrv;
 pub mod ppg;
 pub mod respiration;
 
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    hrv::register(m)?;
     ppg::register(m)?;
     respiration::register(m)?;
     Ok(())

@@ -36,8 +36,8 @@ This is **not** the LoadSym personal ride catalog.
 | Schema v1 (SQLite) | **Supported** |
 | `init` / seed / `symdb` CLI | **Supported** (`--features sqlite`) |
 | File register / CSV ingest / export | **Not started** |
-| TUI workflow | **Planned** |
-| Postgres dialect | **Not started** (LoadSym already has the dual-SQL pattern) |
+| Read-only browser | **Supported** in [`symworx-dbsym-tui`](../symworx-dbsym-tui/README.md) (`symdb-view`) |
+| Postgres dialect | **Not started** (the viewer can open a Postgres URL; this crate still ships SQLite DDL only) |
 
 Design: [notes/design.md](notes/design.md).
 
@@ -61,6 +61,9 @@ cargo run -p symworx-dbsym --features sqlite --bin symdb -- init ./scratch --pro
 # edit ./scratch/.dbsym/schema.sqlite.sql  then:
 cargo run -p symworx-dbsym --features sqlite --bin symdb -- apply ./scratch
 cargo run -p symworx-dbsym --features sqlite --bin symdb -- status ./scratch
+
+# Read-only browser (separate crate; not symview)
+cargo run -p symworx-dbsym-tui --bin symdb-view -- ./scratch/.dbsym/dbsym.sqlite
 ```
 
 ## Schema version
@@ -81,5 +84,6 @@ stay as files; the catalog holds provenance.
 ## See also
 
 - Design notes: [notes/design.md](notes/design.md)
+- Read-only browser: [../symworx-dbsym-tui/README.md](../symworx-dbsym-tui/README.md)
 - LoadSym schema (different catalog): [../symworx-loadsym-db/README.md](../symworx-loadsym-db/README.md)
 - Workspace overview: [../../README.md](../../README.md)

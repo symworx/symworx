@@ -13,7 +13,14 @@ pub fn handle_spatial_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                 app.seed_spatial_demo();
                 app.pending_spatial_import = false;
                 app.spatial_view = crate::app::SpatialView::Visualize;
-                app.status = "Spatial: generated synthetic demo".to_string();
+                app.status = "Spatial: generated 3v3 drill".to_string();
+                return false;
+            }
+            KeyCode::Char('a') | KeyCode::Char('A') => {
+                app.seed_spatial_11v11();
+                app.pending_spatial_import = false;
+                app.spatial_view = crate::app::SpatialView::Visualize;
+                app.status = "Spatial: generated 11v11 sequence (3 min @ 1 Hz)".to_string();
                 return false;
             }
             KeyCode::Char('2') | KeyCode::Enter => {
@@ -22,7 +29,7 @@ pub fn handle_spatial_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
                     app.spatial_view = crate::app::SpatialView::Visualize;
                     return false;
                 }
-                app.status = "Spatial: no suitable .csv in ./data/ — press 1/g for synthetic.".to_string();
+                app.status = "Spatial: no suitable .csv in ./data/ — press 1/g for 3v3, a for 11v11.".to_string();
                 return false;
             }
             KeyCode::Char('v') | KeyCode::Char('V') | KeyCode::Esc => {
@@ -43,19 +50,26 @@ pub fn handle_spatial_keys(app: &mut App, code: KeyCode, _modifiers: KeyModifier
             app.seed_spatial_demo();
             app.spatial_view = crate::app::SpatialView::Visualize;
             app.pending_spatial_import = false;
-            app.status = "Spatial: generated synthetic demo".to_string();
+            app.status = "Spatial: generated 3v3 drill".to_string();
+            return false;
+        }
+        KeyCode::Char('a') | KeyCode::Char('A') => {
+            app.seed_spatial_11v11();
+            app.spatial_view = crate::app::SpatialView::Visualize;
+            app.pending_spatial_import = false;
+            app.status = "Spatial: generated 11v11 sequence (3 min @ 1 Hz)".to_string();
             return false;
         }
         KeyCode::Char('i') | KeyCode::Char('I') => {
             app.spatial_view = crate::app::SpatialView::ImportData;
             app.pending_spatial_import = true;
-            app.status = "Spatial import: 1/g=generate  2/Enter=load csv  Esc/v=back".to_string();
+            app.status = "Spatial import: 1/g=3v3  a=11v11  2/Enter=load csv  Esc/v=back".to_string();
             return false;
         }
         KeyCode::Char('v') | KeyCode::Char('V') => {
             app.spatial_view = crate::app::SpatialView::Visualize;
             app.pending_spatial_import = false;
-            app.status = "Spatial: visualize (←→ n/p < > 1-9  g=gen  b=ball  i=import)".to_string();
+            app.status = "Spatial: visualize (←→ n/p < > 1-9  g=3v3  a=11v11  b=ball  i=import)".to_string();
             return false;
         }
         _ => {}

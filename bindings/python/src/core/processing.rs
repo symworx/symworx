@@ -1,4 +1,4 @@
-// Copyright (c) 2026 PalEm Dynamics LLC
+// Copyright (c) 2026 Nathaniel T. Berry
 // Licensed under the Apache License, Version 2.0.
 
 use pyo3::{
@@ -8,12 +8,20 @@ use pyo3::{
 use symworx_core::signal::processing::{
     FillStrategy,
     OutlierCriterion,
+    burst_indices,
+    convolve,
+    exponential_kernel,
+    gh_burst_deconvolve,
+    gh_deconvolve,
+    gh_deconvolve_sparse,
+    gh_reconvolve,
     interpolation::{
         interp_cubic,
         interp_linear,
         interp_spline,
         interp1,
     },
+    nonnegative_deconvolution,
     normalization::{
         normalize,
         zscore,
@@ -24,6 +32,7 @@ use symworx_core::signal::processing::{
     },
     resample_rr_to_tachogram,
     robust_interpolate,
+    sparse_nonnegative_deconvolution,
 };
 
 // ==========================================================
@@ -212,6 +221,66 @@ pub fn py_resample_rr_to_tachogram(event_times: Vec<f64>, interval_values: Vec<f
 }
 
 // ==========================================================
+// Deconvolution (hormone reconstruction)
+// ==========================================================
+
+#[pyfunction(name = "exponential_kernel")]
+pub fn py_exponential_kernel(dt: f64, tau: f64, len: usize) -> Vec<f64> {
+    exponential_kernel(dt, tau, len)
+}
+
+#[pyfunction(name = "convolve")]
+pub fn py_convolve(signal: Vec<f64>, kernel: Vec<f64>) -> Vec<f64> {
+    convolve(&signal, &kernel)
+}
+
+#[pyfunction(name = "nonnegative_deconvolution")]
+#[pyo3(signature = (observed, kernel, lam=1e-4))]
+pub fn py_nonnegative_deconvolution(observed: Vec<f64>, kernel: Vec<f64>, lam: f64) -> Vec<f64> {
+    nonnegative_deconvolution(&observed, &kernel, lam)
+}
+
+#[pyfunction(name = "gh_deconvolve")]
+pub fn py_gh_deconvolve(observed: Vec<f64>, kernel: Vec<f64>) -> Vec<f64> {
+    gh_deconvolve(&observed, &kernel)
+}
+
+#[pyfunction(name = "gh_reconvolve")]
+pub fn py_gh_reconvolve(secretion: Vec<f64>, kernel: Vec<f64>) -> Vec<f64> {
+    gh_reconvolve(&secretion, &kernel)
+}
+
+#[pyfunction(name = "sparse_nonnegative_deconvolution")]
+#[pyo3(signature = (observed, kernel, lam=0.1, max_iter=2000, tol=1e-8))]
+pub fn py_sparse_nonnegative_deconvolution(
+    observed: Vec<f64>,
+    kernel: Vec<f64>,
+    lam: f64,
+    max_iter: usize,
+    tol: f64,
+) -> Vec<f64> {
+    sparse_nonnegative_deconvolution(&observed, &kernel, lam, max_iter, tol)
+}
+
+#[pyfunction(name = "gh_deconvolve_sparse")]
+#[pyo3(signature = (observed, kernel, lam=0.1))]
+pub fn py_gh_deconvolve_sparse(observed: Vec<f64>, kernel: Vec<f64>, lam: f64) -> Vec<f64> {
+    gh_deconvolve_sparse(&observed, &kernel, lam)
+}
+
+#[pyfunction(name = "burst_indices")]
+#[pyo3(signature = (secretion, floor=0.5))]
+pub fn py_burst_indices(secretion: Vec<f64>, floor: f64) -> Vec<usize> {
+    burst_indices(&secretion, floor)
+}
+
+#[pyfunction(name = "gh_burst_deconvolve")]
+#[pyo3(signature = (observed, kernel, lam=0.1, floor=0.5))]
+pub fn py_gh_burst_deconvolve(observed: Vec<f64>, kernel: Vec<f64>, lam: f64, floor: f64) -> Vec<f64> {
+    gh_burst_deconvolve(&observed, &kernel, lam, floor)
+}
+
+// ==========================================================
 // PYTHON REGISTER
 // ==========================================================
 
@@ -225,6 +294,15 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     m.add_function(wrap_pyfunction!(py_robust_interpolate, m)?)?;
     m.add_function(wrap_pyfunction!(py_resample_rr_to_tachogram, m)?)?;
+    m.add_function(wrap_pyfunction!(py_exponential_kernel, m)?)?;
+    m.add_function(wrap_pyfunction!(py_convolve, m)?)?;
+    m.add_function(wrap_pyfunction!(py_nonnegative_deconvolution, m)?)?;
+    m.add_function(wrap_pyfunction!(py_gh_deconvolve, m)?)?;
+    m.add_function(wrap_pyfunction!(py_gh_reconvolve, m)?)?;
+    m.add_function(wrap_pyfunction!(py_sparse_nonnegative_deconvolution, m)?)?;
+    m.add_function(wrap_pyfunction!(py_gh_deconvolve_sparse, m)?)?;
+    m.add_function(wrap_pyfunction!(py_burst_indices, m)?)?;
+    m.add_function(wrap_pyfunction!(py_gh_burst_deconvolve, m)?)?;
 
     m.add_class::<PyResampleMethod>()?;
     m.add_class::<PyResample>()?;

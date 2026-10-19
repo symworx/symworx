@@ -1,4 +1,4 @@
-// Copyright (c) 2026 PalEm Dynamics LLC
+// Copyright (c) 2026 Nathaniel T. Berry
 // Licensed under the Apache License, Version 2.0.
 
 //! Discrete (histogram) transfer entropy.
@@ -241,7 +241,7 @@ fn quantize_all(series: &[&[f64]], bins: usize) -> Option<Vec<Vec<u8>>> {
 
 /// Equal-occupancy (quantile) bins. Returns empty if the series is
 /// degenerate (too short or fewer than two distinct finite values).
-fn quantize(x: &[f64], n_bins: usize) -> Vec<u8> {
+pub fn quantize(x: &[f64], n_bins: usize) -> Vec<u8> {
     let cuts = quantile_cuts(x, n_bins);
     if cuts.is_empty() {
         return Vec::new();
