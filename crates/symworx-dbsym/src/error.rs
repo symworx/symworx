@@ -12,7 +12,7 @@
 
 use thiserror::Error;
 
-/// Errors from init, seed, and (later) ingest/export.
+/// Errors from init, the agentic work log, seed, and (later) ingest/export.
 #[derive(Error, Debug)]
 pub enum DbSymError {
     /// Invalid argument (profile, path, dialect).
