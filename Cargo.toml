@@ -12,6 +12,7 @@ members = [
     "crates/symworx-dbsym",
     "crates/symworx-dbsym-tui",
     "crates/symworx-embed",
+    "crates/symworx-gpu",
     "crates/symworx-io",
     "crates/symworx-loadsym",
     "crates/symworx-math",
@@ -66,6 +67,7 @@ symworx-signal     = { path = "crates/symworx-signal", version = "0.5.0" }
 symworx-dynamics   = { path = "crates/symworx-dynamics", version = "0.5.0" }
 symworx-backend    = { path = "crates/symworx-backend", version = "0.5.0" }
 symworx-embed      = { path = "crates/symworx-embed", version = "0.5.0" }
+symworx-gpu        = { path = "crates/symworx-gpu", version = "0.5.0" }
 symworx-loadsym-db = { path = "crates/symworx-loadsym-db", version = "0.5.0" }
 symworx-dbsym      = { path = "crates/symworx-dbsym", version = "0.5.0" }
 symworx-dbsym-tui  = { path = "crates/symworx-dbsym-tui", version = "0.5.0" }
