@@ -42,23 +42,27 @@ mod ffi {
 pub fn probe_hip() -> Result<DeviceInfo, GpuError> {
     let count = device_count()?;
     let index = selected_device(count)?;
-    let mut name_buf = [0u8; 256];
-    // `name_buf` is a writable 256-byte buffer. The launcher writes a trailing NUL inside it.
-    let status = unsafe { ffi::symworx_hip_device_name(index, name_buf.as_mut_ptr(), name_buf.len()) };
-    if status != 0 {
-        return Err(GpuError::Device {
-            status,
-            call: "symworx_hip_device_name",
-        });
-    }
-    let end = name_buf.iter().position(|byte| *byte == 0).unwrap_or(name_buf.len());
-    let name = String::from_utf8_lossy(&name_buf[..end]).into_owned();
+    let name = device_name(index)?;
     Ok(DeviceInfo {
         index,
         count,
         name,
         platform: PLATFORM,
     })
+}
+
+/// Every device the HIP runtime of this build can see. Empty when the runtime has none.
+pub fn list_hip_devices() -> Vec<(i32, String)> {
+    let Ok(count) = device_count() else {
+        return Vec::new();
+    };
+    let mut devices = Vec::new();
+    for index in 0..count {
+        if let Ok(name) = device_name(index) {
+            devices.push((index, name));
+        }
+    }
+    devices
 }
 
 pub fn recurrence_mask_hip(
@@ -106,6 +110,20 @@ pub fn recurrence_mask_hip(
         });
     }
     Ok(mask)
+}
+
+fn device_name(index: i32) -> Result<String, GpuError> {
+    let mut name_buf = [0u8; 256];
+    // `name_buf` is a writable 256-byte buffer. The launcher writes a trailing NUL inside it.
+    let status = unsafe { ffi::symworx_hip_device_name(index, name_buf.as_mut_ptr(), name_buf.len()) };
+    if status != 0 {
+        return Err(GpuError::Device {
+            status,
+            call: "symworx_hip_device_name",
+        });
+    }
+    let end = name_buf.iter().position(|byte| *byte == 0).unwrap_or(name_buf.len());
+    Ok(String::from_utf8_lossy(&name_buf[..end]).into_owned())
 }
 
 fn device_count() -> Result<i32, GpuError> {

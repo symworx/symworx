@@ -16,6 +16,7 @@
 #![warn(missing_docs)]
 
 mod error;
+mod hardware;
 mod recurrence;
 
 #[cfg(feature = "hip")]
@@ -25,6 +26,14 @@ pub use error::{
     GpuError,
     MAX_BOOL_MATRIX_CELLS,
     bool_matrix_too_large,
+};
+pub use hardware::{
+    Hardware,
+    HipDevice,
+    HipTarget,
+    PciGpu,
+    Vendor,
+    detect_hardware,
 };
 pub use recurrence::{
     DeviceInfo,

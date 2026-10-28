@@ -12,6 +12,8 @@ Use the device call for large masks, starting around a few thousand embedded poi
 
 ## Build
 
+`detect_hardware()` reports two views. The PCI list is Linux sysfs (`/sys/bus/pci/devices`) and includes every display GPU plus AMD and NVIDIA accelerators. The HIP list is filled only when this crate was built with `hip` and that runtime can see a device. `compiled_for` is `Amd` or `Nvidia` for that build, and `None` otherwise. `compiled_target_matches_pci()` compares the build target with the PCI vendors.
+
 CPU tests need only Rust:
 
 ```bash
