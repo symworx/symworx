@@ -13,6 +13,7 @@ members = [
     "crates/symworx-dbsym-tui",
     "crates/symworx-embed",
     "crates/symworx-gpu",
+    "crates/symworx-npu",
     "crates/symworx-io",
     "crates/symworx-loadsym",
     "crates/symworx-math",
@@ -68,6 +69,7 @@ symworx-dynamics   = { path = "crates/symworx-dynamics", version = "0.5.0" }
 symworx-backend    = { path = "crates/symworx-backend", version = "0.5.0" }
 symworx-embed      = { path = "crates/symworx-embed", version = "0.5.0" }
 symworx-gpu        = { path = "crates/symworx-gpu", version = "0.5.0" }
+symworx-npu        = { path = "crates/symworx-npu", version = "0.5.0" }
 symworx-loadsym-db = { path = "crates/symworx-loadsym-db", version = "0.5.0" }
 symworx-dbsym      = { path = "crates/symworx-dbsym", version = "0.5.0" }
 symworx-dbsym-tui  = { path = "crates/symworx-dbsym-tui", version = "0.5.0" }
@@ -110,7 +112,7 @@ symworx-tui        = { path = "crates/symworx-tui", version = "0.5.0" }
 # so the rule is uniform and easy to maintain.
 unsafe_code = "deny"
 
-[workspace.lints.clippy]
+[workspace.lints.clipy]
 # Pragmatic clippy configuration for the codebase.
 # Kept relativley lightweight to avoid pedantic global checks.
 # Can still use `#[allow(...)]` attributes where justified.
