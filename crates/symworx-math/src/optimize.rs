@@ -88,6 +88,12 @@ where
     grad
 }
 
+/// Sum of squares. Stays off `ArrayBase::dot` so a workspace build that enables
+/// `ndarray/blas` can still link this crate without OpenBLAS.
+fn squared_norm(v: &Array1<f64>) -> f64 {
+    v.fold(0.0, |acc, x| acc + x * x)
+}
+
 /// Gradient descent on a scalar objective with optional analytic gradient.
 ///
 /// # Arguments
@@ -122,7 +128,7 @@ where
             None => finite_difference_gradient(&f, &x, 1e-6),
         };
 
-        let grad_norm = g.dot(&g).sqrt();
+        let grad_norm = squared_norm(&g).sqrt();
         if grad_norm < config.grad_tol {
             converged = true;
             break;
@@ -152,7 +158,7 @@ where
             Some(g_fn) => g_fn(&x),
             None => finite_difference_gradient(&f, &x, 1e-6),
         };
-        if g.dot(&g).sqrt() < config.grad_tol {
+        if squared_norm(&g).sqrt() < config.grad_tol {
             converged = true;
         }
     }
@@ -284,7 +290,7 @@ where
     F: Fn(&Array1<f64>) -> f64,
 {
     let mut alpha = config.learning_rate;
-    let g_norm_sq = g.dot(g);
+    let g_norm_sq = squared_norm(g);
 
     for _ in 0..config.armijo_max_steps {
         let x_trial = x - &(g * alpha);
