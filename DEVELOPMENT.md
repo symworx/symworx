@@ -161,7 +161,7 @@ The `symview` binary (from `symworx-tui`) can be installed with `cargo install s
     - **Tags are created manually** after a green merge to `worx` (for now, we do not have an auto-tag job).
   - **Publish** runs only on tag `v*` after validation succeeds:
     - crates.io
-    - GHCR `ghcr.io/symworx/symview:<version>` after `symworx-tui` is on crates.io (`:latest` for a final release)
+    - GHCR `ghcr.io/symworx/symview:<version>` after `symworx-tui` is on crates.io (`:latest` for a final release). 
     - GitHub Release
     - **PyPI paused:** 
 
