@@ -5,8 +5,7 @@
 #   docker build -f containers/symview.Containerfile -t ghcr.io/symworx/symview:0.5.0 .
 #   docker run --rm -it -v "$PWD:/data" ghcr.io/symworx/symview:0.5.0
 #
-# :z relabels the mount for SELinux. On Docker with SELinux, use -v "$PWD:/data:z".
-FROM rust:1.86
+FROM rust:1.88
 
 WORKDIR /data
 
@@ -18,12 +17,12 @@ ARG SYMWORX_VERSION=0.5.0
 ARG INSTALL_MODE=crates-or-git
 RUN set -eux; \
     if [ "$INSTALL_MODE" = "crates" ]; then \
-      cargo install symworx-tui --bin symview --version "${SYMWORX_VERSION}"; \
+      cargo install symworx-tui --bin symview --version "${SYMWORX_VERSION}" --locked; \
     elif [ "$INSTALL_MODE" = "git" ]; then \
-      cargo install --git https://github.com/symworx/symworx --bin symview --branch worx; \
+      cargo install --git https://github.com/symworx/symworx --bin symview --branch worx --locked; \
     else \
-      cargo install symworx-tui --bin symview --version "${SYMWORX_VERSION}" || \
-      cargo install --git https://github.com/symworx/symworx --bin symview --branch worx; \
+      cargo install symworx-tui --bin symview --version "${SYMWORX_VERSION}" --locked || \
+      cargo install --git https://github.com/symworx/symworx --bin symview --branch worx --locked; \
     fi
 
 # Mount host data at /data so users can drop CSV / Parquet / FIT files in.
