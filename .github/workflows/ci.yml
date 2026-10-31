@@ -41,6 +41,7 @@ jobs:
           cargo +nightly fmt --check \
             -p symworx-error \
             -p symworx-math \
+            -p symworx-gpu \
             -p symworx-io \
             -p symworx-stats \
             -p symworx-signal \
@@ -121,6 +122,7 @@ jobs:
           PKGS=(
             -p symworx-error
             -p symworx-math
+            -p symworx-gpu
             -p symworx-io
             -p symworx-stats
             -p symworx-signal
@@ -139,6 +141,8 @@ jobs:
           cargo test --lib "${PKGS[@]}" -- --quiet
           cargo clippy --lib --no-deps -p symworx-dbsym --features sqlite -- -D warnings
           cargo test --lib -p symworx-dbsym --features sqlite -- --quiet
+          cargo clippy --lib --no-deps -p symworx-dynamics --features gpu -- -D warnings
+          cargo test --lib -p symworx-dynamics --features gpu -- --quiet
 
   python-bindings:
     runs-on: ubuntu-latest
