@@ -17,6 +17,7 @@ Key crates:
 - `symworx-dbsym` — Per-study (or edge) research catalog: subjects, sessions, attributes, ingest audit, file provenance. Not the LoadSym personal ride catalog. Study-specific tables live in the installed project schema, not this crate. The crate also ships the agentic work log (`schema.agentic.sqlite.sql`, `.dbsym/agent.sqlite`).
 - `symworx-dbsym-tui` — Read-only `symdb-view` for a dbSym SQLite file or Postgres URL. Not a `symview` tab and not LoadSym.
 - `symworx-math` — Low-level numerical and sequence primitives (including the canonical home for series operations in `src/series.rs`)
+- `symworx-gpu` — Opt-in HIP kernels (AMD or NVIDIA, selected at build time). Default build is pure Rust and does not call `hipcc`.
 - `symworx-stats`, `symworx-backend`, Python bindings, etc.
 
 ## Development Focus
@@ -100,6 +101,7 @@ cargo run -p symworx-tui --example generate_biosym_demo
 - Demo generation: `crates/symworx-tui/src/generate.rs`
 - Conversion logic: `crates/symworx-tui/src/convert.rs`
 - RQA core (already implemented): `crates/symworx-dynamics/src/rqa/`
+- HIP recurrence kernel (feature `hip`, off by default): `crates/symworx-gpu/` (`kernels/recurrence.hip`). Dynamics calls it from `try_from_trajectory_on_device` / `try_from_trajectories_on_device`. CPU `rqa` / `from_trajectory` stay the default.
 - Low-level series / sequence primitives (canonical implementation): `crates/symworx-math/src/series.rs`
 - LoadSym catalog schema (SQL only, no personal data): `crates/symworx-loadsym-db/` — operator guide `docs/loadsym-personal-starter.md` (schema v4 multi-source)
 - LoadSym catalog runtime + `symload` CLI: `crates/symworx-loadsym/src/catalog.rs`, `src/bin/symload.rs`
@@ -130,6 +132,7 @@ The workspace strongly prefers **minimal, intentional dependencies**. Every new 
 - Prefer pure-Rust or already-present workspace dependencies when possible.
 - `symworx-math` is the canonical home for low-level numerical, sequence, and optimization primitives.
 - `symworx-stats` owns statistical descriptors and classical modeling (regression, PCA/SVD, clustering, linear mixed models) on top of those primitives.
+- **`symworx-gpu`** owns HIP device code (`hipcc`). It is the only crate that may link `libamdhip64` or `libcudart`, and the only place that uses `unsafe` for that FFI. The `hip` feature is off by default so workspace CI does not need ROCm or CUDA. `HIP_PLATFORM=amd` and `HIP_PLATFORM=nvidia` are separate builds of the same kernel source. `detect_hardware()` lists PCI GPUs from Linux sysfs on every build, and HIP devices only when `hip` is on. Do not put HIP headers, `hipcc`, or vendor math libraries in dynamics, signal, stats, or math. CPU algorithms stay the source of truth; device entry points are explicit and return an error when no device is available.
 - **`symworx-embed`** owns host-side device streaming and framing (JSON-line PPG protocol, serial/simulator sources, rolling buffers, simple vitals thresholds).
   - Use **subject** terminology: wire/API field **`sid`** (subject id). On parse only, accept `patient_id` as an alias for `sid` and `heart_rate` as an alias for `bpm`; never emit those aliases outbound.
   - Feature-gate hardware deps (`serial`); keep default path light (`simulate` only).
@@ -175,6 +178,6 @@ RQA and RecurrencePlot are exposed via PyO3 in `bindings/python/`. Keep the Rust
 
 ---
 
-**Last updated:** `symworx-dbsym-tui` (`symdb-view`, read-only SQLite/Postgres browser; not a `symview` tab). Still covers the core I/O rule (`symworx-io` only for on-disk signal I/O), TUI input priority, and `ndarray-linalg` / polars hygiene.
+**Last updated:** `symworx-gpu` (opt-in HIP recurrence mask for AMD and NVIDIA; CPU RQA unchanged). Still covers the core I/O rule (`symworx-io` only for on-disk signal I/O), TUI input priority, and `ndarray-linalg` / polars hygiene.
 
 When you start a new session, read this file and respect the TUI input priority rules above.
