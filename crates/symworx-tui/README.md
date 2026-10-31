@@ -22,6 +22,20 @@ cargo run -p symworx-tui --bin symview
 
 The TUI will look for signal files (`.csv`, `.txt`, `.dat`, `.ibi`, `.parquet`, `.biosym`) in `./data` and the current directory.
 
+### Container
+
+From the workspace root, [`containers/symview.Containerfile`](../../containers/symview.Containerfile) builds an image that starts `symview` in `/data`. Mount the directory that holds your signal files there. `Ctrl+Q` quits. The release workflow pushes `ghcr.io/symworx/symview:<version>` on a `v*` tag. Until that tag exists, build before run.
+
+```bash
+# Podman (:z relabels the mount for SELinux)
+podman build -f containers/symview.Containerfile -t ghcr.io/symworx/symview:0.5.0 .
+podman run --rm -it -v "$PWD:/data:z" ghcr.io/symworx/symview:0.5.0
+
+# Docker (on SELinux, use -v "$PWD:/data:z")
+docker build -f containers/symview.Containerfile -t ghcr.io/symworx/symview:0.5.0 .
+docker run --rm -it -v "$PWD:/data" ghcr.io/symworx/symview:0.5.0
+```
+
 ### Generate Example Data for Testing
 
 Here are easy ways to create test files you can immediately load in `symview`.
