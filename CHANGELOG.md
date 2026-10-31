@@ -5,10 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [unreleased]
+## [Unreleased]
 
 ### Added
 
+### Changed 
+
+## [0.5.1] - 2026-10-31
+
+### Added
+
+- GHCR: added `symview.Containerfile` and publish workflow to CI/CD
 - Python: `fit_polynomial` / `predict_polynomial`; `KalmanFilter.with_control`.
 - Python: `sdnn` (`symworx.core.statistics` and `symworx.biosym.physiology`) and `compute_hrv_metrics` / `HrvMetrics` (SDNN + RMSSD from RR intervals in seconds).
 

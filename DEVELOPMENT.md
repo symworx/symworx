@@ -25,6 +25,14 @@ cargo build -p symworx-tui
 # Run the TUI (symview)
 cargo run -p symworx-tui --bin symview
 
+# Container image (containers/symview.Containerfile).
+# release.yml pushes ghcr.io/symworx/symview:<version> on a v* tag. Until that tag exists, build locally.
+# Podman (:z is the SELinux mount relabel). Docker: drop :z unless SELinux blocks the mount.
+podman build -f containers/symview.Containerfile -t ghcr.io/symworx/symview:0.5.0 .
+podman run --rm -it -v "$PWD:/data:z" ghcr.io/symworx/symview:0.5.0
+docker build -f containers/symview.Containerfile -t ghcr.io/symworx/symview:0.5.0 .
+docker run --rm -it -v "$PWD:/data" ghcr.io/symworx/symview:0.5.0
+
 # Personal LoadSym archive (empty dirs + catalog under ~/velofit)
 ./scripts/init-velofit.sh
 
@@ -120,7 +128,7 @@ Single shared version across the workspace. Feature work lands on `worx`. A rele
 3. **Release**:
    - Merge when checks are green.
    - **Manually** create and push the annotated tag `vX.Y.Z` on that commit (tags are not auto-created in CI).
-   - Tag push runs [`.github/workflows/release.yml`](.github/workflows/release.yml): full validation, then **publish** to crates.io and create a **GitHub Release** page (only on `v*` tags after validation succeeds). **PyPI is paused** until `publish-python` is re-enabled.
+   - Tag push runs [`.github/workflows/release.yml`](.github/workflows/release.yml): full validation, then **publish** to crates.io, push `ghcr.io/symworx/symview:<version>` (`:latest` on a final release), and create a **GitHub Release** page (only on `v*` tags after validation succeeds). The image job waits until `symworx-tui` is on crates.io. **PyPI is paused** until `publish-python` is re-enabled.
 
 Pre-releases (`0.2.0-rc.1`) are tags on `worx` (GitHub pre-release). There is no `stage` soak branch.
 
@@ -134,7 +142,7 @@ Low-level crates must be published before crates that depend on them:
 4. Grouping crates: `symworx-core`, `symworx-biosym`, `symworx-loadsym`, `symworx-spatialsym`, `symworx-tui`
 5. Python packages (via the corresponding `pyproject-*.toml` files): `symworx-biosym`, `symworx-loadsym`, `symworx-spatialsym`, `symworx-core`
 
-The `symview` binary (from `symworx-tui`) can be installed with `cargo install symworx-tui --bin symview` or distributed separately. `symdb-view` (from `symworx-dbsym-tui`) is the read-only dbSym catalog browser: `cargo run -p symworx-dbsym-tui --bin symdb-view`.
+The `symview` binary (from `symworx-tui`) can be installed with `cargo install symworx-tui --bin symview` or distributed separately. The same binary is packaged by [`containers/symview.Containerfile`](containers/symview.Containerfile) as `ghcr.io/symworx/symview:0.5.0` (build and run commands are under [Common Commands](#common-commands)). `symdb-view` (from `symworx-dbsym-tui`) is the read-only dbSym catalog browser: `cargo run -p symworx-dbsym-tui --bin symdb-view`.
 
 ### Versioning
 
@@ -153,6 +161,7 @@ The `symview` binary (from `symworx-tui`) can be installed with `cargo install s
     - **Tags are created manually** after a green merge to `worx` (for now, we do not have an auto-tag job).
   - **Publish** runs only on tag `v*` after validation succeeds:
     - crates.io
+    - GHCR `ghcr.io/symworx/symview:<version>` after `symworx-tui` is on crates.io (`:latest` for a final release). 
     - GitHub Release
     - **PyPI paused:** 
 
