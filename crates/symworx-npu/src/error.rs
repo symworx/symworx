@@ -6,7 +6,7 @@
 pub enum NpuError {
     /// Shape, radius, or theiler problem in the request.
     #[error("{0}")]
-    InvalidInput &'static str,
+    InvalidInput(&'static str),
 
     /// Packed mask length overflows.
     #[error("packed mask length overflows")]

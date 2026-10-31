@@ -11,8 +11,12 @@ mod rqa;
 
 pub use error::NpuError;
 pub use recurrence::{
-    RecurrenceMask, Trajectory, recurrence_mask,
+    RecurrenceMask,
+    Trajectory,
+    recurrence_mask,
 };
 pub use rqa::{
-    RqaParams, RqaStats, rqa,
+    RqaParams,
+    RqaStats,
+    rqa,
 };
