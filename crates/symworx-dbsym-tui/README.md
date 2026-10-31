@@ -24,7 +24,7 @@ cargo run -p symworx-dbsym-tui --bin symdb-view -- path/to/dbsym.sqlite
 cargo run -p symworx-dbsym-tui --bin symdb-view -- --url postgres://user@localhost:5432/dbname
 ```
 
-With no arguments the binary opens `./.dbsym/dbsym.sqlite`.
+With no arguments the binary opens `./.dbsym/dbsym.sqlite`. Pass `.dbsym/agent.sqlite` to browse the agentic work log.
 
 | Key | Action |
 |-----|--------|

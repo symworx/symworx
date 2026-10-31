@@ -33,18 +33,26 @@ node needs FIT + PPG in one file.
 ```text
 <project>/
   .dbsym/
-    schema.sqlite.sql   # study-owned; commit; init copies template once
-    dbsym.sqlite        # gitignore
-    objects/            # gitignore
-    .gitignore          # *.sqlite and objects/ only
+    schema.sqlite.sql          # study-owned; commit; init copies template once
+    dbsym.sqlite               # gitignore; study catalog
+    schema.agentic.sqlite.sql  # project-owned work-log DDL; commit; agent init copies once
+    agent.sqlite               # gitignore; queries, attempts, artifacts
+    objects/                   # gitignore; study blobs
+    .gitignore                 # *.sqlite and objects/
 ```
 
 SQLite default. Postgres dialect later, same dual-file pattern as LoadSym.
 `symdb-view` can already open a Postgres URL read-only; that does not add DDL here.
+Pass `.dbsym/agent.sqlite` to browse the work log. The viewer default stays
+`.dbsym/dbsym.sqlite`.
 
 **Study profile:** multi-subject; seed `exercise_science` (optional).
 
 **Node profile:** same DDL; typically one `coded_id` / `sid`; skip name/DOB hashing.
+
+**Agent profile:** second template and second file. No subjects, no presets.
+v1 stores a title, an attempt summary, and an optional prompt SHA-256.
+`queries.body` stays null. A lab protocol still goes in the study-owned schema copy.
 
 ## Identity
 
@@ -68,6 +76,7 @@ v1 ingest (next): CSV + file register. Excel stays convert-to-CSV.
 | Flexibility | EAV + `time_s`; files for waveforms |
 | Subject id | UUID; coded ids valid without name/DOB |
 | LoadSym | Separate schema this build |
+| Agent log | Second template (`schema.agentic.sqlite.sql`) and second file (`.dbsym/agent.sqlite`). A lab protocol still goes in the study-owned schema copy. Stored text is written as given. |
 | Default deps | `thiserror` only; `rusqlite` behind `sqlite` |
 | Interface | Library + `symdb` CLI. Read-only browse is `symworx-dbsym-tui` (`symdb-view`), not a `symview` tab |
 

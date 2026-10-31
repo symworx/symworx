@@ -7,12 +7,20 @@
 //! `<project>/.dbsym/schema.sqlite.sql` for the study to edit and commit.
 //! The SQLite file itself stays gitignored. Signal bytes still go through `symworx-io`.
 //!
+//! It also ships the agentic work log (`schema.agentic.sqlite.sql`).
+//! `symdb init --profile agent` copies that template to
+//! `<project>/.dbsym/schema.agentic.sqlite.sql` and creates `.dbsym/agent.sqlite`.
+//! v1 stores a title, an attempt summary, and an optional prompt SHA-256.
+//! The prompt body stays null. Study-specific tables still belong in the study schema copy.
+//!
 //! This is **not** the LoadSym personal ride catalog (`symworx-loadsym-db`).
 
 #![doc(html_root_url = "https://docs.rs/symworx-dbsym")]
 
 pub mod error;
 
+#[cfg(feature = "sqlite")]
+pub mod agent;
 #[cfg(feature = "sqlite")]
 pub mod init;
 #[cfg(feature = "sqlite")]
@@ -41,13 +49,31 @@ pub const DEFAULT_SCHEMA_RELATIVE: &str = ".dbsym/schema.sqlite.sql";
 /// Relative object directory next to the SQLite file.
 pub const DEFAULT_OBJECTS_RELATIVE: &str = ".dbsym/objects";
 
-/// Install profile. Same DDL; different typical contents.
+/// Schema version for the agentic work log (`schema_migrations` on `agent.sqlite`).
+///
+/// v1 — queries, attempts, artifacts. Prompt body stays null.
+pub const AGENTIC_SCHEMA_VERSION: i32 = 1;
+
+/// SQLite template for the work log. Copied on `init --profile agent`.
+pub const AGENTIC_SQLITE_SCHEMA: &str = include_str!("../sql/schema.agentic.sqlite.sql");
+
+/// Default relative path for the work-log SQLite file (gitignored).
+pub const DEFAULT_AGENT_DB_RELATIVE: &str = ".dbsym/agent.sqlite";
+
+/// Project-owned work-log schema (commit this; agent init will not overwrite it).
+pub const DEFAULT_AGENT_SCHEMA_RELATIVE: &str = ".dbsym/schema.agentic.sqlite.sql";
+
+/// Install profile.
+///
+/// Study and node share the study DDL. Agent is a separate work-log file.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StoreProfile {
     /// Multi-subject study directory.
     Study,
     /// One-subject capture node (phone / Pi).
     Node,
+    /// Agentic work log (`agent.sqlite`). Separate from the study catalog.
+    Agent,
 }
 
 impl StoreProfile {
@@ -56,17 +82,24 @@ impl StoreProfile {
         match self {
             Self::Study => "study",
             Self::Node => "node",
+            Self::Agent => "agent",
         }
     }
 
-    /// Parse `study` / `node` (case-insensitive). Unknown → `None`.
+    /// Parse `study` / `node` / `agent` (case-insensitive). Unknown → `None`.
     pub fn parse(s: &str) -> Option<Self> {
         match s.trim().to_ascii_lowercase().as_str() {
             "study" => Some(Self::Study),
             "node" => Some(Self::Node),
+            "agent" => Some(Self::Agent),
             _ => None,
         }
     }
+}
+
+/// Work-log DDL. SQLite only; the study template stays on [`get_schema`].
+pub fn get_agentic_schema() -> &'static str {
+    AGENTIC_SQLITE_SCHEMA
 }
 
 /// Returns the schema for the requested dialect.
@@ -91,7 +124,7 @@ mod tests {
     #[test]
     fn schema_is_not_empty() {
         assert!(SQLITE_SCHEMA.len() > 100);
-        assert!(SCHEMA_VERSION >= 1);
+        const { assert!(SCHEMA_VERSION >= 1) };
         assert!(SQLITE_SCHEMA.contains("CREATE TABLE IF NOT EXISTS subjects"));
         assert!(SQLITE_SCHEMA.contains("CREATE TABLE IF NOT EXISTS sessions"));
         assert!(SQLITE_SCHEMA.contains("CREATE TABLE IF NOT EXISTS file_records"));
@@ -120,8 +153,27 @@ mod tests {
     fn store_profile_roundtrip() {
         assert_eq!(StoreProfile::parse("study"), Some(StoreProfile::Study));
         assert_eq!(StoreProfile::parse("NODE"), Some(StoreProfile::Node));
+        assert_eq!(StoreProfile::parse("Agent"), Some(StoreProfile::Agent));
         assert_eq!(StoreProfile::parse("lab"), None);
         assert_eq!(StoreProfile::Study.as_str(), "study");
         assert_eq!(StoreProfile::Node.as_str(), "node");
+        assert_eq!(StoreProfile::Agent.as_str(), "agent");
+    }
+
+    #[test]
+    fn agentic_schema_is_work_log_only() {
+        let sql = get_agentic_schema();
+        assert!(sql.len() > 100);
+        assert_eq!(AGENTIC_SCHEMA_VERSION, 1);
+        assert_eq!(SCHEMA_VERSION, 1);
+        assert_ne!(sql, SQLITE_SCHEMA);
+        assert!(sql.contains("CREATE TABLE IF NOT EXISTS queries"));
+        assert!(sql.contains("CREATE TABLE IF NOT EXISTS attempts"));
+        assert!(sql.contains("CREATE TABLE IF NOT EXISTS artifacts"));
+        assert!(sql.contains("CREATE TABLE IF NOT EXISTS catalog_meta"));
+        assert!(!sql.to_ascii_lowercase().contains("insert into"));
+        assert!(!sql.contains("subjects"));
+        assert_eq!(DEFAULT_AGENT_DB_RELATIVE, ".dbsym/agent.sqlite");
+        assert_eq!(DEFAULT_AGENT_SCHEMA_RELATIVE, ".dbsym/schema.agentic.sqlite.sql");
     }
 }

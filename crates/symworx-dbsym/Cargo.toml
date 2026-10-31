@@ -8,7 +8,7 @@ edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
 authors          = { workspace = true }
-description      = "Per-study (or edge) research catalog: subjects, sessions, attributes, file provenance"
+description      = "Per-study (or edge) research catalog and agentic work log"
 keywords = ["sql", "database", "research-schema"]
 categories = ["science"]
 
