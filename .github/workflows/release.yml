@@ -12,8 +12,8 @@
 #   - tags v*
 #   - workflow_dispatch (checks only; does not publish)
 #
-# Publish (crates.io, PyPI, GitHub Release) runs only on tags v*, after
-# validation succeeds. Create tags manually on worx.
+# Publish (crates.io, GHCR symview image, GitHub Release) runs only on tags
+# v*, after validation succeeds. PyPI is paused. Create tags manually on worx.
 
 name: Release
 
@@ -327,13 +327,14 @@ jobs:
           test "${{ needs.rust-checks.result }}" = "success"
           test "${{ needs.python-bindings.result }}" = "success"
           echo "All release validation jobs passed for v${{ needs.release-meta.outputs.version }}"
-          echo "On tag pushes: publish-crates + github-release run next (PyPI paused)."
+          echo "On tag pushes: publish-crates, then publish-image, plus github-release (PyPI paused)."
 
   # ===========================================================================
   # Publish — only on tags v* after validation succeeds
   #
   # Requires:
   #   - GitHub Environment `crates-io` with secret CARGO_REGISTRY_TOKEN
+  #   - packages: write on GITHUB_TOKEN for ghcr.io/symworx/symview
   #   - permissions for softprops/action-gh-release on the default GITHUB_TOKEN
   #   - (paused) Environment `pypi` + trusted publisher when re-enabling publish-python
   # ===========================================================================
@@ -379,6 +380,93 @@ jobs:
           publish_one symworx-loadsym
           publish_one symworx-spatialsym
           publish_one symworx-tui
+
+  # Image install uses the crates.io binary, so this waits until publish-crates
+  # has uploaded symworx-tui. Final tags also move :latest. Pre-releases do not.
+  publish-image:
+    name: Publish GHCR (symview)
+    runs-on: ubuntu-latest
+    needs: [release-meta, release-ready, publish-crates]
+    if: needs.release-meta.outputs.is_tag == 'true' && needs.release-ready.result == 'success' && needs.publish-crates.result == 'success'
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # cargo install reads the sparse index, which lags the publish API.
+      - name: Wait for symworx-tui on the crates.io index
+        env:
+          VERSION: ${{ needs.release-meta.outputs.version }}
+        run: |
+          set -euo pipefail
+          url="https://index.crates.io/sy/mw/symworx-tui"
+          for i in $(seq 1 30); do
+            if curl -fsSL -A "symworx-release (github.com/symworx/symworx)" "$url" \
+              | grep -F "\"vers\":\"${VERSION}\"" >/dev/null; then
+              echo "symworx-tui ${VERSION} is on the crates.io index"
+              exit 0
+            fi
+            echo "waiting for crates.io index (${i}/30)"
+            sleep 20
+          done
+          echo "::error::symworx-tui ${VERSION} not visible on the crates.io index"
+          exit 1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image tags
+        id: tags
+        env:
+          VERSION: ${{ needs.release-meta.outputs.version }}
+          PRERELEASE: ${{ needs.release-meta.outputs.is_prerelease }}
+        run: |
+          set -euo pipefail
+          {
+            echo "list<<EOF"
+            echo "ghcr.io/symworx/symview:${VERSION}"
+            if [[ "${PRERELEASE}" != "true" ]]; then
+              echo "ghcr.io/symworx/symview:latest"
+            fi
+            echo "EOF"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: containers
+          file: containers/symview.Containerfile
+          push: true
+          # Registry image only. Provenance adds an attestation manifest.
+          provenance: false
+          build-args: |
+            SYMWORX_VERSION=${{ needs.release-meta.outputs.version }}
+            INSTALL_MODE=crates
+          tags: ${{ steps.tags.outputs.list }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/symworx/symworx
+            org.opencontainers.image.version=${{ needs.release-meta.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=Apache-2.0
+            org.opencontainers.image.title=symview
+            org.opencontainers.image.description=SymWorx keyboard-driven TUI (symview)
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Check symview is on PATH
+        run: |
+          docker run --rm --entrypoint bash \
+            "ghcr.io/symworx/symview:${{ needs.release-meta.outputs.version }}" \
+            -c 'command -v symview'
 
   # ---------------------------------------------------------------------------
   # PyPI publish — PAUSED. Validation still builds a wheel smoke artifact
