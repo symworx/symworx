@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- GHCR: added `symview.Containerfile` and publish workflow to CI/CD
 - Python: `fit_polynomial` / `predict_polynomial`; `KalmanFilter.with_control`.
 - Python: `sdnn` (`symworx.core.statistics` and `symworx.biosym.physiology`) and `compute_hrv_metrics` / `HrvMetrics` (SDNN + RMSSD from RR intervals in seconds).
 

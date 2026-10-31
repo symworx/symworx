@@ -21,6 +21,18 @@ cargo run -p symworx-tui --bin symview
 
 In **Import**: browse `./data`, or `Ctrl+G` to generate demo signals. **Explore** for stats/sparkline; **Dynamics** for RQA.
 
+Container image ([`containers/symview.Containerfile`](containers/symview.Containerfile)): `symview` starts with its working directory at `/data`. Mount the folder that holds your signal files there. `Ctrl+Q` quits. The release workflow pushes `ghcr.io/symworx/symview:<version>` on a `v*` tag. Until that tag exists, build before run.
+
+```bash
+# Podman (:z relabels the mount for SELinux)
+podman build -f containers/symview.Containerfile -t ghcr.io/symworx/symview:0.5.0 .
+podman run --rm -it -v "$PWD:/data:z" ghcr.io/symworx/symview:0.5.0
+
+# Docker (on SELinux, use -v "$PWD:/data:z")
+docker build -f containers/symview.Containerfile -t ghcr.io/symworx/symview:0.5.0 .
+docker run --rm -it -v "$PWD:/data" ghcr.io/symworx/symview:0.5.0
+```
+
 ### Classical ML / stats (Rust, no OpenBLAS required for many APIs)
 
 ```bash
