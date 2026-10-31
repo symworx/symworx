@@ -112,7 +112,7 @@ symworx-tui        = { path = "crates/symworx-tui", version = "0.5.0" }
 # so the rule is uniform and easy to maintain.
 unsafe_code = "deny"
 
-[workspace.lints.clipy]
+[workspace.lints.clippy]
 # Pragmatic clippy configuration for the codebase.
 # Kept relativley lightweight to avoid pedantic global checks.
 # Can still use `#[allow(...)]` attributes where justified.
