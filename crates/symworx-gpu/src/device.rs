@@ -21,9 +21,10 @@ const PLATFORM: &str = env!("SYMWORX_HIP_PLATFORM");
 #[allow(unsafe_code)]
 mod ffi {
     unsafe extern "C" {
-        fn symworx_hip_device_count(count: *mut i32) -> i32;
-        fn symworx_hip_device_name(device: i32, name: *mut u8, len: usize) -> i32;
-        fn symworx_recurrence_f64(
+        // Edition 2024: extern items are private unless marked `pub`.
+        pub fn symworx_hip_device_count(count: *mut i32) -> i32;
+        pub fn symworx_hip_device_name(device: i32, name: *mut u8, len: usize) -> i32;
+        pub fn symworx_recurrence_f64(
             left: *const f64,
             nx: i32,
             right: *const f64,
