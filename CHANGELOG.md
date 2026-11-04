@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed 
 
+## [0.6.0] - 2026-11-04
+
+### Added
+
+- `symworx-gpu` with GPU accelerated recurrence analysis. Additional calculations will be added in time.
+
+### Changed 
+
 ## [0.5.1] - 2026-10-31
 
 ### Added
