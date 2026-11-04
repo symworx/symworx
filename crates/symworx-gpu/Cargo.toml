@@ -23,5 +23,12 @@ hip = []
 [dependencies]
 thiserror = { workspace = true }
 
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "recurrence_mask"
+harness = false
+
 [lints]
 workspace = true

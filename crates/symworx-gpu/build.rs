@@ -83,17 +83,21 @@ fn platform() -> String {
 }
 
 fn arch_flags(platform: &str) -> Vec<String> {
+    // hipcc 6.4 forwards a split `--offload-arch` `native` pair to the host
+    // link, which rejects it. The equals form is one argument.
     if let Ok(spec) = env::var("SYMWORX_GPU_ARCH") {
-        let archs: Vec<&str> = spec.split(',').map(str::trim).filter(|arch| !arch.is_empty()).collect();
+        let archs: Vec<String> = spec
+            .split(',')
+            .map(str::trim)
+            .filter(|arch| !arch.is_empty())
+            .map(|arch| format!("--offload-arch={arch}"))
+            .collect();
         if !archs.is_empty() {
-            return archs
-                .into_iter()
-                .flat_map(|arch| ["--offload-arch".to_string(), arch.to_string()])
-                .collect();
+            return archs;
         }
     }
     if platform == "amd" {
-        vec!["--offload-arch".to_string(), "native".to_string()]
+        vec!["--offload-arch=native".to_string()]
     } else {
         Vec::new()
     }
