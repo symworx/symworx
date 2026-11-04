@@ -12,6 +12,13 @@ description      = "Nonlinear dynamics tools (RQA, embedding, entropy, DMD, Koop
 keywords = ["nonlinear-dynamics", "control"] 
 categories = ["science", "mathematics"]
 
+[features]
+default = []
+## Device recurrence constructors. Without `hip` those calls return an unavailable error.
+gpu = ["dep:symworx-gpu"]
+## Compile the HIP recurrence kernel (`HIP_PLATFORM=amd` or `nvidia`).
+hip = ["gpu", "symworx-gpu/hip"]
+
 [dependencies]
 ndarray        = { workspace = true }
 ndarray-linalg = { workspace = true }
@@ -19,6 +26,7 @@ num-complex    = { workspace = true }
 # SVD for DMD (and shared distance metrics for embedding) — enable linalg for Svd.
 symworx-math   = { workspace = true }
 symworx-stats  = { workspace = true, features = ["linalg"] }
+symworx-gpu    = { workspace = true, optional = true }
 
 [lints]
 workspace = true

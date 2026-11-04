@@ -1,0 +1,34 @@
+# Copyright (c) 2026 Nathaniel T. Berry
+# Licensed under the Apache License, Version 2.0.
+
+[package]
+name = "symworx-gpu"
+version          = { workspace = true }
+edition          = { workspace = true }
+license          = { workspace = true }
+repository       = { workspace = true }
+authors          = { workspace = true }
+description      = "Opt-in GPU kernels for SymWorx (HIP for AMD and NVIDIA)"
+keywords = ["gpu", "hip", "recurrence"]
+categories = ["science", "mathematics"]
+
+[features]
+default = []
+## Compile the HIP recurrence kernel with `hipcc`.
+##
+## `HIP_PLATFORM=amd` links `libamdhip64`. `HIP_PLATFORM=nvidia` links `libcudart`.
+## The two builds are not one fat binary. The default build does not call `hipcc`.
+hip = []
+
+[dependencies]
+thiserror = { workspace = true }
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "recurrence_mask"
+harness = false
+
+[lints]
+workspace = true

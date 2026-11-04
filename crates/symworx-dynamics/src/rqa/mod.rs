@@ -22,6 +22,8 @@
 //! let rp = RecurrencePlot::from_series(&series, 3, 1, 0.5, 1);
 //! ```
 
+#[cfg(feature = "gpu")]
+mod device;
 mod metrics;
 mod plot;
 mod utils;

@@ -269,4 +269,78 @@ mod tests {
         let res = crqa(&x, &y, 3, 1, 0.1, 0);
         assert_eq!(res.n_recurrences, 0);
     }
+
+    #[cfg(feature = "hip")]
+    fn radius_between_distance_shells(traj: &ndarray::Array2<f64>) -> f64 {
+        let n = traj.nrows();
+        let mut dist2 = Vec::new();
+        for i in 0..n {
+            for j in (i + 1)..n {
+                let mut acc = 0.0;
+                for k in 0..traj.ncols() {
+                    let delta = traj[[i, k]] - traj[[j, k]];
+                    acc += delta * delta;
+                }
+                dist2.push(acc);
+            }
+        }
+        dist2.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        dist2.dedup_by(|a, b| (*a - *b).abs() <= 1e-9);
+        let mut mid = None;
+        for pair in dist2.windows(2) {
+            if pair[1] - pair[0] > 1e-6 {
+                mid = Some((pair[0] + pair[1]) * 0.5);
+                break;
+            }
+        }
+        mid.expect("sine embedding should have separated distances").sqrt()
+    }
+
+    /// Device mask matches the CPU plot, so DET / LAM from `quantify` match too.
+    #[cfg(feature = "hip")]
+    #[test]
+    fn device_plot_matches_cpu_mask_and_quantify() {
+        if symworx_gpu::probe().is_none() {
+            return;
+        }
+        let series: Vec<f64> = (0..80).map(|i| (i as f64 * 0.3).sin()).collect();
+        let embedded = crate::edim(&series, 2, 1);
+        let n = embedded.len();
+        let mut traj = ndarray::Array2::<f64>::zeros((n, 2));
+        for (i, row) in embedded.into_iter().enumerate() {
+            traj[[i, 0]] = row[0];
+            traj[[i, 1]] = row[1];
+        }
+        let radius = radius_between_distance_shells(&traj);
+        let theiler = 1usize;
+        let cpu = RecurrencePlot::from_trajectory(&traj, radius, theiler);
+        let gpu = RecurrencePlot::try_from_trajectory_on_device(&traj, radius, theiler).unwrap();
+        assert_eq!(cpu.matrix, gpu.matrix);
+
+        let cpu_q = quantify(&cpu.matrix, theiler);
+        let gpu_q = quantify(&gpu.matrix, theiler);
+        assert_eq!(cpu_q.n_recurrences, gpu_q.n_recurrences);
+        assert_eq!(cpu_q.determinism, gpu_q.determinism);
+        assert_eq!(cpu_q.laminarity, gpu_q.laminarity);
+        assert_eq!(cpu_q.lmax, gpu_q.lmax);
+
+        let direct = rqa(&series, 2, 1, radius, theiler);
+        assert_eq!(direct.n_recurrences, cpu_q.n_recurrences);
+        assert_eq!(direct.determinism, cpu_q.determinism);
+
+        let other: Vec<f64> = (0..60).map(|i| (i as f64 * 0.3).sin() + 0.05).collect();
+        let embedded_y = crate::edim(&other, 2, 1);
+        let mut traj_y = ndarray::Array2::<f64>::zeros((embedded_y.len(), 2));
+        for (i, row) in embedded_y.into_iter().enumerate() {
+            traj_y[[i, 0]] = row[0];
+            traj_y[[i, 1]] = row[1];
+        }
+        let cpu_cross = CrossRecurrencePlot::from_trajectories(&traj, &traj_y, radius, 0);
+        let gpu_cross = CrossRecurrencePlot::try_from_trajectories_on_device(&traj, &traj_y, radius, 0).unwrap();
+        assert_eq!(cpu_cross.matrix, gpu_cross.matrix);
+        let cpu_cross_q = quantify(&cpu_cross.matrix, 0);
+        let gpu_cross_q = quantify(&gpu_cross.matrix, 0);
+        assert_eq!(cpu_cross_q.n_recurrences, gpu_cross_q.n_recurrences);
+        assert_eq!(cpu_cross_q.determinism, gpu_cross_q.determinism);
+    }
 }
