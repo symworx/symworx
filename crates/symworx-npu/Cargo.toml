@@ -1,0 +1,24 @@
+# Copyright (c) 2026 Nathaniel T. Berry
+# Licensed under the Apache License, Version 2.0.
+
+[package]
+name = "symworx-npu"
+version          = { workspace = true }
+edition          = { workspace = true }
+license          = { workspace = true }
+repository       = { workspace = true }
+authors          = { workspace = true }
+description      = "No-std recurrence masks and RQA for embedded targets"
+keywords         = ["embedded", "recurrence", "rqa", "no-std"]
+categories       = ["science", "mathematics", "embedded"]
+
+[features]
+default = ["std"]
+## Host standard library. Off for bare-metal MCU builds.
+std = []
+
+[dependencies]
+thiserror = { workspace = true }
+
+[lints]
+workspace = true
