@@ -91,6 +91,7 @@ pub use activity::{
 pub use csv::{
     CsvReader,
     CsvWriter,
+    write_records_csv,
 };
 pub use gbd::{
     GbdReader,
@@ -101,7 +102,10 @@ pub use ibi::{
     read_ibi,
 };
 #[cfg(feature = "parquet")]
-pub use parquet::ParquetReader;
+pub use parquet::{
+    ParquetReader,
+    write_records_parquet,
+};
 pub use paths::{
     ActivityFileEntry,
     VELOFIT_HOME_ENV,
