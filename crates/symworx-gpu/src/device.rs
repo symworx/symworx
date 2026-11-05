@@ -14,6 +14,10 @@ use crate::{
         blank_mask,
         prepare,
     },
+    sample_entropy::{
+        entropy_from_counts,
+        needs_counts,
+    },
 };
 
 const PLATFORM: &str = env!("SYMWORX_HIP_PLATFORM");
@@ -36,6 +40,15 @@ mod ffi {
             device: i32,
             host_bits: *mut u8,
             bits_len: i32,
+        ) -> i32;
+        pub fn symworx_sample_entropy_f64(
+            data: *const f64,
+            n: i32,
+            m: i32,
+            r: f64,
+            device: i32,
+            count_m: *mut u64,
+            count_m1: *mut u64,
         ) -> i32;
     }
 }
@@ -113,6 +126,34 @@ pub fn recurrence_mask_hip(
     Ok(mask)
 }
 
+pub fn sample_entropy_hip(data: &[f64], m: usize, r: f64) -> Result<f64, GpuError> {
+    if !needs_counts(data, m, r)? {
+        return Ok(0.0);
+    }
+    let device = probe_hip()?;
+    let mut host_m = 0u64;
+    let mut host_m1 = 0u64;
+    // `data` stays borrowed for this synchronous launcher. The count slots are exclusive.
+    let status = unsafe {
+        ffi::symworx_sample_entropy_f64(
+            data.as_ptr(),
+            data.len() as i32,
+            m as i32,
+            r,
+            device.index,
+            &mut host_m,
+            &mut host_m1,
+        )
+    };
+    if status != 0 {
+        return Err(GpuError::Device {
+            status,
+            call: "symworx_sample_entropy_f64",
+        });
+    }
+    Ok(entropy_from_counts(host_m, host_m1))
+}
+
 fn device_name(index: i32) -> Result<String, GpuError> {
     let mut name_buf = [0u8; 256];
     // `name_buf` is a writable 256-byte buffer. The launcher writes a trailing NUL inside it.
@@ -188,6 +229,25 @@ mod tests {
         };
         let cpu = recurrence_mask_cpu(left, right, 0.5, 1).unwrap();
         let gpu = recurrence_mask(left, right, 0.5, 1).unwrap();
+        assert_eq!(cpu, gpu);
+    }
+
+    #[test]
+    fn hip_sample_entropy_matches_cpu_when_a_device_is_present() {
+        if probe_hip().is_err() {
+            return;
+        }
+        let mut series = Vec::with_capacity(300);
+        for i in 0..300 {
+            series.push((i as f64 * 0.17).sin());
+        }
+        let cpu = crate::sample_entropy_cpu(&series, 2, 0.2).unwrap();
+        let gpu = crate::sample_entropy(&series, 2, 0.2).unwrap();
+        assert_eq!(cpu, gpu);
+
+        let short = [0.0, 0.5, 0.05];
+        let cpu = crate::sample_entropy_cpu(&short, 0, 0.1).unwrap();
+        let gpu = crate::sample_entropy(&short, 0, 0.1).unwrap();
         assert_eq!(cpu, gpu);
     }
 

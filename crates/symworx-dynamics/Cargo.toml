@@ -14,9 +14,9 @@ categories = ["science", "mathematics"]
 
 [features]
 default = []
-## Device recurrence constructors. Without `hip` those calls return an unavailable error.
+## Device recurrence and sample-entropy entry points. Without `hip` those calls return an unavailable error.
 gpu = ["dep:symworx-gpu"]
-## Compile the HIP recurrence kernel (`HIP_PLATFORM=amd` or `nvidia`).
+## Compile the HIP recurrence and sample-entropy kernels (`HIP_PLATFORM=amd` or `nvidia`).
 hip = ["gpu", "symworx-gpu/hip"]
 
 [dependencies]

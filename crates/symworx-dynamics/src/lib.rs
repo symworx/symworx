@@ -65,6 +65,8 @@ pub use embedding::{
     edim,
     fnn,
 };
+#[cfg(feature = "gpu")]
+pub use entropy::try_sample_entropy_on_device;
 pub use entropy::{
     DEFAULT_AMI_BINS,
     TeConfig,

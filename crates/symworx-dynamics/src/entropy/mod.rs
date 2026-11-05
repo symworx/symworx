@@ -8,11 +8,15 @@
 //! conditional). Pre-binned series use `transfer_entropy_discrete*` and
 //! `mutual_information_discrete`; continuous series are quantile-binned.
 
+#[cfg(feature = "gpu")]
+mod device;
 mod multiscale_entropy;
 mod mutual_information;
 mod sample_entropy;
 mod transfer_entropy;
 
+#[cfg(feature = "gpu")]
+pub use device::try_sample_entropy_on_device;
 pub use multiscale_entropy::multiscale_entropy;
 pub use mutual_information::{
     DEFAULT_AMI_BINS,

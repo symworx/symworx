@@ -9,12 +9,12 @@ license          = { workspace = true }
 repository       = { workspace = true }
 authors          = { workspace = true }
 description      = "Opt-in GPU kernels for SymWorx (HIP for AMD and NVIDIA)"
-keywords = ["gpu", "hip", "recurrence"]
+keywords = ["gpu", "hip", "recurrence", "entropy"]
 categories = ["science", "mathematics"]
 
 [features]
 default = []
-## Compile the HIP recurrence kernel with `hipcc`.
+## Compile the HIP recurrence and sample-entropy kernels with `hipcc`.
 ##
 ## `HIP_PLATFORM=amd` links `libamdhip64`. `HIP_PLATFORM=nvidia` links `libcudart`.
 ## The two builds are not one fat binary. The default build does not call `hipcc`.
@@ -28,6 +28,10 @@ criterion = "0.5"
 
 [[bench]]
 name = "recurrence_mask"
+harness = false
+
+[[bench]]
+name = "sample_entropy"
 harness = false
 
 [lints]

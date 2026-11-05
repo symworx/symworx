@@ -1,12 +1,14 @@
 # symworx-gpu
 
-Opt-in GPU kernels. The default build is a Rust recurrence-mask reference and does not look for a GPU. The `hip` feature compiles `kernels/recurrence.hip` with `hipcc`.
+Opt-in GPU kernels. The default build is a Rust recurrence-mask reference and a Rust sample-entropy reference. It does not look for a GPU. The `hip` feature compiles `kernels/recurrence.hip` and `kernels/sample_entropy.hip` into one shared library with `hipcc`.
 
 `HIP_PLATFORM=amd` uses the ROCm runtime (`libamdhip64`). `HIP_PLATFORM=nvidia` uses nvcc and `libcudart`. HIP does not emit one binary that runs on both. Build twice when you need both.
 
-The kernel fills a packed Euclidean recurrence mask (squared distance, Theiler window). `symworx-dynamics` keeps `RecurrencePlot::from_trajectory` on the CPU. `try_from_trajectory_on_device` is the device call, behind the dynamics `gpu` / `hip` features. Line metrics (DET, LAM) stay on the CPU.
+The recurrence kernel fills a packed Euclidean recurrence mask (squared distance, Theiler window). `symworx-dynamics` keeps `RecurrencePlot::from_trajectory` on the CPU. `try_from_trajectory_on_device` is the device call, behind the dynamics `gpu` / `hip` features. Line metrics (DET, LAM) stay on the CPU.
 
-Use the device call for large masks, starting around a few thousand embedded points. Small plots should keep the CPU method. The dynamics wrapper refuses to expand a boolean matrix above `20_000²` cells.
+The sample-entropy kernel counts Chebyshev matches on the raw series and returns `-ln(A/B)`. `sample_entropy` in dynamics stays on the CPU, as do multiscale entropy, the Dynamics tab, and the Python binding. `try_sample_entropy_on_device` is the device call. It uses the same `m`, `r`, and `0.0` edge cases as the CPU function, and it does not fall back to that loop.
+
+Use a device call for long inputs, starting around a few thousand points. Small plots and short windows should keep the CPU method. The dynamics recurrence wrapper refuses to expand a boolean matrix above `20_000²` cells. Sample entropy does not build that matrix.
 
 `f64` only. Datacenter AMD and NVIDIA run that. Consumer RDNA runs it slowly. There is no `f32` kernel here.
 

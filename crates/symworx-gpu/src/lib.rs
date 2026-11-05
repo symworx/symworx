@@ -5,19 +5,23 @@
 //!
 //! Opt-in device kernels for SymWorx.
 //!
-//! The default build is pure Rust: a CPU recurrence mask and no HIP runtime.
-//! The `hip` feature compiles `kernels/recurrence.hip` with `hipcc` and links
-//! it for either AMD (`HIP_PLATFORM=amd`) or NVIDIA (`HIP_PLATFORM=nvidia`).
+//! The default build is pure Rust: a CPU recurrence mask, a CPU sample-entropy
+//! reference, and no HIP runtime. The `hip` feature compiles
+//! `kernels/recurrence.hip` and `kernels/sample_entropy.hip` with `hipcc` and
+//! links them for either AMD (`HIP_PLATFORM=amd`) or NVIDIA
+//! (`HIP_PLATFORM=nvidia`).
 //!
-//! Callers in `symworx-dynamics` keep the existing CPU recurrence plot. Device
-//! entry points are separate and return [`GpuError::Unavailable`] when this
-//! crate was built without `hip` or no device is present.
+//! Callers in `symworx-dynamics` keep the existing CPU recurrence plot and
+//! `sample_entropy`. Device entry points are separate and return
+//! [`GpuError::Unavailable`] when this crate was built without `hip` or no
+//! device is present.
 
 #![warn(missing_docs)]
 
 mod error;
 mod hardware;
 mod recurrence;
+mod sample_entropy;
 
 #[cfg(feature = "hip")]
 mod device;
@@ -42,4 +46,8 @@ pub use recurrence::{
     probe,
     recurrence_mask,
     recurrence_mask_cpu,
+};
+pub use sample_entropy::{
+    sample_entropy,
+    sample_entropy_cpu,
 };
