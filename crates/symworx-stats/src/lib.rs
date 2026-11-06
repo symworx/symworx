@@ -177,7 +177,9 @@ pub use correlation::{
     pearson_correlation,
 };
 pub use icc::{
+    Icc,
     IccError,
+    icc,
     icc_11,
 };
 pub use density::{
