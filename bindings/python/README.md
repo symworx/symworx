@@ -53,6 +53,8 @@ Time-domain HRV on an interval series: `sdnn` is the population SDNN (NaN if few
 | `simulate_random_intercept` | Balanced LMM sim for tests / demos |
 | `accuracy`, `classification_report` | Classification metrics |
 | `roc_auc`, `roc_auc_ovr` | ROC-AUC binary / macro OVR |
+| `icc_11` | Shrout–Fleiss ICC(1,1) for pairs of replicates |
+| `std_dev_sample` | Sample standard deviation (divisor `n - 1`); NaN when `n < 2` |
 
 ```python
 from symworx.core import statistics as st

@@ -51,6 +51,7 @@ use symworx_core::stats::{
     gaussian_nb as rust_gaussian_nb,
     hist_kde_with as rust_hist_kde_with,
     histogram as rust_histogram,
+    icc_11,
     kde_gaussian as rust_kde_gaussian,
     l1,
     l2,
@@ -80,6 +81,7 @@ use symworx_core::stats::{
     sd_successive_differences,
     sdnn,
     silverman_bandwidth as rust_silverman_bandwidth,
+    std_dev_sample,
     // variability
     successive_differences,
     train_test_split as rust_train_test_split,
@@ -156,6 +158,20 @@ pub fn py_mad(data: Vec<f64>) -> f64 {
 #[pyfunction(name = "percentile")]
 pub fn py_percentile(data: Vec<f64>, p: Vec<f64>) -> PyResult<Vec<f64>> {
     Ok(percentile(&data, p))
+}
+
+/// Sample standard deviation (divisor `n - 1`). NaN when `n < 2`.
+#[pyfunction(name = "std_dev_sample")]
+pub fn py_std_dev_sample(data: Vec<f64>) -> f64 {
+    std_dev_sample(&data)
+}
+
+/// Shrout–Fleiss ICC(1,1) for pairs `(replicate_1, replicate_2)`.
+///
+/// At least two pairs are required. Both mean squares equal to 0 yields 1.
+#[pyfunction(name = "icc_11")]
+pub fn py_icc_11(pairs: Vec<(f64, f64)>) -> PyResult<f64> {
+    icc_11(&pairs).map_err(|err| PyValueError::new_err(err.to_string()))
 }
 
 // ==========================================================
@@ -1115,6 +1131,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_median, m)?)?;
     m.add_function(wrap_pyfunction!(py_mad, m)?)?;
     m.add_function(wrap_pyfunction!(py_percentile, m)?)?;
+    m.add_function(wrap_pyfunction!(py_std_dev_sample, m)?)?;
+    m.add_function(wrap_pyfunction!(py_icc_11, m)?)?;
 
     // --- Correlation --------------------------------------
     let _ = m.add_function(wrap_pyfunction!(py_pearson_correlation, m)?);

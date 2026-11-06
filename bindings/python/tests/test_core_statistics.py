@@ -13,6 +13,26 @@ def test_mean_median():
     assert st.median([1.0, 2.0, 3.0]) == 2.0
 
 
+def test_std_dev_sample():
+    import math
+
+    data = [2.0, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0]
+    assert abs(st.std_dev_sample(data) - math.sqrt(32.0 / 7.0)) < 1e-12
+    assert math.isnan(st.std_dev_sample([42.0]))
+    assert math.isnan(st.std_dev_sample([]))
+
+
+def test_icc_11():
+    import pytest
+
+    assert st.icc_11([(1.0, 1.0), (3.0, 3.0)]) == 1.0
+    assert st.icc_11([(1.0, 3.0), (1.0, 3.0)]) == -1.0
+    assert st.icc_11([(4.0, 4.0), (4.0, 4.0)]) == 1.0
+    assert st.icc_11([(1.0, 3.0), (2.0, 4.0), (3.0, 5.0)]) == 0.0
+    with pytest.raises(ValueError, match=r"at least 2 pairs, got 1"):
+        st.icc_11([(1.0, 2.0)])
+
+
 def test_sdnn():
     import math
 

@@ -54,6 +54,9 @@ pub mod cluster;
 /// Correlation functions.
 pub mod correlation;
 
+/// Shrout–Fleiss ICC(1,1) for two replicates per subject.
+pub mod icc;
+
 /// Distance metrics (e.g., Euclidean).
 pub mod distance;
 
@@ -172,6 +175,10 @@ pub use correlation::{
     correlation_matrix,
     correlation_matrix_from_vec,
     pearson_correlation,
+};
+pub use icc::{
+    IccError,
+    icc_11,
 };
 pub use density::{
     HistBin,
