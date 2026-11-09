@@ -13,6 +13,65 @@ def test_mean_median():
     assert st.median([1.0, 2.0, 3.0]) == 2.0
 
 
+def test_std_dev_sample():
+    import math
+
+    data = [2.0, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0]
+    assert abs(st.std_dev_sample(data) - math.sqrt(32.0 / 7.0)) < 1e-12
+    assert math.isnan(st.std_dev_sample([42.0]))
+    assert math.isnan(st.std_dev_sample([]))
+
+
+def test_icc_11():
+    import pytest
+
+    assert st.icc_11([(1.0, 1.0), (3.0, 3.0)]) == 1.0
+    assert st.icc_11([(1.0, 3.0), (1.0, 3.0)]) == -1.0
+    assert st.icc_11([(4.0, 4.0), (4.0, 4.0)]) == 1.0
+    assert st.icc_11([(1.0, 3.0), (2.0, 4.0), (3.0, 5.0)]) == 0.0
+    with pytest.raises(ValueError, match=r"at least 2 pairs, got 1"):
+        st.icc_11([(1.0, 2.0)])
+
+
+def test_icc_six_forms():
+    import math
+
+    import pytest
+
+    perfect = st.icc([[1.0, 1.0], [3.0, 3.0]])
+    assert (perfect.n, perfect.k) == (2, 2)
+    assert perfect.icc_11 == st.icc_11([(1.0, 1.0), (3.0, 3.0)]) == 1.0
+    assert perfect.icc_1k == perfect.icc_21 == perfect.icc_2k == perfect.icc_31 == perfect.icc_3k == 1.0
+
+    shifted = st.icc([[1.0, 3.0], [2.0, 4.0], [3.0, 5.0]])
+    assert shifted.icc_11 == shifted.icc_1k == 0.0
+    assert abs(shifted.icc_21 - (1.0 / 3.0)) < 1e-12
+    assert shifted.icc_2k == 0.5
+    assert shifted.icc_31 == shifted.icc_3k == 1.0
+
+    wide = st.icc([[1.0, 2.0, 3.0], [2.0, 3.0, 4.0], [3.0, 4.0, 5.0]])
+    assert wide.k == 3
+    assert abs(wide.icc_11 - 0.4) < 1e-12
+    assert abs(wide.icc_1k - (2.0 / 3.0)) < 1e-12
+    assert wide.icc_21 == 0.5
+    assert wide.icc_2k == 0.75
+    assert wide.icc_31 == wide.icc_3k == 1.0
+
+    tied = st.icc([[1.0, 3.0], [1.0, 3.0]])
+    assert tied.icc_11 == -1.0
+    assert tied.icc_21 == tied.icc_2k == 0.0
+    assert math.isnan(tied.icc_1k)
+    assert math.isnan(tied.icc_31)
+    assert math.isnan(tied.icc_3k)
+
+    with pytest.raises(ValueError, match="expected 2"):
+        st.icc([[1.0, 2.0], [3.0]])
+    with pytest.raises(ValueError, match="at least 2 columns"):
+        st.icc([[1.0], [2.0]])
+    with pytest.raises(ValueError, match="at least 2 subjects"):
+        st.icc([[1.0, 2.0]])
+
+
 def test_sdnn():
     import math
 

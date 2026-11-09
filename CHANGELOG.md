@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `symworx-stats`: Shrout–Fleiss `icc_11` for two replicates, and `icc` for the six balanced forms. Python: `symworx.core.statistics.icc_11`, `icc`, and `std_dev_sample`.
+
 ### Changed 
 
 ## [0.6.0] - 2026-11-04
