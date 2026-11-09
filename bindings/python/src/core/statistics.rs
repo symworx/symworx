@@ -19,6 +19,7 @@ use symworx_core::stats::{
     // density
     Histogram as RustHistogram,
     HistogramConfig,
+    Icc as RustIcc,
     KMeansConfig,
     KdeConfig,
     KdeEstimate as RustKde,
@@ -53,7 +54,6 @@ use symworx_core::stats::{
     histogram as rust_histogram,
     icc as rust_icc,
     icc_11,
-    Icc as RustIcc,
     kde_gaussian as rust_kde_gaussian,
     l1,
     l2,

@@ -184,11 +184,7 @@ pub fn icc<R: AsRef<[f64]>>(rows: &[R]) -> Result<Icc, IccError> {
         k,
         icc_11: coefficient(bms - wms, bms + (k_f - 1.0) * wms, all_equal),
         icc_1k: coefficient(bms - wms, bms, all_equal),
-        icc_21: coefficient(
-            bms - ems,
-            bms + (k_f - 1.0) * ems + k_f * judge,
-            all_equal,
-        ),
+        icc_21: coefficient(bms - ems, bms + (k_f - 1.0) * ems + k_f * judge, all_equal),
         icc_2k: coefficient(bms - ems, bms + judge, all_equal),
         icc_31: coefficient(bms - ems, bms + (k_f - 1.0) * ems, all_equal),
         icc_3k: coefficient(bms - ems, bms, all_equal),
@@ -233,10 +229,7 @@ mod tests {
     use super::*;
 
     fn close(actual: f64, expected: f64) {
-        assert!(
-            (actual - expected).abs() < 1e-12,
-            "{actual} != {expected}"
-        );
+        assert!((actual - expected).abs() < 1e-12, "{actual} != {expected}");
     }
 
     #[test]
@@ -334,10 +327,7 @@ mod tests {
     #[test]
     fn table_shape_is_checked() {
         assert_eq!(icc(&[[1.0, 2.0]]), Err(IccError::TooFewSubjects { n: 1 }));
-        assert_eq!(
-            icc(&[[1.0], [2.0]]),
-            Err(IccError::TooFewColumns { k: 1 })
-        );
+        assert_eq!(icc(&[[1.0], [2.0]]), Err(IccError::TooFewColumns { k: 1 }));
         assert_eq!(
             icc(&[vec![1.0, 2.0], vec![3.0]]),
             Err(IccError::RaggedRows {

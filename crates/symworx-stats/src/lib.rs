@@ -176,12 +176,6 @@ pub use correlation::{
     correlation_matrix_from_vec,
     pearson_correlation,
 };
-pub use icc::{
-    Icc,
-    IccError,
-    icc,
-    icc_11,
-};
 pub use density::{
     HistBin,
     HistKde,
@@ -234,6 +228,12 @@ pub use eval::{
     ResidualRef,
     evaluate_residuals,
     model_eval_from_predictions,
+};
+pub use icc::{
+    Icc,
+    IccError,
+    icc,
+    icc_11,
 };
 pub use knn::{
     KnnClassifier,
