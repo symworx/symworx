@@ -3,16 +3,21 @@
 
 //! Vertical reference-channel generator for gait event detection.
 //!
-//! Each step is one Gaussian hump. Timing comes from [`GaitParams`]: stride time
-//! from cadence (or from step length and walking speed), split into a left and
-//! a right gap. `stride_variability` is the coefficient of variation of stride
-//! time. `asymmetry` in `[0, 1]` lengthens the left gap and shortens the right
-//! gap, and lowers the right hump. Values above 0.95 are clamped so both gaps
-//! stay positive.
+//! One Gaussian hump per stride. That is the event [`super::detect_gait_strides`] and
+//! [`super::analyze_gait_signal`] treat as a stride, so a quiet series reports a mean
+//! stride time of `stride_time()` and a cadence of `120 / stride_time()`.
 //!
-//! `vertical_amp` is the detector scale, not a meter displacement. The default
+//! Timing comes from [`GaitParams::stride_time`]: cadence when it is set, otherwise
+//! step length and walking speed. `stride_variability` is the coefficient of
+//! variation of that stride time. `asymmetry` in `[0, 1]` shifts the hump later
+//! in the stride. Values outside that range are clamped. The gap between humps
+//! stays the stride time. Mass, height, and leg length are not used.
+//!
+//! `vertical_amp` is the detector scale, not meter displacement. The default
 //! of 1 matches the normalized amplitudes `detect_gait_strides` is tuned for.
-//! `step_peaks` are the analytic hump centers before noise.
+//! `stride_peaks` are the analytic hump centers before noise. A hump wider than
+//! the gap between strides can merge with its neighbors, and the detector then
+//! will not return those centers.
 
 use rand::{
     SeedableRng,
@@ -29,8 +34,8 @@ pub struct GaitTimeSeries {
     pub times: Vec<f64>,
     /// Vertical reference channel.
     pub values: Vec<f64>,
-    /// Analytic step-peak indices, recorded before additive noise.
-    pub step_peaks: Vec<usize>,
+    /// Analytic stride-peak indices, recorded before additive noise.
+    pub stride_peaks: Vec<usize>,
 }
 
 /// Controls for [`generate_gait_timeseries`].
@@ -86,6 +91,9 @@ pub fn generate_gait_timeseries(params: &GaitSimulationParams) -> Result<GaitTim
     if !params.gait.stride_variability.is_finite() || params.gait.stride_variability < 0.0 {
         return Err("stride variability must be finite and non-negative");
     }
+    if !params.gait.asymmetry.is_finite() {
+        return Err("asymmetry must be finite");
+    }
 
     let n_f = params.duration * params.fs;
     if !n_f.is_finite() || n_f < 1.0 || n_f > usize::MAX as f64 {
@@ -99,7 +107,8 @@ pub fn generate_gait_timeseries(params: &GaitSimulationParams) -> Result<GaitTim
         return Err("stride time must be finite and positive");
     }
 
-    let asymmetry = params.gait.asymmetry.clamp(0.0, 0.95);
+    let asymmetry = params.gait.asymmetry.clamp(0.0, 1.0);
+    let phase = 0.5 + 0.2 * asymmetry;
     let cv = params.gait.stride_variability;
     let margin = 3.0 * params.hump_sigma_s;
     let mut rng = if cv > 0.0 || params.noise_std > 0.0 {
@@ -121,19 +130,20 @@ pub fn generate_gait_timeseries(params: &GaitSimulationParams) -> Result<GaitTim
             }
             _ => base_stride,
         };
-        let left_gap = stride * 0.5 * (1.0 + asymmetry);
-        let right_gap = stride * 0.5 * (1.0 - asymmetry);
-        t += left_gap;
-        push_event(&mut events, t, params.vertical_amp, params.duration, margin);
-        t += right_gap;
-        let right_amp = params.vertical_amp * (1.0 - asymmetry);
-        push_event(&mut events, t, right_amp, params.duration, margin);
+        push_event(
+            &mut events,
+            t + stride * phase,
+            params.vertical_amp,
+            params.duration,
+            margin,
+        );
+        t += stride;
     }
 
     let dt = 1.0 / params.fs;
     let times: Vec<f64> = (0..n).map(|i| i as f64 * dt).collect();
     let mut values = vec![0.0; n];
-    let mut step_peaks = Vec::with_capacity(events.len());
+    let mut stride_peaks = Vec::with_capacity(events.len());
     let window = 4.0 * params.hump_sigma_s;
 
     for (center, amp) in events {
@@ -142,10 +152,10 @@ pub fn generate_gait_timeseries(params: &GaitSimulationParams) -> Result<GaitTim
             continue;
         }
         let idx = idx as usize;
-        if step_peaks.last() == Some(&idx) {
+        if stride_peaks.last() == Some(&idx) {
             continue;
         }
-        step_peaks.push(idx);
+        stride_peaks.push(idx);
 
         let i0 = ((center - window) * params.fs).floor().max(0.0) as usize;
         let i1 = (((center + window) * params.fs).ceil() as usize).min(n);
@@ -166,7 +176,7 @@ pub fn generate_gait_timeseries(params: &GaitSimulationParams) -> Result<GaitTim
     Ok(GaitTimeSeries {
         times,
         values,
-        step_peaks,
+        stride_peaks,
     })
 }
 
@@ -179,7 +189,12 @@ fn push_event(events: &mut Vec<(f64, f64)>, t: f64, amp: f64, duration: f64, mar
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::detect_gait_strides;
+    use crate::{
+        GaitSignalQuality,
+        analyze_gait_signal,
+        detect_gait_strides,
+        detect_gait_strides_with_quality,
+    };
 
     fn quiet() -> GaitSimulationParams {
         GaitSimulationParams {
@@ -192,30 +207,94 @@ mod tests {
         }
     }
 
+    fn gaps(peaks: &[usize]) -> Vec<usize> {
+        peaks.windows(2).map(|w| w[1] - w[0]).collect()
+    }
+
     #[test]
-    fn quiet_series_places_a_hump_on_every_step() {
+    fn quiet_series_places_one_hump_per_stride() {
         let params = quiet();
         let ts = generate_gait_timeseries(&params).unwrap();
         assert_eq!(ts.times.len(), ts.values.len());
-        assert!(ts.step_peaks.len() >= 10);
-        for w in ts.step_peaks.windows(2) {
-            assert_eq!(w[1] - w[0], 50);
+        assert_eq!(ts.stride_peaks.len(), 8);
+        for w in ts.stride_peaks.windows(2) {
+            assert_eq!(w[1] - w[0], 100);
             assert!(ts.values[w[0]] > ts.values[w[0] - 1]);
             assert!(ts.values[w[0]] > ts.values[w[0] + 1]);
         }
     }
 
     #[test]
-    fn stride_detector_recovers_the_analytic_steps() {
+    fn quiet_analysis_reports_the_generated_stride_and_cadence() {
         let params = quiet();
         let ts = generate_gait_timeseries(&params).unwrap();
         let detected = detect_gait_strides(&ts.values, params.fs);
-        assert_eq!(detected.peak_indices, ts.step_peaks);
+        assert_eq!(detected.peak_indices, ts.stride_peaks);
+
+        let analysis = analyze_gait_signal(&ts.values, params.fs);
+        assert_eq!(analysis.intervals.peak_times.len(), ts.stride_peaks.len());
+        assert!((analysis.stats.mean_stride_time_s - 1.0).abs() < 1e-9);
+        let cadence = analysis.stats.cadence_steps_min.expect("cadence");
+        assert!((cadence - 120.0).abs() < 1e-6);
     }
 
     #[test]
-    fn asymmetry_alternates_the_gaps() {
+    fn default_variability_stays_above_the_detector_floor() {
         let params = GaitSimulationParams {
+            seed: Some(1),
+            ..GaitSimulationParams::default()
+        };
+        assert!((params.gait.stride_variability - 0.03).abs() < 1e-12);
+        let ts = generate_gait_timeseries(&params).unwrap();
+        let detected = detect_gait_strides(&ts.values, params.fs);
+        assert_eq!(detected.peak_indices, ts.stride_peaks);
+
+        let analysis = analyze_gait_signal(&ts.values, params.fs);
+        assert!((analysis.stats.mean_stride_time_s - 1.0).abs() < 0.05);
+        let cadence = analysis.stats.cadence_steps_min.expect("cadence");
+        assert!((cadence - 120.0).abs() < 8.0);
+    }
+
+    #[test]
+    fn unset_cadence_follows_speed_and_step_length() {
+        let params = GaitSimulationParams {
+            gait: GaitParams {
+                walking_speed: 1.0,
+                step_length: 0.8,
+                cadence: None,
+                stride_variability: 0.0,
+                asymmetry: 0.0,
+                ..GaitParams::default()
+            },
+            ..GaitSimulationParams::default()
+        };
+        let ts = generate_gait_timeseries(&params).unwrap();
+        assert!(gaps(&ts.stride_peaks).iter().all(|&gap| gap == 160));
+        let analysis = analyze_gait_signal(&ts.values, params.fs);
+        assert!((analysis.stats.mean_stride_time_s - 1.6).abs() < 1e-9);
+        let cadence = analysis.stats.cadence_steps_min.expect("cadence");
+        assert!((cadence - 75.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn explicit_cadence_overrides_speed() {
+        let params = GaitSimulationParams {
+            gait: GaitParams {
+                walking_speed: 3.0,
+                cadence: Some(60.0),
+                stride_variability: 0.0,
+                asymmetry: 0.0,
+                ..GaitParams::default()
+            },
+            ..GaitSimulationParams::default()
+        };
+        let ts = generate_gait_timeseries(&params).unwrap();
+        assert!(gaps(&ts.stride_peaks).iter().all(|&gap| gap == 200));
+    }
+
+    #[test]
+    fn asymmetry_shifts_the_hump_and_keeps_one_peak_per_stride() {
+        let shifted = GaitSimulationParams {
             gait: GaitParams {
                 stride_variability: 0.0,
                 asymmetry: 0.2,
@@ -223,13 +302,48 @@ mod tests {
             },
             ..GaitSimulationParams::default()
         };
+        let quiet_ts = generate_gait_timeseries(&quiet()).unwrap();
+        let ts = generate_gait_timeseries(&shifted).unwrap();
+        assert_eq!(ts.stride_peaks.len(), quiet_ts.stride_peaks.len());
+        assert!(ts.stride_peaks[0] > quiet_ts.stride_peaks[0]);
+        assert!(gaps(&ts.stride_peaks).iter().all(|&gap| gap == 100));
+        let detected = detect_gait_strides(&ts.values, shifted.fs);
+        assert_eq!(detected.peak_indices, ts.stride_peaks);
+        let analysis = analyze_gait_signal(&ts.values, shifted.fs);
+        assert!((analysis.stats.mean_stride_time_s - 1.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn negative_asymmetry_is_clamped_to_symmetric() {
+        let params = GaitSimulationParams {
+            gait: GaitParams {
+                stride_variability: 0.0,
+                asymmetry: -0.5,
+                ..GaitParams::default()
+            },
+            ..GaitSimulationParams::default()
+        };
         let ts = generate_gait_timeseries(&params).unwrap();
-        let gaps: Vec<usize> = ts.step_peaks.windows(2).map(|w| w[1] - w[0]).collect();
-        assert!(gaps.len() >= 4);
-        // First hump is the left step. The following gap is the shorter right step.
-        assert!(gaps[0] < gaps[1]);
-        assert_eq!(gaps[0], gaps[2]);
-        assert_eq!(gaps[1], gaps[3]);
+        let quiet_ts = generate_gait_timeseries(&quiet()).unwrap();
+        assert_eq!(ts.stride_peaks, quiet_ts.stride_peaks);
+    }
+
+    #[test]
+    fn noise_does_not_move_the_analytic_peaks() {
+        let mut params = GaitSimulationParams {
+            gait: GaitParams {
+                stride_variability: 0.0,
+                asymmetry: 0.0,
+                ..GaitParams::default()
+            },
+            seed: Some(3),
+            ..GaitSimulationParams::default()
+        };
+        let clean = generate_gait_timeseries(&params).unwrap();
+        params.noise_std = 0.05;
+        let noisy = generate_gait_timeseries(&params).unwrap();
+        assert_eq!(noisy.stride_peaks, clean.stride_peaks);
+        assert_ne!(noisy.values, clean.values);
     }
 
     #[test]
@@ -245,20 +359,119 @@ mod tests {
         };
         let first = generate_gait_timeseries(&params).unwrap();
         let second = generate_gait_timeseries(&params).unwrap();
-        assert_eq!(first.step_peaks, second.step_peaks);
+        assert_eq!(first.stride_peaks, second.stride_peaks);
         assert_eq!(first.values, second.values);
-        assert!(first.step_peaks.len() >= 4);
+        assert!(first.stride_peaks.len() >= 4);
     }
 
     #[test]
-    fn rejects_a_non_positive_sample_rate() {
+    fn short_recording_returns_an_empty_peak_list() {
         let params = GaitSimulationParams {
-            fs: 0.0,
-            ..GaitSimulationParams::default()
+            duration: 0.3,
+            ..quiet()
         };
-        assert_eq!(
-            generate_gait_timeseries(&params).unwrap_err(),
-            "sample rate must be finite and positive"
-        );
+        let ts = generate_gait_timeseries(&params).unwrap();
+        assert_eq!(ts.values.len(), 30);
+        assert!(ts.stride_peaks.is_empty());
+    }
+
+    #[test]
+    fn wide_sigma_merges_neighbors_so_the_detector_drops_centers() {
+        let params = GaitSimulationParams {
+            duration: 6.0,
+            hump_sigma_s: 0.6,
+            ..quiet()
+        };
+        let ts = generate_gait_timeseries(&params).unwrap();
+        assert!(ts.stride_peaks.len() >= 2);
+        let detected = detect_gait_strides(&ts.values, params.fs);
+        assert!(detected.peak_indices.len() < ts.stride_peaks.len());
+    }
+
+    #[test]
+    fn reference_quality_band_inserts_extra_peaks_on_this_hump() {
+        let params = quiet();
+        let ts = generate_gait_timeseries(&params).unwrap();
+        let detected = detect_gait_strides_with_quality(&ts.values, params.fs, GaitSignalQuality::Reference);
+        // The 0.2–6 Hz preset rings on this Gaussian and inserts extra peaks.
+        // The raw detector is the path that recovers `stride_peaks`.
+        assert!(detected.peak_indices.len() > ts.stride_peaks.len());
+        let mean = detected.intervals_sec.iter().sum::<f64>() / detected.intervals_sec.len() as f64;
+        assert!(mean < 0.85, "mean interval {mean}");
+    }
+
+    #[test]
+    fn rejects_unusable_inputs() {
+        let cases: Vec<(GaitSimulationParams, &str)> = vec![
+            (
+                GaitSimulationParams {
+                    fs: 0.0,
+                    ..GaitSimulationParams::default()
+                },
+                "sample rate must be finite and positive",
+            ),
+            (
+                GaitSimulationParams {
+                    duration: 0.0,
+                    ..GaitSimulationParams::default()
+                },
+                "duration must be finite and positive",
+            ),
+            (
+                GaitSimulationParams {
+                    vertical_amp: 0.0,
+                    ..GaitSimulationParams::default()
+                },
+                "vertical amplitude must be finite and positive",
+            ),
+            (
+                GaitSimulationParams {
+                    hump_sigma_s: f64::NAN,
+                    ..GaitSimulationParams::default()
+                },
+                "hump sigma must be finite and positive",
+            ),
+            (
+                GaitSimulationParams {
+                    noise_std: -0.1,
+                    ..GaitSimulationParams::default()
+                },
+                "noise std must be finite and non-negative",
+            ),
+            (
+                GaitSimulationParams {
+                    gait: GaitParams {
+                        stride_variability: -0.01,
+                        ..GaitParams::default()
+                    },
+                    ..GaitSimulationParams::default()
+                },
+                "stride variability must be finite and non-negative",
+            ),
+            (
+                GaitSimulationParams {
+                    gait: GaitParams {
+                        asymmetry: f64::NAN,
+                        ..GaitParams::default()
+                    },
+                    ..GaitSimulationParams::default()
+                },
+                "asymmetry must be finite",
+            ),
+            (
+                GaitSimulationParams {
+                    gait: GaitParams {
+                        step_length: 0.0,
+                        cadence: None,
+                        ..GaitParams::default()
+                    },
+                    ..GaitSimulationParams::default()
+                },
+                "stride time must be finite and positive",
+            ),
+        ];
+        for (params, message) in cases {
+            assert_eq!(generate_gait_timeseries(&params).unwrap_err(), message);
+        }
     }
 }

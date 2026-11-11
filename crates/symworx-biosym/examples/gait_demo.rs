@@ -67,7 +67,7 @@ fn main() {
     .expect("default gait simulation");
     let detected = analyze_gait_signal(&generated.values, 100.0);
     println!("\nGenerated vertical channel:");
-    println!("  step peaks: {}", generated.step_peaks.len());
+    println!("  stride peaks: {}", generated.stride_peaks.len());
     println!(
         "  detected events: {}, mean interval={:.3}s",
         detected.intervals.peak_times.len(),
