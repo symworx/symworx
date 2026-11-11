@@ -6,6 +6,12 @@ Scalar recurrence masks and RQA. The implementation is `f64` Rust in this crate.
 
 `rqa` reads that mask. `RqaParams::min_line` defaults to 2. The stats are recurrence rate (`rr`), determinism (`det`), laminarity (`lam`), mean diagonal length, and diagonal-line entropy in nats.
 
+`moving_average` is a centered window that shrinks at the ends. `Ema` is causal. `Biquad::bandpass` is one 2nd-order Butterworth section, direct form II transposed, with the same bilinear coefficients as `symworx-signal`. `BandpassSpec` cascades that section.
+
+`PeakFinder` takes a slice. A peak is a strict local maximum, then height, neighbor threshold, prominence, and minimum distance. Distance keeps the earlier peak. Non-finite samples are not peaks.
+
+`detect_gait_peaks` uses a 0.5 s floor, prominence 0.08, and height 0.0, with no bandpass. `detect_gait_peaks_with_quality` adds the 0.2–6 Hz, two-section band and the reference, moderate, and poor thresholds from `symworx-biosym`. `detect_ecg_r_peaks` is a 5–15 Hz band plus a 0.2 s refractory gap. It expects the R wave to be the tall narrow peak. It does not run a derivative-energy detector or pick P and T waves.
+
 `symworx-gpu` is the device path. Its `hip` feature compiles `kernels/recurrence.hip`. Line metrics there stay on the CPU. This crate computes the mask and the line metrics in Rust.
 
 

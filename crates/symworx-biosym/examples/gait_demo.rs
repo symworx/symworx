@@ -10,7 +10,9 @@ use ndarray::array;
 use symworx_biosym::biomechanics::gait::{
     GaitData,
     GaitParams,
+    GaitSimulationParams,
     analyze_gait_signal,
+    generate_gait_timeseries,
 };
 
 fn main() {
@@ -52,6 +54,24 @@ fn main() {
     println!(
         "  GaitAnalysis: n_strides={}, mean interval={:.2}s",
         ga.stats.n_strides, ga.stats.mean_stride_time_s
+    );
+
+    let generated = generate_gait_timeseries(&GaitSimulationParams {
+        gait: GaitParams {
+            stride_variability: 0.0,
+            ..GaitParams::default()
+        },
+        seed: Some(1),
+        ..GaitSimulationParams::default()
+    })
+    .expect("default gait simulation");
+    let detected = analyze_gait_signal(&generated.values, 100.0);
+    println!("\nGenerated vertical channel:");
+    println!("  step peaks: {}", generated.step_peaks.len());
+    println!(
+        "  detected events: {}, mean interval={:.3}s",
+        detected.intervals.peak_times.len(),
+        detected.stats.mean_stride_time_s
     );
 
     println!("\nDemo complete.");

@@ -8,8 +8,8 @@ edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
 authors          = { workspace = true }
-description      = "No-std recurrence masks and RQA for embedded targets"
-keywords         = ["embedded", "recurrence", "rqa", "no-std"]
+description      = "Scalar recurrence masks, RQA, smoothing, and peak detection for embedded targets"
+keywords         = ["embedded", "recurrence", "rqa", "peaks", "no-std"]
 categories       = ["science", "mathematics", "embedded"]
 
 [features]
