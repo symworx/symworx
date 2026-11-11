@@ -18,7 +18,7 @@ use symworx_biosym::biomechanics::gait::{
 fn main() {
     println!("=== BioSym Gait Demo ===\n");
 
-    let mut params = GaitParams::default().with_defaults();
+    let params = GaitParams::default().with_defaults();
     println!("Default GaitParams (with leg length & cadence estimated):");
     println!("  height       : {:.2} m", params.height);
     println!("  leg_length   : {:.2} m", params.leg_length.unwrap_or(0.0));
