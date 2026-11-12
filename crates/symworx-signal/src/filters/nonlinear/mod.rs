@@ -13,15 +13,8 @@ pub mod rls;
 /// Unscented Kalman filter (sigma-point nonlinear filtering).
 pub mod ukf;
 
-pub use ekf::{
-    ExtendedKalmanFilter,
-    numerical_jacobian,
-};
+pub use ekf::{ExtendedKalmanFilter, numerical_jacobian};
 pub use kalman::KalmanFilter;
 pub use kalman1d::KalmanFilter1D;
 pub use rls::*;
-pub use ukf::{
-    UkfParams,
-    UnscentedKalmanFilter,
-    sigma_points,
-};
+pub use ukf::{UkfParams, UnscentedKalmanFilter, sigma_points};

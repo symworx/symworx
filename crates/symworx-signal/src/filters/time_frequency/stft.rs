@@ -6,15 +6,8 @@
 //! Computes spectrograms for time-frequency analysis of signals.
 //! Particularly useful for physiological signals (gait, respiration, EMG, etc.).
 
-use ndarray::{
-    Array1,
-    Array2,
-    s,
-};
-use rustfft::{
-    FftPlanner,
-    num_complex::Complex,
-};
+use ndarray::{Array1, Array2, s};
+use rustfft::{FftPlanner, num_complex::Complex};
 
 /// Window function for STFT.
 #[derive(Debug, Clone, Copy, PartialEq)]

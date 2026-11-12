@@ -14,15 +14,8 @@
 //! update with cross-covariance P_xz and innovation covariance
 //! ```
 
-use ndarray::{
-    Array1,
-    Array2,
-};
-use ndarray_linalg::{
-    Cholesky,
-    Inverse,
-    UPLO,
-};
+use ndarray::{Array1, Array2};
+use ndarray_linalg::{Cholesky, Inverse, UPLO};
 
 /// UKF scaling / weight parameters (standard additive form).
 #[derive(Debug, Clone)]

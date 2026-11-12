@@ -12,18 +12,9 @@ pub mod nnls;
 #[path = "weiner.rs"]
 pub mod wiener;
 
-pub use kernel::{
-    convolve,
-    exponential_kernel,
-};
+pub use kernel::{convolve, exponential_kernel};
 pub use nnls::{
-    burst_indices,
-    gh_burst_deconvolve,
-    gh_deconvolve,
-    gh_deconvolve_sparse,
-    gh_reconvolve,
-    nonnegative_deconvolution,
-    nonnegative_deconvolution_on_support,
-    sparse_nonnegative_deconvolution,
+    burst_indices, gh_burst_deconvolve, gh_deconvolve, gh_deconvolve_sparse, gh_reconvolve, nonnegative_deconvolution,
+    nonnegative_deconvolution_on_support, sparse_nonnegative_deconvolution,
 };
 pub use wiener::wiener_deconvolution;
