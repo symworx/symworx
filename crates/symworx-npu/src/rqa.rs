@@ -128,7 +128,7 @@ fn line_stats(hist: &[usize], recurrent: usize) -> (f64, f64, f64) {
         line_points += points;
         line_count += points / len;
         let p = points as f64 / recurrent as f64;
-        entropy -= p * p.ln();
+        entropy -= p * crate::float::ln(p);
     }
     let det = line_points as f64 / recurrent as f64;
     let mean_diag = if line_count > 0 {

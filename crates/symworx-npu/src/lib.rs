@@ -7,11 +7,20 @@
 //! slice-based `f64` routines with the same decisions as the host filters and
 //! `PeakFinder` in `symworx-signal`. Gait and ECG functions are presets on that
 //! finder. This crate does not call an NPU.
+//!
+//! The default `std` feature is the host build, including a Raspberry Pi Zero
+//! (`arm-unknown-linux-gnueabihf`).
+//! `--no-default-features` is `no_std` plus `alloc` for the Arduino Nano 33 BLE
+//! (`thumbv7em-none-eabihf`). The firmware that provides the allocator stays
+//! outside this crate.
+
+#![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
 
 mod ecg;
 mod error;
+mod float;
 mod gait;
 mod peaks;
 mod recurrence;

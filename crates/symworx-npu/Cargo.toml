@@ -8,17 +8,17 @@ edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
 authors          = { workspace = true }
-description      = "Scalar recurrence masks, RQA, smoothing, and peak detection for embedded targets"
+description      = "Scalar recurrence, RQA, smoothing, and peak detection for host and no_std targets"
 keywords         = ["embedded", "recurrence", "rqa", "peaks", "no-std"]
 categories       = ["science", "mathematics", "embedded"]
 
 [features]
 default = ["std"]
-## Host standard library. Off for bare-metal MCU builds.
+## Host `std::error::Error`. Off for the Arduino Nano 33 BLE (`thumbv7em-none-eabihf`).
 std = []
 
 [dependencies]
-thiserror = { workspace = true }
+libm = "0.2.16"
 
 [lints]
 workspace = true

@@ -19,7 +19,19 @@ Scalar recurrence masks and RQA. The implementation is `f64` Rust in this crate.
 cargo test -p symworx-npu
 ```
 
-The `std` feature is on by default and unused. `lib.rs` has no `#![no_std]`, and `thiserror` keeps its default `std` feature. `--no-default-features` still builds a host crate.
+The default `std` feature is the host build. A Raspberry Pi Zero (ARMv6, Raspberry Pi OS) uses that build:
+
+```bash
+cargo check -p symworx-npu --target arm-unknown-linux-gnueabihf
+```
+
+A Pi Zero 2 W is `aarch64-unknown-linux-gnu`. `--no-default-features` is `no_std` plus `alloc`, with no `thiserror` and no `std`. `sin`, `cos`, `ln`, and `round` go through the `libm` crate on every build. The Arduino Nano 33 BLE (nRF52840) uses that build. Its FPU is single precision, so these `f64` routines are soft-float on that chip.
+
+```bash
+cargo check -p symworx-npu --target thumbv7em-none-eabihf --no-default-features
+```
+
+The board firmware has to provide the global allocator. This crate does not.
 
 ```rust
 use symworx_npu::{RqaParams, Trajectory, recurrence_mask, rqa};

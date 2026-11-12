@@ -180,13 +180,13 @@ fn design_bandpass(fs: f64, f_low: f64, f_high: f64, q: f64) -> Result<([f64; 3]
 
     let w0 = core::f64::consts::PI * (f_high + f_low) / fs;
     let bw = core::f64::consts::PI * (f_high - f_low) / fs;
-    let alpha = (bw / 2.0).sin() / (2.0 * q);
+    let alpha = crate::float::sin(bw / 2.0) / (2.0 * q);
 
     let b0 = alpha;
     let b1 = 0.0;
     let b2 = -alpha;
     let a0 = 1.0 + alpha;
-    let a1 = -2.0 * w0.cos();
+    let a1 = -2.0 * crate::float::cos(w0);
     let a2 = 1.0 - alpha;
 
     Ok(([b0 / a0, b1 / a0, b2 / a0], [1.0, a1 / a0, a2 / a0]))

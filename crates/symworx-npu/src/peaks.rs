@@ -117,7 +117,7 @@ pub fn sample_distance(fs: f64, interval_sec: f64) -> Result<usize, NpuError> {
     if !interval_sec.is_finite() || interval_sec <= 0.0 {
         return Err(NpuError::InvalidInput("minimum interval must be finite and positive"));
     }
-    let samples = (interval_sec * fs).round();
+    let samples = crate::float::round(interval_sec * fs);
     if !samples.is_finite() || samples > usize::MAX as f64 {
         return Err(NpuError::InvalidInput(
             "minimum interval does not fit a sample distance",
