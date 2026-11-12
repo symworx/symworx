@@ -56,14 +56,23 @@ pub use deconvolution::{
     sparse_nonnegative_deconvolution,
 };
 pub use event_window::{
+    EventMeasures,
     EventWindow,
     IntervalScore,
     MEAN_MIN,
+    MEASURE_STEP_FAST_SEC,
+    MEASURE_STEP_SEC,
     POINT_MIN,
+    RollingSample,
+    SAMPLE_ENTROPY_M,
+    SAMPLE_ENTROPY_R_SCALE,
+    StepFeatures,
     WINDOW_SEC,
+    event_measures,
     interpolate_low_probability,
     peer_fit,
     repair_event_window,
+    rolling_event_measures,
     score_event_intervals,
 };
 pub use interpolation::{

@@ -38,8 +38,15 @@ event's prominence. The window is admitted when the events span at
 least 180 s and the mean probability is greater than 0.8. Intervals
 below 0.6 are filled in place from the nearest kept intervals. A
 malformed series is `NpuError::InvalidInput`. A scored series that
-fails a gate is `Ok(None)`. RMSSD, CV, and sample entropy stay with
-the caller.
+fails a gate is `Ok(None)`.
+
+`rolling_event_measures` runs that repair on a grid. `MEASURE_STEP_SEC`
+is 30 s and `MEASURE_STEP_FAST_SEC` is 15 s. Each sample looks back
+180 s. An admitted sample reports RMSSD, CV, and sample entropy
+(`m = 2`, tolerance `0.2 * SD`) of the repaired intervals. The same
+sample carries the measured intervals and probabilities that close
+inside that 15 s or 30 s step, plus their mean and standard deviation.
+A grid time that is not admitted has `measures: None`.
 
 `symworx-gpu` is the device path. Its `hip` feature compiles
 `kernels/recurrence.hip`. Line metrics there stay on the CPU. This

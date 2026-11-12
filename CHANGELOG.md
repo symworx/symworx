@@ -17,6 +17,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `symworx-npu`: the same event-window repair as a scalar `no_std`
   copy. Malformed input is `NpuError::InvalidInput`. A scored window
   that fails a gate is `Ok(None)`. `exp` and `sqrt` go through `libm`.
+- `symworx-signal` and `symworx-npu`: `rolling_event_measures`
+  recalculates every 30 s (`MEASURE_STEP_SEC`) or 15 s
+  (`MEASURE_STEP_FAST_SEC`), each time on the prior 180 s. An admitted
+  sample reports RMSSD, CV, and sample entropy. Each sample also
+  carries the measured intervals and probabilities that close in that
+  step, with their mean and standard deviation.
 - `symworx-stats`: Shrout–Fleiss `icc_11` for two replicates, and
   `icc` for the six balanced forms. Python:
   `symworx.core.statistics.icc_11`, `icc`, and `std_dev_sample`.

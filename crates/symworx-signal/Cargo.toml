@@ -18,7 +18,8 @@ ndarray-linalg = { workspace = true }
 num-complex    = { workspace = true }
 rustfft        = { workspace = true }
 
-symworx-stats  = { workspace = true }
+symworx-dynamics = { workspace = true }
+symworx-stats     = { workspace = true }
 
 [dev-dependencies]
 symworx-math = { workspace = true }
