@@ -9,7 +9,10 @@
 //!
 //! This is the hormone path (e.g. growth hormone on a regular sampling grid).
 
-use ndarray::{Array1, Array2};
+use ndarray::{
+    Array1,
+    Array2,
+};
 use ndarray_linalg::Solve;
 
 use super::kernel::convolve;
@@ -180,7 +183,10 @@ pub fn gh_reconvolve(secretion: &[f64], kernel: &[f64]) -> Vec<f64> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::processing::deconvolution::kernel::{convolve, exponential_kernel};
+    use crate::processing::deconvolution::kernel::{
+        convolve,
+        exponential_kernel,
+    };
 
     #[test]
     fn identity_kernel_recovers_a_nonnegative_series() {

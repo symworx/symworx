@@ -9,13 +9,19 @@
 
 use ndarray::Array1;
 use num_complex::Complex;
-use rustfft::{FftPlanner, num_complex::Complex as RustFftComplex};
+use rustfft::{
+    FftPlanner,
+    num_complex::Complex as RustFftComplex,
+};
 
 /// Computes the Hilbert transform of a real-valued signal using FFT.
 ///
 /// Returns the analytic signal (complex-valued).
 pub fn hilbert(signal: &[f64]) -> Array1<Complex<f64>> {
-    use rustfft::{FftPlanner, num_complex::Complex};
+    use rustfft::{
+        FftPlanner,
+        num_complex::Complex,
+    };
 
     let n = signal.len();
     if n == 0 {

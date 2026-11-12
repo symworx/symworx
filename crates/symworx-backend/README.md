@@ -3,12 +3,13 @@
 Backend utilities for SymWorx: process table, health snapshots, and a
 cloud-agnostic object store.
 
-This crate does **not** own signal file formats. Load CSV / Parquet / FIT
-through [`symworx-io`](../symworx-io/README.md).
+This crate does **not** own signal file formats. Load CSV / Parquet /
+FIT through [`symworx-io`](../symworx-io/README.md).
 
 ## Features
 
-- `supervision` — `graceful_shutdown()` (Ctrl+C / SIGTERM) via `tokio-util`.
+- `supervision` — `graceful_shutdown()` (Ctrl+C / SIGTERM) via
+  `tokio-util`.
 
 Default build stays light: no AWS or Azure SDK.
 
@@ -35,8 +36,8 @@ export SYMWORX_REGION=us-east-1     # or AWS_REGION / AZURE_LOCATION
 export SYMWORX_OBJECT_ENDPOINT=     # MinIO / Azurite / LocalStack
 ```
 
-Do not put credentials in the repo. Use the platform identity
-(IRSA / task role on ECS, managed identity on Azure App Service).
+Do not put credentials in the repo. Use the platform identity (IRSA /
+task role on ECS, managed identity on Azure App Service).
 
 Design notes: [notes/cloud.md](notes/cloud.md).
 
@@ -70,7 +71,8 @@ Licensed under the Apache License, Version 2.0.
 
 If you use this software, please cite it:
 
-Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/symworx
+Berry, N. T. (2026). *SymWorx* [Computer
+software]. https://github.com/symworx/symworx
 
 ```bibtex
 @software{Berry_SymWorx_2026,
@@ -82,4 +84,6 @@ Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/s
 }
 ```
 
-Add the version you used. [`CITATION.cff`](https://github.com/symworx/symworx/blob/main/CITATION.cff) and GitHub **Cite this repository** carry the current release.
+Add the version you
+used. [`CITATION.cff`](https://github.com/symworx/symworx/blob/main/CITATION.cff)
+and GitHub **Cite this repository** carry the current release.

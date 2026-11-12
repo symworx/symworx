@@ -18,7 +18,10 @@
 //! Jacobians may be supplied analytically or approximated with central
 //! finite differences ([`numerical_jacobian`]).
 
-use ndarray::{Array1, Array2};
+use ndarray::{
+    Array1,
+    Array2,
+};
 use ndarray_linalg::Inverse;
 
 /// Extended Kalman filter with user-provided nonlinear models.

@@ -12,7 +12,14 @@
 
 use ndarray::Array1;
 use symworx_signal::processing::{
-    IstaConfig, dct_basis, effective_sensing, ista, measure, omp, random_gaussian_sensing, reconstruct_signal,
+    IstaConfig,
+    dct_basis,
+    effective_sensing,
+    ista,
+    measure,
+    omp,
+    random_gaussian_sensing,
+    reconstruct_signal,
 };
 use symworx_stats::regression_report;
 

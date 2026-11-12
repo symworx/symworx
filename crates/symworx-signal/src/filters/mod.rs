@@ -26,7 +26,12 @@ pub mod time_frequency;
 
 // Linear filters
 // Adaptive filters
-pub use adaptive::{LmsFilter, NlmsFilter, adaptive_mean_filter, adaptive_median_filter};
+pub use adaptive::{
+    LmsFilter,
+    NlmsFilter,
+    adaptive_mean_filter,
+    adaptive_median_filter,
+};
 pub use linear::{
     BandpassFilter,
     ChebyshevFilter,
@@ -45,6 +50,19 @@ pub use nonlinear::{
 };
 // Time-frequency analysis
 pub use time_frequency::{
-    AnalyticSignal, CwtResult, StftResult, WaveletType, WelchConfig, WelchResult, WindowType, cwt, cwt_mexhat,
-    cwt_morlet, hilbert, stft, welch, welch_default, window_samples,
+    AnalyticSignal,
+    CwtResult,
+    StftResult,
+    WaveletType,
+    WelchConfig,
+    WelchResult,
+    WindowType,
+    cwt,
+    cwt_mexhat,
+    cwt_morlet,
+    hilbert,
+    stft,
+    welch,
+    welch_default,
+    window_samples,
 };

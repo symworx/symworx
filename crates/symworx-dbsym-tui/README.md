@@ -2,9 +2,14 @@
 
 Read-only terminal browser for a dbSym catalog. Binary: `symdb-view`.
 
-Two panes: tables on the left, one page of rows on the right. SQLite opens a file. Postgres opens a URL the operator already has. This crate does not ship Postgres DDL, and it does not init, apply, or ingest.
+Two panes: tables on the left, one page of rows on the right. SQLite
+opens a file. Postgres opens a URL the operator already has. This
+crate does not ship Postgres DDL, and it does not init, apply, or
+ingest.
 
-This is not [`symview`](../symworx-tui/README.md) and not the LoadSym catalog. LoadSym stays a workflow inside `symview`. Schemas stay separate.
+This is not [`symview`](../symworx-tui/README.md) and not the LoadSym
+catalog. LoadSym stays a workflow inside `symview`. Schemas stay
+separate.
 
 ## Status
 
@@ -24,7 +29,8 @@ cargo run -p symworx-dbsym-tui --bin symdb-view -- path/to/dbsym.sqlite
 cargo run -p symworx-dbsym-tui --bin symdb-view -- --url postgres://user@localhost:5432/dbname
 ```
 
-With no arguments the binary opens `./.dbsym/dbsym.sqlite`. Pass `.dbsym/agent.sqlite` to browse the agentic work log.
+With no arguments the binary opens `./.dbsym/dbsym.sqlite`. Pass
+`.dbsym/agent.sqlite` to browse the agentic work log.
 
 | Key | Action |
 |-----|--------|
@@ -40,7 +46,9 @@ With no arguments the binary opens `./.dbsym/dbsym.sqlite`. Pass `.dbsym/agent.s
 
 `q` is not quit.
 
-The SQLite file is opened with `SQLITE_OPEN_READ_ONLY` and `PRAGMA query_only = ON`. Postgres runs `SET default_transaction_read_only = on`. Queries are the browser's own `SELECT`s, with identifiers quoted.
+The SQLite file is opened with `SQLITE_OPEN_READ_ONLY` and `PRAGMA
+query_only = ON`. Postgres runs `SET default_transaction_read_only =
+on`. Queries are the browser's own `SELECT`s, with identifiers quoted.
 
 ## Features
 
@@ -53,7 +61,8 @@ The SQLite file is opened with `SQLITE_OPEN_READ_ONLY` and `PRAGMA query_only = 
 
 If you use this software, please cite it:
 
-Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/symworx
+Berry, N. T. (2026). *SymWorx* [Computer
+software]. https://github.com/symworx/symworx
 
 ```bibtex
 @software{Berry_SymWorx_2026,
@@ -65,9 +74,13 @@ Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/s
 }
 ```
 
-Add the version you used. [`CITATION.cff`](https://github.com/symworx/symworx/blob/main/CITATION.cff) and GitHub **Cite this repository** carry the current release.
+Add the version you
+used. [`CITATION.cff`](https://github.com/symworx/symworx/blob/main/CITATION.cff)
+and GitHub **Cite this repository** carry the current release.
 
 ## See also
 
-- Catalog crate: [../symworx-dbsym/README.md](../symworx-dbsym/README.md)
-- Design notes: [../symworx-dbsym/notes/design.md](../symworx-dbsym/notes/design.md)
+- Catalog crate:
+  [../symworx-dbsym/README.md](../symworx-dbsym/README.md)
+- Design notes:
+  [../symworx-dbsym/notes/design.md](../symworx-dbsym/notes/design.md)

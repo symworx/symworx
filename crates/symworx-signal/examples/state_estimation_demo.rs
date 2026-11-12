@@ -10,8 +10,17 @@
 //! cargo run -p symworx-signal --example state_estimation_demo
 //! ```
 
-use ndarray::{Array1, Array2, array};
-use symworx_signal::filters::{ExtendedKalmanFilter, KalmanFilter, UkfParams, UnscentedKalmanFilter};
+use ndarray::{
+    Array1,
+    Array2,
+    array,
+};
+use symworx_signal::filters::{
+    ExtendedKalmanFilter,
+    KalmanFilter,
+    UkfParams,
+    UnscentedKalmanFilter,
+};
 use symworx_stats::regression_report;
 
 fn main() {

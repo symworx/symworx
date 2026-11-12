@@ -4,9 +4,15 @@
 //! Welch power spectral density (averaged modified periodograms).
 
 use ndarray::Array1;
-use rustfft::{FftPlanner, num_complex::Complex};
+use rustfft::{
+    FftPlanner,
+    num_complex::Complex,
+};
 
-use super::stft::{WindowType, window_samples};
+use super::stft::{
+    WindowType,
+    window_samples,
+};
 
 /// Options for [`welch`].
 #[derive(Debug, Clone, PartialEq)]

@@ -12,7 +12,10 @@
 //!
 //! Soft-thresholding reuses [`symworx_stats::soft_threshold`].
 
-use ndarray::{Array1, Array2};
+use ndarray::{
+    Array1,
+    Array2,
+};
 use ndarray_linalg::LeastSquaresSvd;
 use symworx_stats::soft_threshold;
 

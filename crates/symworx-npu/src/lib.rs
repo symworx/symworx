@@ -6,7 +6,9 @@
 //! The recurrence and RQA entry points are unchanged. Smoothing and peaks are
 //! slice-based `f64` routines with the same decisions as the host filters and
 //! `PeakFinder` in `symworx-signal`. Gait and ECG functions are presets on that
-//! finder. This crate does not call an NPU.
+//! finder. The event window matches `symworx-signal`'s repair: leave-one-out
+//! probability, a 180 s span, and in-place fill below 0.6. This crate does not
+//! call an NPU.
 //!
 //! The default `std` feature is the host build, including a Raspberry Pi Zero
 //! (`arm-unknown-linux-gnueabihf`).
@@ -20,6 +22,7 @@ extern crate alloc;
 
 mod ecg;
 mod error;
+mod event_window;
 mod float;
 mod gait;
 mod peaks;
@@ -33,6 +36,17 @@ pub use ecg::{
     detect_ecg_r_peaks_with,
 };
 pub use error::NpuError;
+pub use event_window::{
+    EventWindow,
+    IntervalScore,
+    MEAN_MIN,
+    POINT_MIN,
+    WINDOW_SEC,
+    interpolate_low_probability,
+    peer_fit,
+    repair_event_window,
+    score_event_intervals,
+};
 pub use gait::{
     GaitQuality,
     detect_gait_peaks,

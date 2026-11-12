@@ -1,8 +1,9 @@
 # SymWorx-Math
 
-Numerical primitives for the SymWorx ecosystem. This crate is deliberately
-**lightweight** (no LAPACK / OpenBLAS) so it can be shared freely across
-stats, signal, dynamics, and domain crates without huge compile times.
+Numerical primitives for the SymWorx ecosystem. This crate is
+deliberately **lightweight** (no LAPACK / OpenBLAS) so it can be
+shared freely across stats, signal, dynamics, and domain crates
+without huge compile times.
 
 ## Contents
 
@@ -18,9 +19,10 @@ stats, signal, dynamics, and domain crates without huge compile times.
 
 ## Where this crate sits
 
-Optimization primitives here support nonlinear regression in `symworx-stats`
-and parameter fitting for dynamical models. Heavy linear algebra (SVD, PCA)
-lives in `symworx-stats` behind the `linalg` feature — **not** here.
+Optimization primitives here support nonlinear regression in
+`symworx-stats` and parameter fitting for dynamical models. Heavy
+linear algebra (SVD, PCA) lives in `symworx-stats` behind the `linalg`
+feature — **not** here.
 
 ## Usage example
 
@@ -50,7 +52,8 @@ let (times, states) = rk4_integrate(f, (0.0, 1.0), Array1::from(vec![1.0]), 0.1)
 
 If you use this software, please cite it:
 
-Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/symworx
+Berry, N. T. (2026). *SymWorx* [Computer
+software]. https://github.com/symworx/symworx
 
 ```bibtex
 @software{Berry_SymWorx_2026,
@@ -62,4 +65,6 @@ Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/s
 }
 ```
 
-Add the version you used. [`CITATION.cff`](https://github.com/symworx/symworx/blob/main/CITATION.cff) and GitHub **Cite this repository** carry the current release.
+Add the version you
+used. [`CITATION.cff`](https://github.com/symworx/symworx/blob/main/CITATION.cff)
+and GitHub **Cite this repository** carry the current release.

@@ -1,7 +1,8 @@
 # SymWorx-Dynamics
 
-Nonlinear dynamics and data-driven dynamical systems tools for SymWorx.
-This is a sub-crate to the [`symworx-core`](../symworx-core/README.md) crate.
+Nonlinear dynamics and data-driven dynamical systems tools for
+SymWorx.  This is a sub-crate to the
+[`symworx-core`](../symworx-core/README.md) crate.
 
 ## Modules
 
@@ -19,7 +20,8 @@ This is a sub-crate to the [`symworx-core`](../symworx-core/README.md) crate.
 
 ## Transfer entropy
 
-Discrete (histogram) Schreiber TE. Entropy in nats. Not a kNN / Kraskov estimator.
+Discrete (histogram) Schreiber TE. Entropy in nats. Not a kNN /
+Kraskov estimator.
 
 ```rust
 use symworx_dynamics::{transfer_entropy, transfer_entropy_mv, transfer_entropy_conditional, TeConfig};
@@ -35,17 +37,28 @@ let te_x_given_z = transfer_entropy_conditional(&[&z], &[&x], &y, &cfg);
 - `transfer_entropy_mv` — joint sources `(X1,...,Xp) → Y`
 - `transfer_entropy_conditional` — partial `X → Y | Z`
 
-- `transfer_entropy_discrete*` — same estimator on already-discrete series (`u8` labels). `TeConfig::bins` is ignored. Use this for sleep stages or for HRV after `symworx_stats::RelativeKMeansDiscretizer`.
+- `transfer_entropy_discrete*` — same estimator on already-discrete
+  series (`u8` labels). `TeConfig::bins` is ignored. Use this for
+  sleep stages or for HRV after
+  `symworx_stats::RelativeKMeansDiscretizer`.
 
-Returns `0.0` for short, constant, or mismatched series. Do **not** concatenate users or disconnected nights into one TE series — compute per contiguous record, then summarize.
+Returns `0.0` for short, constant, or mismatched series. Do **not**
+concatenate users or disconnected nights into one TE series — compute
+per contiguous record, then summarize.
 
-Shared relative cuts (per-user min/max, k-means on the pooled unit interval) live in `symworx-stats::discretize`. Example: `cargo run -p symworx-dynamics --example relative_te_demo`.
+Shared relative cuts (per-user min/max, k-means on the pooled unit
+interval) live in `symworx-stats::discretize`. Example: `cargo run -p
+symworx-dynamics --example relative_te_demo`.
 
-No TUI binding. Python: `symworx.core.dynamics.transfer_entropy`, `transfer_entropy_with`, `transfer_entropy_mv`, `transfer_entropy_conditional`, and `transfer_entropy_discrete*`.
+No TUI binding. Python: `symworx.core.dynamics.transfer_entropy`,
+`transfer_entropy_with`, `transfer_entropy_mv`,
+`transfer_entropy_conditional`, and `transfer_entropy_discrete*`.
 
 ## Average mutual information
 
-Histogram mutual information in nats. Bins are equal-occupancy quantiles, the same partition family as discrete transfer entropy. Default `bins` is 8 (`DEFAULT_AMI_BINS`).
+Histogram mutual information in nats. Bins are equal-occupancy
+quantiles, the same partition family as discrete transfer
+entropy. Default `bins` is 8 (`DEFAULT_AMI_BINS`).
 
 ```rust
 use symworx_dynamics::{ami, cross_ami, mutual_information, first_local_minimum, DEFAULT_AMI_BINS};
@@ -56,11 +69,20 @@ let tau = first_local_minimum(&auto);
 let lagged = cross_ami(&driver, &target, 6, DEFAULT_AMI_BINS);
 ```
 
-`cross_ami` index `d` is `I(driver[t−d]; target[t])`, the same backward shift as a Kalman control lag. Those bins are fit once on each full series. `mutual_information` refits bins on the pairs it is given: build the complete pairs yourself and do not concatenate visits. Lag 0 of `ami` is the entropy of `x` under that partition. The embedding readout is the first local minimum.
+`cross_ami` index `d` is `I(driver[t−d]; target[t])`, the same
+backward shift as a Kalman control lag. Those bins are fit once on
+each full series. `mutual_information` refits bins on the pairs it is
+given: build the complete pairs yourself and do not concatenate
+visits. Lag 0 of `ami` is the entropy of `x` under that partition. The
+embedding readout is the first local minimum.
 
-Short, constant, non-finite, or mismatched inputs return `0.0` or an empty curve. `bins` must be in `2..=255`.
+Short, constant, non-finite, or mismatched inputs return `0.0` or an
+empty curve. `bins` must be in `2..=255`.
 
-Python: `symworx.core.dynamics.ami`, `cross_ami`, `mutual_information`, `mutual_information_discrete`, `first_local_minimum`. `symworx.core.statistics` exposes `acf_normalized` and `ccf` with the same lag sign.
+Python: `symworx.core.dynamics.ami`, `cross_ami`,
+`mutual_information`, `mutual_information_discrete`,
+`first_local_minimum`. `symworx.core.statistics` exposes
+`acf_normalized` and `ccf` with the same lag sign.
 
 ## DMD / EDMD
 
@@ -138,11 +160,13 @@ cargo run -p symworx-dynamics --example data_driven_dynamics_demo
 
 ## Related
 
-- **`symworx-stats`** — SVD, regression, clustering, `regression_report`
+- **`symworx-stats`** — SVD, regression, clustering,
+  `regression_report`
 - **`symworx-signal`** — Kalman / EKF / UKF, sparse sensing
 
-Design notes (not shipped APIs): [notes/group-phase-coherence.md](notes/group-phase-coherence.md)
-— cluster-phase, MdRQA, and group-level CRQA summaries.
+Design notes (not shipped APIs):
+[notes/group-phase-coherence.md](notes/group-phase-coherence.md) —
+cluster-phase, MdRQA, and group-level CRQA summaries.
 
 ### SINDy / SINDYc
 
@@ -165,7 +189,8 @@ let f = forced.rhs(&x0, &u0);
 
 If you use this software, please cite it:
 
-Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/symworx
+Berry, N. T. (2026). *SymWorx* [Computer
+software]. https://github.com/symworx/symworx
 
 ```bibtex
 @software{Berry_SymWorx_2026,
@@ -177,4 +202,6 @@ Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/s
 }
 ```
 
-Add the version you used. [`CITATION.cff`](https://github.com/symworx/symworx/blob/main/CITATION.cff) and GitHub **Cite this repository** carry the current release.
+Add the version you
+used. [`CITATION.cff`](https://github.com/symworx/symworx/blob/main/CITATION.cff)
+and GitHub **Cite this repository** carry the current release.

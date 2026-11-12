@@ -7,7 +7,10 @@
 //! kernel (PSF) is known and noise is present.
 
 use ndarray::Array1;
-use rustfft::{FftPlanner, num_complex::Complex};
+use rustfft::{
+    FftPlanner,
+    num_complex::Complex,
+};
 
 /// Performs Wiener deconvolution to recover an original signal.
 ///

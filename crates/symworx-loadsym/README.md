@@ -1,6 +1,7 @@
 # SymWorx-LoadSym
 
-**SymWorx-LoadSym** provides tools for training-load quantification and nutrition modeling.
+**SymWorx-LoadSym** provides tools for training-load quantification
+and nutrition modeling.
 
 ## Quick Start (Rust)
 
@@ -41,7 +42,9 @@ let plan = optimize_load_plan(&daily_loads, &params, LoadGoal::Recovery, &thr).u
 println!("plan TSLi {:?} success={}", plan.daily_tss, plan.success);
 ```
 
-**Optimization goals** (default horizon **4** days, max **10**) — primary success is **mean planned load vs chronic mean \(C\)** (last ≤28 days of TSLi):
+**Optimization goals** (default horizon **4** days, max **10**) —
+primary success is **mean planned load vs chronic mean \(C\)** (last
+≤28 days of TSLi):
 
 | Goal | Intent | Success (defaults) | Scoring prefers |
 |:-----|:-------|:-------------------|:----------------|
@@ -49,10 +52,12 @@ println!("plan TSLi {:?} success={}", plan.daily_tss, plan.success);
 | `Maintenance` | Hold load | \(0.85\,C \le \bar w \le 1.15\,C\) | Mean near \(C\) **with day-to-day TSLi variance** (not flat) |
 | `Overload` | Elevated load | \(1.15\,C \le \bar w \le 1.40\,C\), \(\bar w > C\) | ~1.25·C with variety; soft limit consecutive hard days |
 
-Readiness (SLBi) and projected ACLi are **soft / separate context** — they do not alone hard-fail success.
+Readiness (SLBi) and projected ACLi are **soft / separate context** —
+they do not alone hard-fail success.
 
-Search uses a fine template grid (rest → long). Short horizons fully enumerate
-candidates; longer horizons (when `7^H` is large) use **beam search** so H=10 stays interactive.
+Search uses a fine template grid (rest → long). Short horizons fully
+enumerate candidates; longer horizons (when `7^H` is large) use **beam
+search** so H=10 stays interactive.
 
 Demo:
 
@@ -130,18 +135,26 @@ cargo run -p symworx-loadsym --features "email,polar,sqlite" -- sync --ftp 280
 | `POLAR_REDIRECT_URI` | Default `http://127.0.0.1:8765/callback` |
 | `POLAR_ACCESS_TOKEN` / `POLAR_USER_ID` | Usually from `polar_token.json` after `polar auth` |
 
-`email fetch` and `polar *` also load `$VELOFIT_HOME/.env` when present (process env wins).
+`email fetch` and `polar *` also load `$VELOFIT_HOME/.env` when
+present (process env wins).
 
-**Privacy:** catalog + FIT files stay under `$VELOFIT_HOME`. Do not commit `*.sqlite`, `.env`, `polar_token.json`, or ride archives into SymWorx.
+**Privacy:** catalog + FIT files stay under `$VELOFIT_HOME`. Do not
+commit `*.sqlite`, `.env`, `polar_token.json`, or ride archives into
+SymWorx.
 
 ### Personal catalog (schema)
 
-Schema-only crate: **`symworx-loadsym-db`** (current **SCHEMA_VERSION = 4**).
+Schema-only crate: **`symworx-loadsym-db`** (current **SCHEMA_VERSION
+= 4**).
 
-- Crate overview: [../symworx-loadsym-db/README.md](../symworx-loadsym-db/README.md)
-- Operator guide (layout, multi-source, Polar, sync, timers): [../symworx-loadsym-db/docs/loadsym-personal-starter.md](../symworx-loadsym-db/docs/loadsym-personal-starter.md)
+- Crate overview:
+  [../symworx-loadsym-db/README.md](../symworx-loadsym-db/README.md)
+- Operator guide (layout, multi-source, Polar, sync, timers):
+  [../symworx-loadsym-db/docs/loadsym-personal-starter.md](../symworx-loadsym-db/docs/loadsym-personal-starter.md)
 
-Multi-source sessions keep all FIT copies but only **`counts_for_load = 1`** rows feed `daily_loads` / ACWR / PMC. Prefer power-meter / email over Polar when both match (`relink` / end of `ingest`).
+Multi-source sessions keep all FIT copies but only **`counts_for_load
+= 1`** rows feed `daily_loads` / ACWR / PMC. Prefer power-meter /
+email over Polar when both match (`relink` / end of `ingest`).
 
 ## Power ride metrics
 
@@ -155,7 +168,8 @@ println!("SEPi={} TSLi={:.1}", m.np, m.tss);
 
 If you use this software, please cite it:
 
-Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/symworx
+Berry, N. T. (2026). *SymWorx* [Computer
+software]. https://github.com/symworx/symworx
 
 ```bibtex
 @software{Berry_SymWorx_2026,
@@ -167,4 +181,6 @@ Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/s
 }
 ```
 
-Add the version you used. [`CITATION.cff`](https://github.com/symworx/symworx/blob/main/CITATION.cff) and GitHub **Cite this repository** carry the current release.
+Add the version you
+used. [`CITATION.cff`](https://github.com/symworx/symworx/blob/main/CITATION.cff)
+and GitHub **Cite this repository** carry the current release.

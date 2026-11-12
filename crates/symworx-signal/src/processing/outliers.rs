@@ -16,7 +16,10 @@
 //! and `LinearInterp` strategies on detected outliers (common for RR artifact
 //! correction in the HRV / nonlinear dynamics literature).
 
-use symworx_stats::basic::{mad, median};
+use symworx_stats::basic::{
+    mad,
+    median,
+};
 
 use crate::processing::interpolation::interp_linear;
 

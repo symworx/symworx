@@ -44,24 +44,66 @@ pub mod deconvolution;
 
 pub use decimate::min_max_decimate;
 pub use deconvolution::{
-    burst_indices, convolve, exponential_kernel, gh_burst_deconvolve, gh_deconvolve, gh_deconvolve_sparse,
-    gh_reconvolve, nonnegative_deconvolution, nonnegative_deconvolution_on_support, sparse_nonnegative_deconvolution,
+    burst_indices,
+    convolve,
+    exponential_kernel,
+    gh_burst_deconvolve,
+    gh_deconvolve,
+    gh_deconvolve_sparse,
+    gh_reconvolve,
+    nonnegative_deconvolution,
+    nonnegative_deconvolution_on_support,
+    sparse_nonnegative_deconvolution,
 };
 pub use event_window::{
-    EventWindow, IntervalScore, MEAN_MIN, POINT_MIN, WINDOW_SEC, interpolate_low_probability, peer_fit,
-    repair_event_window, score_event_intervals,
+    EventWindow,
+    IntervalScore,
+    MEAN_MIN,
+    POINT_MIN,
+    WINDOW_SEC,
+    interpolate_low_probability,
+    peer_fit,
+    repair_event_window,
+    score_event_intervals,
 };
-pub use interpolation::{interp_cubic, interp_linear, interp_spline, interp1};
-pub use normalization::{normalize, zscore};
+pub use interpolation::{
+    interp_cubic,
+    interp_linear,
+    interp_spline,
+    interp1,
+};
+pub use normalization::{
+    normalize,
+    zscore,
+};
 pub use outliers::{
-    FillStrategy, OutlierCriterion, detect_outliers, interpolate_outliers, robust_interpolate,
+    FillStrategy,
+    OutlierCriterion,
+    detect_outliers,
+    interpolate_outliers,
+    robust_interpolate,
     robust_interpolate_with_times,
 };
-pub use peaks::{Peak, PeakFinder, PeakFinderBuilder};
-pub use resample::{Resample, ResampleMethod};
+pub use peaks::{
+    Peak,
+    PeakFinder,
+    PeakFinderBuilder,
+};
+pub use resample::{
+    Resample,
+    ResampleMethod,
+};
 pub use sparse_sensing::{
-    IstaConfig, SparseRecoveryResult, dct_basis, effective_sensing, ista, measure, omp, random_gaussian_sensing,
-    reconstruct_signal, row_selection_sensing,
+    IstaConfig,
+    SparseRecoveryResult,
+    dct_basis,
+    effective_sensing,
+    ista,
+    measure,
+    omp,
+    random_gaussian_sensing,
+    reconstruct_signal,
+    row_selection_sensing,
 };
 pub use traits::PeakDetect;
 pub use windows::resample_rr_to_tachogram;

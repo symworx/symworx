@@ -362,6 +362,53 @@ mod tests {
     }
 
     #[test]
+    fn score_takes_the_worse_of_peer_and_detector() {
+        let times = [0.0, 0.7, 1.6, 2.7, 3.1];
+        let prominences = [1.0, 1.0, 100.0, 1.0, 1.0];
+        let scores = score_event_intervals(&times, &prominences).unwrap();
+        assert!(scores[1].peer_fit > POINT_MIN);
+        assert_eq!(scores[1].detector_fit, 0.0);
+        assert_eq!(scores[1].probability, 0.0);
+        let expected = (-2.5_f64 * 2.5 / 8.0).exp();
+        assert!((scores[3].peer_fit - expected).abs() < 1e-12);
+        assert!(scores[3].detector_fit > scores[3].peer_fit);
+        assert!((scores[3].probability - scores[3].peer_fit).abs() < 1e-12);
+    }
+
+    /// 181 intervals cycling 0.90, 1.00, 1.10 s. Event 40 has a prominence that
+    /// does not fit, so interval 39 is the only low probability.
+    fn cycle_window() -> (Vec<f64>, Vec<f64>) {
+        let cycle = [0.90_f64, 1.00, 1.10];
+        let mut times = vec![0.0];
+        for i in 0..181 {
+            times.push(times.last().unwrap() + cycle[i % 3]);
+        }
+        let mut prominences = vec![1.0; times.len()];
+        prominences[40] = 1.0e6;
+        (times, prominences)
+    }
+
+    #[test]
+    fn repair_golden_cycle_keeps_the_worse_fit_and_the_time_weighted_gap() {
+        let (times, prominences) = cycle_window();
+        let scores = score_event_intervals(&times, &prominences).unwrap();
+        assert!(scores[39].peer_fit > POINT_MIN);
+        assert_eq!(scores[39].detector_fit, 0.0);
+        assert_eq!(scores[39].probability, 0.0);
+        assert!((scores[39].interval_sec - 0.90).abs() < 1e-12);
+
+        let window = repair_event_window(&times, &prominences).unwrap();
+        assert_eq!(window.intervals_sec.len(), 181);
+        assert_eq!(window.probability[39], 0.0);
+        assert!((window.intervals_sec[38] - 1.10).abs() < 1e-12);
+        assert!((window.intervals_sec[40] - 1.00).abs() < 1e-12);
+        assert!((window.intervals_sec[39] - 20.0 / 19.0).abs() < 1e-12);
+        assert!((window.intervals_sec[39] - scores[39].interval_sec).abs() > 0.1);
+        assert!(window.mean_probability > MEAN_MIN);
+        assert!((window.span_sec - 180.9).abs() < 1e-9);
+    }
+
+    #[test]
     fn repair_fills_an_interval_whose_prominence_does_not_fit() {
         let (times, mut prominences) = uniform_window(182, 1.0, 1.0);
         prominences[40] = 1.0e6;
