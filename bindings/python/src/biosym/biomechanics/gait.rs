@@ -3,6 +3,7 @@
 
 use ndarray::Array1;
 use pyo3::{
+    exceptions::PyValueError,
     prelude::*,
     wrap_pyfunction,
 };
@@ -10,7 +11,10 @@ use symworx_biosym::biomechanics::{
     GaitAnalysis,
     GaitData,
     GaitParams,
+    GaitSimulationParams,
     GaitStats,
+    GaitTimeSeries,
+    generate_gait_timeseries,
 };
 
 #[pyclass(name = "GaitParams")]
@@ -139,6 +143,109 @@ impl From<GaitAnalysis> for PyGaitAnalysis {
             stats: PyGaitStats::from(a.stats),
             peak_times: a.intervals.peak_times,
             intervals_sec: a.intervals.intervals_sec,
+        }
+    }
+}
+
+#[pyclass(name = "GaitTimeSeries")]
+#[derive(Clone)]
+pub struct PyGaitTimeSeries {
+    #[pyo3(get)]
+    pub times: Vec<f64>,
+    #[pyo3(get)]
+    pub values: Vec<f64>,
+    #[pyo3(get)]
+    pub stride_peaks: Vec<usize>,
+}
+
+#[pymethods]
+impl PyGaitTimeSeries {
+    fn __repr__(&self) -> String {
+        format!(
+            "GaitTimeSeries(len={}, stride_peaks={})",
+            self.times.len(),
+            self.stride_peaks.len()
+        )
+    }
+}
+
+impl From<GaitTimeSeries> for PyGaitTimeSeries {
+    fn from(ts: GaitTimeSeries) -> Self {
+        Self {
+            times: ts.times,
+            values: ts.values,
+            stride_peaks: ts.stride_peaks,
+        }
+    }
+}
+
+impl From<PyGaitTimeSeries> for GaitTimeSeries {
+    fn from(ts: PyGaitTimeSeries) -> Self {
+        Self {
+            times: ts.times,
+            values: ts.values,
+            stride_peaks: ts.stride_peaks,
+        }
+    }
+}
+
+#[pyclass(name = "GaitSimulationParams")]
+#[derive(Clone)]
+pub struct PyGaitSimulationParams {
+    #[pyo3(get, set)]
+    pub fs: f64,
+    #[pyo3(get, set)]
+    pub duration: f64,
+    #[pyo3(get, set)]
+    pub gait: PyGaitParams,
+    #[pyo3(get, set)]
+    pub vertical_amp: f64,
+    #[pyo3(get, set)]
+    pub hump_sigma_s: f64,
+    #[pyo3(get, set)]
+    pub noise_std: f64,
+    #[pyo3(get, set)]
+    pub seed: Option<u64>,
+}
+
+#[pymethods]
+impl PyGaitSimulationParams {
+    #[new]
+    fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl Default for PyGaitSimulationParams {
+    fn default() -> Self {
+        GaitSimulationParams::default().into()
+    }
+}
+
+impl From<GaitSimulationParams> for PyGaitSimulationParams {
+    fn from(p: GaitSimulationParams) -> Self {
+        Self {
+            fs: p.fs,
+            duration: p.duration,
+            gait: PyGaitParams { inner: p.gait },
+            vertical_amp: p.vertical_amp,
+            hump_sigma_s: p.hump_sigma_s,
+            noise_std: p.noise_std,
+            seed: p.seed,
+        }
+    }
+}
+
+impl From<PyGaitSimulationParams> for GaitSimulationParams {
+    fn from(py: PyGaitSimulationParams) -> Self {
+        Self {
+            fs: py.fs,
+            duration: py.duration,
+            gait: py.gait.inner,
+            vertical_amp: py.vertical_amp,
+            hump_sigma_s: py.hump_sigma_s,
+            noise_std: py.noise_std,
+            seed: py.seed,
         }
     }
 }
@@ -280,14 +387,24 @@ pub fn py_analyze_gait_signal(signal: Vec<f64>, fs: f64) -> PyGaitAnalysis {
     PyGaitAnalysis::from(analysis)
 }
 
+#[pyfunction(name = "generate_gait_timeseries")]
+pub fn py_generate_gait_timeseries(params: PyGaitSimulationParams) -> PyResult<PyGaitTimeSeries> {
+    generate_gait_timeseries(&GaitSimulationParams::from(params))
+        .map(PyGaitTimeSeries::from)
+        .map_err(PyValueError::new_err)
+}
+
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyGaitParams>()?;
     m.add_class::<PyGaitData>()?;
     m.add_class::<PyGaitStats>()?;
     m.add_class::<PyGaitAnalysis>()?;
+    m.add_class::<PyGaitSimulationParams>()?;
+    m.add_class::<PyGaitTimeSeries>()?;
 
     m.add_function(wrap_pyfunction!(py_detect_gait_strides, m)?)?;
     m.add_function(wrap_pyfunction!(py_analyze_gait_signal, m)?)?;
+    m.add_function(wrap_pyfunction!(py_generate_gait_timeseries, m)?)?;
 
     Ok(())
 }

@@ -41,6 +41,7 @@ jobs:
           cargo +nightly fmt --check \
             -p symworx-error \
             -p symworx-math \
+            -p symworx-npu \
             -p symworx-gpu \
             -p symworx-io \
             -p symworx-stats \
@@ -92,6 +93,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
+          targets: thumbv7em-none-eabihf,arm-unknown-linux-gnueabihf
 
       # Use distro OpenBLAS instead of OpenBLAS-from-source.
       # Cuts down on build time; required for RUSTFLAGS=-lopenblas above.
@@ -122,6 +124,7 @@ jobs:
           PKGS=(
             -p symworx-error
             -p symworx-math
+            -p symworx-npu
             -p symworx-gpu
             -p symworx-io
             -p symworx-stats
@@ -143,6 +146,8 @@ jobs:
           cargo test --lib -p symworx-dbsym --features sqlite -- --quiet
           cargo clippy --lib --no-deps -p symworx-dynamics --features gpu -- -D warnings
           cargo test --lib -p symworx-dynamics --features gpu -- --quiet
+          RUSTFLAGS= cargo check -p symworx-npu --target thumbv7em-none-eabihf --no-default-features
+          RUSTFLAGS= cargo check -p symworx-npu --target arm-unknown-linux-gnueabihf
 
   python-bindings:
     runs-on: ubuntu-latest

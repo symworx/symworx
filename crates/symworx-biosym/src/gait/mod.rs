@@ -7,7 +7,8 @@
 //! spatiotemporal metrics (`GaitData`, `GaitStats`).
 //!
 //! Provides stride/step timing, cadence, length calculations, vertical oscillation,
-//! symmetry, and full `GaitAnalysis` (with quality-aware stride detection from signals).
+//! symmetry, a vertical reference-channel generator, and full `GaitAnalysis`
+//! (with quality-aware stride detection from signals).
 //! Designed for use with RQA and nonlinear dynamics tooling in `symworx-dynamics`.
 //!
 //! See `detect_gait_strides*`, `analyze_gait*`, `GaitAnalysis`, `GaitData`, `GaitStats`,
@@ -33,6 +34,7 @@
 
 mod analysis;
 mod data;
+mod generation;
 mod metrics;
 mod params;
 mod processing;
@@ -50,6 +52,11 @@ pub use analysis::{
     gait_peak_finder,
 };
 pub use data::GaitData;
+pub use generation::{
+    GaitSimulationParams,
+    GaitTimeSeries,
+    generate_gait_timeseries,
+};
 pub use metrics::{
     GaitStats,
     compute_gait_stats,

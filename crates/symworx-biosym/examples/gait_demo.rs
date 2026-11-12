@@ -10,13 +10,15 @@ use ndarray::array;
 use symworx_biosym::biomechanics::gait::{
     GaitData,
     GaitParams,
+    GaitSimulationParams,
     analyze_gait_signal,
+    generate_gait_timeseries,
 };
 
 fn main() {
     println!("=== BioSym Gait Demo ===\n");
 
-    let mut params = GaitParams::default().with_defaults();
+    let params = GaitParams::default().with_defaults();
     println!("Default GaitParams (with leg length & cadence estimated):");
     println!("  height       : {:.2} m", params.height);
     println!("  leg_length   : {:.2} m", params.leg_length.unwrap_or(0.0));
@@ -52,6 +54,24 @@ fn main() {
     println!(
         "  GaitAnalysis: n_strides={}, mean interval={:.2}s",
         ga.stats.n_strides, ga.stats.mean_stride_time_s
+    );
+
+    let generated = generate_gait_timeseries(&GaitSimulationParams {
+        gait: GaitParams {
+            stride_variability: 0.0,
+            ..GaitParams::default()
+        },
+        seed: Some(1),
+        ..GaitSimulationParams::default()
+    })
+    .expect("default gait simulation");
+    let detected = analyze_gait_signal(&generated.values, 100.0);
+    println!("\nGenerated vertical channel:");
+    println!("  stride peaks: {}", generated.stride_peaks.len());
+    println!(
+        "  detected events: {}, mean interval={:.3}s",
+        detected.intervals.peak_times.len(),
+        detected.stats.mean_stride_time_s
     );
 
     println!("\nDemo complete.");

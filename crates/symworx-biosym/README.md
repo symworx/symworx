@@ -5,7 +5,7 @@ It provides tools for simulating and analyzing physiological and biomechanical s
 
 ## Features (Current)
 
-- **Gait modeling & analysis** — `GaitParams`, `GaitData`, `GaitStats`, `GaitAnalysis` (under `biomechanics::gait`) with stride detection from signals (`detect_gait_strides*`, `analyze_gait*`), quality presets, cadence, lengths, symmetry, vertical oscillation. Parity with physiology analysis.
+- **Gait modeling & analysis** — `GaitParams`, `GaitData`, `GaitStats`, `GaitAnalysis` (under `biomechanics::gait`) with stride detection from signals (`detect_gait_strides*`, `analyze_gait*`), a vertical reference-channel generator (`generate_gait_timeseries`), quality presets, cadence, lengths, symmetry, vertical oscillation. Parity with physiology analysis.
 - **Central Pattern Generator (CPG)** — Coupled Van der Pol oscillators for heart, bilateral legs, and respiration, driven by a dynamic `tau` parameter.
 - **Numerical integration** — Uses RK4 from `symworx-math` for stable simulation.
 - **Python bindings** — via the unified package (`from symworx import biosym`); optional split package `symworx_biosym` may still exist in `bindings/python/`.

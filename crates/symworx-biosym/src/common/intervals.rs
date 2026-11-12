@@ -176,7 +176,7 @@ mod tests {
         assert!(series.peak_indices.is_empty());
         assert_eq!(series.peak_times, times);
         // Use tolerant compare because 1.1 and 1.2 are not exactly representable
-        let expected = vec![1.1, 1.1, 1.2];
+        let expected = [1.1, 1.1, 1.2];
         assert_eq!(series.intervals_sec.len(), expected.len());
         for (a, b) in series.intervals_sec.iter().zip(expected.iter()) {
             assert!((a - b).abs() < 1e-9, "interval diff too large: {a} vs {b}");

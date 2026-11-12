@@ -1,0 +1,24 @@
+# Copyright (c) 2026 Nathaniel T. Berry
+# Licensed under the Apache License, Version 2.0.
+
+[package]
+name = "symworx-npu"
+version          = { workspace = true }
+edition          = { workspace = true }
+license          = { workspace = true }
+repository       = { workspace = true }
+authors          = { workspace = true }
+description      = "Scalar recurrence, RQA, smoothing, and peak detection for host and no_std targets"
+keywords         = ["embedded", "recurrence", "rqa", "peaks", "no-std"]
+categories       = ["science", "mathematics", "embedded"]
+
+[features]
+default = ["std"]
+## Host `std::error::Error`. Off for the Arduino Nano 33 BLE (`thumbv7em-none-eabihf`).
+std = []
+
+[dependencies]
+libm = "0.2.16"
+
+[lints]
+workspace = true

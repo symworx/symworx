@@ -199,7 +199,7 @@ mod tests {
         let right = array![1.0, 1.05, 0.95];
         let sym = compute_symmetry_index(&left, &right).unwrap();
         assert!(
-            sym >= 0.0 && sym < 0.1,
+            (0.0..0.1).contains(&sym),
             "near-symmetric should be low index, got {}",
             sym
         );

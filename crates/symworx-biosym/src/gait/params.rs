@@ -6,7 +6,7 @@
 
 /// Core gait simulation / analysis parameters.
 /// Adapted from Python GaitSimulationParams with idiomatic Rust.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct GaitParams {
     /// Walking speed (m/s)
     pub walking_speed: f64,
