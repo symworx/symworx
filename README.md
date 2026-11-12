@@ -1,12 +1,16 @@
 # SymWorx
 
-**SymWorx** is an open-source computational stack for **biosignal analysis**, **training load**, **nonlinear dynamics**, and **classical ML** — with a **Rust kernel**, **Python bindings**, and a keyboard-driven TUI (`symview`).
+**SymWorx** is an open-source computational stack for **biosignal
+analysis**, **training load**, **nonlinear dynamics**, and **classical
+ML** — with a **Rust kernel**, **Python bindings**, and a
+keyboard-driven TUI (`symview`).
 
-It is aimed at research, education, and portable inference (workstation today; embedded/mobile recipes for exported models).
+It is aimed at research, education, and portable inference
+(workstation today; embedded/mobile recipes for exported models).
     
-**License:** [Apache License 2.0](LICENSE)
-**Changelog:** [CHANGELOG.md](CHANGELOG.md)
-**Cite:** [Citation](#citation) · [`CITATION.cff`](CITATION.cff)
+**License:** [Apache License 2.0](LICENSE) **Changelog:**
+[CHANGELOG.md](CHANGELOG.md) **Cite:** [Citation](#citation) ·
+[`CITATION.cff`](CITATION.cff)
 
 ---
 
@@ -19,9 +23,15 @@ It is aimed at research, education, and portable inference (workstation today; e
 cargo run -p symworx-tui --bin symview
 ```
 
-In **Import**: browse `./data`, or `Ctrl+G` to generate demo signals. **Explore** for stats/sparkline; **Dynamics** for RQA.
+In **Import**: browse `./data`, or `Ctrl+G` to generate demo
+signals. **Explore** for stats/sparkline; **Dynamics** for RQA.
 
-Container image ([`containers/symview.Containerfile`](containers/symview.Containerfile)): `symview` starts with its working directory at `/data`. Mount the folder that holds your signal files there. `Ctrl+Q` quits. The release workflow pushes `ghcr.io/symworx/symview:<version>` on a `v*` tag. Until that tag exists, build before run.
+Container image
+([`containers/symview.Containerfile`](containers/symview.Containerfile)):
+`symview` starts with its working directory at `/data`. Mount the
+folder that holds your signal files there. `Ctrl+Q` quits. The release
+workflow pushes `ghcr.io/symworx/symview:<version>` on a `v*`
+tag. Until that tag exists, build before run.
 
 ```bash
 # Podman (:z relabels the mount for SELinux)
@@ -44,7 +54,8 @@ cargo run -p symworx-stats --example train_test_split_demo
 cargo run -p symworx-stats --example linear_regression_demo --features linalg
 ```
 
-Model export (C / iOS / Android / web): [crates/symworx-stats/docs/model_export.md](crates/symworx-stats/docs/model_export.md)
+Model export (C / iOS / Android / web):
+[crates/symworx-stats/docs/model_export.md](crates/symworx-stats/docs/model_export.md)
 
 ### Training load (CLI)
 
@@ -55,7 +66,10 @@ Model export (C / iOS / Android / web): [crates/symworx-stats/docs/model_export.
 cargo run -p symworx-loadsym --features "fit,sqlite" -- stats ride.fit --ftp 280
 ```
 
-TUI: `symview` → Home → **LoadSym** (`3`). Personal catalog (schema v4, multi-source ingest): [crates/symworx-loadsym-db/docs/loadsym-personal-starter.md](crates/symworx-loadsym-db/docs/loadsym-personal-starter.md) · [crate README](crates/symworx-loadsym-db/README.md)
+TUI: `symview` → Home → **LoadSym** (`3`). Personal catalog (schema
+v4, multi-source ingest):
+[crates/symworx-loadsym-db/docs/loadsym-personal-starter.md](crates/symworx-loadsym-db/docs/loadsym-personal-starter.md)
+· [crate README](crates/symworx-loadsym-db/README.md)
 
 ### Python (education / data science)
 
@@ -99,7 +113,8 @@ export PYTHON_SYS_EXECUTABLE=python3.12
 2. **Robustness** — strong typing, explicit errors where the API is mature  
 3. **Scalability** — one kernel for analysis, simulation, and portable inference  
 
-Much of the original work lived in Python; the long-term engine is **Rust**, with Python for teaching and rapid prototyping.
+Much of the original work lived in Python; the long-term engine is
+**Rust**, with Python for teaching and rapid prototyping.
 
 ---
 
@@ -144,22 +159,28 @@ Much of the original work lived in Python; the long-term engine is **Rust**, wit
 | [symworx-error](crates/symworx-error/README.md) | Shared errors |
 | [bindings/python](bindings/python/README.md) | PyO3 package `symworx` |
 
-Gait and run-performance modeling live inside **biosym**, not as a separate crate.
+Gait and run-performance modeling live inside **biosym**, not as a
+separate crate.
 
 ---
 
 ## Dependencies & heavy features
 
-- **`ndarray-linalg` / OpenBLAS** — heavy. Opt-in on `symworx-stats` via `features = ["linalg"]`. **Unconditional** on `symworx-signal` (deconvolution, etc.).
-- **`polars`** — optional in TUI for in-memory frames only; **never** for signal file I/O.
-- **I/O rule:** all on-disk signal formats go through **`symworx-io`** only.
+- **`ndarray-linalg` / OpenBLAS** — heavy. Opt-in on `symworx-stats`
+  via `features = ["linalg"]`. **Unconditional** on `symworx-signal`
+  (deconvolution, etc.).
+- **`polars`** — optional in TUI for in-memory frames only; **never**
+  for signal file I/O.
+- **I/O rule:** all on-disk signal formats go through **`symworx-io`**
+  only.
 
 Details: [AGENTS.md](AGENTS.md), [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ### System deps (when using `linalg` or signal LA)
 
 Linux (Fedora/Debian-style): install OpenBLAS development packages (CI uses system OpenBLAS).  
-Without OpenBLAS, prefer pure-Rust stats examples (logistic, rules, splits, k-NN, NB).
+Without OpenBLAS, prefer pure-Rust stats examples (logistic, rules,
+splits, k-NN, NB).
 
 ---
 
@@ -171,9 +192,11 @@ cargo test -p symworx-stats
 cargo +nightly fmt -- --check
 ```
 
-See [DEVELOPMENT.md](DEVELOPMENT.md) and [CONTRIBUTING.md](CONTRIBUTING.md).
+See [DEVELOPMENT.md](DEVELOPMENT.md) and
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
-Agent / AI contributors: read [AGENTS.md](AGENTS.md) and own all submitted code.
+Agent / AI contributors: read [AGENTS.md](AGENTS.md) and own all
+submitted code.
 
 ---
 
@@ -181,7 +204,8 @@ Agent / AI contributors: read [AGENTS.md](AGENTS.md) and own all submitted code.
 
 If you use this software in published work, please cite it:
 
-Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/symworx
+Berry, N. T. (2026). *SymWorx* [Computer
+software]. https://github.com/symworx/symworx
 
 ```bibtex
 @software{Berry_SymWorx_2026,
@@ -193,10 +217,10 @@ Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/s
 }
 ```
 
-Add the version you actually used (git tag or the `version` in `CITATION.cff`).
-GitHub **Cite this repository** (from [`CITATION.cff`](CITATION.cff) on the
-default branch) is the versioned form. There is no software DOI yet; the GitHub
-URL is the locator.
+Add the version you actually used (git tag or the `version` in
+`CITATION.cff`).  GitHub **Cite this repository** (from
+[`CITATION.cff`](CITATION.cff) on the default branch) is the versioned
+form. There is no software DOI yet; the GitHub URL is the locator.
 
 ---
 
