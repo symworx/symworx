@@ -54,6 +54,9 @@ pub mod cluster;
 /// Correlation functions.
 pub mod correlation;
 
+/// Shrout–Fleiss ICC(1,1) for two replicates per subject.
+pub mod icc;
+
 /// Distance metrics (e.g., Euclidean).
 pub mod distance;
 
@@ -225,6 +228,12 @@ pub use eval::{
     ResidualRef,
     evaluate_residuals,
     model_eval_from_predictions,
+};
+pub use icc::{
+    Icc,
+    IccError,
+    icc,
+    icc_11,
 };
 pub use knn::{
     KnnClassifier,

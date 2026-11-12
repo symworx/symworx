@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `symworx-stats`: Shrout–Fleiss `icc_11` for two replicates, and `icc` for the six balanced forms. Python: `symworx.core.statistics.icc_11`, `icc`, and `std_dev_sample`.
+- `symworx-npu`: CPU scalar `f64` recurrence masks, RQA, smoothing, and peak detection, with gait and ECG presets. The default `std` build covers the host and a Raspberry Pi Zero (`arm-unknown-linux-gnueabihf`). `--no-default-features` is `no_std` plus `alloc` for the Arduino Nano 33 BLE (`thumbv7em-none-eabihf`). `sin`, `cos`, `ln`, and `round` go through `libm`.
+- `symworx-biosym`: `generate_gait_timeseries` writes one Gaussian hump per stride. Analytic centers are `stride_peaks`. Python: `symworx.biosym.generate_gait_timeseries` and `GaitTimeSeries.stride_peaks`.
+
+### Changed 
+
+## [0.6.0] - 2026-11-04
+
+### Added
+
+- `symworx-gpu` with GPU accelerated recurrence analysis. Additional calculations will be added in time.
+
 ### Changed 
 
 ## [0.5.1] - 2026-10-31

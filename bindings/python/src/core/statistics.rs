@@ -19,6 +19,7 @@ use symworx_core::stats::{
     // density
     Histogram as RustHistogram,
     HistogramConfig,
+    Icc as RustIcc,
     KMeansConfig,
     KdeConfig,
     KdeEstimate as RustKde,
@@ -51,6 +52,8 @@ use symworx_core::stats::{
     gaussian_nb as rust_gaussian_nb,
     hist_kde_with as rust_hist_kde_with,
     histogram as rust_histogram,
+    icc as rust_icc,
+    icc_11,
     kde_gaussian as rust_kde_gaussian,
     l1,
     l2,
@@ -80,6 +83,7 @@ use symworx_core::stats::{
     sd_successive_differences,
     sdnn,
     silverman_bandwidth as rust_silverman_bandwidth,
+    std_dev_sample,
     // variability
     successive_differences,
     train_test_split as rust_train_test_split,
@@ -156,6 +160,86 @@ pub fn py_mad(data: Vec<f64>) -> f64 {
 #[pyfunction(name = "percentile")]
 pub fn py_percentile(data: Vec<f64>, p: Vec<f64>) -> PyResult<Vec<f64>> {
     Ok(percentile(&data, p))
+}
+
+/// Sample standard deviation (divisor `n - 1`). NaN when `n < 2`.
+#[pyfunction(name = "std_dev_sample")]
+pub fn py_std_dev_sample(data: Vec<f64>) -> f64 {
+    std_dev_sample(&data)
+}
+
+/// Shrout–Fleiss ICC(1,1) for pairs `(replicate_1, replicate_2)`.
+///
+/// At least two pairs are required. Both mean squares equal to 0 yields 1.
+#[pyfunction(name = "icc_11")]
+pub fn py_icc_11(pairs: Vec<(f64, f64)>) -> PyResult<f64> {
+    icc_11(&pairs).map_err(|err| PyValueError::new_err(err.to_string()))
+}
+
+/// Six Shrout–Fleiss coefficients for one subjects-by-replicates table.
+#[pyclass(name = "Icc")]
+#[derive(Clone)]
+pub struct PyIcc {
+    /// Number of subjects.
+    #[pyo3(get)]
+    pub n: usize,
+    /// Number of matched replicates.
+    #[pyo3(get)]
+    pub k: usize,
+    /// One-way random, single replicate.
+    #[pyo3(get)]
+    pub icc_11: f64,
+    /// One-way random, mean of the `k` replicates.
+    #[pyo3(get)]
+    pub icc_1k: f64,
+    /// Two-way random, absolute agreement, single replicate.
+    #[pyo3(get)]
+    pub icc_21: f64,
+    /// Two-way random, absolute agreement, mean of the `k` replicates.
+    #[pyo3(get)]
+    pub icc_2k: f64,
+    /// Two-way mixed, consistency, single replicate.
+    #[pyo3(get)]
+    pub icc_31: f64,
+    /// Two-way mixed, consistency, mean of the `k` replicates.
+    #[pyo3(get)]
+    pub icc_3k: f64,
+}
+
+impl From<RustIcc> for PyIcc {
+    fn from(value: RustIcc) -> Self {
+        Self {
+            n: value.n,
+            k: value.k,
+            icc_11: value.icc_11,
+            icc_1k: value.icc_1k,
+            icc_21: value.icc_21,
+            icc_2k: value.icc_2k,
+            icc_31: value.icc_31,
+            icc_3k: value.icc_3k,
+        }
+    }
+}
+
+#[pymethods]
+impl PyIcc {
+    fn __repr__(&self) -> String {
+        format!(
+            "Icc(n={}, k={}, icc_11={}, icc_1k={}, icc_21={}, icc_2k={}, icc_31={}, icc_3k={})",
+            self.n, self.k, self.icc_11, self.icc_1k, self.icc_21, self.icc_2k, self.icc_31, self.icc_3k
+        )
+    }
+}
+
+/// Six Shrout–Fleiss coefficients. Each row is one subject.
+///
+/// Columns are matched replicates. At least two rows and two columns are
+/// required, and every row must have the same length.
+#[pyfunction(name = "icc")]
+pub fn py_icc(rows: Vec<Vec<f64>>) -> PyResult<PyIcc> {
+    rust_icc(&rows)
+        .map(PyIcc::from)
+        .map_err(|err| PyValueError::new_err(err.to_string()))
 }
 
 // ==========================================================
@@ -1115,6 +1199,10 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(py_median, m)?)?;
     m.add_function(wrap_pyfunction!(py_mad, m)?)?;
     m.add_function(wrap_pyfunction!(py_percentile, m)?)?;
+    m.add_function(wrap_pyfunction!(py_std_dev_sample, m)?)?;
+    m.add_class::<PyIcc>()?;
+    m.add_function(wrap_pyfunction!(py_icc_11, m)?)?;
+    m.add_function(wrap_pyfunction!(py_icc, m)?)?;
 
     // --- Correlation --------------------------------------
     let _ = m.add_function(wrap_pyfunction!(py_pearson_correlation, m)?);

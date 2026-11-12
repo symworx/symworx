@@ -24,6 +24,7 @@ __pycache__/
 *.sqlite3
 *.db
 *.ipynb_checkpoints
+.env
 *.env
 *.venv
 env/

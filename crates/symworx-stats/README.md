@@ -12,6 +12,7 @@ Statistics and machine-learning algorithms. Dynamical operators and signal sensi
 |:-------|:--------|:------------------|
 | `basic`, `variability` | mean, median, MAD, RMSSD, … | No |
 | `correlation`, `autocorrelation` | Pearson, autocovariance `acf`, normalized `acf_normalized`, lagged `ccf` | No |
+| `icc` | Shrout–Fleiss ICC(1,1), ICC(2,1), ICC(3,1), and the three average-of-k forms | No |
 | `distance` | Euclidean, Manhattan, cosine, Chebyshev | No |
 | `error_metrics` | MAE/MSE/RMSE, R², bias, residuals, `RegressionReport` | No |
 | `eval` | Shared `EvalPolicy` / `EvalReport` / `ModelEval` (flag + percentile) | No (`serde` opt-in for JSON) |
