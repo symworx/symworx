@@ -48,6 +48,22 @@ sample carries the measured intervals and probabilities that close
 inside that 15 s or 30 s step, plus their mean and standard deviation.
 A grid time that is not admitted has `measures: None`.
 
+`cross_sample_entropy` compares every template in one series with every
+template in the other, including the pair that shares an index. The same
+`r` makes the two call orders equal.
+
+`cross_recurrence_mask` embeds both series the way host `edim` does.
+A Theiler window of 0 leaves the simultaneous pair set. `recurrence_mask`
+still clears `|i - j| == 0`. `crqa` reads that mask; its diagonal entropy
+is in nats.
+
+`joint_coupling` repairs both sides over the prior 180 s, drops oldest
+intervals from the longer side, then calls those two with `m = 2`,
+`tau = 1`, Theiler 0, and `r = 0.2 * SD` of the trimmed series pooled
+together. `rolling_joint_coupling` uses the 15 s or 30 s grid. A side
+that misses the 180 s gate has `coupling: None`. Fewer than two intervals
+after the trim does too.
+
 `symworx-gpu` is the device path. Its `hip` feature compiles
 `kernels/recurrence.hip`. Line metrics there stay on the CPU. This
 crate computes the mask and the line metrics in Rust.

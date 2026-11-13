@@ -66,6 +66,56 @@ pub fn sample_entropy(data: &[f64], m: usize, r: f64) -> f64 {
     -((count_m_plus_1 as f64) / (count_m as f64)).ln()
 }
 
+/// Cross-sample entropy of two series, in nats.
+///
+/// Every template in `x` is compared with every template in `y`, including
+/// the pair that shares an index. The same `r` makes the swapped call equal.
+/// The calls differ only when the caller scales `r` from one of the series.
+///
+/// Returns 0 when either series is shorter than `m + 1`, `r` is below
+/// `1e-10`, or either count is zero. A constant series is still scored.
+/// A NaN lag counts at `m` and not at `m + 1`, as in [`sample_entropy`].
+pub fn cross_sample_entropy(x: &[f64], y: &[f64], m: usize, r: f64) -> f64 {
+    let Some(templates_x) = x.len().checked_sub(m).filter(|n| *n >= 1) else {
+        return 0.0;
+    };
+    let Some(templates_y) = y.len().checked_sub(m).filter(|n| *n >= 1) else {
+        return 0.0;
+    };
+    if r < 1e-10 {
+        return 0.0;
+    }
+
+    let (count_m, count_m1) = cross_counts(x, y, templates_x, templates_y, m, r);
+    if count_m == 0 || count_m1 == 0 {
+        return 0.0;
+    }
+    -((count_m1 as f64) / (count_m as f64)).ln()
+}
+
+fn cross_counts(x: &[f64], y: &[f64], templates_x: usize, templates_y: usize, m: usize, r: f64) -> (u64, u64) {
+    let mut count_m = 0u64;
+    let mut count_m1 = 0u64;
+    for i in 0..templates_x {
+        for j in 0..templates_y {
+            let mut match_m = true;
+            for k in 0..m {
+                if (x[i + k] - y[j + k]).abs() > r {
+                    match_m = false;
+                    break;
+                }
+            }
+            if match_m {
+                count_m += 1;
+                if (x[i + m] - y[j + m]).abs() <= r {
+                    count_m1 += 1;
+                }
+            }
+        }
+    }
+    (count_m, count_m1)
+}
+
 // TESTS
 #[cfg(test)]
 mod tests {
@@ -99,5 +149,41 @@ mod tests {
     fn test_long_constant_signal() {
         let data = vec![42.0; 100];
         assert_eq!(sample_entropy(&data, 2, 0.5), 0.0);
+    }
+
+    #[test]
+    fn cross_sample_entropy_matches_a_hand_count() {
+        // m = 2. Five pairs match at m and three of those match at m+1.
+        let x = [0.0, 1.0, 0.0, 1.0, 0.0];
+        let y = [0.0, 1.0, 0.0, 1.0, 1.0];
+        let got = cross_sample_entropy(&x, &y, 2, 0.1);
+        assert_eq!(got, -((3.0_f64) / 5.0).ln());
+        assert_eq!(got, cross_sample_entropy(&y, &x, 2, 0.1));
+    }
+
+    #[test]
+    fn cross_sample_entropy_counts_the_diagonal_that_sample_entropy_skips() {
+        let x = [0.0, 0.0, 1.0, 0.0];
+        assert_eq!(sample_entropy(&x, 1, 0.1), 0.0);
+        assert_eq!(cross_sample_entropy(&x, &x, 1, 0.1), -((3.0_f64) / 5.0).ln());
+    }
+
+    #[test]
+    fn cross_sample_entropy_early_exits_do_not_treat_a_constant_as_zero() {
+        assert_eq!(cross_sample_entropy(&[0.0, 1.0], &[0.0, 1.0], 2, 0.5), 0.0);
+        assert_eq!(cross_sample_entropy(&[0.0, 1.0, 2.0], &[0.0, 1.0, 2.0], 1, 1e-12), 0.0);
+        assert_eq!(cross_sample_entropy(&[0.0, 1.0, 2.0], &[10.0, 11.0, 12.0], 1, 0.1), 0.0);
+
+        // x is constant. y is not. Matches still count.
+        let x = [1.0, 1.0, 1.0, 1.0];
+        let y = [1.0, 1.0, 2.0, 1.0];
+        assert_eq!(cross_sample_entropy(&x, &y, 1, 0.1), -((3.0_f64) / 6.0).ln());
+    }
+
+    #[test]
+    fn cross_sample_entropy_counts_a_nan_lag_as_m_only() {
+        let x = [0.0, 0.0, f64::NAN];
+        let y = [0.0, 0.0, 0.0];
+        assert_eq!(cross_sample_entropy(&x, &y, 1, 0.2), -((2.0_f64) / 4.0).ln());
     }
 }

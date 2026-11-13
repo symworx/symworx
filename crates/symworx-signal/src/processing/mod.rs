@@ -59,6 +59,8 @@ pub use event_window::{
     EventMeasures,
     EventWindow,
     IntervalScore,
+    JointCoupling,
+    JointSample,
     MEAN_MIN,
     MEASURE_STEP_FAST_SEC,
     MEASURE_STEP_SEC,
@@ -70,10 +72,13 @@ pub use event_window::{
     WINDOW_SEC,
     event_measures,
     interpolate_low_probability,
+    joint_coupling,
     peer_fit,
     repair_event_window,
     rolling_event_measures,
+    rolling_joint_coupling,
     score_event_intervals,
+    trim_to_same_end,
 };
 pub use interpolation::{
     interp_cubic,
