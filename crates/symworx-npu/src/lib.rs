@@ -7,8 +7,8 @@
 //! slice-based `f64` routines with the same decisions as the host filters and
 //! `PeakFinder` in `symworx-signal`. Gait and ECG functions are presets on that
 //! finder. The event window matches `symworx-signal`'s repair: leave-one-out
-//! probability, a 180 s span, and in-place fill below 0.6. This crate does not
-//! call an NPU.
+//! probability, a 180 s span, and in-place fill below 0.6. Sample entropy is
+//! the scalar copy of `symworx-dynamics`. This crate does not call an NPU.
 //!
 //! The default `std` feature is the host build, including a Raspberry Pi Zero
 //! (`arm-unknown-linux-gnueabihf`).
@@ -28,6 +28,7 @@ mod gait;
 mod peaks;
 mod recurrence;
 mod rqa;
+mod sample_entropy;
 mod smooth;
 
 pub use ecg::{
@@ -56,7 +57,6 @@ pub use event_window::{
     repair_event_window,
     rmssd,
     rolling_event_measures,
-    sample_entropy,
     score_event_intervals,
 };
 pub use gait::{
@@ -79,6 +79,7 @@ pub use rqa::{
     RqaStats,
     rqa,
 };
+pub use sample_entropy::sample_entropy;
 pub use smooth::{
     BandpassSpec,
     Biquad,

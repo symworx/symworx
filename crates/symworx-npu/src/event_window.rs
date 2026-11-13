@@ -307,45 +307,6 @@ pub fn cv(data: &[f64]) -> f64 {
     sd / mean.abs()
 }
 
-/// Sample entropy. The counts and the early exits match `symworx-dynamics`.
-///
-/// Returns 0 when the series is shorter than `m + 2`, nearly constant, the
-/// tolerance is below `1e-10`, or either match count is zero.
-pub fn sample_entropy(data: &[f64], m: usize, r: f64) -> f64 {
-    let n = data.len();
-    if n <= m + 1 {
-        return 0.0;
-    }
-    let sd = population_std(data);
-    if !sd.is_finite() || sd < 1e-12 || r < 1e-10 {
-        return 0.0;
-    }
-
-    let mut count_m = 0usize;
-    let mut count_m_plus_1 = 0usize;
-    for i in 0..(n - m - 1) {
-        for j in (i + 1)..(n - m) {
-            let mut match_m = true;
-            for k in 0..m {
-                if (data[i + k] - data[j + k]).abs() > r {
-                    match_m = false;
-                    break;
-                }
-            }
-            if match_m {
-                count_m += 1;
-                if (data[i + m] - data[j + m]).abs() <= r {
-                    count_m_plus_1 += 1;
-                }
-            }
-        }
-    }
-    if count_m == 0 || count_m_plus_1 == 0 {
-        return 0.0;
-    }
-    -float::ln((count_m_plus_1 as f64) / (count_m as f64))
-}
-
 /// RMSSD, CV, and sample entropy of one admitted window.
 ///
 /// Sample entropy uses [`SAMPLE_ENTROPY_M`] and a tolerance of
@@ -356,7 +317,7 @@ pub fn event_measures(window: &EventWindow) -> EventMeasures {
     EventMeasures {
         rmssd: rmssd(data),
         cv: cv(data),
-        sample_entropy: sample_entropy(data, SAMPLE_ENTROPY_M, SAMPLE_ENTROPY_R_SCALE * sd),
+        sample_entropy: crate::sample_entropy(data, SAMPLE_ENTROPY_M, SAMPLE_ENTROPY_R_SCALE * sd),
         mean_probability: window.mean_probability,
         n_intervals: data.len(),
     }
@@ -400,7 +361,7 @@ pub fn rolling_event_measures(
     Ok(samples)
 }
 
-fn population_std(data: &[f64]) -> f64 {
+pub fn population_std(data: &[f64]) -> f64 {
     if data.len() < 2 {
         return f64::NAN;
     }
@@ -767,7 +728,7 @@ mod tests {
         let window = repair_event_window(&times, &prominences).unwrap().unwrap();
         let measures = event_measures(&window);
         let sd = population_std(&window.intervals_sec);
-        let expected = sample_entropy(&window.intervals_sec, SAMPLE_ENTROPY_M, SAMPLE_ENTROPY_R_SCALE * sd);
+        let expected = crate::sample_entropy(&window.intervals_sec, SAMPLE_ENTROPY_M, SAMPLE_ENTROPY_R_SCALE * sd);
         assert!((measures.sample_entropy - expected).abs() < 1e-12);
         assert!((measures.sample_entropy - 0.22648990134155392).abs() < 1e-9);
         assert_eq!(measures.n_intervals, 180);
