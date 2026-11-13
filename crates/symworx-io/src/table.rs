@@ -100,15 +100,12 @@ impl TableData {
 
     /// Row-major copy (for APIs that expect `Vec<Vec<f64>>` rows).
     pub fn to_row_major(&self) -> Vec<Vec<f64>> {
-        let n = self.n_rows();
-        let p = self.n_cols();
-        let mut rows = Vec::with_capacity(n);
-        for i in 0..n {
-            let mut row = Vec::with_capacity(p);
-            for c in 0..p {
-                row.push(self.columns[c][i]);
+        let mut rows: Vec<Vec<f64>> = (0..self.n_rows()).map(|_| Vec::with_capacity(self.n_cols())).collect();
+        for column in &self.columns {
+            let mut values = column.iter();
+            for row in &mut rows {
+                row.push(*values.next().expect("column shorter than n_rows"));
             }
-            rows.push(row);
         }
         rows
     }
@@ -330,13 +327,12 @@ pub fn write_numeric_table(path: &str, table: &TableData) -> Result<(), SymError
     let mut wtr = WriterBuilder::new().from_writer(file);
     wtr.write_record(&table.headers)
         .map_err(|e| SymError::Io(std::io::Error::other(e.to_string())))?;
-    let n = table.n_rows();
-    let p = table.n_cols();
-    for i in 0..n {
-        let mut rec = Vec::with_capacity(p);
-        for c in 0..p {
-            rec.push(format!("{}", table.columns[c][i]));
-        }
+    let mut columns: Vec<_> = table.columns.iter().map(|column| column.iter()).collect();
+    for _ in 0..table.n_rows() {
+        let rec: Vec<String> = columns
+            .iter_mut()
+            .map(|column| format!("{}", column.next().expect("column shorter than n_rows")))
+            .collect();
         wtr.write_record(&rec)
             .map_err(|e| SymError::Io(std::io::Error::other(e.to_string())))?;
     }
