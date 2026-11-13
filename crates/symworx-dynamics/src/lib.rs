@@ -70,6 +70,7 @@ pub use entropy::{
     TeConfig,
     ami,
     cross_ami,
+    cross_sample_entropy,
     first_local_minimum,
     multiscale_entropy,
     mutual_information,

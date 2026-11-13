@@ -22,7 +22,10 @@ pub use mutual_information::{
     mutual_information,
     mutual_information_discrete,
 };
-pub use sample_entropy::sample_entropy;
+pub use sample_entropy::{
+    cross_sample_entropy,
+    sample_entropy,
+};
 pub use transfer_entropy::{
     TeConfig,
     transfer_entropy,

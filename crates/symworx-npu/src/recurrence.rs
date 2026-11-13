@@ -45,11 +45,84 @@ impl RecurrenceMask {
 }
 
 /// Scalar recurrence mask. Matches the specification in `symworx-gpu`.
+///
+/// `|i - j| <= theiler` stays unset, including the diagonal when `theiler` is 0.
 pub fn recurrence_mask(
     left: Trajectory,
     right: Trajectory,
     radius: f64,
     theiler: usize,
+) -> Result<RecurrenceMask, crate::NpuError> {
+    fill_mask(left, right, radius, theiler, false)
+}
+
+/// Delay embedding. Row `i` is `series[i + k * tau]` for `k` in `0..m`.
+///
+/// The row count is `series.len() - (m - 1) * tau`. This matches `edim` in
+/// `symworx-dynamics`.
+pub fn embed(series: &[f64], m: usize, tau: usize) -> Result<alloc::vec::Vec<f64>, crate::NpuError> {
+    if m == 0 || tau == 0 {
+        return Err(crate::NpuError::InvalidInput("embedding m and tau must be non-zero"));
+    }
+    let span = (m - 1)
+        .checked_mul(tau)
+        .and_then(|lag| lag.checked_add(1))
+        .ok_or(crate::NpuError::Overflow)?;
+    if series.len() < span {
+        return Err(crate::NpuError::InvalidInput("series is shorter than the embedding"));
+    }
+    let n = series.len() - (m - 1) * tau;
+    let cells = n.checked_mul(m).ok_or(crate::NpuError::Overflow)?;
+    let mut points = alloc::vec::Vec::with_capacity(cells);
+    for i in 0..n {
+        for k in 0..m {
+            points.push(series[i + k * tau]);
+        }
+    }
+    Ok(points)
+}
+
+/// Cross-recurrence mask of two scalar series.
+///
+/// Both series use the same `m` and `tau`. Distance is squared Euclidean.
+/// Pairs with `|i - j| <= theiler` are skipped only when `theiler > 0`, so a
+/// window of 0 keeps the simultaneous pair. [`recurrence_mask`] still clears
+/// `|i - j| == 0`.
+pub fn cross_recurrence_mask(
+    x: &[f64],
+    y: &[f64],
+    m: usize,
+    tau: usize,
+    radius: f64,
+    theiler: usize,
+) -> Result<RecurrenceMask, crate::NpuError> {
+    let x_points = embed(x, m, tau)?;
+    let y_points = embed(y, m, tau)?;
+    let nx = x_points.len() / m;
+    let ny = y_points.len() / m;
+    fill_mask(
+        Trajectory {
+            points: &x_points,
+            n: nx,
+            dim: m,
+        },
+        Trajectory {
+            points: &y_points,
+            n: ny,
+            dim: m,
+        },
+        radius,
+        theiler,
+        true,
+    )
+}
+
+fn fill_mask(
+    left: Trajectory,
+    right: Trajectory,
+    radius: f64,
+    theiler: usize,
+    keep_diagonal_at_zero: bool,
 ) -> Result<RecurrenceMask, crate::NpuError> {
     prepare(left, right, radius)?;
     if left.n == 0 || right.n == 0 {
@@ -69,7 +142,13 @@ pub fn recurrence_mask(
     for i in 0..left.n {
         let a = row(left, i);
         for j in 0..right.n {
-            if (i as isize - j as isize).unsigned_abs() <= theiler {
+            let close = (i as isize - j as isize).unsigned_abs() <= theiler;
+            let skip = if keep_diagonal_at_zero {
+                theiler > 0 && close
+            } else {
+                close
+            };
+            if skip {
                 continue;
             }
             if squared_distance(a, row(right, j)) <= radius2 {
@@ -285,5 +364,50 @@ mod tests {
             non_finite,
             crate::NpuError::InvalidInput("radius must be finite")
         ));
+    }
+
+    #[test]
+    fn embed_uses_the_host_delay() {
+        let points = embed(&[0.0, 1.0, 2.0, 3.0, 4.0], 2, 2).unwrap();
+        assert_eq!(points, vec![0.0, 2.0, 1.0, 3.0, 2.0, 4.0]);
+        assert!(embed(&[0.0, 1.0], 0, 1).is_err());
+        assert!(embed(&[0.0, 1.0], 2, 0).is_err());
+        assert!(embed(&[0.0, 1.0], 3, 1).is_err());
+    }
+
+    #[test]
+    fn cross_mask_keeps_the_simultaneous_pair_when_theiler_is_zero() {
+        let x = [0.0, 5.0, 0.0];
+        let y = [0.0, 5.0];
+        let cross = cross_recurrence_mask(&x, &y, 1, 1, 0.1, 0).unwrap();
+        assert!(cross.bit(0, 0));
+        assert!(cross.bit(1, 1));
+        assert!(cross.bit(2, 0));
+        assert!(!cross.bit(0, 1));
+        assert!(!cross.bit(1, 0));
+        assert!(!cross.bit(2, 1));
+
+        let auto = recurrence_mask(
+            Trajectory {
+                points: &x,
+                n: 3,
+                dim: 1,
+            },
+            Trajectory {
+                points: &y,
+                n: 2,
+                dim: 1,
+            },
+            0.1,
+            0,
+        )
+        .unwrap();
+        assert!(!auto.bit(0, 0));
+        assert!(!auto.bit(1, 1));
+
+        let cleared = cross_recurrence_mask(&x, &y, 1, 1, 0.1, 1).unwrap();
+        assert!(!cleared.bit(0, 0));
+        assert!(!cleared.bit(1, 1));
+        assert!(cleared.bit(2, 0));
     }
 }

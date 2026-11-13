@@ -1,12 +1,15 @@
 # symworx-loadsym-db
 
-**Schema-only** crate for a personal training-load catalog used by LoadSym / `symload`.
+**Schema-only** crate for a personal training-load catalog used by
+LoadSym / `symload`.
 
 - **Zero runtime dependencies** — embeds SQL via `include_str!`
-- **No personal data** — never sample athlete rows, emails, or real paths beyond generic `$VELOFIT_HOME`
+- **No personal data** — never sample athlete rows, emails, or real
+  paths beyond generic `$VELOFIT_HOME`
 - **Dialects:** SQLite (recommended personal default) and PostgreSQL
 
-The actual database file lives **outside** this repository (typically `$VELOFIT_HOME/db/loadsym.sqlite`).
+The actual database file lives **outside** this repository (typically
+`$VELOFIT_HOME/db/loadsym.sqlite`).
 
 ## Schema version
 
@@ -19,7 +22,9 @@ Current: **`SCHEMA_VERSION = 4`**
 | v3 | `catalog_meta` key/value (e.g. `last_ingest_at` ingest watermark) |
 | v4 | Multi-source session linking: `ingest_pipeline`, `external_id`, `session_group_id`, `counts_for_load`, `is_primary`, `match_reason`, `session_groups` |
 
-Migrations for existing SQLite files are applied by `symload` (`catalog::migrate_catalog`) on `db init` / `open_catalog`. Documented SQL sketches live under `sql/migrations/`.
+Migrations for existing SQLite files are applied by `symload`
+(`catalog::migrate_catalog`) on `db init` / `open_catalog`. Documented
+SQL sketches live under `sql/migrations/`.
 
 ## Files
 
@@ -53,11 +58,16 @@ cargo run -p symworx-loadsym --features sqlite -- db init
 cargo run -p symworx-loadsym --features sqlite -- db status
 ```
 
-Runtime init, ingest, session relink, and multi-pipeline sync live in **`symworx-loadsym`** (`catalog` + `symload` binary), not in this crate.
+Runtime init, ingest, session relink, and multi-pipeline sync live in
+**`symworx-loadsym`** (`catalog` + `symload` binary), not in this
+crate.
 
 ## Multi-source load counting (v4)
 
-The catalog may store **multiple FIT copies** of the same real-world session (e.g. SRM via email + Polar AccessLink). Only rows with **`counts_for_load = 1`** roll into `daily_loads` (and thus ACWR / PMC).
+The catalog may store **multiple FIT copies** of the same real-world
+session (e.g. SRM via email + Polar AccessLink). Only rows with
+**`counts_for_load = 1`** roll into `daily_loads` (and thus ACWR /
+PMC).
 
 | Column / table | Meaning |
 |----------------|---------|
@@ -69,7 +79,9 @@ The catalog may store **multiple FIT copies** of the same real-world session (e.
 | `is_primary` | Load primary within the group |
 | `session_groups` | Group metadata (`primary_activity_id`, `match_method`) |
 
-Matching and primary selection (power-meter preferred) are implemented in `symworx-loadsym::catalog` (`relink` / end of `ingest`). See the personal starter for CLI and TUI calendar badges (`●` / `○`).
+Matching and primary selection (power-meter preferred) are implemented
+in `symworx-loadsym::catalog` (`relink` / end of `ingest`). See the
+personal starter for CLI and TUI calendar badges (`●` / `○`).
 
 ## Privacy
 
@@ -83,15 +95,18 @@ Never commit personal catalog files or secrets into SymWorx.
 
 ## See also
 
-- **Operator guide:** [docs/loadsym-personal-starter.md](docs/loadsym-personal-starter.md)
-- **Algorithms + CLI:** [../symworx-loadsym/README.md](../symworx-loadsym/README.md)
+- **Operator guide:**
+  [docs/loadsym-personal-starter.md](docs/loadsym-personal-starter.md)
+- **Algorithms + CLI:**
+  [../symworx-loadsym/README.md](../symworx-loadsym/README.md)
 - **Workspace overview:** [../../README.md](../../README.md)
 
 ## Citation
 
 If you use this software, please cite it:
 
-Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/symworx
+Berry, N. T. (2026). *SymWorx* [Computer
+software]. https://github.com/symworx/symworx
 
 ```bibtex
 @software{Berry_SymWorx_2026,
@@ -103,4 +118,6 @@ Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/s
 }
 ```
 
-Add the version you used. [`CITATION.cff`](https://github.com/symworx/symworx/blob/main/CITATION.cff) and GitHub **Cite this repository** carry the current release.
+Add the version you
+used. [`CITATION.cff`](https://github.com/symworx/symworx/blob/main/CITATION.cff)
+and GitHub **Cite this repository** carry the current release.

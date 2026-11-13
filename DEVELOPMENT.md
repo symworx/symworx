@@ -1,16 +1,22 @@
 # Development
 
-This document describes how to build, test, and contribute to the SymWorx workspace.
+This document describes how to build, test, and contribute to the
+SymWorx workspace.
 
-For guidelines when working with AI/agentic development tools, see [AGENTS.md](AGENTS.md). All contributors are expected to take full ownership of submitted code.
+For guidelines when working with AI/agentic development tools, see
+[AGENTS.md](AGENTS.md). All contributors are expected to take full
+ownership of submitted code.
 
 ## Prerequisites
 
-- Rust (stable + nightly toolchain recommended for formatting; MSRV `1.85`, same as edition 2024)
+- Rust (stable + nightly toolchain recommended for formatting; MSRV
+  `1.85`, same as edition 2024)
 - Cargo
-- For full native linear algebra features: OpenBLAS development headers (optional for most development)
+- For full native linear algebra features: OpenBLAS development
+  headers (optional for most development)
 - Python 3.12+ and maturin (for Python bindings development)
-- (Optional) `cargo install cargo-release` or similar for local release management
+- (Optional) `cargo install cargo-release` or similar for local
+  release management
 
 ## Common Commands
 
@@ -83,24 +89,33 @@ Run Python tests:
 python -m pytest
 ```
 
-See the individual `pyproject-*.toml` files for the higher-level packages (`symworx-biosym`, `symworx-loadsym`, `symworx-core`, etc.).
+See the individual `pyproject-*.toml` files for the higher-level
+packages (`symworx-biosym`, `symworx-loadsym`, `symworx-core`, etc.).
 
 ## Code Style
 
 - Run `cargo fmt` before committing.
-- In CI we run `cargo +nightly fmt -- --check` to catch formatting that depends on unstable options.
-- Follow the lint rules defined in the root `Cargo.toml` (`[workspace.lints]`).
+- In CI we run `cargo +nightly fmt -- --check` to catch formatting
+  that depends on unstable options.
+- Follow the lint rules defined in the root `Cargo.toml`
+  (`[workspace.lints]`).
 - Keep changes focused. One logical change per PR is preferred.
 
 ## Workspace Structure
 
-This is a Cargo workspace. Low-level crates (e.g. `symworx-math`, `symworx-io`, `symworx-stats`) can be depended on individually. Grouping crates (`symworx-core`, `symworx-biosym`, `symworx-loadsym`, `symworx-spatialsym`, `symworx-tui`) provide higher-level APIs and re-exports.
+This is a Cargo workspace. Low-level crates (e.g. `symworx-math`,
+`symworx-io`, `symworx-stats`) can be depended on
+individually. Grouping crates (`symworx-core`, `symworx-biosym`,
+`symworx-loadsym`, `symworx-spatialsym`, `symworx-tui`) provide
+higher-level APIs and re-exports.
 
-All crates currently share a single version defined in the root `[workspace.package]`.
+All crates currently share a single version defined in the root
+`[workspace.package]`.
 
 ## Branching
 
-**SymWorx org standard** (GitHub Flow). The default branch is **`worx`**.
+**SymWorx org standard** (GitHub Flow). The default branch is
+**`worx`**.
 
 ```text
 feature/*  ──PR──►  worx  ──tag──►  vX.Y.Z
@@ -113,24 +128,45 @@ feature/*  ──PR──►  worx  ──tag──►  vX.Y.Z
 | `feature/*` | Short-lived work |
 | `release/vX.Y.Z` | Optional freeze when a release needs soak or last-minute fixes |
 
-Do not force-push `worx`. Until GitHub finishes renaming `develop` → `worx`, the default is still named `develop` (same history); open PRs against the GitHub default.
+Do not force-push `worx`. Until GitHub finishes renaming `develop` →
+`worx`, the default is still named `develop` (same history); open PRs
+against the GitHub default.
 
 ## Releasing
 
-Single shared version across the workspace. Feature work lands on `worx`. A release is a version bump on `worx`, then a tag:
+Single shared version across the workspace. Feature work lands on
+`worx`. A release is a version bump on `worx`, then a tag:
 
-1. **Feature development** → merge to `worx` (day-to-day CI: fmt, clippy, lib tests, Python bindings).
-2. **Version bump** (on `worx`, or on an optional `release/vX.Y.Z` freeze branch):
-   - Bump the shared version in the root `Cargo.toml`: `[workspace.package] version` **and** every internal crate `version = "…"` under `[workspace.dependencies]` (must stay in lockstep). `./scripts/bump-version.sh` also updates `CITATION.cff` `version`. README citation blocks stay unversioned on purpose.
+1. **Feature development** → merge to `worx` (day-to-day CI: fmt,
+   clippy, lib tests, Python bindings).
+2. **Version bump** (on `worx`, or on an optional `release/vX.Y.Z`
+   freeze branch):
+   - Bump the shared version in the root `Cargo.toml`:
+     `[workspace.package] version` **and** every internal crate
+     `version = "…"` under `[workspace.dependencies]` (must stay in
+     lockstep). `./scripts/bump-version.sh` also updates
+     `CITATION.cff` `version`. README citation blocks stay unversioned
+     on purpose.
    - Set `date-released` in `CITATION.cff` to the release date.
-   - Update `CHANGELOG.md` (require a `## [X.Y.Z]` section for the tag / `release/*` branch).
-   - Open a PR into `worx` if the bump is not already on the default branch.
+   - Update `CHANGELOG.md` (require a `## [X.Y.Z]` section for the tag
+     / `release/*` branch).
+   - Open a PR into `worx` if the bump is not already on the default
+     branch.
 3. **Release**:
    - Merge when checks are green.
-   - **Manually** create and push the annotated tag `vX.Y.Z` on that commit (tags are not auto-created in CI).
-   - Tag push runs [`.github/workflows/release.yml`](.github/workflows/release.yml): full validation, then **publish** to crates.io, push `ghcr.io/symworx/symview:<version>` (`:latest` on a final release), and create a **GitHub Release** page (only on `v*` tags after validation succeeds). The image job waits until `symworx-tui` is on crates.io. **PyPI is paused** until `publish-python` is re-enabled.
+   - **Manually** create and push the annotated tag `vX.Y.Z` on that
+     commit (tags are not auto-created in CI).
+   - Tag push runs
+     [`.github/workflows/release.yml`](.github/workflows/release.yml):
+     full validation, then **publish** to crates.io, push
+     `ghcr.io/symworx/symview:<version>` (`:latest` on a final
+     release), and create a **GitHub Release** page (only on `v*` tags
+     after validation succeeds). The image job waits until
+     `symworx-tui` is on crates.io. **PyPI is paused** until
+     `publish-python` is re-enabled.
 
-Pre-releases (`0.2.0-rc.1`) are tags on `worx` (GitHub pre-release). There is no `stage` soak branch.
+Pre-releases (`0.2.0-rc.1`) are tags on `worx` (GitHub
+pre-release). There is no `stage` soak branch.
 
 ### Publishing Order
 
@@ -138,57 +174,100 @@ Low-level crates must be published before crates that depend on them:
 
 1. `symworx-error`
 2. `symworx-math`
-3. `symworx-io`, `symworx-stats`, `symworx-signal`, `symworx-gpu`, `symworx-dynamics`, `symworx-backend`, `symworx-embed`, `symworx-loadsym-db`, `symworx-dbsym`, `symworx-dbsym-tui`
-4. Grouping crates: `symworx-core`, `symworx-biosym`, `symworx-loadsym`, `symworx-spatialsym`, `symworx-tui`
-5. Python packages (via the corresponding `pyproject-*.toml` files): `symworx-biosym`, `symworx-loadsym`, `symworx-spatialsym`, `symworx-core`
+3. `symworx-io`, `symworx-stats`, `symworx-signal`, `symworx-gpu`,
+   `symworx-dynamics`, `symworx-backend`, `symworx-embed`,
+   `symworx-loadsym-db`, `symworx-dbsym`, `symworx-dbsym-tui`
+4. Grouping crates: `symworx-core`, `symworx-biosym`,
+   `symworx-loadsym`, `symworx-spatialsym`, `symworx-tui`
+5. Python packages (via the corresponding `pyproject-*.toml` files):
+   `symworx-biosym`, `symworx-loadsym`, `symworx-spatialsym`,
+   `symworx-core`
 
-The `symview` binary (from `symworx-tui`) can be installed with `cargo install symworx-tui --bin symview` or distributed separately. The same binary is packaged by [`containers/symview.Containerfile`](containers/symview.Containerfile) as `ghcr.io/symworx/symview:0.5.0` (build and run commands are under [Common Commands](#common-commands)). `symdb-view` (from `symworx-dbsym-tui`) is the read-only dbSym catalog browser: `cargo run -p symworx-dbsym-tui --bin symdb-view`.
+The `symview` binary (from `symworx-tui`) can be installed with `cargo
+install symworx-tui --bin symview` or distributed separately. The same
+binary is packaged by
+[`containers/symview.Containerfile`](containers/symview.Containerfile)
+as `ghcr.io/symworx/symview:0.5.0` (build and run commands are under
+[Common Commands](#common-commands)). `symdb-view` (from
+`symworx-dbsym-tui`) is the read-only dbSym catalog browser: `cargo
+run -p symworx-dbsym-tui --bin symdb-view`.
 
 ### Versioning
 
 - We use a single version for the entire workspace.
 - Semantic Versioning (SemVer) is followed.
-- Pre-releases (e.g. `0.2.0-beta.1`, `0.2.0-rc.1`) may be tagged from `worx` (or an optional release branch); mark them as prerelease in GitHub (`-` in the version).
+- Pre-releases (e.g. `0.2.0-beta.1`, `0.2.0-rc.1`) may be tagged from
+  `worx` (or an optional release branch); mark them as prerelease in
+  GitHub (`-` in the version).
 - Final releases are tagged on `worx`.
 
 ### CI / Release Automation Notes
 
-- Day-to-day [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on push/PR to **`worx`** and **`develop`** (cutover), plus **`workflow_dispatch`** (manual re-run of this gate; no publish). It formats library crates, clippy + unit-tests the **full science package set**, and builds Python bindings (`maturin develop` + pytest). The TUI smoke build is **disabled**; run `cargo build -p symworx-tui --bin symview` locally when touching the TUI.
-- The release path is gated by [`.github/workflows/release.yml`](.github/workflows/release.yml):
-  - **Validation** on PRs into `main` (legacy freeze PRs), pushes to `release/**`, tags `v*`, and `workflow_dispatch` (not on push to `worx`; day-to-day CI already ran):
-    - Release metadata (workspace version matches `release/vX.Y.Z` / tag; `CHANGELOG.md` has a `## [X.Y.Z]` section).
-    - Same science fmt/clippy/test set as day-to-day CI, plus Python **wheel smoke**
-    - **Tags are created manually** after a green merge to `worx` (for now, we do not have an auto-tag job).
+- Day-to-day [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
+  runs on push/PR to **`worx`** and **`develop`** (cutover), plus
+  **`workflow_dispatch`** (manual re-run of this gate; no publish). It
+  formats library crates, clippy + unit-tests the **full science
+  package set**, and builds Python bindings (`maturin develop` +
+  pytest). The TUI smoke build is **disabled**; run `cargo build -p
+  symworx-tui --bin symview` locally when touching the TUI.
+- The release path is gated by
+  [`.github/workflows/release.yml`](.github/workflows/release.yml):
+  - **Validation** on PRs into `main` (legacy freeze PRs), pushes to
+    `release/**`, tags `v*`, and `workflow_dispatch` (not on push to
+    `worx`; day-to-day CI already ran):
+    - Release metadata (workspace version matches `release/vX.Y.Z` /
+      tag; `CHANGELOG.md` has a `## [X.Y.Z]` section).
+    - Same science fmt/clippy/test set as day-to-day CI, plus Python
+      **wheel smoke**
+    - **Tags are created manually** after a green merge to `worx` (for
+      now, we do not have an auto-tag job).
   - **Publish** runs only on tag `v*` after validation succeeds:
     - crates.io
-    - GHCR `ghcr.io/symworx/symview:<version>` after `symworx-tui` is on crates.io (`:latest` for a final release). 
+    - GHCR `ghcr.io/symworx/symview:<version>` after `symworx-tui` is
+      on crates.io (`:latest` for a final release).
     - GitHub Release
-    - **PyPI paused:** 
+    - **PyPI paused:**
 
 ### Native / Heavy Dependencies
 
-Several optional features pull in native libraries (notably OpenBLAS via `ndarray-linalg` for the `linalg` feature in `symworx-stats` and `symworx-core`).
+Several optional features pull in native libraries (notably OpenBLAS
+via `ndarray-linalg` for the `linalg` feature in `symworx-stats` and
+`symworx-core`).
 
 - Default builds do **not** require these libraries.
-- Full feature builds require the appropriate system development packages (see the crate READMEs for instructions).
-- When publishing, we rely on feature flags so users only pull heavy dependencies when they explicitly opt in.
+- Full feature builds require the appropriate system development
+  packages (see the crate READMEs for instructions).
+- When publishing, we rely on feature flags so users only pull heavy
+  dependencies when they explicitly opt in.
 
 ### Python Package Publishing
 
-**Paused** in CI until a more stable build is ready. Validation still runs `maturin develop` / wheel smoke.
+**Paused** in CI until a more stable build is ready. Validation still
+runs `maturin develop` / wheel smoke.
 
 ## Other Notes
 
-- The `docs/` directory contains higher-level guides. [docs/projects.md](docs/projects.md) lists slated vs considered work. The LoadSym personal catalog starter **redirects** to the canonical copy under `crates/symworx-loadsym-db/docs/` (schema v4, multi-source ingest). These are not part of the generated `cargo doc` output.
+- The `docs/` directory contains higher-level
+  guides. [docs/projects.md](docs/projects.md) lists slated vs
+  considered work. The LoadSym personal catalog starter **redirects**
+  to the canonical copy under `crates/symworx-loadsym-db/docs/`
+  (schema v4, multi-source ingest). These are not part of the
+  generated `cargo doc` output.
 - Internal agent guidelines live in `AGENTS.md`.
-- Feel free to open issues or discussions for anything unclear in this document.
+- Feel free to open issues or discussions for anything unclear in this
+  document.
 
 ---
 
 **Quick links**
 - [AGENTS.md](AGENTS.md) – guidelines for agentic development
 - [CONTRIBUTING.md](CONTRIBUTING.md)
-- [Projects](docs/projects.md) – slated vs considered development items
-- [LoadSym personal catalog](crates/symworx-loadsym-db/docs/loadsym-personal-starter.md) – `$VELOFIT_HOME`, ingest, Polar, sync
-- [symworx-loadsym-db README](crates/symworx-loadsym-db/README.md) – schema versions / API
-- Root `Cargo.toml` for the full list of workspace members and shared dependencies
+- [Projects](docs/projects.md) – slated vs considered development
+  items
+- [LoadSym personal
+  catalog](crates/symworx-loadsym-db/docs/loadsym-personal-starter.md)
+  – `$VELOFIT_HOME`, ingest, Polar, sync
+- [symworx-loadsym-db README](crates/symworx-loadsym-db/README.md) –
+  schema versions / API
+- Root `Cargo.toml` for the full list of workspace members and shared
+  dependencies

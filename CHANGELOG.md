@@ -2,16 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a
+Changelog](https://keepachangelog.com/en/1.0.0/), and this project
+adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
 ### Added
 
-- `symworx-stats`: Shrout–Fleiss `icc_11` for two replicates, and `icc` for the six balanced forms. Python: `symworx.core.statistics.icc_11`, `icc`, and `std_dev_sample`.
-- `symworx-npu`: CPU scalar `f64` recurrence masks, RQA, smoothing, and peak detection, with gait and ECG presets. The default `std` build covers the host and a Raspberry Pi Zero (`arm-unknown-linux-gnueabihf`). `--no-default-features` is `no_std` plus `alloc` for the Arduino Nano 33 BLE (`thumbv7em-none-eabihf`). `sin`, `cos`, `ln`, and `round` go through `libm`.
-- `symworx-biosym`: `generate_gait_timeseries` writes one Gaussian hump per stride. Analytic centers are `stride_peaks`. Python: `symworx.biosym.generate_gait_timeseries` and `GaitTimeSeries.stride_peaks`.
+- `symworx-signal`: `peer_fit`, `score_event_intervals`, and
+  `repair_event_window`. A detected-event window is admitted when it
+  spans 180 s and the mean leave-one-out probability is greater than
+  0.8. Intervals below 0.6 are interpolated in place.
+- `symworx-npu`: the same event-window repair as a scalar `no_std`
+  copy. Malformed input is `NpuError::InvalidInput`. A scored window
+  that fails a gate is `Ok(None)`. `exp` and `sqrt` go through `libm`.
+- `symworx-signal` and `symworx-npu`: `rolling_event_measures`
+  recalculates every 30 s (`MEASURE_STEP_SEC`) or 15 s
+  (`MEASURE_STEP_FAST_SEC`), each time on the prior 180 s. An admitted
+  sample reports RMSSD, CV, and sample entropy. Each sample also
+  carries the measured intervals and probabilities that close in that
+  step, with their mean and standard deviation.
+- `symworx-stats`: Shrout–Fleiss `icc_11` for two replicates, and
+  `icc` for the six balanced forms. Python:
+  `symworx.core.statistics.icc_11`, `icc`, and `std_dev_sample`.
+- `symworx-npu`: CPU scalar `f64` recurrence masks, RQA, smoothing,
+  and peak detection, with gait and ECG presets. The default `std`
+  build covers the host and a Raspberry Pi Zero
+  (`arm-unknown-linux-gnueabihf`). `--no-default-features` is `no_std`
+  plus `alloc` for the Arduino Nano 33 BLE
+  (`thumbv7em-none-eabihf`). `sin`, `cos`, `ln`, and `round` go
+  through `libm`.
+- `symworx-biosym`: `generate_gait_timeseries` writes one Gaussian
+  hump per stride. Analytic centers are `stride_peaks`. Python:
+  `symworx.biosym.generate_gait_timeseries` and
+  `GaitTimeSeries.stride_peaks`.
 
 ### Changed 
 
@@ -19,7 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `symworx-gpu` with GPU accelerated recurrence analysis. Additional calculations will be added in time.
+- `symworx-gpu` with GPU accelerated recurrence analysis. Additional
+  calculations will be added in time.
 
 ### Changed 
 
@@ -28,8 +54,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - GHCR: added `symview.Containerfile` and publish workflow to CI/CD
-- Python: `fit_polynomial` / `predict_polynomial`; `KalmanFilter.with_control`.
-- Python: `sdnn` (`symworx.core.statistics` and `symworx.biosym.physiology`) and `compute_hrv_metrics` / `HrvMetrics` (SDNN + RMSSD from RR intervals in seconds).
+- Python: `fit_polynomial` / `predict_polynomial`;
+  `KalmanFilter.with_control`.
+- Python: `sdnn` (`symworx.core.statistics` and
+  `symworx.biosym.physiology`) and `compute_hrv_metrics` /
+  `HrvMetrics` (SDNN + RMSSD from RR intervals in seconds).
 
 ### Changed 
 
@@ -37,17 +66,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `symworx-spatialsym`: 11v11 sequence of play (`generate_11v11_play`, 180 s @ 1 Hz) with planted `SpaceAction` labels; `convex_hull` / `local_triangles` for defending outline vs local attacking triangles; `evaluate_space_actions` vs the classifier
-- Spatial Visualize: 3v3 drill on `g`; 11v11 sequence on `a`; magenta defending hull and white local attacking triangles on 11v11; CL vs GT on compact agent lines
-- `symworx-io`: `load_numeric_table(path, opts)` — comma, tab, or whitespace; header row or explicit names; kept columns are `f64` (others skipped).
-- `symworx-math::tz`: `TimeZone` enum (`Utc`, `Est`, `Edt`, `UsEastern`, `FixedHours`) with `local_to_unix` / `unix_to_local`. `UsEastern` uses US DST rules since 2007 (EST/EDT).
-- `symworx-dbsym-tui` — `symdb-view`, a read-only browser for a dbSym SQLite file or a Postgres URL (`NoTls`). Not a LoadSym view and not a `symview` tab.
+- `symworx-spatialsym`: 11v11 sequence of play (`generate_11v11_play`,
+  180 s @ 1 Hz) with planted `SpaceAction` labels; `convex_hull` /
+  `local_triangles` for defending outline vs local attacking
+  triangles; `evaluate_space_actions` vs the classifier
+- Spatial Visualize: 3v3 drill on `g`; 11v11 sequence on `a`; magenta
+  defending hull and white local attacking triangles on 11v11; CL vs
+  GT on compact agent lines
+- `symworx-io`: `load_numeric_table(path, opts)` — comma, tab, or
+  whitespace; header row or explicit names; kept columns are `f64`
+  (others skipped).
+- `symworx-math::tz`: `TimeZone` enum (`Utc`, `Est`, `Edt`,
+  `UsEastern`, `FixedHours`) with `local_to_unix` /
+  `unix_to_local`. `UsEastern` uses US DST rules since 2007 (EST/EDT).
+- `symworx-dbsym-tui` — `symdb-view`, a read-only browser for a dbSym
+  SQLite file or a Postgres URL (`NoTls`). Not a LoadSym view and not
+  a `symview` tab.
 
 ### Changed
 
-- Nearby defenders who are not the immediate presser now classify as `Denial` (the variant was previously unused)
-- Event-driven `Close` tracks the target each frame instead of a frozen snapshot
-- GitHub Flow: default branch is `worx`; releases are tags on `worx` (no `stage` / `main` promotion).
+- Nearby defenders who are not the immediate presser now classify as
+  `Denial` (the variant was previously unused)
+- Event-driven `Close` tracks the target each frame instead of a
+  frozen snapshot
+- GitHub Flow: default branch is `worx`; releases are tags on `worx`
+  (no `stage` / `main` promotion).
 
 ## [0.4.2] - 2026-09-17
 
@@ -57,101 +100,160 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Copyright holder updated to Nathaniel T. Berry (Apache License 2.0 retained)
+- Copyright holder updated to Nathaniel T. Berry (Apache License 2.0
+  retained)
 
 ## [0.4.1] - 2026-09-12
 
 ### Notes
 
-- `symworx-dbsym` generic ingest / export / TUI workflow are not started.
+- `symworx-dbsym` generic ingest / export / TUI workflow are not
+  started.
 
 ### Added
 
-- `symworx-dbsym` — per-study / edge catalog: SQLite schema v1 (`subjects`, `sessions`, `file_records`, EAV `observations`), `StoreProfile`, `symdb init` / `apply` / `presets` / `status` (`--features sqlite`). Init copies `.dbsym/schema.sqlite.sql` for the study to edit; never overwrites an existing copy.
-- Software citation: root [`CITATION.cff`](CITATION.cff) (GitHub “Cite this repository”) plus APA/BibTeX in the workspace and crate READMEs 
+- `symworx-dbsym` — per-study / edge catalog: SQLite schema v1
+  (`subjects`, `sessions`, `file_records`, EAV `observations`),
+  `StoreProfile`, `symdb init` / `apply` / `presets` / `status`
+  (`--features sqlite`). Init copies `.dbsym/schema.sqlite.sql` for
+  the study to edit; never overwrites an existing copy.
+- Software citation: root [`CITATION.cff`](CITATION.cff) (GitHub “Cite
+  this repository”) plus APA/BibTeX in the workspace and crate READMEs
 
 ## [0.4.0] - 2026-09-04
 
 ### Notes
 
-- `symworx-backend` still has no HTTP listener and no AWS/Azure SDK. Cloud I/O is reserved behind `CloudDisabled`.
-- Transfer entropy is a discrete quantile-binned estimator on `feature/transfer-entropy`. Not yet bound in Python or `symview`.
-- Shared relative discretization (grouped k-means cuts) lives on `feature/discretize-pipeline`. HRV/sleep is an example use, not a typed API.
+- `symworx-backend` still has no HTTP listener and no AWS/Azure
+  SDK. Cloud I/O is reserved behind `CloudDisabled`.
+- Transfer entropy is a discrete quantile-binned estimator on
+  `feature/transfer-entropy`. Not yet bound in Python or `symview`.
+- Shared relative discretization (grouped k-means cuts) lives on
+  `feature/discretize-pipeline`. HRV/sleep is an example use, not a
+  typed API.
 
 ### Added
 
-- `symworx-signal`: Welch PSD (`welch` / `welch_default`, Hann, density scaling). `symworx-stats::bandpower` integrates a PSD over a frequency band (no FFT in stats).
-- `symworx-signal`: natural cubic spline interpolation (`interp_spline` / `interp_cubic`) and resample Cubic/Spline methods (clamp outside the knot interval)
-- `symworx-math::special`: `erf` and `standard_normal_cdf` (Abramowitz & Stegun 7.1.26). `EvalPolicy` percentile ranks use this instead of a private copy.
-- `symworx-math::optimize`: `golden_section_minimize` / `golden_section_maximize` (`ScalarSearchResult`). Mixed-model scalar REML now calls this instead of a local copy.
-- `symworx-stats::eval` — shared `EvalPolicy` / `EvalReport` / `ModelEval` (one envelope for all model kinds: flag + percentile). Optional `serde` feature for JSON. See [model_export.md](crates/symworx-stats/docs/model_export.md) §10
-- `symworx-backend`: `BackendConfig` / `CloudProvider` (`SYMWORX_CLOUD=local|aws|azure`), `ProcessManager` task table, `HealthReport`, `LocalFsStore` / `ObjectStore`
-- `symworx-dynamics` discrete transfer entropy: `transfer_entropy` / `transfer_entropy_with` (bivariate), `transfer_entropy_mv` (joint sources), `transfer_entropy_conditional` (partial TE), plus `TeConfig`
-- `symworx-math::series::discretize` — apply interior cuts to a series (`u8` bins)
-- `symworx-stats::discretize` — `GroupedRangeScaler` + `RelativeKMeansDiscretizer` (per-user range, pooled k-means cuts on `[0, 1]`)
-- `symworx-stats::grouped_train_test_split` — hold out whole groups (users)
-- `transfer_entropy_discrete` / `_mv` / `_conditional` — TE on pre-binned labels (sleep stages, relative HRV bins); `TeConfig::bins` ignored
-- `relative_te_demo` example — synthetic multi-user relative bins + per-night TE
+- `symworx-signal`: Welch PSD (`welch` / `welch_default`, Hann,
+  density scaling). `symworx-stats::bandpower` integrates a PSD over a
+  frequency band (no FFT in stats).
+- `symworx-signal`: natural cubic spline interpolation
+  (`interp_spline` / `interp_cubic`) and resample Cubic/Spline methods
+  (clamp outside the knot interval)
+- `symworx-math::special`: `erf` and `standard_normal_cdf` (Abramowitz
+  & Stegun 7.1.26). `EvalPolicy` percentile ranks use this instead of
+  a private copy.
+- `symworx-math::optimize`: `golden_section_minimize` /
+  `golden_section_maximize` (`ScalarSearchResult`). Mixed-model scalar
+  REML now calls this instead of a local copy.
+- `symworx-stats::eval` — shared `EvalPolicy` / `EvalReport` /
+  `ModelEval` (one envelope for all model kinds: flag +
+  percentile). Optional `serde` feature for JSON. See
+  [model_export.md](crates/symworx-stats/docs/model_export.md) §10
+- `symworx-backend`: `BackendConfig` / `CloudProvider`
+  (`SYMWORX_CLOUD=local|aws|azure`), `ProcessManager` task table,
+  `HealthReport`, `LocalFsStore` / `ObjectStore`
+- `symworx-dynamics` discrete transfer entropy: `transfer_entropy` /
+  `transfer_entropy_with` (bivariate), `transfer_entropy_mv` (joint
+  sources), `transfer_entropy_conditional` (partial TE), plus
+  `TeConfig`
+- `symworx-math::series::discretize` — apply interior cuts to a series
+  (`u8` bins)
+- `symworx-stats::discretize` — `GroupedRangeScaler` +
+  `RelativeKMeansDiscretizer` (per-user range, pooled k-means cuts on
+  `[0, 1]`)
+- `symworx-stats::grouped_train_test_split` — hold out whole groups
+  (users)
+- `transfer_entropy_discrete` / `_mv` / `_conditional` — TE on
+  pre-binned labels (sleep stages, relative HRV bins);
+  `TeConfig::bins` ignored
+- `relative_te_demo` example — synthetic multi-user relative bins +
+  per-night TE
 
 ## [0.3.2] - 2026-08-22
 
-Same contents as 0.3.0. crates.io republish after a partial 0.3.1 upload.
+Same contents as 0.3.0. crates.io republish after a partial 0.3.1
+upload.
 
 ### Notes
 
 - `v0.3.0` GitHub tag did not publish.
-- `0.3.1` was uploaded for most crates from a local `cargo publish` on develop; That number is burned.
+- `0.3.1` was uploaded for most crates from a local `cargo publish` on
+  develop; That number is burned.
 - All workspace crates are now 0.3.2
 
 ## [0.3.0] - 2026-08-22
 
 ### Added
 
-- Python `symworx.core.statistics.lmer` / `MixedModel` and `simulate_random_intercept` (random intercept or linear growth)
-- `symworx-math::circular` — wrap, circular mean, mean resultant length, circular SD
-- `symworx-spatialsym` path linearity (`path_linearity`, `path_linearity_windows`) and pairwise effort / directional phase
-- Spatial Visualize: plan-view canvas (pair edges, focused path vs chord) and A0–A1 effort-in strip with frame playhead
-- Spatial generate is a 3v3 (`generate_3v3_attack`) on a FIFA 105×68 m pitch (camera locked to bounds): G0 attacks +x (up, white), G1 defends (magenta). Summary lists team roll-ups and within/versus pairs
-- `symworx-spatialsym::soccer` IFAB Law 1 presets (length 90–120 m, width 45–90 m; fixed 16.5/5.5 m boxes, 7.32 m goal, 11 m PK, 9.15 m circle). Generic `PlayAreaMarkings` drawn on the Spatial plan
-- Spatial Visualize: stats on the left, field on the right (attack +x drawn upward). Phase edges stay cyan/yellow/red
-- Spatial TUI summary shows path efficiency / RMS deviation and pairwise effort / directional phase
-- Windowed pairwise phase (`*_series` / `*_at`) and signed closing acceleration (`a_close`); TUI `Now` line uses a 1 s window
-- `path_and_phase` example: straight vs weave, together / opposed / one-go-one-brake drills, plus 3v3 player/team print
-- `symworx-dynamics::phase` — relative phase, Kuramoto order, cluster-phase (pre-extracted phases)
+- Python `symworx.core.statistics.lmer` / `MixedModel` and
+  `simulate_random_intercept` (random intercept or linear growth)
+- `symworx-math::circular` — wrap, circular mean, mean resultant
+  length, circular SD
+- `symworx-spatialsym` path linearity (`path_linearity`,
+  `path_linearity_windows`) and pairwise effort / directional phase
+- Spatial Visualize: plan-view canvas (pair edges, focused path vs
+  chord) and A0–A1 effort-in strip with frame playhead
+- Spatial generate is a 3v3 (`generate_3v3_attack`) on a FIFA 105×68 m
+  pitch (camera locked to bounds): G0 attacks +x (up, white), G1
+  defends (magenta). Summary lists team roll-ups and within/versus
+  pairs
+- `symworx-spatialsym::soccer` IFAB Law 1 presets (length 90–120 m,
+  width 45–90 m; fixed 16.5/5.5 m boxes, 7.32 m goal, 11 m PK, 9.15 m
+  circle). Generic `PlayAreaMarkings` drawn on the Spatial plan
+- Spatial Visualize: stats on the left, field on the right (attack +x
+  drawn upward). Phase edges stay cyan/yellow/red
+- Spatial TUI summary shows path efficiency / RMS deviation and
+  pairwise effort / directional phase
+- Windowed pairwise phase (`*_series` / `*_at`) and signed closing
+  acceleration (`a_close`); TUI `Now` line uses a 1 s window
+- `path_and_phase` example: straight vs weave, together / opposed /
+  one-go-one-brake drills, plus 3v3 player/team print
+- `symworx-dynamics::phase` — relative phase, Kuramoto order,
+  cluster-phase (pre-extracted phases)
 
 ## [0.2.0] - 2026-08-07
 
 ### Added
 
-- Linear mixed models in `symworx-stats` (`mixed` / `lmer`): random intercept and linear growth (REML/ML), design helpers, and simulators, behind the `linalg` feature
+- Linear mixed models in `symworx-stats` (`mixed` / `lmer`): random
+  intercept and linear growth (REML/ML), design helpers, and
+  simulators, behind the `linalg` feature
 
 ### Changed
 
 - Workspace version bumped to 0.2.0
-- Copyright holder updated to Nathaniel T. Berry (Apache License 2.0 retained)
+- Copyright holder updated to Nathaniel T. Berry (Apache License 2.0
+  retained)
 
 ### Notes
 
-- Python bindings still expose a **subset** of Rust stats (LMM not bound yet; expand in a later release).
+- Python bindings still expose a **subset** of Rust stats (LMM not
+  bound yet; expand in a later release).
 - Welch PSD remains a placeholder; do not rely on it for analysis.
-- Workspace remains a monorepo with a shared version and single changelog; this may change as this project grows.
+- Workspace remains a monorepo with a shared version and single
+  changelog; this may change as this project grows.
 
 ## [0.1.1] - 2026-08-02
 
 ### Added
 
-- `scripts/init-velofit.sh` — create `$VELOFIT_HOME` layout and empty LoadSym catalog for new users
+- `scripts/init-velofit.sh` — create `$VELOFIT_HOME` layout and empty
+  LoadSym catalog for new users
 
 ### Changed
 
-- Documentation pass: clearer crate READMEs, fewer redundant sections, aligned TUI keybinding notes
+- Documentation pass: clearer crate READMEs, fewer redundant sections,
+  aligned TUI keybinding notes
 - Removed external product/book citations from docs and code comments
 
 ### Notes
 
-- Python bindings still expose a **subset** of Rust stats (expand in a later release).
+- Python bindings still expose a **subset** of Rust stats (expand in a
+  later release).
 - Welch PSD remains a placeholder; do not rely on it for analysis.
-- Workspace remains a monorepo with a shared version and single changelog; this may change as this project grows.
+- Workspace remains a monorepo with a shared version and single
+  changelog; this may change as this project grows.
 
 ## [0.1.0] - 2026-07-31
 
@@ -161,9 +263,11 @@ Same contents as 0.3.0. crates.io republish after a partial 0.3.1 upload.
 
 ### Notes
 
-- Python bindings still expose a **subset** of Rust stats (expand in a later release).
+- Python bindings still expose a **subset** of Rust stats (expand in a
+  later release).
 - Welch PSD remains a placeholder; do not rely on it for analysis.
-- Workspace remains a monorepo with a shared version and single changelog; this may change as this project grows.
+- Workspace remains a monorepo with a shared version and single
+  changelog; this may change as this project grows.
 
 ---
 

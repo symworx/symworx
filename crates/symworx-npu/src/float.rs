@@ -5,7 +5,7 @@
 //!
 //! `libm` is pure Rust. The host tests and the Nano 33 BLE build call the
 //! same functions. The bandpass golden check still matches the host section
-//! within 1e-12.
+//! within 1e-12. `exp` and `sqrt` are the same path for the event-window fit.
 
 #[inline]
 pub fn sin(x: f64) -> f64 {
@@ -25,4 +25,14 @@ pub fn ln(x: f64) -> f64 {
 #[inline]
 pub fn round(x: f64) -> f64 {
     libm::round(x)
+}
+
+#[inline]
+pub fn exp(x: f64) -> f64 {
+    libm::exp(x)
+}
+
+#[inline]
+pub fn sqrt(x: f64) -> f64 {
+    libm::sqrt(x)
 }

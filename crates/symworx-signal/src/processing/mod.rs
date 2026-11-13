@@ -33,6 +33,9 @@ pub mod outliers;
 /// Windowing helpers and RR-to-tachogram resampling (for equidistant feature windows).
 pub mod windows;
 
+/// Per-event probability and 180 s window repair.
+pub mod event_window;
+
 /// Sparse / compressed sensing (ISTA, OMP, measurement matrices).
 pub mod sparse_sensing;
 
@@ -51,6 +54,31 @@ pub use deconvolution::{
     nonnegative_deconvolution,
     nonnegative_deconvolution_on_support,
     sparse_nonnegative_deconvolution,
+};
+pub use event_window::{
+    EventMeasures,
+    EventWindow,
+    IntervalScore,
+    JointCoupling,
+    JointSample,
+    MEAN_MIN,
+    MEASURE_STEP_FAST_SEC,
+    MEASURE_STEP_SEC,
+    POINT_MIN,
+    RollingSample,
+    SAMPLE_ENTROPY_M,
+    SAMPLE_ENTROPY_R_SCALE,
+    StepFeatures,
+    WINDOW_SEC,
+    event_measures,
+    interpolate_low_probability,
+    joint_coupling,
+    peer_fit,
+    repair_event_window,
+    rolling_event_measures,
+    rolling_joint_coupling,
+    score_event_intervals,
+    trim_to_same_end,
 };
 pub use interpolation::{
     interp_cubic,

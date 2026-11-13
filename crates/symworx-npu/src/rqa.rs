@@ -105,6 +105,22 @@ pub fn rqa(mask: &crate::RecurrenceMask, params: RqaParams) -> RqaStats {
     }
 }
 
+/// Cross-recurrence quantification of two scalar series.
+///
+/// Embeds both series, builds [`crate::cross_recurrence_mask`], then [`rqa`]
+/// with the default minimum line length of 2. `diag_entropy` is in nats.
+pub fn crqa(
+    x: &[f64],
+    y: &[f64],
+    m: usize,
+    tau: usize,
+    radius: f64,
+    theiler: usize,
+) -> Result<RqaStats, crate::NpuError> {
+    let mask = crate::cross_recurrence_mask(x, y, m, tau, radius, theiler)?;
+    Ok(rqa(&mask, RqaParams::default()))
+}
+
 fn count_line(len: usize, min_line: usize, hist: &mut alloc::vec::Vec<usize>, _count: &mut usize) {
     if len >= min_line {
         if hist.len() <= len {
@@ -168,6 +184,22 @@ mod tests {
         let stats = rqa(&mask, RqaParams::default());
         assert!(stats.rr > 0.0);
         assert!(stats.det > 0.5);
+    }
+
+    #[test]
+    fn crqa_matches_rqa_on_the_cross_mask() {
+        let x = [0.0, 5.0, 0.0];
+        let y = [0.0, 5.0];
+        let mask = recurrence_mask_cross(&x, &y);
+        let stats = crqa(&x, &y, 1, 1, 0.1, 0).unwrap();
+        assert_eq!(stats, rqa(&mask, RqaParams::default()));
+        assert!(crqa(&x, &y, 0, 1, 0.1, 0).is_err());
+        assert!(crqa(&x, &y, 1, 0, 0.1, 0).is_err());
+        assert!(crqa(&[0.0, 1.0], &y, 3, 1, 0.1, 0).is_err());
+    }
+
+    fn recurrence_mask_cross(x: &[f64], y: &[f64]) -> crate::RecurrenceMask {
+        crate::cross_recurrence_mask(x, y, 1, 1, 0.1, 0).unwrap()
     }
 
     #[test]

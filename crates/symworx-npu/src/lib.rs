@@ -1,12 +1,16 @@
 // Copyright (c) 2026 Nathaniel T. Berry
 // Licensed under the Apache License, Version 2.0.
 
-//! Scalar recurrence masks, RQA, smoothing, and peak detection.
+//! Scalar recurrence, RQA, smoothing, and peak detection.
 //!
-//! The recurrence and RQA entry points are unchanged. Smoothing and peaks are
-//! slice-based `f64` routines with the same decisions as the host filters and
-//! `PeakFinder` in `symworx-signal`. Gait and ECG functions are presets on that
-//! finder. This crate does not call an NPU.
+//! Smoothing and peaks follow the host filters and `PeakFinder` in
+//! `symworx-signal`. Gait and ECG are presets on that finder. The event
+//! window matches that crate's repair: leave-one-out probability, a 180 s
+//! span, and in-place fill below 0.6. Sample entropy and cross-sample entropy
+//! match `symworx-dynamics`. Cross recurrence keeps the pair at a shared index
+//! when the Theiler window is 0. `joint_coupling` runs both measures after the
+//! longer repaired window is trimmed from the front. This crate does not call
+//! an NPU.
 //!
 //! The default `std` feature is the host build, including a Raspberry Pi Zero
 //! (`arm-unknown-linux-gnueabihf`).
@@ -20,11 +24,13 @@ extern crate alloc;
 
 mod ecg;
 mod error;
+mod event_window;
 mod float;
 mod gait;
 mod peaks;
 mod recurrence;
 mod rqa;
+mod sample_entropy;
 mod smooth;
 
 pub use ecg::{
@@ -33,6 +39,33 @@ pub use ecg::{
     detect_ecg_r_peaks_with,
 };
 pub use error::NpuError;
+pub use event_window::{
+    EventMeasures,
+    EventWindow,
+    IntervalScore,
+    JointCoupling,
+    JointSample,
+    MEAN_MIN,
+    MEASURE_STEP_FAST_SEC,
+    MEASURE_STEP_SEC,
+    POINT_MIN,
+    RollingSample,
+    SAMPLE_ENTROPY_M,
+    SAMPLE_ENTROPY_R_SCALE,
+    StepFeatures,
+    WINDOW_SEC,
+    cv,
+    event_measures,
+    interpolate_low_probability,
+    joint_coupling,
+    peer_fit,
+    repair_event_window,
+    rmssd,
+    rolling_event_measures,
+    rolling_joint_coupling,
+    score_event_intervals,
+    trim_to_same_end,
+};
 pub use gait::{
     GaitQuality,
     detect_gait_peaks,
@@ -46,12 +79,19 @@ pub use peaks::{
 pub use recurrence::{
     RecurrenceMask,
     Trajectory,
+    cross_recurrence_mask,
+    embed,
     recurrence_mask,
 };
 pub use rqa::{
     RqaParams,
     RqaStats,
+    crqa,
     rqa,
+};
+pub use sample_entropy::{
+    cross_sample_entropy,
+    sample_entropy,
 };
 pub use smooth::{
     BandpassSpec,

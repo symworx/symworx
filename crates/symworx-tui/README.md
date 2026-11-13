@@ -1,6 +1,7 @@
 # symworx-tui
 
-**`symview`** — Terminal user interface for selecting, converting, and visualizing biosym / physiological signals in the Symworx ecosystem.
+**`symview`** — Terminal user interface for selecting, converting, and
+visualizing biosym / physiological signals in the Symworx ecosystem.
 
 > **Status**: v0.1 (Early development)
 
@@ -8,7 +9,12 @@
 
 - Interactive file browser for biosignal files
 - Manual path input support
-- File conversion: `.ibi` → CSV and `.parquet` → CSV (both via `symworx-io`). The TUI **must** use `symworx-io` for all signal file I/O. `polars/parquet` (or direct `parquet` deps) must never be used for loading — they create unresolvable version conflicts with the workspace's chosen Parquet stack. Optional Polars usage is strictly for in-memory DataFrame work after loading via `symworx-io`.
+- File conversion: `.ibi` → CSV and `.parquet` → CSV (both via
+  `symworx-io`). The TUI **must** use `symworx-io` for all signal file
+  I/O. `polars/parquet` (or direct `parquet` deps) must never be used
+  for loading — they create unresolvable version conflicts with the
+  workspace's chosen Parquet stack. Optional Polars usage is strictly
+  for in-memory DataFrame work after loading via `symworx-io`.
 - Tabbed UI: Import, Explore, Dynamics, LoadSym (and related views)
 - Keyboard-driven navigation
 
@@ -20,11 +26,17 @@
 cargo run -p symworx-tui --bin symview
 ```
 
-The TUI will look for signal files (`.csv`, `.txt`, `.dat`, `.ibi`, `.parquet`, `.biosym`) in `./data` and the current directory.
+The TUI will look for signal files (`.csv`, `.txt`, `.dat`, `.ibi`,
+`.parquet`, `.biosym`) in `./data` and the current directory.
 
 ### Container
 
-From the workspace root, [`containers/symview.Containerfile`](../../containers/symview.Containerfile) builds an image that starts `symview` in `/data`. Mount the directory that holds your signal files there. `Ctrl+Q` quits. The release workflow pushes `ghcr.io/symworx/symview:<version>` on a `v*` tag. Until that tag exists, build before run.
+From the workspace root,
+[`containers/symview.Containerfile`](../../containers/symview.Containerfile)
+builds an image that starts `symview` in `/data`. Mount the directory
+that holds your signal files there. `Ctrl+Q` quits. The release
+workflow pushes `ghcr.io/symworx/symview:<version>` on a `v*`
+tag. Until that tag exists, build before run.
 
 ```bash
 # Podman (:z relabels the mount for SELinux)
@@ -38,7 +50,8 @@ docker run --rm -it -v "$PWD:/data" ghcr.io/symworx/symview:0.5.0
 
 ### Generate Example Data for Testing
 
-Here are easy ways to create test files you can immediately load in `symview`.
+Here are easy ways to create test files you can immediately load in
+`symview`.
 
 #### Option 1: Simple synthetic signal (recommended for quick testing)
 
@@ -104,7 +117,8 @@ print("Generated data/example_ppg.csv")
 
 #### Option 3: Using Rust + symworx-biosym (recommended for realistic data)
 
-We now ship a small example that generates proper physiological signals using the real `symworx-biosym` crate:
+We now ship a small example that generates proper physiological
+signals using the real `symworx-biosym` crate:
 
 ```bash
 # Generate realistic PPG + respiration data into data/
@@ -115,31 +129,47 @@ This will create:
 - `data/demo_ppg_resting.csv`
 - `data/demo_respiration.csv`
 
-You can then load them directly in `symview`. This is the best way to quickly get realistic test data that exercises the dynamics features well.
+You can then load them directly in `symview`. This is the best way to
+quickly get realistic test data that exercises the dynamics features
+well.
 
 ---
 
 ## Tips
 
-- Put generated files in a `data/` directory — they will be discovered automatically.
-- Multi-column CSVs are supported with header awareness: the column picker will show actual names (e.g. "time", "ppg") when a header row is present.
-- **Quit:** `Ctrl+Q` anytime; at a root screen, first `Esc` arms quit and second `Esc` exits. Bare `q` is **not** quit (safe while typing).
-- **Home workflows:** `1` BioSym · `2` StatsSym · `3` LoadSym · `4` SpatialSym. `Ctrl+H` or `0` returns to Home.
-- **Tab navigation:** `Ctrl+Left` / `Ctrl+Right` (primary); `Ctrl+1`… also work where applicable.
-- **RQA (Dynamics):** With a signal loaded, `c` opens the param editor (`m` / `tau` / radius); Enter computes via `symworx-dynamics`.
+- Put generated files in a `data/` directory — they will be discovered
+  automatically.
+- Multi-column CSVs are supported with header awareness: the column
+  picker will show actual names (e.g. "time", "ppg") when a header row
+  is present.
+- **Quit:** `Ctrl+Q` anytime; at a root screen, first `Esc` arms quit
+  and second `Esc` exits. Bare `q` is **not** quit (safe while
+  typing).
+- **Home workflows:** `1` BioSym · `2` StatsSym · `3` LoadSym · `4`
+  SpatialSym. `Ctrl+H` or `0` returns to Home.
+- **Tab navigation:** `Ctrl+Left` / `Ctrl+Right` (primary); `Ctrl+1`…
+  also work where applicable.
+- **RQA (Dynamics):** With a signal loaded, `c` opens the param editor
+  (`m` / `tau` / radius); Enter computes via `symworx-dynamics`.
 - **Import tab:**
-  - `Ctrl+G` → generate demo data (PPG / respiration / stride intervals)
+  - `Ctrl+G` → generate demo data (PPG / respiration / stride
+    intervals)
   - `/` → filter mode
   - `c` → convert selected file to CSV
   - `Ctrl+R` or `F5` → refresh the file list
-- **LoadSym personal archive:** optional one-time setup: `./scripts/init-velofit.sh` (creates `$VELOFIT_HOME` + empty catalog). The TUI runs without it; calendar/metrics stay empty until init + ingest.
-- Standalone demo generator: `cargo run -p symworx-tui --example generate_biosym_demo`
+- **LoadSym personal archive:** optional one-time setup:
+  `./scripts/init-velofit.sh` (creates `$VELOFIT_HOME` + empty
+  catalog). The TUI runs without it; calendar/metrics stay empty until
+  init + ingest.
+- Standalone demo generator: `cargo run -p symworx-tui --example
+  generate_biosym_demo`
 
 ## Citation
 
 If you use this software, please cite it:
 
-Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/symworx
+Berry, N. T. (2026). *SymWorx* [Computer
+software]. https://github.com/symworx/symworx
 
 ```bibtex
 @software{Berry_SymWorx_2026,
@@ -151,4 +181,6 @@ Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/s
 }
 ```
 
-Add the version you used. [`CITATION.cff`](https://github.com/symworx/symworx/blob/main/CITATION.cff) and GitHub **Cite this repository** carry the current release.
+Add the version you
+used. [`CITATION.cff`](https://github.com/symworx/symworx/blob/main/CITATION.cff)
+and GitHub **Cite this repository** carry the current release.

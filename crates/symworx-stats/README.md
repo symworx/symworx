@@ -1,12 +1,14 @@
 # SymWorx-Stats
 
 Statistical analysis and classical ML tools for the SymWorx ecosystem
-(physiological signals, biomechanics, training load, and general scientific data).
-This is a sub-crate of [`symworx-core`](../symworx-core/README.md).
+(physiological signals, biomechanics, training load, and general
+scientific data).  This is a sub-crate of
+[`symworx-core`](../symworx-core/README.md).
 
 ## Module map
 
-Statistics and machine-learning algorithms. Dynamical operators and signal sensing live elsewhere.
+Statistics and machine-learning algorithms. Dynamical operators and
+signal sensing live elsewhere.
 
 | Module | Methods | `linalg` feature? |
 |:-------|:--------|:------------------|
@@ -41,19 +43,27 @@ Statistics and machine-learning algorithms. Dynamical operators and signal sensi
 symworx-stats = { path = "...", features = ["linalg"] }
 ```
 
-`linalg` pulls `ndarray-linalg` + OpenBLAS. `symworx-core` enables it by default.
+`linalg` pulls `ndarray-linalg` + OpenBLAS. `symworx-core` enables it
+by default.
 
 ## Model export (embedded / mobile / web)
 
-Train in Rust, ship coefficients or rules **and** a shared eval policy, run **predict + local eval** elsewhere:
+Train in Rust, ship coefficients or rules **and** a shared eval
+policy, run **predict + local eval** elsewhere:
 
-→ **[docs/model_export.md](docs/model_export.md)** — C/MCU, iOS (Swift), Android (Kotlin), and TypeScript/web examples for scaler + logistic (binary/OVR), LDA, and rule lists. Shared `EvalPolicy` / `EvalReport` JSON for flags and percentile ranks (feature `serde` to derive).
+→ **[docs/model_export.md](docs/model_export.md)** — C/MCU, iOS
+(Swift), Android (Kotlin), and TypeScript/web examples for scaler +
+logistic (binary/OVR), LDA, and rule lists. Shared `EvalPolicy` /
+`EvalReport` JSON for flags and percentile ranks (feature `serde` to
+derive).
 
 ## Related crates
 
-- **`symworx-math`** — optimization / integration primitives (no LAPACK)
+- **`symworx-math`** — optimization / integration primitives (no
+  LAPACK)
 - **`symworx-signal`** — Kalman / EKF / UKF, sparse sensing
-- **`symworx-dynamics`** — embedding, RQA, DMD, EDMD, SINDy/SINDYc, LTI/PID
+- **`symworx-dynamics`** — embedding, RQA, DMD, EDMD, SINDy/SINDYc,
+  LTI/PID
 
 ## Runnable examples
 
@@ -92,7 +102,8 @@ let r = acf_normalized(&gh, 6, false); // r[0] == 1
 let lag = ccf(&hrv, &delta_gh, 6);     // lag[d] = corr(hrv[t−d], Δgh[t])
 ```
 
-`acf` remains the mean-centered autocovariance (lag 0 is the second moment, not 1).
+`acf` remains the mean-centered autocovariance (lag 0 is the second
+moment, not 1).
 
 ### Predicted vs expected
 
@@ -197,7 +208,8 @@ use symworx_stats::{ols, ridge, Pca, Svd};
 
 If you use this software, please cite it:
 
-Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/symworx
+Berry, N. T. (2026). *SymWorx* [Computer
+software]. https://github.com/symworx/symworx
 
 ```bibtex
 @software{Berry_SymWorx_2026,
@@ -209,4 +221,6 @@ Berry, N. T. (2026). *SymWorx* [Computer software]. https://github.com/symworx/s
 }
 ```
 
-Add the version you used. [`CITATION.cff`](https://github.com/symworx/symworx/blob/main/CITATION.cff) and GitHub **Cite this repository** carry the current release.
+Add the version you
+used. [`CITATION.cff`](https://github.com/symworx/symworx/blob/main/CITATION.cff)
+and GitHub **Cite this repository** carry the current release.
