@@ -6,8 +6,10 @@
 //! Smoothing and peaks follow the host filters and `PeakFinder` in
 //! `symworx-signal`. Gait and ECG are presets on that finder. The event
 //! window matches that crate's repair: leave-one-out probability, a 180 s
-//! span, and in-place fill below 0.6. Sample entropy and cross-sample entropy
-//! match `symworx-dynamics`. Cross recurrence keeps the pair at a shared index
+//! span, and in-place fill below 0.6. Sample entropy, cross-sample entropy, and
+//! detrended fluctuation analysis match `symworx-dynamics`. DFA uses the same
+//! stacked boxes, default windows `4..=16` and `16..=64`, and `min_repeats`
+//! of 4. Cross recurrence keeps the pair at a shared index
 //! when the Theiler window is 0. `joint_coupling` runs both measures after the
 //! longer repaired window is trimmed from the front. This crate does not call
 //! an NPU.
@@ -22,6 +24,7 @@
 
 extern crate alloc;
 
+pub mod dfa;
 mod ecg;
 mod error;
 mod event_window;
@@ -33,6 +36,12 @@ mod rqa;
 mod sample_entropy;
 mod smooth;
 
+pub use dfa::{
+    DfaConfig,
+    DfaFit,
+    DfaResult,
+    dfa,
+};
 pub use ecg::{
     EcgDetectParams,
     detect_ecg_r_peaks,

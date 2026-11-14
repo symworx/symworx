@@ -14,9 +14,9 @@ categories = ["science", "mathematics"]
 
 [features]
 default = []
-## Device recurrence constructors. Without `hip` those calls return an unavailable error.
+## Device recurrence and order-1 DFA fluctuation. Without `hip` those calls return an unavailable error.
 gpu = ["dep:symworx-gpu"]
-## Compile the HIP recurrence kernel (`HIP_PLATFORM=amd` or `nvidia`).
+## Compile the HIP recurrence and DFA kernels (`HIP_PLATFORM=amd` or `nvidia`).
 hip = ["gpu", "symworx-gpu/hip"]
 
 [dependencies]
