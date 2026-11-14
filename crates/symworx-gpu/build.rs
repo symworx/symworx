@@ -1,7 +1,8 @@
 // Copyright (c) 2026 Nathaniel T. Berry
 // Licensed under the Apache License, Version 2.0.
 
-//! Compiles `kernels/recurrence.hip` when the `hip` feature is enabled.
+//! Compiles `kernels/recurrence.hip` and `kernels/dfa.hip` when the `hip`
+//! feature is enabled.
 //!
 //! `hipcc` targets AMD or NVIDIA from `HIP_PLATFORM`. The kernel is linked
 //! as a shared library so `hipcc` does the device link. Cargo does not run
@@ -19,6 +20,7 @@ use std::{
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=kernels/recurrence.hip");
+    println!("cargo:rerun-if-changed=kernels/dfa.hip");
     println!("cargo:rerun-if-env-changed=HIP_PLATFORM");
     println!("cargo:rerun-if-env-changed=SYMWORX_GPU_ARCH");
     println!("cargo:rerun-if-env-changed=ROCM_PATH");
@@ -44,6 +46,7 @@ fn main() {
         .args(arch_flags(&platform))
         .args(fp_flags(&platform))
         .arg("kernels/recurrence.hip")
+        .arg("kernels/dfa.hip")
         .arg("-o")
         .arg(&lib_path);
     run(&mut cmd, &hipcc);

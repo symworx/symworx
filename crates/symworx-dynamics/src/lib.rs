@@ -12,6 +12,7 @@
 //!
 //! - [`embedding`] — Phase space reconstruction (`edim`, false nearest neighbors)
 //! - [`entropy`] — Sample entropy, multiscale entropy, mutual information, and transfer entropy
+//! - [`dfa`] — Detrended fluctuation analysis (one exponent per scale window; default `α1`, `α2`)
 //! - [`rqa`] — Recurrence Quantification Analysis (RQA) and cross-recurrence (cRQA)
 //! - [`phase`] — Relative phase, Kuramoto order, cluster-phase (pre-extracted phases)
 //! - [`dmd`] — Dynamic Mode Decomposition (data-driven linear operators)
@@ -29,6 +30,8 @@
 // Modules
 /// Linear systems and elementary feedback control.
 pub mod control;
+/// Detrended fluctuation analysis (one exponent per scale window; default `α1`, `α2`).
+pub mod dfa;
 /// Dynamic Mode Decomposition (exact / SVD-based).
 pub mod dmd;
 /// Embedding dimension calculations (e.g., edim, fnn).
@@ -52,6 +55,15 @@ pub use control::{
     LtiSimResult,
     Pid,
     PidConfig,
+};
+#[cfg(feature = "gpu")]
+pub use dfa::dfa_on_device;
+pub use dfa::{
+    DfaConfig,
+    DfaError,
+    DfaFit,
+    DfaResult,
+    dfa,
 };
 pub use dmd::{
     DmdConfig,

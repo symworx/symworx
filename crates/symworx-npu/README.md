@@ -64,9 +64,17 @@ together. `rolling_joint_coupling` uses the 15 s or 30 s grid. A side
 that misses the 180 s gate has `coupling: None`. Fewer than two intervals
 after the trim does too.
 
+`dfa` is the scalar copy of `symworx-dynamics` detrended fluctuation
+analysis. The default windows are boxes 4–16 and 16–64. The second
+window needs 256 samples unless `always_alpha2` is set, and only when
+its boxes fit. Heart rate and stride rate are not inputs. The log and
+square root go through `libm`. This crate does not launch that
+calculation on an accelerator.
+
 `symworx-gpu` is the device path. Its `hip` feature compiles
-`kernels/recurrence.hip`. Line metrics there stay on the CPU. This
-crate computes the mask and the line metrics in Rust.
+`kernels/recurrence.hip` and `kernels/dfa.hip`. Line metrics and the
+DFA slope stay on the CPU. This crate computes the mask, the line
+metrics, and DFA in Rust.
 
 
 ```bash

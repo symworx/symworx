@@ -10,6 +10,7 @@ SymWorx.  This is a sub-crate to the
 |:-------|:--------|
 | `embedding` | Delay coordinates (`edim`), false nearest neighbors (`fnn`) |
 | `entropy` | Sample entropy, multiscale entropy, histogram AMI / cross-AMI, discrete transfer entropy |
+| `dfa` | Detrended fluctuation analysis (default `α1` on 4–16, `α2` on 16–64; `α2` needs 256 samples unless `always_alpha2`). `dfa_on_device` (`gpu` / `hip`) computes order-1 `F(n)` on HIP and fits the slope on the CPU. |
 | `rqa` | Recurrence plots, RQA / cRQA metrics |
 | `phase` | Relative phase, Kuramoto *R*, cluster-phase (Richardson et al. 2012); input is pre-extracted phases |
 | `dmd` | Dynamic Mode Decomposition (exact / SVD-based) |

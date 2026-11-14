@@ -8,8 +8,8 @@ edition          = { workspace = true }
 license          = { workspace = true }
 repository       = { workspace = true }
 authors          = { workspace = true }
-description      = "Scalar recurrence, RQA, smoothing, peaks, and event-window repair for host and no_std targets"
-keywords         = ["embedded", "recurrence", "rqa", "peaks", "no-std"]
+description      = "Scalar recurrence, RQA, DFA, smoothing, peaks, and event-window repair for host and no_std targets"
+keywords         = ["embedded", "recurrence", "rqa", "dfa", "no-std"]
 categories       = ["science", "mathematics", "embedded"]
 
 [features]

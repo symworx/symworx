@@ -1,20 +1,28 @@
 # symworx-gpu
 
 Opt-in GPU kernels. The default build is a Rust recurrence-mask
-reference and does not look for a GPU. The `hip` feature compiles
-`kernels/recurrence.hip` with `hipcc`.
+reference, plus an order-1 DFA fluctuation reference, and does not look
+for a GPU. The `hip` feature compiles `kernels/recurrence.hip` and
+`kernels/dfa.hip` with `hipcc` into one shared library.
 
 `HIP_PLATFORM=amd` uses the ROCm runtime
 (`libamdhip64`). `HIP_PLATFORM=nvidia` uses nvcc and `libcudart`. HIP
 does not emit one binary that runs on both. Build twice when you need
 both.
 
-The kernel fills a packed Euclidean recurrence mask (squared distance,
-Theiler window). `symworx-dynamics` keeps
+The recurrence kernel fills a packed Euclidean recurrence mask (squared
+distance, Theiler window). `symworx-dynamics` keeps
 `RecurrencePlot::from_trajectory` on the
 CPU. `try_from_trajectory_on_device` is the device call, behind the
 dynamics `gpu` / `hip` features. Line metrics (DET, LAM) stay on the
 CPU.
+
+`dfa_fluctuation` is order-1 `F(n)` for box lengths the caller passes.
+One thread owns one stacked box and writes its residual sum of squares.
+The host adds those sums and takes the root mean square. The log-log
+slope stays in `symworx-dynamics` (`dfa_on_device`). Order 2 and above
+stay on the CPU fluctuation. The device call does not choose α windows
+and does not read a heart rate or a stride rate.
 
 Use the device call for large masks, starting around a few thousand
 embedded points. Small plots should keep the CPU method. The dynamics

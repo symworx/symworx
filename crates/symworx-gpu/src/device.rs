@@ -37,6 +37,15 @@ mod ffi {
             host_bits: *mut u8,
             bits_len: i32,
         ) -> i32;
+        pub fn symworx_dfa_linear_ss_f64(
+            profile: *const f64,
+            n: i32,
+            starts: *const i32,
+            scales: *const i32,
+            n_boxes: i32,
+            device: i32,
+            host_ss: *mut f64,
+        ) -> i32;
     }
 }
 
@@ -111,6 +120,41 @@ pub fn recurrence_mask_hip(
         });
     }
     Ok(mask)
+}
+
+/// Per-box order-1 residual sums. `starts` and `scales` are one entry per box.
+pub fn dfa_linear_ss_hip(profile: &[f64], starts: &[i32], scales: &[i32]) -> Result<Vec<f64>, GpuError> {
+    if starts.len() != scales.len() {
+        return Err(GpuError::InvalidInput("box starts and scales differ in length"));
+    }
+    if profile.len() > i32::MAX as usize || starts.len() > i32::MAX as usize {
+        return Err(GpuError::InvalidInput("DFA launch does not fit in i32"));
+    }
+    let device = probe_hip()?;
+    if starts.is_empty() {
+        return Ok(Vec::new());
+    }
+    let mut ss = vec![0.0; starts.len()];
+    // `profile`, `starts`, and `scales` stay borrowed for this synchronous launch.
+    // `ss` is exclusively borrowed as the output buffer.
+    let status = unsafe {
+        ffi::symworx_dfa_linear_ss_f64(
+            profile.as_ptr(),
+            profile.len() as i32,
+            starts.as_ptr(),
+            scales.as_ptr(),
+            starts.len() as i32,
+            device.index,
+            ss.as_mut_ptr(),
+        )
+    };
+    if status != 0 {
+        return Err(GpuError::Device {
+            status,
+            call: "symworx_dfa_linear_ss_f64",
+        });
+    }
+    Ok(ss)
 }
 
 fn device_name(index: i32) -> Result<String, GpuError> {
